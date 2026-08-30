@@ -6,8 +6,11 @@ node_modules/
 # Expo
 .expo/
 dist/
+dist-ios/
 web-build/
 expo-env.d.ts
+.playwright-cli/
+output/
 
 # Native
 .kotlin/
