@@ -8,7 +8,7 @@ import { MealPhoto } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 
-const stages = ['Grilled chicken', 'White rice', 'Avocado', 'Sesame sauce'];
+const stages = ['Gegrilltes Hähnchen', 'Weißer Reis', 'Avocado', 'Sesamsauce'];
 
 export default function AnalyzingScreen() {
   const router = useRouter();
@@ -30,7 +30,7 @@ export default function AnalyzingScreen() {
         <Pressable onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={23} />
         </Pressable>
-        <Text style={styles.topTitle}>Meal analysis</Text>
+        <Text style={styles.topTitle}>Mahlzeitenanalyse</Text>
         <View style={styles.closeButton} />
       </View>
 
@@ -39,7 +39,7 @@ export default function AnalyzingScreen() {
         <View style={styles.scanLine} />
         <View style={styles.analyzingPill}>
           <View style={styles.liveDot} />
-          <Text style={styles.analyzingPillText}>ANALYZING</Text>
+          <Text style={styles.analyzingPillText}>ANALYSE</Text>
         </View>
       </View>
 
@@ -47,8 +47,8 @@ export default function AnalyzingScreen() {
         <View style={styles.sparkleCircle}>
           <Ionicons color={colors.text} name="sparkles" size={25} />
         </View>
-        <Text style={styles.title}>Analyzing your meal…</Text>
-        <Text style={styles.subtitle}>Identifying foods and estimating portions. You’ll confirm everything next.</Text>
+        <Text style={styles.title}>Wir analysieren deine Mahlzeit …</Text>
+        <Text style={styles.subtitle}>Kadro erkennt Lebensmittel und schätzt Portionen. Im nächsten Schritt bestätigst du alles.</Text>
 
         <View style={styles.chips}>
           {stages.map((stage, index) => (
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   closeButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   topTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
   photoWrap: { marginHorizontal: 20 },
-  scanLine: { position: 'absolute', left: 16, right: 16, top: '48%', height: 2, backgroundColor: colors.accent, shadowColor: colors.accent, shadowOpacity: 0.8, shadowRadius: 8 },
+  scanLine: { position: 'absolute', left: 16, right: 16, top: '48%', height: 2, backgroundColor: colors.accent },
   analyzingPill: { position: 'absolute', top: 14, left: 14, height: 30, borderRadius: 15, backgroundColor: 'rgba(23,24,22,0.75)', paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 6 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.accent },
   analyzingPillText: { color: colors.white, fontSize: 9, fontWeight: '800', letterSpacing: 1 },

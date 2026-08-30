@@ -9,7 +9,7 @@ import {
   nutritionFromItems,
   sumMeals,
 } from '@/services/mockNutrition';
-import { DailyTargets, Meal, MealItem, Nutrition } from '@/types/nutrition';
+import { DailyTargets, Meal, MealItem, Nutrition, PortionFactor } from '@/types/nutrition';
 
 type AppContextValue = {
   userName: string;
@@ -21,8 +21,10 @@ type AppContextValue = {
   scannedMeal: Meal;
   photoUri: string | null;
   hasLoggedScan: boolean;
+  mealPortion: PortionFactor | null;
   setPhotoUri: (uri: string | null) => void;
   adjustItem: (id: string, direction: -1 | 1) => void;
+  setMealPortion: (factor: PortionFactor) => void;
   toggleItem: (id: string) => void;
   resetScan: () => void;
   logScannedMeal: () => void;
@@ -35,6 +37,7 @@ function scaleItem(item: MealItem, nextAmount: number): MealItem {
   return {
     ...item,
     amountG: nextAmount,
+    portionFactor: nextAmount / item.baseAmountG,
     calories: Math.round(item.calories * ratio),
     protein: Math.round(item.protein * ratio),
     carbs: Math.round(item.carbs * ratio),
@@ -46,6 +49,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [meals, setMeals] = useState<Meal[]>(INITIAL_MEALS);
   const [detectedItems, setDetectedItems] = useState<MealItem[]>(DETECTED_ITEMS);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [mealPortion, setMealPortionState] = useState<PortionFactor | null>(1);
 
   const consumed = useMemo(() => sumMeals(meals), [meals]);
   const remaining = useMemo(() => getRemaining(DEFAULT_TARGETS, consumed), [consumed]);
@@ -53,12 +57,20 @@ export function AppProvider({ children }: PropsWithChildren) {
   const hasLoggedScan = meals.some((meal) => meal.id === scannedMeal.id);
 
   const adjustItem = (id: string, direction: -1 | 1) => {
+    setMealPortionState(null);
     setDetectedItems((current) =>
       current.map((item) => {
         if (item.id !== id) return item;
         const nextAmount = Math.max(10, item.amountG + direction * 10);
         return scaleItem(item, nextAmount);
       }),
+    );
+  };
+
+  const setMealPortion = (factor: PortionFactor) => {
+    setMealPortionState(factor);
+    setDetectedItems((current) =>
+      current.map((item) => scaleItem(item, Math.max(10, Math.round(item.baseAmountG * factor)))),
     );
   };
 
@@ -71,6 +83,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const resetScan = () => {
     setDetectedItems(DETECTED_ITEMS);
     setPhotoUri(null);
+    setMealPortionState(1);
   };
 
   const logScannedMeal = () => {
@@ -91,13 +104,15 @@ export function AppProvider({ children }: PropsWithChildren) {
       scannedMeal: { ...scannedMeal, ...nutritionFromItems(detectedItems) },
       photoUri,
       hasLoggedScan,
+      mealPortion,
       setPhotoUri,
       adjustItem,
+      setMealPortion,
       toggleItem,
       resetScan,
       logScannedMeal,
     }),
-    [consumed, detectedItems, hasLoggedScan, meals, photoUri, remaining, scannedMeal],
+    [consumed, detectedItems, hasLoggedScan, mealPortion, meals, photoUri, remaining, scannedMeal],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

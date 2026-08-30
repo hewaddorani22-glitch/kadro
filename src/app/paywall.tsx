@@ -6,6 +6,7 @@ import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui';
+import { KadroMark } from '@/components/KadroMark';
 import { colors, radii } from '@/constants/theme';
 
 type Plan = 'yearly' | 'monthly';
@@ -21,62 +22,60 @@ export default function PaywallScreen() {
       return;
     }
     Alert.alert(
-      'Checkout ready for Day 3',
-      'This MVP intentionally uses mock billing. RevenueCat can replace this action without changing the screen.',
-      [{ text: 'Continue demo', onPress: () => router.replace('/(tabs)/today') }],
+      'Bezahlung folgt an Tag 3',
+      'Dieses MVP nutzt absichtlich eine Demo-Bezahlung. RevenueCat kann diese Aktion später ersetzen, ohne den Screen zu ändern.',
+      [{ text: 'Demo fortsetzen', onPress: () => router.replace('/(tabs)/today') }],
     );
   };
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Close paywall" onPress={() => router.back()} style={styles.closeButton}>
+        <Pressable accessibilityLabel="Paywall schließen" onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={22} />
         </Pressable>
-        <Pressable onPress={() => Alert.alert('Restore purchases', 'No test purchase exists yet. RevenueCat is scheduled for Day 3.')}>
-          <Text style={styles.restore}>Restore</Text>
+        <Pressable onPress={() => Alert.alert('Käufe wiederherstellen', 'Es gibt noch keinen Testkauf. RevenueCat ist für Tag 3 vorgesehen.')}>
+          <Text style={styles.restore}>Wiederherstellen</Text>
         </Pressable>
       </View>
 
       <View style={styles.content}>
-        <View style={styles.heroMark}>
-          <View style={styles.heroMarkInner}><Ionicons color={colors.text} name="infinite" size={35} /></View>
-        </View>
-        <Text style={styles.title}>Eat with a plan.{`\n`}Not a guess.</Text>
-        <Text style={styles.subtitle}>Keep the calm, adaptive guidance you just experienced — after every meal.</Text>
+        <View style={styles.heroMark}><KadroMark size={76} /></View>
+        <Text style={styles.title}>Iss mit einem Plan.{`\n`}Nicht nach Gefühl.</Text>
+        <Text style={styles.subtitle}>Behalte die ruhige, adaptive Unterstützung, die du gerade erlebt hast – nach jeder Mahlzeit.</Text>
 
         <View style={styles.benefits}>
-          <Benefit label="Unlimited meal scans" />
-          <Benefit label="Your day replans after every meal" />
-          <Benefit label="Personalized next-meal suggestions" />
+          <Benefit label="Unbegrenzte Mahlzeiten-Scans" />
+          <Benefit label="Neue Aufstellung nach jeder Mahlzeit" />
+          <Benefit label="Persönliche Vorschläge für den nächsten Zug" />
         </View>
 
         <View style={styles.plans}>
           <PlanCard
-            badge="BEST VALUE"
-            detail="€3.33 per month"
-            label="Yearly"
+            badge="BESTER PREIS"
+            detail="€3,33 pro Monat"
+            label="Jährlich"
             onPress={() => setSelected('yearly')}
-            price="€39.99 / year"
+            price="€39,99 / Jahr"
             selected={selected === 'yearly'}
           />
           <PlanCard
-            detail="Flexible, cancel anytime"
-            label="Monthly"
+            detail="Flexibel, jederzeit kündbar"
+            label="Monatlich"
             onPress={() => setSelected('monthly')}
-            price="€9.99 / month"
+            price="€9,99 / Monat"
             selected={selected === 'monthly'}
           />
         </View>
       </View>
 
       <View style={styles.footer}>
-        <PrimaryButton icon="arrow-forward" label="Start my 7-day free trial" onPress={subscribe} />
-        <Text style={styles.billing}>{selected === 'yearly' ? '€39.99/year' : '€9.99/month'} after trial. Cancel anytime.</Text>
+        <PrimaryButton icon="arrow-forward" label="7 Tage kostenlos testen" onPress={subscribe} />
+        <Text style={styles.billing}>{selected === 'yearly' ? '€39,99/Jahr' : '€9,99/Monat'} nach dem Test. Jederzeit kündbar.</Text>
         <View style={styles.legalRow}>
-          <Text style={styles.legal}>Terms</Text>
+          <Text style={styles.legal}>Bedingungen</Text>
           <View style={styles.legalDot} />
-          <Text style={styles.legal}>Privacy</Text>
+          <Text style={styles.legal}>Datenschutz</Text>
         </View>
       </View>
     </SafeAreaView>
@@ -116,8 +115,7 @@ const styles = StyleSheet.create({
   closeButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   restore: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   content: { flex: 1, alignItems: 'center', paddingTop: 15 },
-  heroMark: { width: 104, height: 104, borderRadius: 52, borderWidth: 1, borderColor: colors.accent, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
-  heroMarkInner: { width: 68, height: 68, borderRadius: 34, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  heroMark: { width: 104, height: 104, borderRadius: 52, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   title: { color: colors.text, fontSize: 36, lineHeight: 41, fontWeight: '700', letterSpacing: -1.2, textAlign: 'center', marginTop: 20 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 340, marginTop: 10 },
   benefits: { alignSelf: 'stretch', gap: 13, marginTop: 24, paddingHorizontal: 7 },
@@ -126,7 +124,7 @@ const styles = StyleSheet.create({
   benefitText: { color: colors.text, fontSize: 14, fontWeight: '600' },
   plans: { alignSelf: 'stretch', gap: 10, marginTop: 25 },
   planCard: { minHeight: 76, borderRadius: radii.button, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  planCardSelected: { borderColor: colors.accentDeep, backgroundColor: colors.accentSoft },
+  planCardSelected: { borderColor: colors.accentDeep, backgroundColor: colors.neutralSoft },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   radioSelected: { borderColor: colors.accentDeep },
   radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.accentDeep },
@@ -136,7 +134,7 @@ const styles = StyleSheet.create({
   planDetail: { color: colors.muted, fontSize: 10 },
   badge: { backgroundColor: colors.text, borderRadius: radii.pill, paddingHorizontal: 7, paddingVertical: 4 },
   badgeText: { color: colors.white, fontSize: 7, fontWeight: '800', letterSpacing: 0.7 },
-  planPrice: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  planPrice: { color: colors.text, fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
   footer: { gap: 9, paddingBottom: 10 },
   billing: { color: colors.muted, fontSize: 10, textAlign: 'center' },
   legalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },

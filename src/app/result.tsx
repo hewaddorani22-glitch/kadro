@@ -1,11 +1,14 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 
 import { Card, ConfidenceBadge, Eyebrow, MealPhoto, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getRemaining } from '@/services/mockNutrition';
+import { formatNumber } from '@/utils/format';
 
 export default function ResultScreen() {
   const router = useRouter();
@@ -18,6 +21,65 @@ export default function ResultScreen() {
       carbs: consumed.carbs + scannedMeal.carbs,
       fat: consumed.fat + scannedMeal.fat,
     });
+  const startingRemaining = hasLoggedScan
+    ? Math.min(targets.calories, projected.calories + scannedMeal.calories)
+    : remaining.calories;
+  const mealProgress = useRef(new Animated.Value(0)).current;
+  const remainingProgress = useRef(new Animated.Value(0)).current;
+  const recommendationReveal = useRef(new Animated.Value(0)).current;
+  const [displayedCalories, setDisplayedCalories] = useState(0);
+  const [displayedRemaining, setDisplayedRemaining] = useState(startingRemaining);
+
+  useEffect(() => {
+    const mealListener = mealProgress.addListener(({ value }) => {
+      setDisplayedCalories(Math.round(scannedMeal.calories * value));
+    });
+    const remainingListener = remainingProgress.addListener(({ value }) => {
+      setDisplayedRemaining(Math.round(startingRemaining + (projected.calories - startingRemaining) * value));
+    });
+    let cancelled = false;
+
+    void AccessibilityInfo.isReduceMotionEnabled().then((reduceMotion) => {
+      if (cancelled) return;
+      if (reduceMotion) {
+        mealProgress.setValue(1);
+        remainingProgress.setValue(1);
+        recommendationReveal.setValue(1);
+        return;
+      }
+
+      Animated.sequence([
+        Animated.timing(mealProgress, {
+          duration: 700,
+          easing: Easing.bezier(0.22, 1, 0.36, 1),
+          toValue: 1,
+          useNativeDriver: false,
+        }),
+        Animated.delay(400),
+        Animated.timing(remainingProgress, {
+          duration: 650,
+          easing: Easing.bezier(0.22, 1, 0.36, 1),
+          toValue: 1,
+          useNativeDriver: false,
+        }),
+        Animated.timing(recommendationReveal, {
+          duration: 300,
+          easing: Easing.out(Easing.cubic),
+          toValue: 1,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    });
+
+    return () => {
+      cancelled = true;
+      mealProgress.removeListener(mealListener);
+      remainingProgress.removeListener(remainingListener);
+      mealProgress.stopAnimation();
+      remainingProgress.stopAnimation();
+      recommendationReveal.stopAnimation();
+    };
+  }, [mealProgress, projected.calories, recommendationReveal, remainingProgress, scannedMeal.calories, startingRemaining]);
 
   const showOptions = () => {
     logScannedMeal();
@@ -32,11 +94,11 @@ export default function ResultScreen() {
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.iconButton}>
+        <Pressable accessibilityLabel="Zurück" onPress={() => router.back()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
-        <Text style={styles.topTitle}>Meal result</Text>
-        <Pressable style={styles.iconButton}>
+        <Text style={styles.topTitle}>Ergebnis</Text>
+        <Pressable accessibilityLabel="Ergebnis teilen" style={styles.iconButton}>
           <Ionicons color={colors.text} name="share-outline" size={21} />
         </Pressable>
       </View>
@@ -47,24 +109,27 @@ export default function ResultScreen() {
         <View style={styles.titleRow}>
           <View style={styles.mealCopy}>
             <Text style={styles.mealTitle}>{scannedMeal.title}</Text>
-            <ConfidenceBadge />
+            <ConfidenceBadge uncertain={scannedMeal.confidence === 'medium'} />
           </View>
           <View style={styles.calorieBlock}>
-            <Text style={styles.calories}>~{scannedMeal.calories}</Text>
-            <Text style={styles.calorieLabel}>kcal estimated</Text>
+            <ImpactRing total={scannedMeal.calories} value={displayedCalories} />
+            <View style={styles.calorieCenter}>
+              <Text style={styles.calories}>~{formatNumber(displayedCalories)}</Text>
+              <Text style={styles.calorieLabel}>kcal geschätzt</Text>
+            </View>
           </View>
         </View>
       </View>
 
       <View style={styles.macros}>
         <MacroResult label="Protein" value={scannedMeal.protein} unit="g" />
-        <MacroResult label="Carbs" value={scannedMeal.carbs} unit="g" />
-        <MacroResult label="Fat" value={scannedMeal.fat} unit="g" />
-        <MacroResult label="Fiber" value={scannedMeal.fiber ?? 8} unit="g" />
+        <MacroResult label="Kohlenh." value={scannedMeal.carbs} unit="g" />
+        <MacroResult label="Fett" value={scannedMeal.fat} unit="g" />
+        <MacroResult label="Ballastst." value={scannedMeal.fiber ?? 8} unit="g" />
       </View>
 
       <View style={styles.section}>
-        <SectionTitle action={<Pressable onPress={() => router.replace('/confirm')}><Text style={styles.edit}>Edit</Text></Pressable>}>Ingredients detected</SectionTitle>
+        <SectionTitle action={<Pressable onPress={() => router.replace('/confirm')}><Text style={styles.edit}>Bearbeiten</Text></Pressable>}>Erkannte Zutaten</SectionTitle>
         <Card style={styles.ingredientsCard}>
           {scannedMeal.items.filter((item) => item.included).map((item, index, list) => (
             <View key={item.id}>
@@ -83,52 +148,86 @@ export default function ResultScreen() {
         <View style={styles.dayHeader}>
           <View style={styles.dayIcon}><Ionicons color={colors.text} name="sunny-outline" size={23} /></View>
           <View style={styles.dayHeading}>
-            <Eyebrow>Your day after this meal</Eyebrow>
-            <Text style={styles.onTrack}>You’re still on track</Text>
+            <Eyebrow>Dein Tag danach</Eyebrow>
+            <Text style={styles.onTrack}>Du bist weiter im Plan</Text>
           </View>
           <Ionicons color={colors.success} name="checkmark-circle" size={25} />
         </View>
         <View style={styles.remainingRow}>
           <View>
-            <Text style={styles.remainingValue}>{projected.calories.toLocaleString('en-US')}</Text>
-            <Text style={styles.remainingLabel}>kcal remaining</Text>
+            <Text style={styles.remainingValue}>{formatNumber(displayedRemaining)}</Text>
+            <Text style={styles.remainingLabel}>kcal übrig</Text>
           </View>
           <View style={styles.remainingDivider} />
           <View>
             <Text style={styles.remainingValue}>{projected.protein} g</Text>
-            <Text style={styles.remainingLabel}>protein remaining</Text>
+            <Text style={styles.remainingLabel}>Protein übrig</Text>
           </View>
         </View>
       </Card>
 
+      <Animated.View
+        style={{
+          opacity: recommendationReveal,
+          transform: [{ translateY: recommendationReveal.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
+        }}
+      >
       <Card style={styles.nextCard}>
         <View style={styles.nextTop}>
           <View style={styles.nextBadge}><Ionicons color={colors.text} name="navigate" size={20} /></View>
           <View style={styles.nextCopy}>
-            <Eyebrow>Recommended next meal</Eyebrow>
-            <Text style={styles.nextTitle}>A lighter, protein-first dinner</Text>
+            <Eyebrow>Deine nächste Mahlzeit</Eyebrow>
+            <Text style={styles.nextTitle}>Leichter und proteinreich</Text>
           </View>
         </View>
         <View style={styles.aimRow}>
           <View style={styles.aimBlock}>
             <Text style={styles.aimValue}>450–550</Text>
-            <Text style={styles.aimLabel}>kilocalories</Text>
+            <Text style={styles.aimLabel}>Kilokalorien</Text>
           </View>
           <View style={styles.aimBlock}>
             <Text style={styles.aimValue}>35–45 g</Text>
-            <Text style={styles.aimLabel}>protein</Text>
+            <Text style={styles.aimLabel}>Protein</Text>
           </View>
           <View style={styles.aimBlock}>
-            <Text style={styles.aimValue}>Light</Text>
-            <Text style={styles.aimLabel}>on fats</Text>
+            <Text style={styles.aimValue}>Leicht</Text>
+            <Text style={styles.aimLabel}>bei Fett</Text>
           </View>
         </View>
-        <PrimaryButton icon="arrow-forward" label="Show me 3 options" onPress={showOptions} />
+        <PrimaryButton icon="arrow-forward" label="3 Optionen zeigen" onPress={showOptions} />
       </Card>
+      </Animated.View>
 
-      <PrimaryButton label="Save meal and finish" onPress={saveForLater} variant="ghost" />
-      <Text style={styles.estimateNote}>Nutrition values are estimates. You stay in control of every ingredient and portion.</Text>
+      <PrimaryButton label="Mahlzeit speichern" onPress={saveForLater} variant="ghost" />
+      <Text style={styles.estimateNote}>Nährwerte sind Schätzungen. Du behältst die Kontrolle über jede Zutat und Portion.</Text>
     </Screen>
+  );
+}
+
+function ImpactRing({ total, value }: { total: number; value: number }) {
+  const size = 122;
+  const stroke = 7;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = total > 0 ? Math.min(1, Math.max(0, value / total)) : 0;
+  const dashOffset = circumference * (1 - progress);
+
+  return (
+    <Svg height={size} style={styles.impactRing} width={size}>
+      <Circle cx={size / 2} cy={size / 2} fill="none" r={radius} stroke={colors.neutralSoft} strokeWidth={stroke} />
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        fill="none"
+        r={radius}
+        stroke={colors.accent}
+        strokeDasharray={`${circumference} ${circumference}`}
+        strokeDashoffset={dashOffset}
+        strokeLinecap="round"
+        strokeWidth={stroke}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+    </Svg>
   );
 }
 
@@ -149,12 +248,14 @@ const styles = StyleSheet.create({
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   mealCopy: { flex: 1, gap: 10 },
   mealTitle: { color: colors.text, fontSize: 29, lineHeight: 34, fontWeight: '700', letterSpacing: -0.8, textTransform: 'capitalize' },
-  calorieBlock: { alignItems: 'flex-end' },
-  calories: { color: colors.text, fontSize: 36, lineHeight: 41, fontWeight: '700', letterSpacing: -1.2 },
+  calorieBlock: { width: 122, height: 122, alignItems: 'center', justifyContent: 'center' },
+  impactRing: { position: 'absolute', top: 0, left: 0 },
+  calorieCenter: { alignItems: 'center' },
+  calories: { color: colors.text, fontSize: 25, lineHeight: 30, fontWeight: '700', letterSpacing: -0.8, fontVariant: ['tabular-nums'] },
   calorieLabel: { color: colors.muted, fontSize: 10 },
   macros: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, paddingVertical: 15 },
   macroResult: { flex: 1, alignItems: 'center', gap: 4 },
-  macroValue: { color: colors.text, fontSize: 17, fontWeight: '700' },
+  macroValue: { color: colors.text, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
   macroUnit: { fontSize: 11, fontWeight: '600' },
   macroLabel: { color: colors.muted, fontSize: 10 },
   section: { gap: 13 },
@@ -163,7 +264,7 @@ const styles = StyleSheet.create({
   ingredientRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 10 },
   ingredientCheck: { width: 28, height: 28, borderRadius: 10, backgroundColor: colors.successSoft, alignItems: 'center', justifyContent: 'center' },
   ingredientName: { flex: 1, color: colors.text, fontSize: 13, fontWeight: '600' },
-  ingredientAmount: { color: colors.muted, fontSize: 12, fontWeight: '600' },
+  ingredientAmount: { color: colors.muted, fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 46 },
   dayCard: { backgroundColor: colors.text, borderColor: colors.text, gap: 19 },
   dayHeader: { flexDirection: 'row', alignItems: 'center', gap: 11 },
@@ -171,7 +272,7 @@ const styles = StyleSheet.create({
   dayHeading: { flex: 1, gap: 4 },
   onTrack: { color: colors.white, fontSize: 18, fontWeight: '700' },
   remainingRow: { flexDirection: 'row', alignItems: 'center' },
-  remainingValue: { color: colors.white, fontSize: 25, fontWeight: '700' },
+  remainingValue: { color: colors.white, fontSize: 25, fontWeight: '700', fontVariant: ['tabular-nums'] },
   remainingLabel: { color: 'rgba(255,255,255,0.54)', fontSize: 10, marginTop: 3 },
   remainingDivider: { width: 1, height: 42, backgroundColor: 'rgba(255,255,255,0.13)', marginHorizontal: 28 },
   nextCard: { backgroundColor: colors.accentSoft, borderColor: colors.accent, gap: 18 },

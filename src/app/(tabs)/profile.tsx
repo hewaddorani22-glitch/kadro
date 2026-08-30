@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Card, Eyebrow, PageTitle, Screen, SectionTitle } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { formatNumber } from '@/utils/format';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <View style={styles.avatar}><Text style={styles.avatarText}>A</Text></View>
         <View style={styles.headerCopy}>
-          <Eyebrow>Your profile</Eyebrow>
+          <Eyebrow>Dein Profil</Eyebrow>
           <PageTitle>Alex Morgan</PageTitle>
           <Text style={styles.subtitle}>alex@example.com</Text>
         </View>
@@ -29,45 +30,45 @@ export default function ProfileScreen() {
         <Card style={styles.proCard}>
           <View style={styles.proIcon}><Ionicons color={colors.text} name="infinite" size={26} /></View>
           <View style={styles.proCopy}>
-            <Text style={styles.proTitle}>Nutrition Autopilot Pro</Text>
-            <Text style={styles.proText}>Unlimited scans. A plan that keeps adapting.</Text>
+            <Text style={styles.proTitle}>Kadro Pro</Text>
+            <Text style={styles.proText}>Unbegrenzte Scans. Ein Plan, der sich weiter anpasst.</Text>
           </View>
-          <View style={styles.tryPill}><Text style={styles.tryText}>TRY FREE</Text></View>
+          <View style={styles.tryPill}><Text style={styles.tryText}>GRATIS TESTEN</Text></View>
         </Card>
       </Pressable>
 
       <View style={styles.section}>
-        <SectionTitle>Your plan</SectionTitle>
+        <SectionTitle>Dein Plan</SectionTitle>
         <Card style={styles.planCard}>
           <View style={styles.planGrid}>
-            <PlanStat label="Calories" value={targets.calories.toLocaleString('en-US')} />
+            <PlanStat label="Kalorien" value={formatNumber(targets.calories)} />
             <PlanStat label="Protein" value={`${targets.protein} g`} />
-            <PlanStat label="Goal" value="Lose" />
-            <PlanStat label="Activity" value="Light" />
+            <PlanStat label="Ziel" value="Reduzieren" />
+            <PlanStat label="Aktivität" value="Leicht" />
           </View>
           <Pressable style={styles.updateRow}>
             <Ionicons color={colors.accentDeep} name="options-outline" size={19} />
-            <Text style={styles.updateText}>Update goals and preferences</Text>
+            <Text style={styles.updateText}>Ziele und Präferenzen anpassen</Text>
             <Ionicons color={colors.muted} name="chevron-forward" size={18} />
           </Pressable>
         </Card>
       </View>
 
       <View style={styles.section}>
-        <SectionTitle>Preferences</SectionTitle>
+        <SectionTitle>Einstellungen</SectionTitle>
         <Card style={styles.listCard}>
           <ToggleRow
-            detail="Original meal photos are discarded after analysis."
+            detail="Originalfotos werden nach der Analyse verworfen."
             icon="image-outline"
-            label="Save meal photos"
+            label="Mahlzeitenfotos speichern"
             onValueChange={setSavePhotos}
             value={savePhotos}
           />
           <View style={styles.divider} />
           <ToggleRow
-            detail="Gentle reminders around your usual meal times."
+            detail="Sanfte Hinweise zu deinen üblichen Essenszeiten."
             icon="notifications-outline"
-            label="Smart reminders"
+            label="Intelligente Erinnerungen"
             onValueChange={setNotifications}
             value={notifications}
           />
@@ -75,22 +76,22 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <SectionTitle>Support & privacy</SectionTitle>
+        <SectionTitle>Support und Datenschutz</SectionTitle>
         <Card style={styles.listCard}>
-          <MenuRow icon="shield-checkmark-outline" label="Privacy" />
+          <MenuRow icon="shield-checkmark-outline" label="Datenschutz" />
           <View style={styles.divider} />
-          <MenuRow icon="document-text-outline" label="Terms" />
+          <MenuRow icon="document-text-outline" label="Nutzungsbedingungen" />
           <View style={styles.divider} />
-          <MenuRow icon="help-circle-outline" label="Help & feedback" />
+          <MenuRow icon="help-circle-outline" label="Hilfe und Feedback" />
         </Card>
       </View>
 
       <View style={styles.wellnessNote}>
         <Ionicons color={colors.muted} name="information-circle-outline" size={18} />
-        <Text style={styles.wellnessText}>Nutrition Autopilot provides general wellness estimates and is not a medical service.</Text>
+        <Text style={styles.wellnessText}>Kadro liefert allgemeine Wellness-Schätzungen und ist kein medizinischer Dienst.</Text>
       </View>
 
-      <Text style={styles.version}>Nutrition Autopilot · Demo 0.1.0</Text>
+      <Text style={styles.version}>Kadro · Demo 0.1.0</Text>
     </Screen>
   );
 }
@@ -134,8 +135,8 @@ const styles = StyleSheet.create({
   headerCopy: { flex: 1, gap: 3 },
   subtitle: { color: colors.muted, fontSize: 13 },
   editButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  proCard: { backgroundColor: colors.accent, borderColor: colors.accent, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
-  proIcon: { width: 46, height: 46, borderRadius: 17, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  proCard: { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
+  proIcon: { width: 46, height: 46, borderRadius: 17, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   proCopy: { flex: 1, gap: 4 },
   proTitle: { color: colors.text, fontSize: 14, fontWeight: '800' },
   proText: { color: colors.text, opacity: 0.7, fontSize: 11, lineHeight: 15 },
@@ -146,8 +147,8 @@ const styles = StyleSheet.create({
   planGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   planStat: { width: '50%', padding: 14, gap: 4 },
   planStatLabel: { color: colors.muted, fontSize: 11 },
-  planStatValue: { color: colors.text, fontSize: 18, fontWeight: '700' },
-  updateRow: { minHeight: 54, borderRadius: 18, backgroundColor: colors.accentSoft, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  planStatValue: { color: colors.text, fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  updateRow: { minHeight: 54, borderRadius: 18, backgroundColor: colors.neutralSoft, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
   updateText: { flex: 1, color: colors.accentDeep, fontSize: 12, fontWeight: '700' },
   listCard: { padding: 8 },
   toggleRow: { minHeight: 78, padding: 9, flexDirection: 'row', alignItems: 'center', gap: 11 },

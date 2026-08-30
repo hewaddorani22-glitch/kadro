@@ -1,24 +1,24 @@
-# Nutrition Autopilot
+# Kadro
 
-An iOS-first, production-shaped Day 1 MVP built with React Native, Expo Router and TypeScript.
+An iOS-first, production-shaped nutrition MVP built with React Native, Expo Router and TypeScript.
 
 [![CI](https://github.com/hewaddorani22-glitch/kadro/actions/workflows/ci.yml/badge.svg)](https://github.com/hewaddorani22-glitch/kadro/actions/workflows/ci.yml)
 
-> Take a photo of your food. The app tells you what to eat next.
+> Die Aufstellung deines Tages.
 
 ## Included product loop
 
-1. Personalized onboarding
-2. Daily calorie and macro dashboard
+1. Six-step German onboarding with transparent wellness guardrails
+2. Daily calorie and macro dashboard with no empty start state
 3. Full-screen meal camera with a demo fallback
 4. Animated analysis state
-5. Editable detected-food confirmation
-6. Meal result with confidence and estimated nutrition
+5. One-tap `weniger / passt / mehr` portion confirmation plus optional gram-level editing
+6. Animated meal result with confidence and estimated nutrition
 7. Recalculated daily balance
 8. Three contextual next-meal suggestions
 9. Progress, profile and transparent subscription paywall
 
-All nutrition, analysis and billing data is mocked behind a small service/context layer. Real APIs can replace those boundaries without rebuilding the screens.
+All nutrition, analysis and billing data is mocked behind a small service/context layer. Typed integration contracts live in `src/services/contracts.ts` so real APIs can replace those boundaries without rebuilding the screens.
 
 ## Open with Expo Go
 
@@ -60,8 +60,9 @@ Contributions should follow [CONTRIBUTING.md](./CONTRIBUTING.md). Pull requests 
 
 - Expo SDK 54, compatible with the current App Store build of Expo Go
 - React Native + Expo Router + TypeScript
+- Kadro brand system and German product UI
 - Real camera preview when permission is granted
 - No backend, AI analysis, auth or live billing yet
 - Meal photos are not persisted by the prototype
 
-The next implementation slice is the Day 2 scanner pipeline: temporary upload, vision detection, nutrition database lookup, correction persistence and saved meals.
+The next implementation slice is the Day 2 scanner pipeline: temporary upload, vision detection, nutrition database lookup, local-first retry, correction persistence, saved meals and an initial verified German recommendation catalog.

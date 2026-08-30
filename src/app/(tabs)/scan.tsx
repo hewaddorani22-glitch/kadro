@@ -9,14 +9,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 
-type CaptureMode = 'Photo' | 'Describe' | 'Barcode';
+type CaptureMode = 'Foto' | 'Beschreiben' | 'Barcode';
 
 export default function ScanScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const { setPhotoUri } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
-  const [mode, setMode] = useState<CaptureMode>('Photo');
+  const [mode, setMode] = useState<CaptureMode>('Foto');
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
@@ -26,8 +26,8 @@ export default function ScanScreen() {
 
   const capture = async () => {
     if (capturing) return;
-    if (mode !== 'Photo') {
-      Alert.alert(`${mode} mode`, 'This Day 1 prototype keeps these as visible fallbacks. Photo is the active MVP path.');
+    if (mode !== 'Foto') {
+      Alert.alert(`${mode}`, 'In diesem MVP ist zunächst der Foto-Scan aktiv. Diese Option folgt in einem späteren Schritt.');
       return;
     }
 
@@ -65,12 +65,12 @@ export default function ScanScreen() {
           <View style={styles.fallbackOrb}>
             <Ionicons color={colors.accent} name="restaurant" size={58} />
           </View>
-          <Text style={styles.fallbackTitle}>Frame your whole meal</Text>
-          <Text style={styles.fallbackText}>Natural light and a clear view help with portions.</Text>
+          <Text style={styles.fallbackTitle}>Zeig die ganze Mahlzeit</Text>
+          <Text style={styles.fallbackText}>Natürliches Licht und eine klare Ansicht helfen bei der Portionsschätzung.</Text>
           {permission && !permission.granted ? (
             <Pressable onPress={requestPermission} style={styles.permissionButton}>
               <Ionicons color={colors.text} name="camera-outline" size={18} />
-              <Text style={styles.permissionText}>Enable camera</Text>
+              <Text style={styles.permissionText}>Kamera erlauben</Text>
             </Pressable>
           ) : null}
         </View>
@@ -81,14 +81,14 @@ export default function ScanScreen() {
 
       <SafeAreaView edges={['top', 'bottom']} style={styles.overlay}>
         <View style={styles.topBar}>
-          <Pressable accessibilityLabel="Close scanner" onPress={close} style={styles.circleButton}>
+          <Pressable accessibilityLabel="Scanner schließen" onPress={close} style={styles.circleButton}>
             <Ionicons color={colors.white} name="close" size={24} />
           </Pressable>
           <View style={styles.titlePill}>
             <Ionicons color={colors.accent} name="sparkles" size={15} />
-            <Text style={styles.screenTitle}>Scan meal</Text>
+            <Text style={styles.screenTitle}>Mahlzeit scannen</Text>
           </View>
-          <Pressable accessibilityLabel="Toggle flash" style={styles.circleButton}>
+          <Pressable accessibilityLabel="Blitz umschalten" style={styles.circleButton}>
             <Ionicons color={colors.white} name="flash-outline" size={22} />
           </Pressable>
         </View>
@@ -100,13 +100,13 @@ export default function ScanScreen() {
           <View style={styles.cornerBottomRight} />
           <View style={styles.tipPill}>
             <View style={styles.tipDot} />
-            <Text style={styles.tipText}>Keep the full plate visible</Text>
+            <Text style={styles.tipText}>Den ganzen Teller sichtbar halten</Text>
           </View>
         </View>
 
         <View style={styles.controls}>
           <View style={styles.modeRow}>
-            {(['Photo', 'Describe', 'Barcode'] as CaptureMode[]).map((item) => (
+            {(['Foto', 'Beschreiben', 'Barcode'] as CaptureMode[]).map((item) => (
               <Pressable key={item} onPress={() => setMode(item)} style={styles.modeButton}>
                 <Text style={[styles.modeText, mode === item && styles.modeTextActive]}>{item}</Text>
                 {mode === item ? <View style={styles.modeDot} /> : null}
@@ -114,17 +114,17 @@ export default function ScanScreen() {
             ))}
           </View>
           <View style={styles.shutterRow}>
-            <Pressable accessibilityLabel="Choose a recent photo" style={styles.smallControl}>
+            <Pressable accessibilityLabel="Foto auswählen" style={styles.smallControl}>
               <Ionicons color={colors.white} name="images-outline" size={23} />
             </Pressable>
-            <Pressable accessibilityLabel="Take meal photo" onPress={capture} style={({ pressed }) => [styles.shutterOuter, pressed && styles.shutterPressed]}>
+            <Pressable accessibilityLabel="Mahlzeit fotografieren" onPress={capture} style={({ pressed }) => [styles.shutterOuter, pressed && styles.shutterPressed]}>
               <View style={styles.shutterInner} />
             </Pressable>
-            <Pressable accessibilityLabel="Use demo meal" onPress={capture} style={styles.smallControl}>
+            <Pressable accessibilityLabel="Demo-Mahlzeit verwenden" onPress={capture} style={styles.smallControl}>
               <Ionicons color={colors.white} name="play-outline" size={24} />
             </Pressable>
           </View>
-          <Text style={styles.privacy}>Photo analyzed temporarily · not saved by default</Text>
+          <Text style={styles.privacy}>Foto nur vorübergehend analysiert · standardmäßig nicht gespeichert</Text>
         </View>
       </SafeAreaView>
     </View>
@@ -134,7 +134,7 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.camera },
   fallback: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: colors.cameraSoft, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 52 },
-  fallbackOrb: { width: 112, height: 112, borderRadius: 56, backgroundColor: 'rgba(183,213,138,0.12)', borderWidth: 1, borderColor: 'rgba(183,213,138,0.32)', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
+  fallbackOrb: { width: 112, height: 112, borderRadius: 56, backgroundColor: 'rgba(187,220,142,0.12)', borderWidth: 1, borderColor: 'rgba(187,220,142,0.32)', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   fallbackTitle: { color: colors.white, fontSize: 21, fontWeight: '700', textAlign: 'center' },
   fallbackText: { color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 8 },
   permissionButton: { marginTop: 18, minHeight: 44, borderRadius: radii.pill, paddingHorizontal: 16, backgroundColor: colors.accent, flexDirection: 'row', alignItems: 'center', gap: 8 },

@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { colors } from '@/constants/theme';
+import { formatNumber } from '@/utils/format';
 
 export function CalorieRing({ remaining, total }: { remaining: number; total: number }) {
   const size = 220;
@@ -11,7 +12,7 @@ export function CalorieRing({ remaining, total }: { remaining: number; total: nu
   const consumedRatio = Math.min(1, Math.max(0, (total - remaining) / total));
 
   return (
-    <View accessibilityLabel={`${remaining} calories remaining`} style={styles.outer}>
+    <View accessibilityLabel={`${remaining} Kilokalorien übrig`} style={styles.outer}>
       <View style={styles.track}>
         <Svg height={size} style={styles.svg} width={size}>
           <Circle
@@ -19,7 +20,7 @@ export function CalorieRing({ remaining, total }: { remaining: number; total: nu
             cy={size / 2}
             fill="none"
             r={radius}
-            stroke={colors.accentSoft}
+            stroke={colors.neutralSoft}
             strokeWidth={stroke}
           />
           <Circle
@@ -36,11 +37,11 @@ export function CalorieRing({ remaining, total }: { remaining: number; total: nu
           />
         </Svg>
         <View style={styles.inner}>
-          <Text style={styles.value}>{remaining.toLocaleString('en-US')}</Text>
-          <Text style={styles.label}>kcal left</Text>
+          <Text style={styles.value}>{formatNumber(remaining)}</Text>
+          <Text style={styles.label}>kcal übrig</Text>
           <View style={styles.statusRow}>
             <View style={styles.statusDot} />
-            <Text style={styles.status}>On track</Text>
+            <Text style={styles.status}>Im Plan</Text>
           </View>
         </View>
       </View>
@@ -75,6 +76,7 @@ const styles = StyleSheet.create({
     lineHeight: 54,
     fontWeight: '700',
     letterSpacing: -1.7,
+    fontVariant: ['tabular-nums'],
   },
   label: {
     color: colors.muted,

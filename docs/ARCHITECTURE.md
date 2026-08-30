@@ -28,12 +28,12 @@ Expo Router uses `src/app` as the route root.
 
 - `src/app/_layout.tsx`: root stack and application providers.
 - `src/app/index.tsx`: initial redirect to onboarding.
-- `src/app/onboarding.tsx`: eight-step local onboarding flow.
+- `src/app/onboarding.tsx`: six-step local German onboarding flow.
 - `src/app/(tabs)/_layout.tsx`: Today, Plan, Scan, Progress, and Profile tabs.
 - `src/app/(tabs)/scan.tsx`: camera preview and demo capture fallback.
 - `src/app/analyzing.tsx`: staged mock analysis animation.
-- `src/app/confirm.tsx`: ingredient inclusion and portion correction.
-- `src/app/result.tsx`: meal estimate and projected remaining targets.
+- `src/app/confirm.tsx`: ingredient inclusion, one-tap meal portion sizing, and optional gram-level correction.
+- `src/app/result.tsx`: animated meal estimate, projected remaining targets, and delayed recommendation reveal.
 - `src/app/paywall.tsx`: transparent mock subscription choice.
 
 Root stack routes sit above the tab navigator so camera analysis, confirmation, result, and paywall can focus the user on one step.
@@ -47,6 +47,7 @@ Root stack routes sit above the tab navigator so camera analysis, confirmation, 
 - detected meal items;
 - temporary captured photo URI;
 - derived consumed and remaining nutrition.
+- current quick portion selection (`0.7×`, `1×`, or `1.4×`; `null` after custom gram edits).
 
 `mockNutrition.ts` owns fixture data and pure calculations:
 
@@ -60,25 +61,13 @@ Screens must not maintain separate copies of these totals.
 
 ## Integration seams
 
-The next backend implementation should introduce interfaces without changing screen props:
+The typed interfaces already live in `src/services/contracts.ts` and are the boundary for the next backend implementation:
 
 ```ts
-interface MealAnalysisService {
-  analyze(photoUri: string): Promise<DetectedMeal>;
-}
-
-interface NutritionLookupService {
-  resolve(items: DetectedFood[]): Promise<MealItem[]>;
-}
-
-interface MealRepository {
-  save(meal: Meal): Promise<void>;
-  listForDay(date: string): Promise<Meal[]>;
-}
-
-interface RecommendationService {
-  getThree(input: RecommendationInput): Promise<MealSuggestion[]>;
-}
+MealAnalysisService
+NutritionLookupService
+MealRepository
+RecommendationService
 ```
 
 Suggested responsibilities:
@@ -87,6 +76,7 @@ Suggested responsibilities:
 - USDA/Open Food Facts adapter: normalized calories and macros.
 - Supabase repository: profiles, targets, meals, items, and recommendations.
 - RevenueCat adapter: entitlement state and purchase/restore actions.
+- Initial recommendation adapter: deterministic scoring over a verified German catalog; an LLM may re-rank or explain candidates later but must not invent nutrition values.
 
 Raw provider payloads should be mapped to the domain types in `src/types/nutrition.ts` before reaching React components.
 

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, radii, shadows, spacing } from '@/constants/theme';
+import { colors, radii, spacing } from '@/constants/theme';
 
 type ButtonProps = {
   label: string;
@@ -35,6 +35,7 @@ export function PrimaryButton({
   const dark = variant === 'dark';
   const ghost = variant === 'ghost';
   const secondary = variant === 'secondary';
+  const lightText = variant === 'primary' || dark;
 
   return (
     <Pressable
@@ -52,12 +53,12 @@ export function PrimaryButton({
         style,
       ]}
     >
-      <Text style={[styles.buttonText, (dark || ghost) && styles.buttonTextLight, ghost && styles.buttonTextDark]}>
+      <Text style={[styles.buttonText, lightText && styles.buttonTextLight, ghost && styles.buttonTextDark]}>
         {label}
       </Text>
       {icon ? (
         <Ionicons
-          color={dark ? colors.white : colors.text}
+          color={lightText ? colors.white : colors.text}
           name={icon}
           size={18}
         />
@@ -144,7 +145,7 @@ export function MacroCard({
       </View>
       <Text numberOfLines={1} style={styles.macroLabel}>{label}</Text>
       <Text style={styles.macroValue}>{current}</Text>
-      <Text style={styles.macroTarget}>of {target}{unit}</Text>
+      <Text style={styles.macroTarget}>von {target}{unit}</Text>
       <ProgressBar value={current / target} />
     </Card>
   );
@@ -159,7 +160,7 @@ export function ConfidenceBadge({ uncertain = false }: { uncertain?: boolean }) 
         size={14}
       />
       <Text style={[styles.confidenceText, uncertain && styles.confidenceTextUncertain]}>
-        {uncertain ? 'Portion uncertain' : 'High confidence'}
+        {uncertain ? 'Portion unsicher' : 'Hohe Sicherheit'}
       </Text>
     </View>
   );
@@ -172,7 +173,7 @@ export function MealPhoto({ uri, height = 250, style }: { uri?: string | null; h
       <Image resizeMode="cover" source={source} style={styles.photo} />
       {!uri ? (
         <View style={styles.demoBadge}>
-          <Text style={styles.demoBadgeText}>DEMO MEAL</Text>
+          <Text style={styles.demoBadgeText}>DEMO-MAHLZEIT</Text>
         </View>
       ) : null}
     </View>
@@ -219,12 +220,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: 20,
-    ...shadows.soft,
   },
   button: {
     minHeight: 56,
     borderRadius: radii.button,
-    backgroundColor: colors.accent,
+    backgroundColor: colors.accentDeep,
     paddingHorizontal: 22,
     flexDirection: 'row',
     alignItems: 'center',
@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.neutralSoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -327,11 +327,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 22,
     fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   macroTarget: {
     color: colors.muted,
     fontSize: 11,
     marginBottom: 7,
+    fontVariant: ['tabular-nums'],
   },
   confidence: {
     alignSelf: 'flex-start',
@@ -339,7 +341,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 5,
     borderRadius: radii.pill,
-    backgroundColor: colors.successSoft,
+    backgroundColor: colors.neutralSoft,
     paddingHorizontal: 10,
     paddingVertical: 6,
   },

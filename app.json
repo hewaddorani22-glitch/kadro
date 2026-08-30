@@ -1,24 +1,30 @@
 {
   "expo": {
-    "name": "Nutrition Autopilot",
-    "slug": "nutrition-autopilot",
+    "name": "Kadro",
+    "slug": "kadro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "nutrition-autopilot",
+    "scheme": "kadro",
     "icon": "./assets/icon.png",
+    "backgroundColor": "#F5F3EE",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F5F3EE"
+    },
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.nutritionautopilot.app",
+      "bundleIdentifier": "com.hewaddorani.kadro",
       "infoPlist": {
-        "NSCameraUsageDescription": "Nutrition Autopilot uses your camera to scan meals. Photos stay on your device in this demo."
+        "NSCameraUsageDescription": "Kadro verwendet deine Kamera, um Mahlzeiten zu analysieren. Fotos werden in dieser Demo nicht dauerhaft gespeichert."
       }
     },
     "android": {
+      "package": "com.hewaddorani.kadro",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#BBDC8E",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
@@ -32,7 +38,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Nutrition Autopilot to photograph meals for analysis."
+          "cameraPermission": "Erlaube Kadro, Mahlzeiten für die Analyse zu fotografieren."
         }
       ],
       "expo-font"

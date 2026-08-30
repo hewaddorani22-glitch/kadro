@@ -1,32 +1,35 @@
 # Roadmap
 
-## Current status: Day 1 complete
+## Current status: Day 1.5 complete
 
-- [x] Eight-step personalized onboarding
+- [x] Kadro name, mark, app icon, and exact brand tokens
+- [x] German product UI
+- [x] Six-step personalized onboarding with visible wellness guardrails
 - [x] Today dashboard with derived calories and macros
 - [x] Central full-screen camera flow with permission and demo states
 - [x] Staged analyzing state
-- [x] Detected-food confirmation and portion correction
-- [x] Result screen with estimate, confidence, ingredients, and projected balance
-- [x] Home, Supermarket, and Eating Out recommendation contexts
+- [x] Detected-food confirmation with one-tap meal sizing and optional gram correction
+- [x] Result sequence with estimate count-up, remaining count-down, confidence, and reduced-motion support
+- [x] Zuhause, Supermarkt, and Unterwegs recommendation contexts
 - [x] Exactly three suggestions per context
 - [x] Progress and profile screens
 - [x] Transparent mock paywall
 - [x] Expo Go compatibility on SDK 54
 - [x] TypeScript, Expo Doctor, web export, and iOS bundle checks
+- [x] Typed service contracts for analysis, nutrition lookup, persistence, retry, and recommendations
 
 ## Day 2: real meal intelligence
 
 Priority order:
 
-1. Define typed service interfaces for image analysis, nutrition lookup, and meal storage.
-2. Add image resizing/compression and a temporary-upload boundary.
-3. Return structured detected foods, portions, and confidence from a multimodal model.
-4. Resolve normalized nutrition through USDA FoodData Central for fresh food.
-5. Add Open Food Facts as the packaged-food and barcode source.
-6. Preserve the existing confirmation UI as the correction layer.
-7. Save the confirmed meal and reload Today from the repository.
-8. Add retry, offline, unclear-image, and multiple-dish error states.
+1. Add image resizing/compression and a temporary-upload boundary.
+2. Return structured detected foods, portions, and confidence from a multimodal model.
+3. Resolve normalized nutrition through USDA FoodData Central for fresh food.
+4. Add Open Food Facts as the packaged-food and barcode source.
+5. Preserve the existing confirmation UI as the correction layer.
+6. Save the confirmed meal and reload Today from the repository.
+7. Add a local-first retry queue plus unclear-image and multiple-dish error states.
+8. Seed 40–60 verified German meals and rank exactly three deterministically by context, remaining macros, and preferences.
 
 Acceptance criteria:
 
@@ -36,6 +39,7 @@ Acceptance criteria:
 - Corrections change totals before persistence.
 - A saved meal survives an application restart.
 - The current mock service remains available for deterministic previews and development.
+- Recommendation nutrition comes from the verified catalog, never from generated prose.
 
 ## Day 3: real Autopilot and accounts
 
@@ -43,6 +47,7 @@ Acceptance criteria:
 - Postgres meal, item, target, and recommendation records
 - Remaining macro calculation on persisted data
 - Structured recommendation generation with exactly three results
+- Expand the verified German catalog toward 200 meals after schema and ranking validation
 - Preference and rejection feedback
 - RevenueCat subscription and restore flow
 - PostHog product events and Sentry error reporting

@@ -12,6 +12,8 @@ export type MealItem = Nutrition & {
   id: string;
   name: string;
   amountG: number;
+  baseAmountG: number;
+  portionFactor: number;
   confidence: 'high' | 'medium';
   optional?: boolean;
   included: boolean;
@@ -22,7 +24,7 @@ export type Meal = Nutrition & {
   title: string;
   type: 'Breakfast' | 'Lunch' | 'Dinner' | 'Snack';
   time: string;
-  confidence: 'High confidence' | 'Portion uncertain';
+  confidence: 'high' | 'medium';
   items: MealItem[];
 };
 
@@ -36,3 +38,5 @@ export type MealSuggestion = Nutrition & {
   detail: string;
   time: string;
 };
+
+export type PortionFactor = 0.7 | 1 | 1.4;

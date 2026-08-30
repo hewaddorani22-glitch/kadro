@@ -10,7 +10,7 @@ export const DEFAULT_TARGETS: DailyTargets = {
 export const INITIAL_MEALS: Meal[] = [
   {
     id: 'breakfast-1',
-    title: 'Skyr, berries & granola',
+    title: 'Skyr mit Beeren und Granola',
     type: 'Breakfast',
     time: '08:12',
     calories: 430,
@@ -18,7 +18,7 @@ export const INITIAL_MEALS: Meal[] = [
     carbs: 52,
     fat: 9,
     fiber: 8,
-    confidence: 'High confidence',
+    confidence: 'high',
     items: [],
   },
 ];
@@ -26,8 +26,10 @@ export const INITIAL_MEALS: Meal[] = [
 export const DETECTED_ITEMS: MealItem[] = [
   {
     id: 'chicken',
-    name: 'Grilled chicken',
+    name: 'Gegrilltes Hähnchen',
     amountG: 180,
+    baseAmountG: 180,
+    portionFactor: 1,
     calories: 297,
     protein: 36,
     carbs: 0,
@@ -37,8 +39,10 @@ export const DETECTED_ITEMS: MealItem[] = [
   },
   {
     id: 'rice',
-    name: 'White rice',
+    name: 'Weißer Reis',
     amountG: 220,
+    baseAmountG: 220,
+    portionFactor: 1,
     calories: 286,
     protein: 6,
     carbs: 62,
@@ -50,6 +54,8 @@ export const DETECTED_ITEMS: MealItem[] = [
     id: 'avocado',
     name: 'Avocado',
     amountG: 70,
+    baseAmountG: 70,
+    portionFactor: 1,
     calories: 112,
     protein: 2,
     carbs: 6,
@@ -59,8 +65,10 @@ export const DETECTED_ITEMS: MealItem[] = [
   },
   {
     id: 'sauce',
-    name: 'Sesame sauce',
+    name: 'Sesamsauce',
     amountG: 30,
+    baseAmountG: 30,
+    portionFactor: 1,
     calories: 15,
     protein: 4,
     carbs: 8,
@@ -87,10 +95,10 @@ export function nutritionFromItems(items: MealItem[]): Nutrition {
 export function createScannedMeal(items: MealItem[]): Meal {
   return {
     id: 'scan-chicken-bowl',
-    title: 'Chicken rice bowl',
+    title: 'Hähnchen-Reis-Bowl',
     type: 'Lunch',
     time: '13:24',
-    confidence: 'High confidence',
+    confidence: items.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
     items,
     ...nutritionFromItems(items),
   };
@@ -120,18 +128,18 @@ export function getRemaining(targets: DailyTargets, consumed: Nutrition): Nutrit
 
 export const SUGGESTIONS: Record<MealContext, MealSuggestion[]> = {
   home: [
-    { id: 'home-1', title: 'Herby chicken plate', detail: 'Chicken, potatoes, greens & yogurt', time: '20 min', calories: 520, protein: 46, carbs: 48, fat: 14 },
-    { id: 'home-2', title: 'Egg-white taco bowl', detail: 'Eggs, black beans, salsa & rice', time: '15 min', calories: 485, protein: 40, carbs: 52, fat: 11 },
-    { id: 'home-3', title: 'Warm tuna pasta salad', detail: 'Tuna, pasta, tomatoes & rocket', time: '18 min', calories: 505, protein: 43, carbs: 57, fat: 10 },
+    { id: 'home-1', title: 'Kräuter-Hähnchen-Teller', detail: 'Hähnchen, Kartoffeln, Gemüse und Joghurt', time: '20 Min.', calories: 520, protein: 46, carbs: 48, fat: 14 },
+    { id: 'home-2', title: 'Eier-Taco-Bowl', detail: 'Eier, schwarze Bohnen, Salsa und Reis', time: '15 Min.', calories: 485, protein: 40, carbs: 52, fat: 11 },
+    { id: 'home-3', title: 'Warmer Thunfisch-Nudelsalat', detail: 'Thunfisch, Nudeln, Tomaten und Rucola', time: '18 Min.', calories: 505, protein: 43, carbs: 57, fat: 10 },
   ],
   supermarket: [
-    { id: 'market-1', title: 'High-protein yogurt bowl', detail: 'Skyr, berries, oats & almonds', time: 'No prep', calories: 440, protein: 42, carbs: 47, fat: 9 },
-    { id: 'market-2', title: 'Chicken wrap + skyr', detail: 'One fresh wrap and a plain skyr', time: 'Grab & go', calories: 510, protein: 48, carbs: 56, fat: 12 },
-    { id: 'market-3', title: 'Protein sandwich + fruit', detail: 'Wholegrain chicken sandwich & apple', time: 'Grab & go', calories: 485, protein: 39, carbs: 61, fat: 10 },
+    { id: 'market-1', title: 'Proteinreiche Skyr-Bowl', detail: 'Skyr, Beeren, Haferflocken und Mandeln', time: 'Ohne Kochen', calories: 440, protein: 42, carbs: 47, fat: 9 },
+    { id: 'market-2', title: 'Hähnchen-Wrap und Skyr', detail: 'Ein frischer Wrap und ein Natur-Skyr', time: 'Direkt essen', calories: 510, protein: 48, carbs: 56, fat: 12 },
+    { id: 'market-3', title: 'Protein-Sandwich und Obst', detail: 'Vollkorn-Hähnchen-Sandwich und Apfel', time: 'Direkt essen', calories: 485, protein: 39, carbs: 61, fat: 10 },
   ],
   'eating-out': [
-    { id: 'out-1', title: 'Chicken pho', detail: 'Broth-based, extra chicken, herbs', time: 'Vietnamese', calories: 500, protein: 41, carbs: 58, fat: 9 },
-    { id: 'out-2', title: 'Grilled chicken salad', detail: 'Dressing on the side, add potatoes', time: 'Casual dining', calories: 470, protein: 45, carbs: 38, fat: 14 },
-    { id: 'out-3', title: 'Sushi protein set', detail: 'Sashimi, edamame & six maki', time: 'Japanese', calories: 530, protein: 43, carbs: 62, fat: 11 },
+    { id: 'out-1', title: 'Hähnchen-Pho', detail: 'Klare Brühe, extra Hähnchen und Kräuter', time: 'Vietnamesisch', calories: 500, protein: 41, carbs: 58, fat: 9 },
+    { id: 'out-2', title: 'Gegrillter Hähnchensalat', detail: 'Dressing separat, dazu Kartoffeln', time: 'Bistro', calories: 470, protein: 45, carbs: 38, fat: 14 },
+    { id: 'out-3', title: 'Proteinreiches Sushi-Set', detail: 'Sashimi, Edamame und sechs Maki', time: 'Japanisch', calories: 530, protein: 43, carbs: 62, fat: 11 },
   ],
 };

@@ -2,7 +2,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { colors } from '@/constants/theme';
+import { KadroMark } from '@/components/KadroMark';
+import { colors, shadows } from '@/constants/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -28,7 +29,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="today"
         options={{
-          title: 'Today',
+          title: 'Heute',
           tabBarIcon: ({ focused }) => <TabIcon active="today" focused={focused} inactive="today-outline" />,
         }}
       />
@@ -48,13 +49,13 @@ export default function TabLayout() {
           tabBarButton: ({ onPress, accessibilityState }) => (
             <View style={styles.scanSlot}>
               <Pressable
-                accessibilityLabel="Scan meal"
+                accessibilityLabel="Mahlzeit scannen"
                 accessibilityRole="button"
                 accessibilityState={accessibilityState}
                 onPress={onPress}
                 style={({ pressed }) => [styles.scanButton, pressed && styles.scanPressed]}
               >
-                <Ionicons color={colors.text} name="camera" size={27} />
+                <KadroMark dotColor={colors.white} size={38} />
               </Pressable>
             </View>
           ),
@@ -63,14 +64,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="progress"
         options={{
-          title: 'Progress',
+          title: 'Verlauf',
           tabBarIcon: ({ focused }) => <TabIcon active="stats-chart" focused={focused} inactive="stats-chart-outline" />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'You',
+          title: 'Du',
           tabBarIcon: ({ focused }) => <TabIcon active="person" focused={focused} inactive="person-outline" />,
         }}
       />
@@ -87,11 +88,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    shadowColor: colors.text,
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: -4 },
-    elevation: 8,
+    elevation: 0,
   },
   hiddenBar: {
     display: 'none',
@@ -115,11 +112,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -27,
-    shadowColor: colors.text,
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    ...shadows.scan,
   },
   scanPressed: {
     transform: [{ scale: 0.94 }],

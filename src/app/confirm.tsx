@@ -1,15 +1,18 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card, ConfidenceBadge, MealPhoto, PrimaryButton, Screen } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { PortionFactor } from '@/types/nutrition';
 
 export default function ConfirmScreen() {
   const router = useRouter();
-  const { adjustItem, detectedItems, photoUri, scannedMeal, toggleItem } = useApp();
+  const { adjustItem, detectedItems, mealPortion, photoUri, scannedMeal, setMealPortion, toggleItem } = useApp();
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const confirm = () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -19,10 +22,10 @@ export default function ConfirmScreen() {
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.iconButton}>
+        <Pressable accessibilityLabel="Zurück" onPress={() => router.back()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
-        <Text style={styles.topTitle}>Confirm meal</Text>
+        <Text style={styles.topTitle}>Mahlzeit bestätigen</Text>
         <Pressable style={styles.iconButton}>
           <Ionicons color={colors.text} name="ellipsis-horizontal" size={21} />
         </Pressable>
@@ -32,10 +35,10 @@ export default function ConfirmScreen() {
 
       <View style={styles.heading}>
         <View style={styles.headingRow}>
-          <Text style={styles.title}>Looks right?</Text>
-          <ConfidenceBadge />
+          <Text style={styles.title}>Passt das?</Text>
+          <ConfidenceBadge uncertain={scannedMeal.confidence === 'medium'} />
         </View>
-        <Text style={styles.subtitle}>Tap a food to remove it, or adjust the portion. Two seconds now makes the estimate much better.</Text>
+        <Text style={styles.subtitle}>Bestätige die Zutaten und wähle mit einem Tap die passende Portionsgröße.</Text>
       </View>
 
       <View style={styles.chips}>
@@ -51,38 +54,74 @@ export default function ConfirmScreen() {
         ))}
       </View>
 
-      <Card style={styles.listCard}>
-        {detectedItems.map((item, index) => (
-          <View key={item.id}>
-            <View style={[styles.itemRow, !item.included && styles.itemRowOff]}>
-              <Pressable onPress={() => toggleItem(item.id)} style={[styles.checkButton, item.included && styles.checkButtonOn]}>
-                <Ionicons color={item.included ? colors.text : colors.muted} name={item.included ? 'checkmark' : 'add'} size={17} />
-              </Pressable>
-              <View style={styles.itemCopy}>
-                <View style={styles.itemNameRow}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  {item.optional ? <Text style={styles.uncertain}>CHECK</Text> : null}
-                </View>
-                <Text style={styles.itemCalories}>~{item.calories} kcal</Text>
-              </View>
-              <View style={styles.stepper}>
-                <Pressable onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
-                  <Ionicons color={colors.text} name="remove" size={17} />
-                </Pressable>
-                <Text style={styles.amount}>{item.amountG} g</Text>
-                <Pressable onPress={() => adjustItem(item.id, 1)} style={styles.stepperButton}>
-                  <Ionicons color={colors.text} name="add" size={17} />
-                </Pressable>
-              </View>
-            </View>
-            {index < detectedItems.length - 1 ? <View style={styles.divider} /> : null}
+      <Card style={styles.portionCard}>
+        <View style={styles.portionHeading}>
+          <View>
+            <Text style={styles.portionTitle}>Wie groß war die Portion?</Text>
+            <Text style={styles.portionSubtitle}>{mealPortion ? 'Schnelle Schätzung für die ganze Mahlzeit' : 'Individuell angepasst'}</Text>
           </View>
-        ))}
+          <Ionicons color={colors.accentDeep} name="resize-outline" size={22} />
+        </View>
+        <View style={styles.portionSelector}>
+          {([
+            { factor: 0.7 as PortionFactor, label: 'Weniger', multiplier: '0,7×' },
+            { factor: 1 as PortionFactor, label: 'Passt', multiplier: '1×' },
+            { factor: 1.4 as PortionFactor, label: 'Mehr', multiplier: '1,4×' },
+          ]).map((choice) => {
+            const active = mealPortion === choice.factor;
+            return (
+              <Pressable
+                accessibilityState={{ selected: active }}
+                key={choice.label}
+                onPress={() => setMealPortion(choice.factor)}
+                style={[styles.portionChoice, active && styles.portionChoiceActive]}
+              >
+                <Text style={[styles.portionChoiceLabel, active && styles.portionChoiceLabelActive]}>{choice.label}</Text>
+                <Text style={[styles.portionMultiplier, active && styles.portionChoiceLabelActive]}>{choice.multiplier}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
+        <Pressable onPress={() => setDetailsOpen((current) => !current)} style={styles.detailsToggle}>
+          <Text style={styles.detailsToggleText}>{detailsOpen ? 'Detailkorrektur schließen' : 'Grammangaben im Detail bearbeiten'}</Text>
+          <Ionicons color={colors.muted} name={detailsOpen ? 'chevron-up' : 'chevron-down'} size={18} />
+        </Pressable>
       </Card>
+
+      {detailsOpen ? (
+        <Card style={styles.listCard}>
+          {detectedItems.map((item, index) => (
+            <View key={item.id}>
+              <View style={[styles.itemRow, !item.included && styles.itemRowOff]}>
+                <Pressable onPress={() => toggleItem(item.id)} style={[styles.checkButton, item.included && styles.checkButtonOn]}>
+                  <Ionicons color={item.included ? colors.text : colors.muted} name={item.included ? 'checkmark' : 'add'} size={17} />
+                </Pressable>
+                <View style={styles.itemCopy}>
+                  <View style={styles.itemNameRow}>
+                    <Text style={styles.itemName}>{item.name}</Text>
+                    {item.optional ? <Text style={styles.uncertain}>PRÜFEN</Text> : null}
+                  </View>
+                  <Text style={styles.itemCalories}>~{item.calories} kcal</Text>
+                </View>
+                <View style={styles.stepper}>
+                  <Pressable accessibilityLabel={`${item.name} verringern`} onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
+                    <Ionicons color={colors.text} name="remove" size={17} />
+                  </Pressable>
+                  <Text style={styles.amount}>{item.amountG} g</Text>
+                  <Pressable accessibilityLabel={`${item.name} erhöhen`} onPress={() => adjustItem(item.id, 1)} style={styles.stepperButton}>
+                    <Ionicons color={colors.text} name="add" size={17} />
+                  </Pressable>
+                </View>
+              </View>
+              {index < detectedItems.length - 1 ? <View style={styles.divider} /> : null}
+            </View>
+          ))}
+        </Card>
+      ) : null}
 
       <Card style={styles.estimateCard}>
         <View>
-          <Text style={styles.estimateLabel}>CURRENT ESTIMATE</Text>
+          <Text style={styles.estimateLabel}>AKTUELLE SCHÄTZUNG</Text>
           <Text style={styles.estimateValue}>~{scannedMeal.calories} kcal</Text>
         </View>
         <View style={styles.macroSummary}>
@@ -94,8 +133,8 @@ export default function ConfirmScreen() {
         </View>
       </Card>
 
-      <PrimaryButton icon="arrow-forward" label="Yes, continue" onPress={confirm} />
-      <PrimaryButton label="Retake photo" onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+      <PrimaryButton icon="arrow-forward" label="Passt, weiter" onPress={confirm} />
+      <PrimaryButton label="Foto wiederholen" onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
     </Screen>
   );
 }
@@ -115,6 +154,18 @@ const styles = StyleSheet.create({
   detectedChipText: { color: colors.text, fontSize: 12, fontWeight: '600' },
   detectedChipTextOff: { color: colors.muted, textDecorationLine: 'line-through' },
   listCard: { padding: 8 },
+  portionCard: { gap: 16 },
+  portionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  portionTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
+  portionSubtitle: { color: colors.muted, fontSize: 11, marginTop: 4 },
+  portionSelector: { flexDirection: 'row', borderRadius: radii.input, backgroundColor: colors.neutralSoft, padding: 4, gap: 4 },
+  portionChoice: { flex: 1, minHeight: 52, borderRadius: 11, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  portionChoiceActive: { backgroundColor: colors.accent },
+  portionChoiceLabel: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  portionChoiceLabelActive: { color: colors.text },
+  portionMultiplier: { color: colors.muted, fontSize: 10, fontVariant: ['tabular-nums'] },
+  detailsToggle: { minHeight: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  detailsToggleText: { color: colors.muted, fontSize: 12, fontWeight: '600' },
   itemRow: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 7 },
   itemRowOff: { opacity: 0.48 },
   checkButton: { width: 34, height: 34, borderRadius: 13, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
@@ -123,14 +174,14 @@ const styles = StyleSheet.create({
   itemNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   itemName: { color: colors.text, fontSize: 14, fontWeight: '700' },
   uncertain: { color: colors.attention, fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
-  itemCalories: { color: colors.muted, fontSize: 11 },
+  itemCalories: { color: colors.muted, fontSize: 11, fontVariant: ['tabular-nums'] },
   stepper: { height: 38, borderRadius: 14, backgroundColor: colors.background, flexDirection: 'row', alignItems: 'center' },
   stepperButton: { width: 34, height: 38, alignItems: 'center', justifyContent: 'center' },
-  amount: { minWidth: 44, color: colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  amount: { minWidth: 44, color: colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center', fontVariant: ['tabular-nums'] },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 52 },
   estimateCard: { backgroundColor: colors.text, borderColor: colors.text, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   estimateLabel: { color: 'rgba(255,255,255,0.58)', fontSize: 9, fontWeight: '800', letterSpacing: 0.9 },
-  estimateValue: { color: colors.white, fontSize: 22, fontWeight: '700', marginTop: 4 },
+  estimateValue: { color: colors.white, fontSize: 22, fontWeight: '700', marginTop: 4, fontVariant: ['tabular-nums'] },
   macroSummary: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   macroSummaryText: { color: colors.accent, fontSize: 11, fontWeight: '700' },
   dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' },
