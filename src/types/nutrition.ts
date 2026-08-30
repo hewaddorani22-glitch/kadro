@@ -8,6 +8,12 @@ export type Nutrition = {
   fiber?: number;
 };
 
+export type NutritionSource = {
+  provider: 'usda' | 'open-food-facts' | 'kadro-catalog' | 'demo';
+  referenceId?: string;
+  label: string;
+};
+
 export type MealItem = Nutrition & {
   id: string;
   name: string;
@@ -17,6 +23,7 @@ export type MealItem = Nutrition & {
   confidence: 'high' | 'medium';
   optional?: boolean;
   included: boolean;
+  source: NutritionSource;
 };
 
 export type Meal = Nutrition & {
@@ -26,6 +33,9 @@ export type Meal = Nutrition & {
   time: string;
   confidence: 'high' | 'medium';
   items: MealItem[];
+  origin?: 'seed' | 'scan';
+  date?: string;
+  savedAt?: string;
 };
 
 export type DailyTargets = Nutrition;
@@ -37,6 +47,9 @@ export type MealSuggestion = Nutrition & {
   title: string;
   detail: string;
   time: string;
+  contexts?: MealContext[];
+  preferences?: string[];
+  source?: NutritionSource;
 };
 
 export type PortionFactor = 0.7 | 1 | 1.4;

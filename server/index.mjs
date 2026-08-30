@@ -1,0 +1,249 @@
+import 'dotenv/config';
+import { createServer } from 'node:http';
+
+const port = Number(process.env.PORT || 8787);
+const openAiModel = process.env.OPENAI_VISION_MODEL || 'gpt-4o';
+const usdaApiKey = process.env.USDA_API_KEY || 'DEMO_KEY';
+
+const detectionSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['title', 'clarity', 'dishCount', 'confidence', 'items'],
+  properties: {
+    title: { type: 'string' },
+    clarity: { type: 'string', enum: ['clear', 'unclear'] },
+    dishCount: { type: 'integer', minimum: 0, maximum: 8 },
+    confidence: { type: 'string', enum: ['high', 'medium'] },
+    items: {
+      type: 'array',
+      minItems: 0,
+      maxItems: 12,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['nameDe', 'searchTermEn', 'estimatedGrams', 'confidence', 'optional'],
+        properties: {
+          nameDe: { type: 'string' },
+          searchTermEn: { type: 'string' },
+          estimatedGrams: { type: 'integer', minimum: 5, maximum: 2000 },
+          confidence: { type: 'string', enum: ['high', 'medium'] },
+          optional: { type: 'boolean' },
+        },
+      },
+    },
+  },
+};
+
+function json(response, status, body) {
+  response.writeHead(status, {
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json; charset=utf-8',
+  });
+  response.end(JSON.stringify(body));
+}
+
+async function readBody(request) {
+  const chunks = [];
+  let size = 0;
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > 8_000_000) throw new Error('payload_too_large');
+    chunks.push(chunk);
+  }
+  return JSON.parse(Buffer.concat(chunks).toString('utf8'));
+}
+
+function extractResponseText(response) {
+  if (typeof response.output_text === 'string') return response.output_text;
+  for (const output of response.output || []) {
+    for (const content of output.content || []) {
+      if (content.type === 'output_text' && typeof content.text === 'string') return content.text;
+    }
+  }
+  throw new Error('missing_structured_output');
+}
+
+async function detectFoods({ imageBase64, mimeType }) {
+  if (!process.env.OPENAI_API_KEY) throw new Error('openai_key_missing');
+  const response = await fetch('https://api.openai.com/v1/responses', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: openAiModel,
+      store: false,
+      max_output_tokens: 1400,
+      input: [{
+        role: 'user',
+        content: [
+          {
+            type: 'input_text',
+            text: 'Analysiere genau eine sichtbare Mahlzeit. Erkenne nur sichtbare Lebensmittel, schätze Gramm-Portionen, markiere unsichere Saucen als optional und gib deutsche Namen plus kurze englische USDA-Suchbegriffe aus. Gib keine Kalorien oder Makros aus. Bei Unschärfe clarity=unclear; bei mehreren getrennten Tellern dishCount>1.',
+          },
+          { type: 'input_image', image_url: `data:${mimeType};base64,${imageBase64}`, detail: 'low' },
+        ],
+      }],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'kadro_meal_detection',
+          strict: true,
+          schema: detectionSchema,
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`openai_${response.status}:${detail.slice(0, 300)}`);
+  }
+  return JSON.parse(extractResponseText(await response.json()));
+}
+
+function nutrient(food, ids) {
+  const match = (food.foodNutrients || []).find((entry) => ids.includes(Number(entry.nutrientId || entry.nutrientNumber)));
+  return Number(match?.value || 0);
+}
+
+function chooseFood(foods) {
+  const priority = ['Foundation', 'SR Legacy', 'Survey (FNDDS)', 'Branded'];
+  const rank = (food) => {
+    const index = priority.indexOf(food.dataType);
+    return index === -1 ? priority.length : index;
+  };
+  return [...foods].sort((a, b) => rank(a) - rank(b))[0];
+}
+
+async function resolveUsdaItem(item, index) {
+  const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query: item.searchTermEn, pageSize: 8 }),
+  });
+  if (!response.ok) throw new Error(`usda_${response.status}`);
+  const result = await response.json();
+  const food = chooseFood(result.foods || []);
+  if (!food) {
+    return {
+      id: `detected-${index}`,
+      name: item.nameDe,
+      amountG: item.estimatedGrams,
+      baseAmountG: item.estimatedGrams,
+      portionFactor: 1,
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      fiber: 0,
+      confidence: 'medium',
+      optional: true,
+      included: true,
+      source: { provider: 'usda', label: 'USDA: nicht gefunden' },
+    };
+  }
+
+  const factor = item.estimatedGrams / 100;
+  return {
+    id: `fdc-${food.fdcId}-${index}`,
+    name: item.nameDe,
+    amountG: item.estimatedGrams,
+    baseAmountG: item.estimatedGrams,
+    portionFactor: 1,
+    calories: Math.round(nutrient(food, [1008, 208]) * factor),
+    protein: Math.round(nutrient(food, [1003, 203]) * factor),
+    carbs: Math.round(nutrient(food, [1005, 205]) * factor),
+    fat: Math.round(nutrient(food, [1004, 204]) * factor),
+    fiber: Math.round(nutrient(food, [1079, 291]) * factor),
+    confidence: item.confidence,
+    optional: item.optional,
+    included: true,
+    source: {
+      provider: 'usda',
+      referenceId: String(food.fdcId),
+      label: `USDA FDC ${food.fdcId}`,
+    },
+  };
+}
+
+async function analyzeMeal(input) {
+  if (input?.mimeType !== 'image/jpeg' || typeof input?.imageBase64 !== 'string' || input.imageBase64.length < 100) {
+    return { status: 400, body: { code: 'invalid_input', message: 'Ungültiges Fotoformat.' } };
+  }
+
+  const detection = await detectFoods(input);
+  if (detection.clarity === 'unclear' || !detection.items.length) {
+    return { status: 422, body: { code: 'unclear_image', message: 'Das Foto ist für eine verlässliche Schätzung nicht eindeutig genug.' } };
+  }
+  if (detection.dishCount > 1) {
+    return { status: 422, body: { code: 'multiple_dishes', message: 'Es wurden mehrere getrennte Mahlzeiten erkannt. Bitte fotografiere nur einen Teller.' } };
+  }
+
+  const items = await Promise.all(detection.items.map(resolveUsdaItem));
+  const warnings = items.some((item) => item.calories === 0)
+    ? ['Mindestens eine Zutat konnte in USDA nicht eindeutig zugeordnet werden und muss geprüft werden.']
+    : [];
+  return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };
+}
+
+async function lookupBarcode(barcode) {
+  if (!/^\d{7,14}$/.test(barcode)) return { status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } };
+  const fields = 'code,product_name_de,product_name,nutriments';
+  const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`, {
+    headers: { 'User-Agent': 'Kadro-MVP/1.0' },
+  });
+  if (!response.ok) return { status: response.status === 404 ? 404 : 502, body: { code: 'product_not_found', message: 'Produkt nicht gefunden.' } };
+  const result = await response.json();
+  const product = result.product;
+  const values = product?.nutriments || {};
+  return {
+    status: 200,
+    body: {
+      barcode,
+      name: product?.product_name_de || product?.product_name || 'Verpacktes Lebensmittel',
+      per100g: {
+        calories: Math.round(Number(values['energy-kcal_100g'] || 0)),
+        protein: Math.round(Number(values.proteins_100g || 0)),
+        carbs: Math.round(Number(values.carbohydrates_100g || 0)),
+        fat: Math.round(Number(values.fat_100g || 0)),
+        fiber: Math.round(Number(values.fiber_100g || 0)),
+      },
+      source: { provider: 'open-food-facts', referenceId: barcode, label: `Open Food Facts ${barcode}` },
+    },
+  };
+}
+
+const server = createServer(async (request, response) => {
+  if (request.method === 'OPTIONS') return json(response, 204, {});
+  if (request.method === 'GET' && request.url === '/health') {
+    return json(response, 200, { ok: true, model: openAiModel, openaiConfigured: Boolean(process.env.OPENAI_API_KEY), usdaMode: process.env.USDA_API_KEY ? 'personal-key' : 'demo-key' });
+  }
+
+  try {
+    if (request.method === 'POST' && request.url === '/v1/analyze') {
+      const result = await analyzeMeal(await readBody(request));
+      return json(response, result.status, result.body);
+    }
+    const barcodeMatch = request.method === 'GET' && request.url?.match(/^\/v1\/barcode\/(\d{7,14})$/);
+    if (barcodeMatch) {
+      const result = await lookupBarcode(barcodeMatch[1]);
+      return json(response, result.status, result.body);
+    }
+    return json(response, 404, { code: 'not_found', message: 'Route nicht gefunden.' });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown_error';
+    const setupError = message === 'openai_key_missing';
+    return json(response, setupError ? 503 : 502, {
+      code: setupError ? 'server_not_configured' : 'provider_error',
+      message: setupError ? 'OPENAI_API_KEY fehlt auf dem Server.' : 'Ein externer Analysedienst ist gerade nicht erreichbar.',
+    });
+  }
+});
+
+server.listen(port, '0.0.0.0', () => {
+  console.log(`Kadro analysis gateway listening on http://0.0.0.0:${port}`);
+});

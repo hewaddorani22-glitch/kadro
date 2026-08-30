@@ -10,12 +10,16 @@ import { formatNumber, mealTypeLabel } from '@/utils/format';
 
 export default function TodayScreen() {
   const router = useRouter();
-  const { consumed, hasLoggedScan, meals, remaining, resetScan, targets, userName } = useApp();
+  const { consumed, hasLoggedScan, meals, pendingAnalysisCount, remaining, resetScan, resumeLatestAnalysis, targets, userName } = useApp();
   const dateLabel = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date());
 
   const startScan = () => {
     resetScan();
     router.push('/(tabs)/scan');
+  };
+
+  const resumePending = async () => {
+    if (await resumeLatestAnalysis()) router.push('/analyzing');
   };
 
   return (
@@ -29,6 +33,17 @@ export default function TodayScreen() {
           <Text style={styles.avatarText}>A</Text>
         </Pressable>
       </View>
+
+      {pendingAnalysisCount > 0 ? (
+        <Pressable onPress={resumePending} style={styles.pendingBanner}>
+          <View style={styles.pendingIcon}><Ionicons color={colors.text} name="cloud-offline-outline" size={19} /></View>
+          <View style={styles.pendingCopy}>
+            <Text style={styles.pendingTitle}>{pendingAnalysisCount} Scan{pendingAnalysisCount === 1 ? '' : 's'} wartet lokal</Text>
+            <Text style={styles.pendingText}>Tippen und mit Verbindung erneut analysieren</Text>
+          </View>
+          <Ionicons color={colors.text} name="refresh" size={19} />
+        </Pressable>
+      ) : null}
 
       <Card style={styles.heroCard}>
         <View style={styles.heroTop}>
@@ -113,6 +128,11 @@ const styles = StyleSheet.create({
   greeting: { color: colors.text, fontSize: 28, lineHeight: 35, fontWeight: '700', letterSpacing: -0.8, marginTop: 5 },
   avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: colors.white, fontSize: 15, fontWeight: '800' },
+  pendingBanner: { minHeight: 66, borderRadius: radii.card, backgroundColor: colors.attentionSoft, borderWidth: 1, borderColor: colors.attention, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  pendingIcon: { width: 38, height: 38, borderRadius: 14, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  pendingCopy: { flex: 1, gap: 2 },
+  pendingTitle: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  pendingText: { color: colors.muted, fontSize: 10 },
   heroCard: { gap: 18, paddingVertical: 22 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   onTrack: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 4 },

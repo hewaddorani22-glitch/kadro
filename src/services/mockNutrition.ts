@@ -20,6 +20,7 @@ export const INITIAL_MEALS: Meal[] = [
     fiber: 8,
     confidence: 'high',
     items: [],
+    origin: 'seed',
   },
 ];
 
@@ -36,6 +37,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     fat: 12,
     confidence: 'high',
     included: true,
+    source: { provider: 'demo', label: 'Kadro Demo' },
   },
   {
     id: 'rice',
@@ -49,6 +51,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     fat: 1,
     confidence: 'high',
     included: true,
+    source: { provider: 'demo', label: 'Kadro Demo' },
   },
   {
     id: 'avocado',
@@ -62,6 +65,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     fat: 10,
     confidence: 'high',
     included: true,
+    source: { provider: 'demo', label: 'Kadro Demo' },
   },
   {
     id: 'sauce',
@@ -76,6 +80,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     confidence: 'medium',
     optional: true,
     included: true,
+    source: { provider: 'demo', label: 'Kadro Demo' },
   },
 ];
 
@@ -92,14 +97,15 @@ export function nutritionFromItems(items: MealItem[]): Nutrition {
   );
 }
 
-export function createScannedMeal(items: MealItem[]): Meal {
+export function createScannedMeal(items: MealItem[], title = 'Hähnchen-Reis-Bowl', id = 'scan-chicken-bowl'): Meal {
   return {
-    id: 'scan-chicken-bowl',
-    title: 'Hähnchen-Reis-Bowl',
+    id,
+    title,
     type: 'Lunch',
     time: '13:24',
     confidence: items.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
     items,
+    origin: 'scan',
     ...nutritionFromItems(items),
   };
 }

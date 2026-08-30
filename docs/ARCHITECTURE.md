@@ -9,7 +9,11 @@ Today dashboard
    ↓
 Camera / demo capture
    ↓
-Analyzing state
+Local resize/compression
+   ↓
+Local analysis gateway → vision detection → nutrition lookup
+   ↓
+Analyzing / retry state
    ↓
 Detected-food confirmation
    ↓
@@ -40,22 +44,24 @@ Root stack routes sit above the tab navigator so camera analysis, confirmation, 
 
 ## State and calculations
 
-`AppProvider` owns the current in-memory state:
+`AppProvider` owns active UI state and hydrates saved meals from local storage:
 
 - user targets;
 - logged meals;
 - detected meal items;
-- temporary captured photo URI;
+- temporary compressed photo URI;
+- current analysis status and local retry count;
 - derived consumed and remaining nutrition.
 - current quick portion selection (`0.7×`, `1×`, or `1.4×`; `null` after custom gram edits).
 
-`mockNutrition.ts` owns fixture data and pure calculations:
+`mockNutrition.ts` owns the deterministic scan fixture and pure calculations:
 
 - `nutritionFromItems` totals included detected items;
 - `createScannedMeal` maps corrected items into a meal;
 - `sumMeals` derives daily consumption;
 - `getRemaining` derives the daily balance;
-- `SUGGESTIONS` supplies exactly three options per context.
+
+`recommendations.ts` scores the 45-entry German catalog by context and the user's remaining calories, protein, and fat. It sorts deterministically and returns exactly three entries; no model invents nutrition values.
 
 Screens must not maintain separate copies of these totals.
 
@@ -70,24 +76,25 @@ MealRepository
 RecommendationService
 ```
 
-Suggested responsibilities:
+Current responsibilities:
 
-- Vision provider: food identity, portion estimate, and confidence only.
-- USDA/Open Food Facts adapter: normalized calories and macros.
-- Supabase repository: profiles, targets, meals, items, and recommendations.
+- `mealAnalysis.ts`: client-side compression, temporary-file cleanup, gateway calls, and typed errors.
+- `server/index.mjs`: secret-bearing local gateway. OpenAI returns food identity, portion estimate, and confidence only; USDA provides normalized calories and macros; Open Food Facts provides packaged-food barcode data.
+- `localRepository.ts`: confirmed meals and a maximum-three local retry queue in AsyncStorage.
 - RevenueCat adapter: entitlement state and purchase/restore actions.
-- Initial recommendation adapter: deterministic scoring over a verified German catalog; an LLM may re-rank or explain candidates later but must not invent nutrition values.
+- `recommendations.ts`: deterministic scoring over the reviewed German MVP catalog.
 
 Raw provider payloads should be mapped to the domain types in `src/types/nutrition.ts` before reaching React components.
 
 ## Privacy boundary
 
-The captured `photoUri` currently remains local and temporary. A real pipeline should:
+The current local development pipeline:
 
-1. compress the image locally;
-2. upload only for analysis;
-3. delete the remote original immediately after processing;
-4. persist structured results only;
-5. require an explicit opt-in before retaining meal photos.
+1. resizes to 1280 px and compresses to JPEG locally;
+2. deletes the camera original after the compressed working copy exists;
+3. sends the working copy only to the configured local gateway;
+4. keeps at most three failed scans locally for explicit retry;
+5. persists only the user-confirmed structured meal;
+6. never retains photos as part of saved meal records.
 
-Document retention, deletion, provider processing, and consent before enabling any production upload.
+The compressed preview lives only in the app cache during the active flow. A production-hosted gateway still needs a documented retention/deletion policy, provider disclosure, authentication, rate limiting, and explicit consent before launch.

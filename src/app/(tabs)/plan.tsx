@@ -7,7 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { SUGGESTIONS } from '@/services/mockNutrition';
+import { recommendMeals } from '@/services/recommendations';
 import { MealContext } from '@/types/nutrition';
 import { formatNumber } from '@/utils/format';
 
@@ -30,7 +30,7 @@ export default function PlanScreen() {
     }
   }, [params.context]);
 
-  const suggestions = useMemo(() => (selected ? SUGGESTIONS[selected] : []), [selected]);
+  const suggestions = useMemo(() => (selected ? recommendMeals(selected, remaining) : []), [remaining, selected]);
 
   const chooseContext = (context: MealContext) => {
     void Haptics.selectionAsync();
@@ -105,6 +105,7 @@ export default function PlanScreen() {
                   <View style={styles.suggestionCopy}>
                     <Text style={styles.suggestionTitle}>{suggestion.title}</Text>
                     <Text style={styles.suggestionDetail}>{suggestion.detail}</Text>
+                    <Text style={styles.source}>{suggestion.source?.label}</Text>
                   </View>
                   <Text style={styles.time}>{suggestion.time}</Text>
                 </View>
@@ -182,6 +183,7 @@ const styles = StyleSheet.create({
   suggestionCopy: { flex: 1, gap: 4 },
   suggestionTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   suggestionDetail: { color: colors.muted, fontSize: 12, lineHeight: 18 },
+  source: { color: colors.muted, fontSize: 9, marginTop: 2 },
   time: { color: colors.accentDeep, fontSize: 11, fontWeight: '700' },
   nutritionRow: { flexDirection: 'row', backgroundColor: colors.background, borderRadius: 16, paddingVertical: 10 },
   nutritionStat: { flex: 1, alignItems: 'center', gap: 2 },

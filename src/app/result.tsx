@@ -81,13 +81,13 @@ export default function ResultScreen() {
     };
   }, [mealProgress, projected.calories, recommendationReveal, remainingProgress, scannedMeal.calories, startingRemaining]);
 
-  const showOptions = () => {
-    logScannedMeal();
+  const showOptions = async () => {
+    await logScannedMeal();
     router.replace({ pathname: '/(tabs)/plan', params: { context: 'home', fromScan: '1' } });
   };
 
-  const saveForLater = () => {
-    logScannedMeal();
+  const saveForLater = async () => {
+    await logScannedMeal();
     router.replace('/(tabs)/today');
   };
 
@@ -136,7 +136,10 @@ export default function ResultScreen() {
               <View style={styles.ingredientRow}>
                 <View style={styles.ingredientCheck}><Ionicons color={colors.success} name="checkmark" size={15} /></View>
                 <Text style={styles.ingredientName}>{item.name}</Text>
-                <Text style={styles.ingredientAmount}>{item.amountG} g</Text>
+                <View style={styles.ingredientMeta}>
+                  <Text style={styles.ingredientAmount}>{item.amountG} g</Text>
+                  <Text style={styles.ingredientSource}>{item.source.label}</Text>
+                </View>
               </View>
               {index < list.length - 1 ? <View style={styles.divider} /> : null}
             </View>
@@ -264,7 +267,9 @@ const styles = StyleSheet.create({
   ingredientRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 10 },
   ingredientCheck: { width: 28, height: 28, borderRadius: 10, backgroundColor: colors.successSoft, alignItems: 'center', justifyContent: 'center' },
   ingredientName: { flex: 1, color: colors.text, fontSize: 13, fontWeight: '600' },
+  ingredientMeta: { alignItems: 'flex-end', gap: 2 },
   ingredientAmount: { color: colors.muted, fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  ingredientSource: { color: colors.muted, fontSize: 8 },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 46 },
   dayCard: { backgroundColor: colors.text, borderColor: colors.text, gap: 19 },
   dayHeader: { flexDirection: 'row', alignItems: 'center', gap: 11 },

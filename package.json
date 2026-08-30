@@ -4,14 +4,18 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~54.0.0",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.14",
+    "expo-file-system": "~19.0.24",
     "expo-font": "~14.0.12",
     "expo-haptics": "~15.0.8",
+    "expo-image-manipulator": "~14.0.8",
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.24",
     "expo-status-bar": "~3.0.9",
+    "dotenv": "^17.2.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -26,13 +30,15 @@
   },
   "scripts": {
     "start": "expo start",
+    "api": "node server/index.mjs",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "validate:catalog": "node scripts/validate-catalog.mjs",
     "doctor": "npx expo-doctor",
     "check": "npm run typecheck && npx expo export --platform web",
-    "verify": "npm run typecheck && npm run doctor && npx expo export --platform web"
+    "verify": "npm run typecheck && npm run validate:catalog && node --check server/index.mjs && npm run doctor && npx expo export --platform web"
   },
   "private": true
 }

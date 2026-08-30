@@ -14,7 +14,7 @@ type CaptureMode = 'Foto' | 'Beschreiben' | 'Barcode';
 export default function ScanScreen() {
   const router = useRouter();
   const pathname = usePathname();
-  const { setPhotoUri } = useApp();
+  const { setCapturedPhoto, startDemoScan } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
   const [mode, setMode] = useState<CaptureMode>('Foto');
   const [cameraReady, setCameraReady] = useState(false);
@@ -35,19 +35,24 @@ export default function ScanScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      if (permission?.granted && cameraReady && cameraRef.current) {
-        const result = await cameraRef.current.takePictureAsync({ quality: 0.72 });
-        setPhotoUri(result?.uri ?? null);
-      } else {
-        setPhotoUri(null);
+      if (!permission?.granted || !cameraReady || !cameraRef.current) {
+        Alert.alert('Kamera noch nicht bereit', 'Erlaube die Kamera oder nutze rechts den Demo-Button.');
+        return;
       }
+      const result = await cameraRef.current.takePictureAsync({ quality: 0.9 });
+      if (!result?.uri) throw new Error('missing camera uri');
+      setCapturedPhoto(result.uri);
       router.push('/analyzing');
     } catch {
-      setPhotoUri(null);
-      router.push('/analyzing');
+      Alert.alert('Foto nicht aufgenommen', 'Bitte versuche es noch einmal oder nutze die Demo-Mahlzeit.');
     } finally {
       setCapturing(false);
     }
+  };
+
+  const runDemo = () => {
+    startDemoScan();
+    router.push('/analyzing');
   };
 
   return (
@@ -120,11 +125,11 @@ export default function ScanScreen() {
             <Pressable accessibilityLabel="Mahlzeit fotografieren" onPress={capture} style={({ pressed }) => [styles.shutterOuter, pressed && styles.shutterPressed]}>
               <View style={styles.shutterInner} />
             </Pressable>
-            <Pressable accessibilityLabel="Demo-Mahlzeit verwenden" onPress={capture} style={styles.smallControl}>
+            <Pressable accessibilityLabel="Demo-Mahlzeit verwenden" onPress={runDemo} style={styles.smallControl}>
               <Ionicons color={colors.white} name="play-outline" size={24} />
             </Pressable>
           </View>
-          <Text style={styles.privacy}>Foto nur vorübergehend analysiert · standardmäßig nicht gespeichert</Text>
+          <Text style={styles.privacy}>Original nicht gespeichert · bei Netzfehler lokal vorgemerkt</Text>
         </View>
       </SafeAreaView>
     </View>

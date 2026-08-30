@@ -11,7 +11,7 @@ import { PortionFactor } from '@/types/nutrition';
 
 export default function ConfirmScreen() {
   const router = useRouter();
-  const { adjustItem, detectedItems, mealPortion, photoUri, scannedMeal, setMealPortion, toggleItem } = useApp();
+  const { adjustItem, analysisMessage, detectedItems, mealPortion, photoUri, scannedMeal, setMealPortion, toggleItem } = useApp();
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const confirm = () => {
@@ -40,6 +40,13 @@ export default function ConfirmScreen() {
         </View>
         <Text style={styles.subtitle}>Bestätige die Zutaten und wähle mit einem Tap die passende Portionsgröße.</Text>
       </View>
+
+      {analysisMessage ? (
+        <View style={styles.analysisWarning}>
+          <Ionicons color={colors.attention} name="alert-circle-outline" size={18} />
+          <Text style={styles.analysisWarningText}>{analysisMessage}</Text>
+        </View>
+      ) : null}
 
       <View style={styles.chips}>
         {detectedItems.map((item) => (
@@ -101,7 +108,7 @@ export default function ConfirmScreen() {
                     <Text style={styles.itemName}>{item.name}</Text>
                     {item.optional ? <Text style={styles.uncertain}>PRÜFEN</Text> : null}
                   </View>
-                  <Text style={styles.itemCalories}>~{item.calories} kcal</Text>
+                  <Text style={styles.itemCalories}>~{item.calories} kcal · {item.source.label}</Text>
                 </View>
                 <View style={styles.stepper}>
                   <Pressable accessibilityLabel={`${item.name} verringern`} onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
@@ -147,6 +154,8 @@ const styles = StyleSheet.create({
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   title: { color: colors.text, fontSize: 30, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21 },
+  analysisWarning: { minHeight: 48, borderRadius: 15, backgroundColor: colors.attentionSoft, paddingHorizontal: 13, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  analysisWarningText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   detectedChip: { minHeight: 38, borderRadius: radii.pill, backgroundColor: colors.successSoft, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 6 },
   detectedChipQuestion: { backgroundColor: colors.attentionSoft },

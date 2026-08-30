@@ -1,6 +1,6 @@
 # Roadmap
 
-## Current status: Day 1.5 complete
+## Current status: Day 2 implementation complete; credentialed device validation pending
 
 - [x] Kadro name, mark, app icon, and exact brand tokens
 - [x] German product UI
@@ -22,14 +22,16 @@
 
 Priority order:
 
-1. Add image resizing/compression and a temporary-upload boundary.
-2. Return structured detected foods, portions, and confidence from a multimodal model.
-3. Resolve normalized nutrition through USDA FoodData Central for fresh food.
-4. Add Open Food Facts as the packaged-food and barcode source.
-5. Preserve the existing confirmation UI as the correction layer.
-6. Save the confirmed meal and reload Today from the repository.
-7. Add a local-first retry queue plus unclear-image and multiple-dish error states.
-8. Seed 40–60 verified German meals and rank exactly three deterministically by context, remaining macros, and preferences.
+1. [x] Add image resizing/compression and a temporary-upload boundary.
+2. [x] Return structured detected foods, portions, and confidence from a multimodal model.
+3. [x] Resolve normalized nutrition through USDA FoodData Central for fresh food.
+4. [x] Add Open Food Facts as the packaged-food and barcode source.
+5. [x] Preserve the existing confirmation UI as the correction layer.
+6. [x] Save the confirmed meal and reload Today from the repository.
+7. [x] Add a local-first retry queue plus unclear-image and multiple-dish error states.
+8. [x] Seed 45 reviewed German meal estimates and rank exactly three deterministically by context, remaining macros, and preferences.
+
+The code path, mock path, gateway health endpoint, Open Food Facts lookup, catalog validator, TypeScript, Expo Doctor, and exports are automated or locally testable without credentials. One real-photo smoke test on an iPhone remains required after `OPENAI_API_KEY` and the Mac LAN URL are configured.
 
 Acceptance criteria:
 
