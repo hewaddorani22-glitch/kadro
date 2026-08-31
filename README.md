@@ -15,7 +15,7 @@ An iOS-first, production-shaped nutrition MVP built with React Native, Expo Rout
 5. One-tap `weniger / passt / mehr` portion confirmation plus optional gram-level editing
 6. Animated meal result with confidence and estimated nutrition
 7. Recalculated daily balance
-8. Three deterministic contextual suggestions from a 90-meal German catalog
+8. Three deterministic contextual suggestions from a 200-meal German catalog
 9. Progress, profile and transparent subscription paywall
 
 The demo meal and billing remain mocked. Real scans use OpenRouter or direct OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. The barcode adapter reads packaged-food data from Open Food Facts. Typed integration contracts keep raw provider payloads out of the UI.

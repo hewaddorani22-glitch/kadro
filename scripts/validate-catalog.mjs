@@ -13,7 +13,7 @@ const numericRanges = {
   fiber: [4, 25],
 };
 
-if (catalog.length < 90 || catalog.length > 200) throw new Error(`Expected 90–200 meals, got ${catalog.length}`);
+if (catalog.length !== 200) throw new Error(`Expected exactly 200 meals, got ${catalog.length}`);
 if (new Set(catalog.map((item) => item.id)).size !== catalog.length) throw new Error('Catalog IDs must be unique');
 
 for (const item of catalog) {
@@ -44,13 +44,65 @@ const contextSizes = [];
 for (const context of contexts) {
   const items = catalog.filter((item) => item.context === context);
   contextSizes.push(items.length);
-  if (items.length < 25) throw new Error(`Context ${context} needs at least 25 meals`);
+  if (items.length < 66) throw new Error(`Context ${context} needs at least 66 meals`);
   for (const tag of tags) {
-    if (items.filter((item) => item.tags.includes(tag)).length < 2) {
-      throw new Error(`Context ${context} needs at least two ${tag} meals`);
+    if (items.filter((item) => item.tags.includes(tag)).length < 10) {
+      throw new Error(`Context ${context} needs at least ten ${tag} meals`);
     }
   }
 }
 if (Math.max(...contextSizes) - Math.min(...contextSizes) > 1) throw new Error('Catalog contexts must stay balanced');
 
+const budgets = [
+  { calories: 1600, protein: 120, fat: 60 },
+  { calories: 1300, protein: 95, fat: 45 },
+  { calories: 1000, protein: 75, fat: 35 },
+  { calories: 800, protein: 55, fat: 28 },
+  { calories: 600, protein: 40, fat: 20 },
+  { calories: 450, protein: 30, fat: 15 },
+];
+const preferences = [null, ...tags];
+const selectedIds = new Set();
+let recommendationSets = 0;
+
+function rank(context, remaining, preference) {
+  const calorieTarget = Math.min(550, Math.max(380, remaining.calories * 0.38));
+  const proteinTarget = Math.min(45, Math.max(28, remaining.protein * 0.48));
+  return catalog
+    .filter((item) => item.context === context)
+    .map((item) => {
+      const distance = Math.abs(item.calories - calorieTarget) / 80
+        + Math.abs(item.protein - proteinTarget) / 12
+        + Math.max(0, item.fat - remaining.fat * 0.35) / 10;
+      return { item, score: distance + (preference && item.tags.includes(preference) ? -1.5 : 0) };
+    })
+    .sort((a, b) => a.score - b.score || a.item.id.localeCompare(b.item.id))
+    .slice(0, 3)
+    .map(({ item }) => item);
+}
+
+for (const remaining of budgets) {
+  for (const preference of preferences) {
+    for (const context of contexts) {
+      const first = rank(context, remaining, preference);
+      const second = rank(context, remaining, preference);
+      if (first.length !== 3 || new Set(first.map((item) => item.id)).size !== 3) {
+        throw new Error(`${context}: ranking must return three unique meals`);
+      }
+      if (first.some((item) => item.context !== context)) throw new Error(`${context}: ranking leaked another context`);
+      if (first.map((item) => item.id).join() !== second.map((item) => item.id).join()) {
+        throw new Error(`${context}: ranking must be deterministic`);
+      }
+      if (preference && !first.some((item) => item.tags.includes(preference))) {
+        throw new Error(`${context}: ranking ignored ${preference}`);
+      }
+      first.forEach((item) => selectedIds.add(item.id));
+      recommendationSets += 1;
+    }
+  }
+}
+
+if (selectedIds.size < 80) throw new Error(`Ranking coverage is too narrow: only ${selectedIds.size} meals reached the top three`);
+
 console.log(`Validated ${catalog.length} Kadro catalog meals across ${contexts.length} contexts.`);
+console.log(`Validated ${recommendationSets} deterministic recommendation sets; ${selectedIds.size} meals reached the top three.`);

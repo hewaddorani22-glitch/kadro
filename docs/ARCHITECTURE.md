@@ -64,7 +64,7 @@ Root stack routes sit above the tab navigator so camera analysis, confirmation, 
 - `sumMeals` derives daily consumption;
 - `getRemaining` derives the daily balance;
 
-`recommendations.ts` scores the 90-entry German catalog by context and the user's remaining calories, protein, and fat. It sorts deterministically and returns exactly three entries; no model invents nutrition values. The catalog validator enforces balanced context coverage, known preference tags, plausible nutrition ranges, and calorie-to-macro consistency.
+`recommendations.ts` scores the 200-entry German catalog by context and the user's remaining calories, protein, and fat. It sorts deterministically and returns exactly three entries; no model invents nutrition values. The catalog validator enforces balanced context coverage, known preference tags, plausible nutrition ranges, calorie-to-macro consistency, and 90 deterministic recommendation sets across 30 budget/preference scenarios.
 
 Screens must not maintain separate copies of these totals.
 
