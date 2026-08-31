@@ -18,7 +18,7 @@ An iOS-first, production-shaped nutrition MVP built with React Native, Expo Rout
 8. Three deterministic contextual suggestions from a 200-meal German catalog
 9. Progress, profile and transparent subscription paywall
 
-The demo meal and billing remain mocked. Real scans use OpenRouter or direct OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. The barcode adapter reads packaged-food data from Open Food Facts. Typed integration contracts keep raw provider payloads out of the UI.
+The demo meal remains available as a deterministic fallback. Real scans use OpenRouter or direct OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. The barcode adapter reads packaged-food data from Open Food Facts. RevenueCat-backed purchase and restore actions use a non-billing preview until its public SDK keys and offering are configured. Typed integration contracts keep raw provider payloads out of the UI.
 
 When configured, Supabase provides an anonymous authenticated session, RLS-isolated profiles, daily targets, confirmed meals, ingredients, recommendation impressions, and acceptance/rejection feedback. The profile screen can upgrade that same anonymous user ID to a verified email/password account without placing a login wall before the first scan. Without Supabase configuration the app remains fully local-first.
 
@@ -104,6 +104,22 @@ npm run db:remote:check
 ```
 
 OpenRouter requests require providers that support every requested parameter, deny provider data collection, use `store: false`, and enable ZDR by default. Set `OPENROUTER_ZDR=false` only for local debugging if your selected model has no ZDR-compatible endpoint.
+
+## Enable RevenueCat subscriptions
+
+1. Create a RevenueCat project and an iOS app with bundle ID `com.hewaddorani.kadro`.
+2. Create the entitlement `kadro_pro`.
+3. Add annual and monthly subscription products to that entitlement, then add them as the standard annual and monthly packages in the current Offering.
+4. Copy the public RevenueCat **Test Store** SDK key into `.env`:
+
+```bash
+EXPO_PUBLIC_REVENUECAT_TEST_API_KEY=test_...
+EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=kadro_pro
+```
+
+Expo Go then displays the RevenueCat Test Store offering and safely simulates purchase and restore without a real charge. Real Apple or Google sandbox purchases require the corresponding public platform SDK key plus a development/TestFlight build; Expo Go cannot execute native StoreKit or Play Billing transactions.
+
+The app uses the current Supabase user ID as RevenueCat's App User ID, so an email-upgraded Kadro account keeps a stable purchase identity. Only public SDK keys belong in `EXPO_PUBLIC_` variables—never a RevenueCat secret API key.
 
 ## Quality checks
 

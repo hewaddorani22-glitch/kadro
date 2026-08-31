@@ -7,11 +7,13 @@ import { AccountLinkCard } from '@/components/AccountLinkCard';
 import { Card, Eyebrow, PageTitle, Screen, SectionTitle } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { useSubscription } from '@/context/SubscriptionContext';
 import { formatNumber } from '@/utils/format';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { syncMode, targets, userName } = useApp();
+  const { status: subscriptionStatus } = useSubscription();
   const [savePhotos, setSavePhotos] = useState(false);
   const [notifications, setNotifications] = useState(true);
 
@@ -44,10 +46,10 @@ export default function ProfileScreen() {
         <Card style={styles.proCard}>
           <View style={styles.proIcon}><Ionicons color={colors.text} name="infinite" size={26} /></View>
           <View style={styles.proCopy}>
-            <Text style={styles.proTitle}>Kadro Pro</Text>
-            <Text style={styles.proText}>Unbegrenzte Scans. Ein Plan, der sich weiter anpasst.</Text>
+            <Text style={styles.proTitle}>{subscriptionStatus === 'active' ? 'Kadro Pro ist aktiv' : 'Kadro Pro'}</Text>
+            <Text style={styles.proText}>{subscriptionStatus === 'active' ? 'Dein Zugang ist auf diesem Konto freigeschaltet.' : 'Unbegrenzte Scans. Ein Plan, der sich weiter anpasst.'}</Text>
           </View>
-          <View style={styles.tryPill}><Text style={styles.tryText}>GRATIS TESTEN</Text></View>
+          <View style={styles.tryPill}><Text style={styles.tryText}>{subscriptionStatus === 'active' ? 'AKTIV' : 'ANSEHEN'}</Text></View>
         </Card>
       </Pressable>
 

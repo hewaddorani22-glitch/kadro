@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { useSubscription } from '@/context/SubscriptionContext';
 import { recordRecommendationFeedback, recordRecommendationSet } from '@/services/cloudRepository';
 import { recommendMeals } from '@/services/recommendations';
 import { MealContext } from '@/types/nutrition';
@@ -22,6 +23,7 @@ export default function PlanScreen() {
   const params = useLocalSearchParams<{ context?: string; fromScan?: string }>();
   const router = useRouter();
   const { hasLoggedScan, remaining } = useApp();
+  const { status: subscriptionStatus } = useSubscription();
   const [selected, setSelected] = useState<MealContext | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
   const recordedSet = useRef('');
@@ -57,7 +59,7 @@ export default function PlanScreen() {
       void recordRecommendationFeedback(selected, id, 'accepted').catch(() => undefined);
     }
     setChosen(id);
-    if (params.fromScan === '1') {
+    if (params.fromScan === '1' && subscriptionStatus !== 'active') {
       setTimeout(() => router.push('/paywall'), 350);
     }
   };
@@ -140,7 +142,7 @@ export default function PlanScreen() {
             );
           })}
 
-          {hasLoggedScan && params.fromScan !== '1' ? (
+          {hasLoggedScan && params.fromScan !== '1' && subscriptionStatus !== 'active' ? (
             <Pressable onPress={() => router.push('/paywall')} style={styles.proBanner}>
               <View style={styles.proIcon}><Ionicons color={colors.white} name="infinite" size={20} /></View>
               <View style={styles.proCopy}>

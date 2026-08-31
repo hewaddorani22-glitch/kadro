@@ -1,32 +1,100 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui';
 import { KadroMark } from '@/components/KadroMark';
 import { colors, radii } from '@/constants/theme';
+import { useSubscription } from '@/context/SubscriptionContext';
 
 type Plan = 'yearly' | 'monthly';
 
 export default function PaywallScreen() {
   const router = useRouter();
   const [selected, setSelected] = useState<Plan>('yearly');
+  const { busy, error, purchase, refresh, restore, snapshot, status } = useSubscription();
+  const yearly = snapshot?.plans.yearly ?? null;
+  const monthly = snapshot?.plans.monthly ?? null;
+  const selectedPlan = snapshot?.plans[selected] ?? null;
+  const testStore = snapshot?.mode === 'test-store';
 
-  const subscribe = () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    if (Platform.OS === 'web') {
+  useEffect(() => {
+    if (!snapshot?.configured || selectedPlan) return;
+    if (yearly) setSelected('yearly');
+    else if (monthly) setSelected('monthly');
+  }, [monthly, selectedPlan, snapshot?.configured, yearly]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const subscribe = async () => {
+    if (status === 'active') {
       router.replace('/(tabs)/today');
       return;
     }
+    if (status === 'unconfigured') {
+      Alert.alert(
+        'RevenueCat noch nicht verbunden',
+        'Die Paywall läuft als sichere Vorschau. Nach dem Eintragen des öffentlichen Test-Store-Schlüssels werden Kauf und Wiederherstellung in Expo Go simuliert.',
+        [{ text: 'Abbrechen', style: 'cancel' }, { text: 'Demo fortsetzen', onPress: () => router.replace('/(tabs)/today') }],
+      );
+      return;
+    }
+    if (status === 'error') {
+      await refresh();
+      return;
+    }
+    const result = await purchase(selected);
+    if (result !== 'active') return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert(
-      'Bezahlung folgt an Tag 3',
-      'Dieses MVP nutzt absichtlich eine Demo-Bezahlung. RevenueCat kann diese Aktion später ersetzen, ohne den Screen zu ändern.',
-      [{ text: 'Demo fortsetzen', onPress: () => router.replace('/(tabs)/today') }],
+      testStore ? 'Test-Abo aktiviert' : 'Kadro Pro aktiviert',
+      testStore ? 'Der RevenueCat Test Store hat den Kauf ohne echte Abbuchung simuliert.' : 'Dein Kadro-Pro-Zugang ist jetzt aktiv.',
+      [{ text: 'Weiter', onPress: () => router.replace('/(tabs)/today') }],
     );
   };
+
+  const restorePurchase = async () => {
+    if (status === 'unconfigured') {
+      Alert.alert('Noch nicht verbunden', 'Füge zuerst den öffentlichen RevenueCat-Schlüssel in der .env-Datei ein.');
+      return;
+    }
+    const result = await restore();
+    if (result === 'failed') return;
+    const active = result === 'active';
+    Alert.alert(
+      active ? 'Käufe wiederhergestellt' : 'Kein aktives Abo gefunden',
+      active ? 'Kadro Pro ist wieder aktiv.' : 'Für dieses Store-Konto wurde kein aktiver Kadro-Pro-Kauf gefunden.',
+    );
+  };
+
+  const buttonLabel = busy
+    ? 'Wird verarbeitet …'
+    : status === 'loading'
+      ? 'Angebot wird geladen …'
+      : status === 'active'
+        ? 'Mit Kadro Pro weiter'
+        : status === 'unconfigured'
+          ? 'Demo fortsetzen'
+          : status === 'error'
+            ? 'Erneut laden'
+            : testStore
+              ? 'Test-Abo starten'
+              : selectedPlan?.hasFreeTrial
+                ? 'Kostenlos testen'
+                : 'Kadro Pro starten';
+
+  const billingCopy = status === 'active'
+    ? 'Dein Kadro-Pro-Zugang ist aktiv.'
+    : status === 'unconfigured'
+      ? 'Vorschaupreise – es wird nichts abgebucht.'
+      : selectedPlan
+        ? `${selectedPlan.billing}${testStore ? ' Test Store: keine echte Abbuchung.' : ''}`
+        : 'Lege im aktuellen RevenueCat Offering ein Jahres- und/oder Monatspaket an.';
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -34,13 +102,14 @@ export default function PaywallScreen() {
         <Pressable accessibilityLabel="Paywall schließen" onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={22} />
         </Pressable>
-        <Pressable onPress={() => Alert.alert('Käufe wiederherstellen', 'Es gibt noch keinen Testkauf. RevenueCat ist für Tag 3 vorgesehen.')}>
-          <Text style={styles.restore}>Wiederherstellen</Text>
+        <Pressable disabled={busy || status === 'loading'} onPress={() => void restorePurchase()}>
+          <Text style={[styles.restore, (busy || status === 'loading') && styles.disabledText]}>Wiederherstellen</Text>
         </Pressable>
       </View>
 
       <View style={styles.content}>
         <View style={styles.heroMark}><KadroMark size={76} /></View>
+        {testStore ? <View style={styles.testBadge}><Text style={styles.testBadgeText}>REVENUECAT TEST STORE</Text></View> : null}
         <Text style={styles.title}>Iss mit einem Plan.{`\n`}Nicht nach Gefühl.</Text>
         <Text style={styles.subtitle}>Behalte die ruhige, adaptive Unterstützung, die du gerade erlebt hast – nach jeder Mahlzeit.</Text>
 
@@ -53,25 +122,34 @@ export default function PaywallScreen() {
         <View style={styles.plans}>
           <PlanCard
             badge="BESTER PREIS"
-            detail="€3,33 pro Monat"
+            detail={yearly?.detail ?? '€3,33 pro Monat'}
+            disabled={Boolean(snapshot?.configured && !yearly)}
             label="Jährlich"
             onPress={() => setSelected('yearly')}
-            price="€39,99 / Jahr"
+            price={yearly?.price ?? (snapshot?.configured ? 'Nicht verfügbar' : '€39,99 / Jahr')}
             selected={selected === 'yearly'}
           />
           <PlanCard
-            detail="Flexibel, jederzeit kündbar"
+            detail={monthly?.detail ?? 'Flexibel, jederzeit kündbar'}
+            disabled={Boolean(snapshot?.configured && !monthly)}
             label="Monatlich"
             onPress={() => setSelected('monthly')}
-            price="€9,99 / Monat"
+            price={monthly?.price ?? (snapshot?.configured ? 'Nicht verfügbar' : '€9,99 / Monat')}
             selected={selected === 'monthly'}
           />
         </View>
+        {status === 'loading' ? <ActivityIndicator color={colors.accentDeep} style={styles.loader} /> : null}
+        {error ? <Text style={styles.error}>{error}</Text> : null}
       </View>
 
       <View style={styles.footer}>
-        <PrimaryButton icon="arrow-forward" label="7 Tage kostenlos testen" onPress={subscribe} />
-        <Text style={styles.billing}>{selected === 'yearly' ? '€39,99/Jahr' : '€9,99/Monat'} nach dem Test. Jederzeit kündbar.</Text>
+        <PrimaryButton
+          disabled={busy || status === 'loading' || (snapshot?.configured === true && status !== 'active' && !selectedPlan && status !== 'error')}
+          icon={status === 'active' ? 'checkmark-circle-outline' : 'arrow-forward'}
+          label={buttonLabel}
+          onPress={() => void subscribe()}
+        />
+        <Text style={styles.billing}>{billingCopy}</Text>
         <View style={styles.legalRow}>
           <Text style={styles.legal}>Bedingungen</Text>
           <View style={styles.legalDot} />
@@ -91,9 +169,9 @@ function Benefit({ label }: { label: string }) {
   );
 }
 
-function PlanCard({ badge, detail, label, onPress, price, selected }: { badge?: string; detail: string; label: string; onPress: () => void; price: string; selected: boolean }) {
+function PlanCard({ badge, detail, disabled, label, onPress, price, selected }: { badge?: string; detail: string; disabled?: boolean; label: string; onPress: () => void; price: string; selected: boolean }) {
   return (
-    <Pressable onPress={onPress} style={[styles.planCard, selected && styles.planCardSelected]}>
+    <Pressable disabled={disabled} onPress={onPress} style={[styles.planCard, selected && styles.planCardSelected, disabled && styles.planCardDisabled]}>
       <View style={[styles.radio, selected && styles.radioSelected]}>
         {selected ? <View style={styles.radioDot} /> : null}
       </View>
@@ -116,6 +194,8 @@ const styles = StyleSheet.create({
   restore: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   content: { flex: 1, alignItems: 'center', paddingTop: 15 },
   heroMark: { width: 104, height: 104, borderRadius: 52, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
+  testBadge: { backgroundColor: colors.accent, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 5, marginTop: 10 },
+  testBadgeText: { color: colors.text, fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
   title: { color: colors.text, fontSize: 36, lineHeight: 41, fontWeight: '700', letterSpacing: -1.2, textAlign: 'center', marginTop: 20 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 340, marginTop: 10 },
   benefits: { alignSelf: 'stretch', gap: 13, marginTop: 24, paddingHorizontal: 7 },
@@ -125,6 +205,7 @@ const styles = StyleSheet.create({
   plans: { alignSelf: 'stretch', gap: 10, marginTop: 25 },
   planCard: { minHeight: 76, borderRadius: radii.button, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', gap: 11 },
   planCardSelected: { borderColor: colors.accentDeep, backgroundColor: colors.neutralSoft },
+  planCardDisabled: { opacity: 0.45 },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   radioSelected: { borderColor: colors.accentDeep },
   radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.accentDeep },
@@ -136,6 +217,9 @@ const styles = StyleSheet.create({
   badgeText: { color: colors.white, fontSize: 7, fontWeight: '800', letterSpacing: 0.7 },
   planPrice: { color: colors.text, fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
   footer: { gap: 9, paddingBottom: 10 },
+  loader: { marginTop: 12 },
+  error: { color: colors.attention, fontSize: 11, lineHeight: 16, marginTop: 12, textAlign: 'center' },
+  disabledText: { opacity: 0.45 },
   billing: { color: colors.muted, fontSize: 10, textAlign: 'center' },
   legalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
   legal: { color: colors.muted, fontSize: 9, textDecorationLine: 'underline' },

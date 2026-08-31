@@ -23,7 +23,7 @@ Meal result + projected daily balance
    ↓
 Three contextual next-meal suggestions
    ↓
-Mock paywall / back to Today
+RevenueCat-backed paywall / safe preview fallback
 ```
 
 The application deliberately keeps this loop narrow. New features should strengthen it before expanding into unrelated fitness functionality.
@@ -40,7 +40,7 @@ Expo Router uses `src/app` as the route root.
 - `src/app/analyzing.tsx`: staged mock analysis animation.
 - `src/app/confirm.tsx`: ingredient inclusion, one-tap meal portion sizing, and optional gram-level correction.
 - `src/app/result.tsx`: animated meal estimate, projected remaining targets, and delayed recommendation reveal.
-- `src/app/paywall.tsx`: transparent mock subscription choice.
+- `src/app/paywall.tsx`: transparent annual/monthly choice backed by RevenueCat Offering prices, purchase, and user-triggered restore.
 - `src/components/AccountLinkCard.tsx`: anonymous account upgrade, email verification, password setup, and existing-account recovery from Profile.
 
 Root stack routes sit above the tab navigator so camera analysis, confirmation, result, and paywall can focus the user on one step.
@@ -89,7 +89,7 @@ Current responsibilities:
 - `accountLinking.ts`: ID-preserving email upgrade with `updateUser`, email-change verification, password setup, and existing-account sign-in.
 - `cloudRepository.ts`: maps Kadro domain records to RLS-protected Supabase rows and records recommendation feedback.
 - `syncRepository.ts`: preserves local-first writes, uploads pending local scans during hydration, and merges cloud meals back into domain state.
-- RevenueCat adapter: entitlement state and purchase/restore actions.
+- `subscription.ts` + `SubscriptionContext.tsx`: platform/Test Store key selection, Supabase-user identity, current Offering, `kadro_pro` entitlement state, purchase cancellation, and user-triggered restore. Without public SDK configuration, the paywall remains a clearly labeled non-billing preview.
 - `recommendations.ts`: deterministic scoring over the reviewed German MVP catalog.
 
 Raw provider payloads should be mapped to the domain types in `src/types/nutrition.ts` before reaching React components.

@@ -20,6 +20,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-purchases": "^10.8.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
@@ -46,9 +47,10 @@
     "typecheck": "tsc --noEmit",
     "validate:catalog": "node scripts/validate-catalog.mjs",
     "validate:supabase": "node scripts/validate-supabase.mjs",
+    "validate:subscription": "node scripts/validate-subscription.mjs",
     "doctor": "npx expo-doctor",
     "check": "npm run typecheck && npx expo export --platform web",
-    "verify": "npm run typecheck && npm run validate:catalog && npm run validate:supabase && node --check server/index.mjs && npm run doctor && npx expo export --platform web"
+    "verify": "npm run typecheck && npm run validate:catalog && npm run validate:supabase && npm run validate:subscription && node --check server/index.mjs && npm run doctor && npx expo export --platform web"
   },
   "private": true
 }

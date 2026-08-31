@@ -59,6 +59,9 @@ Acceptance criteria:
 - [x] Add permanent account linking with verified email and password recovery; Apple remains optional after MVP validation
 - [x] Expand the verified German catalog from 45 to 200 meals after live schema and ranking validation
 - [ ] RevenueCat subscription and restore flow
+  - [x] Expo Go-safe Test Store adapter, Supabase identity, live Offering prices, entitlement check, purchase, cancellation, and restore UI
+  - [ ] Create RevenueCat project, `kadro_pro` entitlement, current annual/monthly Offering, and run a Test Store purchase/restore smoke test
+  - [ ] Configure App Store Connect products and run a native StoreKit sandbox purchase in a development/TestFlight build
 - [ ] PostHog product events and Sentry error reporting
 
 ## Day 4: launch quality
