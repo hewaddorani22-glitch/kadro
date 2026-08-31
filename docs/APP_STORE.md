@@ -24,7 +24,7 @@ Kadro ist kein klassisches Ernährungstagebuch. Die App hilft dir, nach jeder Ma
 
 So funktioniert es:
 
-- Fotografiere deine Mahlzeit.
+- Fotografiere, beschreibe oder scanne den Barcode deiner Mahlzeit.
 - Prüfe erkannte Zutaten und passe die Portion mit einem Tap an.
 - Sieh geschätzte Kalorien und Makronährstoffe samt Konfidenz.
 - Erhalte einen neu berechneten Tagesstand.
@@ -38,14 +38,14 @@ Ernährung,Kalorien,Makros,Mahlzeit,Protein,Essensplan,Foto,Wellness,Tagesplan
 
 ### What's New
 
-Erste private Kadro-Beta: Mahlzeitenfoto, Zutaten- und Portionskorrektur, Tagesbilanz, drei kontextbezogene nächste Ideen, Cloud-Sicherung und transparente Schätzwerte.
+Erste private Kadro-Beta: Foto, Beschreibung oder Barcode, Zutaten- und Portionskorrektur, Tagesbilanz, drei kontextbezogene nächste Ideen, echter Gewichtsverlauf, Cloud-Sicherung und transparente Schätzwerte.
 
 ## Screenshot storyboard
 
 Capture native screenshots from the production/TestFlight build, not the web preview. Use one accepted 6.9-inch portrait size, preferably `1320 × 2868` px with no alpha channel. Keep real status bars and avoid personal email addresses or account identifiers.
 
 1. **Heute:** headline `Dein Tag. Sofort im Blick.` with calories remaining, macros, and Next Move.
-2. **Scan:** headline `Ein Foto reicht.` with a real plate fully visible and the photo-only scanner.
+2. **Scan:** headline `Foto, Text oder Barcode.` with a real plate fully visible and the three honest input modes.
 3. **Bestätigen:** headline `Du behältst die Kontrolle.` with detected ingredients and the portion selector.
 4. **Ergebnis:** headline `Schätzung statt Scheingenauigkeit.` with confidence and source labels.
 5. **Plan:** headline `Drei Ideen, die jetzt passen.` with exactly three contextual recommendations.

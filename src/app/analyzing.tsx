@@ -10,7 +10,7 @@ import { useApp } from '@/context/AppContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { AnalysisErrorKind } from '@/services/contracts';
 
-const stages = ['Foto vorbereitet', 'Lebensmittel erkannt', 'Nährwerte abgeglichen', 'Bereit zur Bestätigung'];
+const stages = ['Eingabe vorbereitet', 'Lebensmittel erkannt', 'Nährwerte abgeglichen', 'Bereit zur Bestätigung'];
 
 const errorCopy: Record<AnalysisErrorKind, { title: string; detail: string }> = {
   'not-configured': {
@@ -18,8 +18,8 @@ const errorCopy: Record<AnalysisErrorKind, { title: string; detail: string }> = 
     detail: 'Starte den lokalen Kadro-Server und setze EXPO_PUBLIC_ANALYSIS_API_URL. Die Demo funktioniert sofort.',
   },
   offline: {
-    title: 'Scan lokal vorgemerkt',
-    detail: 'Sobald die Verbindung wieder da ist, kannst du diesen Scan erneut analysieren.',
+    title: 'Keine Verbindung',
+    detail: 'Fotos werden lokal vorgemerkt. Beschreibungen und Barcodes kannst du mit Verbindung erneut starten.',
   },
   'unclear-image': {
     title: 'Foto nicht eindeutig',
@@ -31,7 +31,7 @@ const errorCopy: Record<AnalysisErrorKind, { title: string; detail: string }> = 
   },
   'provider-error': {
     title: 'Analyse gerade nicht möglich',
-    detail: 'Der Scan bleibt lokal vorgemerkt. Versuche es gleich noch einmal.',
+    detail: 'Versuche es gleich noch einmal oder ändere deine Eingabe.',
   },
 };
 
@@ -43,6 +43,7 @@ export default function AnalyzingScreen() {
     analysisStatus,
     analyzeCurrentPhoto,
     photoUri,
+    scanMode,
     startDemoScan,
   } = useApp();
   const [visible, setVisible] = useState(0);
@@ -98,7 +99,7 @@ export default function AnalyzingScreen() {
       </View>
 
       <View style={styles.photoWrap}>
-        <MealPhoto height={330} uri={photoUri} />
+        <MealPhoto height={330} placeholder={scanMode === 'barcode' ? 'barcode' : scanMode === 'description' ? 'description' : 'demo'} uri={photoUri} />
         {!failed ? <View style={styles.scanLine} /> : null}
         <View style={styles.analyzingPill}>
           <View style={[styles.liveDot, failed && styles.warningDot]} />
@@ -119,7 +120,7 @@ export default function AnalyzingScreen() {
           <View style={styles.actions}>
             {analysisError !== 'not-configured' ? <PrimaryButton icon="refresh" label="Erneut versuchen" onPress={retry} /> : null}
             <PrimaryButton label="Demo-Mahlzeit öffnen" onPress={runDemo} variant={analysisError === 'not-configured' ? 'primary' : 'secondary'} />
-            <PrimaryButton label="Foto wiederholen" onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+            <PrimaryButton label="Eingabe ändern" onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
           </View>
         ) : (
           <View style={styles.chips}>

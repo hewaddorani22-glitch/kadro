@@ -12,7 +12,7 @@ import { PortionFactor } from '@/types/nutrition';
 
 export default function ConfirmScreen() {
   const router = useRouter();
-  const { adjustItem, analysisMessage, detectedItems, mealPortion, photoUri, scannedMeal, setMealPortion, toggleItem } = useApp();
+  const { adjustItem, analysisMessage, detectedItems, mealPortion, photoUri, scanMode, scannedMeal, setMealPortion, toggleItem } = useApp();
   const [detailsOpen, setDetailsOpen] = useState(false);
 
   const confirm = () => {
@@ -36,7 +36,7 @@ export default function ConfirmScreen() {
         <View style={styles.iconButtonSpacer} />
       </View>
 
-      <MealPhoto height={230} uri={photoUri} />
+      <MealPhoto height={230} placeholder={scanMode === 'barcode' ? 'barcode' : scanMode === 'description' ? 'description' : 'demo'} uri={photoUri} />
 
       <View style={styles.heading}>
         <View style={styles.headingRow}>

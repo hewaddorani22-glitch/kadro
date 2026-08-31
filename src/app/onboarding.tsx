@@ -2,14 +2,17 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KadroMark } from '@/components/KadroMark';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { colors, radii, spacing } from '@/constants/theme';
+import { useApp } from '@/context/AppContext';
 import { recordWellnessConsent } from '@/services/consent';
+import { calculateDailyTargets, estimatedPace } from '@/services/personalization';
 import { trackEvent } from '@/services/telemetry';
+import { NutritionGoal, UserProfile } from '@/types/nutrition';
 
 type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap };
 
@@ -25,17 +28,27 @@ const activityChoices: Choice[] = [
   { label: 'Sehr aktiv', detail: '4 oder mehr Einheiten pro Woche', icon: 'barbell-outline' },
 ];
 
+const preferenceChoices = [
+  { id: 'high-protein', label: 'Proteinreich' },
+  { id: 'vegetarian', label: 'Vegetarisch' },
+  { id: 'pork-free', label: 'Ohne Schwein' },
+  { id: 'lactose-free', label: 'Laktosefrei' },
+  { id: 'quick', label: 'Schnelle Mahlzeiten' },
+] as const;
+
 const TOTAL_STEPS = 6;
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const { completeOnboarding } = useApp();
   const [step, setStep] = useState(0);
   const [goal, setGoal] = useState('Gewicht reduzieren');
+  const [displayName, setDisplayName] = useState('');
   const [age, setAge] = useState(29);
   const [height, setHeight] = useState(178);
   const [weight, setWeight] = useState(78);
   const [activity, setActivity] = useState('Leicht aktiv');
-  const [preferences, setPreferences] = useState<string[]>(['Proteinreich']);
+  const [preferences, setPreferences] = useState<string[]>(['high-protein']);
   const [showConsent, setShowConsent] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
@@ -52,6 +65,18 @@ export default function OnboardingScreen() {
     ][step],
     [step],
   );
+
+  const draftProfile = useMemo<UserProfile>(() => ({
+    displayName: displayName.trim() || 'Du',
+    goal: goal === 'Gewicht halten' ? 'maintain' : goal === 'Stärker werden' ? 'gain' : 'lose',
+    age,
+    heightCm: height,
+    weightKg: weight,
+    activityLevel: activity === 'Meist sitzend' ? 'low' : activity === 'Sehr aktiv' ? 'high' : 'light',
+    preferences,
+    completedAt: null,
+  }), [activity, age, displayName, goal, height, preferences, weight]);
+  const startingTargets = useMemo(() => calculateDailyTargets(draftProfile), [draftProfile]);
 
   const next = () => {
     void Haptics.selectionAsync();
@@ -72,6 +97,7 @@ export default function OnboardingScreen() {
     setConsentError(null);
     try {
       await recordWellnessConsent();
+      await completeOnboarding(draftProfile);
       trackEvent('onboarding completed', { completion: skippedPersonalization ? 'skipped' : 'finished' });
       setShowConsent(false);
       router.replace('/(tabs)/scan');
@@ -130,32 +156,32 @@ export default function OnboardingScreen() {
             <ChoiceList choices={goalChoices} selected={goal} onSelect={setGoal} />
           ) : null}
           {step === 1 ? (
-            <ProfileNumbers age={age} height={height} setAge={setAge} setHeight={setHeight} setWeight={setWeight} weight={weight} />
+            <ProfileNumbers age={age} displayName={displayName} height={height} setAge={setAge} setDisplayName={setDisplayName} setHeight={setHeight} setWeight={setWeight} weight={weight} />
           ) : null}
           {step === 2 ? (
             <ChoiceList choices={activityChoices} selected={activity} onSelect={setActivity} />
           ) : null}
           {step === 3 ? (
             <View style={styles.chips}>
-              {['Proteinreich', 'Vegetarisch', 'Ohne Schwein', 'Laktosefrei', 'Schnelle Mahlzeiten', 'Keine Präferenz'].map((item) => {
-                const selected = preferences.includes(item);
+              {[...preferenceChoices, { id: 'none', label: 'Keine Präferenz' }].map((item) => {
+                const selected = item.id === 'none' ? preferences.length === 0 : preferences.includes(item.id);
                 return (
                   <Pressable
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: selected }}
-                    key={item}
-                    onPress={() => togglePreference(item)}
+                    key={item.id}
+                    onPress={() => item.id === 'none' ? setPreferences([]) : togglePreference(item.id)}
                     style={[styles.chip, selected && styles.chipSelected]}
                   >
                     {selected ? <Ionicons color={colors.text} name="checkmark" size={17} /> : null}
-                    <Text style={styles.chipText}>{item}</Text>
+                    <Text style={styles.chipText}>{item.label}</Text>
                   </Pressable>
                 );
               })}
             </View>
           ) : null}
           {step === 4 ? <PlanCalculation goal={goal} activity={activity} /> : null}
-          {step === 5 ? <StartingPlan /> : null}
+          {step === 5 ? <StartingPlan goal={draftProfile.goal} targets={startingTargets} /> : null}
         </View>
       </View>
 
@@ -221,9 +247,22 @@ function ChoiceList({ choices, selected, onSelect }: { choices: Choice[]; select
   );
 }
 
-function ProfileNumbers({ age, height, setAge, setHeight, setWeight, weight }: { age: number; height: number; setAge: (value: number) => void; setHeight: (value: number) => void; setWeight: (value: number) => void; weight: number }) {
+function ProfileNumbers({ age, displayName, height, setAge, setDisplayName, setHeight, setWeight, weight }: { age: number; displayName: string; height: number; setAge: (value: number) => void; setDisplayName: (value: string) => void; setHeight: (value: number) => void; setWeight: (value: number) => void; weight: number }) {
   return (
     <View style={styles.metrics}>
+      <View style={styles.nameField}>
+        <Text style={styles.nameLabel}>Vorname (optional)</Text>
+        <TextInput
+          accessibilityLabel="Vorname"
+          autoCapitalize="words"
+          maxLength={40}
+          onChangeText={setDisplayName}
+          placeholder="z. B. Alex"
+          placeholderTextColor={colors.muted}
+          style={styles.nameInput}
+          value={displayName}
+        />
+      </View>
       <MetricRow label="Alter" max={80} min={18} onChange={setAge} unit="Jahre" value={age} />
       <MetricRow label="Größe" max={220} min={130} onChange={setHeight} unit="cm" value={height} />
       <MetricRow label="Gewicht" max={200} min={40} onChange={setWeight} unit="kg" value={weight} />
@@ -273,21 +312,21 @@ function Signal({ label }: { label: string }) {
   );
 }
 
-function StartingPlan() {
+function StartingPlan({ goal, targets }: { goal: NutritionGoal; targets: ReturnType<typeof calculateDailyTargets> }) {
   return (
     <View style={styles.startingCard}>
       <Text style={styles.cardEyebrow}>TAGESZIEL</Text>
-      <Text style={styles.calories}>2.230</Text>
+      <Text style={styles.calories}>{new Intl.NumberFormat('de-DE').format(targets.calories)}</Text>
       <Text style={styles.caloriesLabel}>Kilokalorien</Text>
       <View style={styles.divider} />
       <View style={styles.planStats}>
         <View style={styles.planStat}>
-          <Text style={styles.planStatValue}>140 g</Text>
+          <Text style={styles.planStatValue}>{targets.protein} g</Text>
           <Text style={styles.planStatLabel}>Protein</Text>
         </View>
         <View style={styles.planStat}>
-          <Text style={styles.planStatValue}>0,4 kg</Text>
-          <Text style={styles.planStatLabel}>ca. pro Woche</Text>
+          <Text style={styles.planStatValue}>{estimatedPace(goal)}</Text>
+          <Text style={styles.planStatLabel}>geschätztes Tempo</Text>
         </View>
         <View style={styles.planStat}>
           <Text style={styles.planStatValue}>Flexibel</Text>
@@ -333,6 +372,9 @@ const styles = StyleSheet.create({
   number: { color: colors.text, fontSize: 68, lineHeight: 76, fontWeight: '700', letterSpacing: -2 },
   numberUnit: { color: colors.muted, fontSize: 15, fontWeight: '600' },
   metrics: { gap: 12 },
+  nameField: { gap: 7 },
+  nameLabel: { color: colors.text, fontSize: 13, fontWeight: '600' },
+  nameInput: { minHeight: 48, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 16, paddingHorizontal: 14 },
   metricRow: { minHeight: 72, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   metricLabel: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
   metricButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },

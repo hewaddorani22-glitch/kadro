@@ -5,6 +5,8 @@ const catalog = JSON.parse(await readFile(url, 'utf8'));
 const contexts = ['home', 'supermarket', 'eating-out'];
 const tags = ['high-protein', 'pescetarian', 'vegan', 'vegetarian'];
 const idPrefixes = { home: 'home', supermarket: 'market', 'eating-out': 'out' };
+const porkWords = /schwein|speck|schinken|salami/i;
+const lactoseWords = /skyr|joghurt|käse|quark|kefir|milch|mozzarella|ricotta|halloumi|frischkäse/i;
 const numericRanges = {
   calories: [350, 700],
   protein: [18, 65],
@@ -49,6 +51,13 @@ for (const context of contexts) {
     if (items.filter((item) => item.tags.includes(tag)).length < 10) {
       throw new Error(`Context ${context} needs at least ten ${tag} meals`);
     }
+  }
+  const vegetarian = items.filter((item) => item.tags.some((tag) => tag === 'vegetarian' || tag === 'vegan'));
+  const lactoseFree = items.filter((item) => !lactoseWords.test(`${item.title} ${item.detail}`));
+  const porkFree = items.filter((item) => !porkWords.test(`${item.title} ${item.detail}`));
+  const vegetarianLactoseFree = vegetarian.filter((item) => !lactoseWords.test(`${item.title} ${item.detail}`));
+  for (const [preference, matches] of Object.entries({ vegetarian, lactoseFree, porkFree, vegetarianLactoseFree })) {
+    if (matches.length < 3) throw new Error(`${context}: fewer than three meals satisfy ${preference}`);
   }
 }
 if (Math.max(...contextSizes) - Math.min(...contextSizes) > 1) throw new Error('Catalog contexts must stay balanced');

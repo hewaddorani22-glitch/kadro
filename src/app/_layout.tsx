@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
+import { AppRouteGuard } from '@/components/AppRouteGuard';
 import { colors } from '@/constants/theme';
 import { AppProvider } from '@/context/AppContext';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
@@ -21,8 +22,9 @@ export default function RootLayout() {
       <AppErrorBoundary>
         <AppProvider>
           <SubscriptionProvider>
-            <StatusBar style="dark" />
-            <Stack
+            <AppRouteGuard>
+              <StatusBar style="dark" />
+              <Stack
               screenOptions={{
                 headerShown: false,
                 contentStyle: { backgroundColor: colors.background },
@@ -39,7 +41,8 @@ export default function RootLayout() {
               <Stack.Screen name="privacy" />
               <Stack.Screen name="terms" />
               <Stack.Screen name="account-deletion" />
-            </Stack>
+              </Stack>
+            </AppRouteGuard>
           </SubscriptionProvider>
         </AppProvider>
       </AppErrorBoundary>

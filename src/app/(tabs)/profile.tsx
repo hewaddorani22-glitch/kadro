@@ -13,11 +13,12 @@ import {
   isTelemetryConfigured,
   setAnalyticsCollectionEnabled,
 } from '@/services/telemetry';
+import { activityLabel, goalLabel } from '@/services/personalization';
 import { formatNumber } from '@/utils/format';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { syncMode, targets, userName } = useApp();
+  const { profile, syncMode, targets, userName } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
 
@@ -76,8 +77,8 @@ export default function ProfileScreen() {
           <View style={styles.planGrid}>
             <PlanStat label="Kalorien" value={formatNumber(targets.calories)} />
             <PlanStat label="Protein" value={`${targets.protein} g`} />
-            <PlanStat label="Ziel" value="Reduzieren" />
-            <PlanStat label="Aktivität" value="Leicht" />
+            <PlanStat label="Ziel" value={goalLabel(profile.goal)} />
+            <PlanStat label="Aktivität" value={activityLabel(profile.activityLevel)} />
           </View>
         </Card>
       </View>

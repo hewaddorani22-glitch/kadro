@@ -1,42 +1,61 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AnalysisErrorKind, MealAnalysisInput } from '@/services/contracts';
-import { analyzePreparedPhoto, deleteTemporaryPhoto, MealAnalysisError, prepareMealPhoto } from '@/services/mealAnalysis';
-import { loadAnalysisQueue, loadMeals, queueAnalysis, removeQueuedAnalysis } from '@/services/localRepository';
+import { analyzeBarcode, analyzeDescription, analyzePreparedPhoto, deleteTemporaryPhoto, MealAnalysisError, prepareMealPhoto } from '@/services/mealAnalysis';
+import {
+  loadAllStoredScans,
+  loadAnalysisQueue,
+  loadMeals,
+  loadProfile,
+  loadWeightEntries,
+  queueAnalysis,
+  removeQueuedAnalysis,
+  saveProfile,
+  saveWeightEntry,
+} from '@/services/localRepository';
 import {
   createScannedMeal,
   DEFAULT_TARGETS,
   DETECTED_ITEMS,
   getRemaining,
-  INITIAL_MEALS,
   nutritionFromItems,
   sumMeals,
 } from '@/services/mockNutrition';
-import { hydrateCloudState, saveSyncedMeal, SyncMode } from '@/services/syncRepository';
+import { calculateDailyTargets, DEFAULT_PROFILE } from '@/services/personalization';
+import { hydrateCloudState, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
 import { isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/supabaseClient';
 import { captureOperationalError, countBucket, trackEvent } from '@/services/telemetry';
-import { DailyTargets, Meal, MealItem, Nutrition, PortionFactor } from '@/types/nutrition';
+import { DailyTargets, Meal, MealItem, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
-type ScanMode = 'live' | 'demo' | 'queued';
+type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode';
 
 function telemetryScanSource(mode: ScanMode) {
   if (mode === 'live') return 'camera' as const;
   if (mode === 'queued') return 'queued_retry' as const;
+  if (mode === 'description') return 'description' as const;
+  if (mode === 'barcode') return 'barcode' as const;
   return 'demo' as const;
 }
 
 type AppContextValue = {
   userName: string;
+  profile: UserProfile;
+  hydrationReady: boolean;
   targets: DailyTargets;
   meals: Meal[];
+  mealHistory: Meal[];
+  weightEntries: WeightEntry[];
   consumed: Nutrition;
   remaining: Nutrition;
   detectedItems: MealItem[];
   scannedMeal: Meal;
   photoUri: string | null;
+  scanMode: ScanMode;
   hasLoggedScan: boolean;
+  hasEverLoggedScan: boolean;
+  isCurrentScanLogged: boolean;
   mealPortion: PortionFactor | null;
   analysisStatus: AnalysisStatus;
   analysisError: AnalysisErrorKind | null;
@@ -44,8 +63,12 @@ type AppContextValue = {
   pendingAnalysisCount: number;
   syncMode: SyncMode;
   refreshCloudState: () => Promise<void>;
+  completeOnboarding: (profile: UserProfile) => Promise<void>;
+  addWeightEntry: (weightKg: number) => Promise<void>;
   setCapturedPhoto: (uri: string) => void;
   startDemoScan: () => void;
+  startDescriptionScan: (description: string) => void;
+  startBarcodeScan: (barcode: string) => void;
   analyzeCurrentPhoto: (forceDemo?: boolean) => Promise<void>;
   resumeLatestAnalysis: () => Promise<boolean>;
   adjustItem: (id: string, direction: -1 | 1) => void;
@@ -72,13 +95,18 @@ function scaleItem(item: MealItem, nextAmount: number): MealItem {
     protein: Math.round(item.protein * ratio),
     carbs: Math.round(item.carbs * ratio),
     fat: Math.round(item.fat * ratio),
+    fiber: Math.round((item.fiber ?? 0) * ratio),
   };
 }
 
 export function AppProvider({ children }: PropsWithChildren) {
-  const [userName, setUserName] = useState('Alex');
+  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [hydrationReady, setHydrationReady] = useState(false);
   const [targets, setTargets] = useState(DEFAULT_TARGETS);
-  const [meals, setMeals] = useState<Meal[]>(INITIAL_MEALS);
+  const [meals, setMeals] = useState<Meal[]>([]);
+  const [mealHistory, setMealHistory] = useState<Meal[]>([]);
+  const [freeScanUsed, setFreeScanUsed] = useState(false);
+  const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([]);
   const [detectedItems, setDetectedItems] = useState<MealItem[]>(DETECTED_ITEMS);
   const [mealTitle, setMealTitle] = useState('Hähnchen-Reis-Bowl');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
@@ -87,6 +115,8 @@ export function AppProvider({ children }: PropsWithChildren) {
   const photoUriRef = useRef<string | null>(null);
   const scanModeRef = useRef<ScanMode>('demo');
   const [queuedInput, setQueuedInput] = useState<MealAnalysisInput | null>(null);
+  const [descriptionInput, setDescriptionInput] = useState('');
+  const [barcodeInput, setBarcodeInput] = useState('');
   const [mealPortion, setMealPortionState] = useState<PortionFactor | null>(1);
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>('idle');
   const [analysisError, setAnalysisError] = useState<AnalysisErrorKind | null>(null);
@@ -107,8 +137,11 @@ export function AppProvider({ children }: PropsWithChildren) {
         return;
       }
       setMeals(cloudState.meals);
+      setMealHistory(cloudState.mealHistory);
+      setFreeScanUsed(cloudState.hasEverLoggedScan);
       setTargets(cloudState.targets);
-      setUserName(cloudState.userName);
+      setProfile(cloudState.profile);
+      await saveProfile(cloudState.profile);
       setSyncMode('cloud');
     } catch (error) {
       setSyncMode('error');
@@ -121,12 +154,26 @@ export function AppProvider({ children }: PropsWithChildren) {
     let active = true;
     const stopAuthLifecycle = startSupabaseAuthLifecycle();
     void (async () => {
-      const [storedMeals, queue] = await Promise.all([loadMeals(), loadAnalysisQueue()]);
+      const [storedMeals, storedHistory, queue, storedProfile, storedWeights] = await Promise.all([
+        loadMeals(),
+        loadAllStoredScans(),
+        loadAnalysisQueue(),
+        loadProfile(),
+        loadWeightEntries(),
+      ]);
       if (!active) return;
       setMeals(storedMeals);
+      setMealHistory(storedHistory);
+      setFreeScanUsed(storedHistory.length > 0);
       setPendingAnalysisCount(queue.length);
+      setProfile(storedProfile);
+      setWeightEntries(storedWeights);
+      if (storedProfile.completedAt) setTargets(calculateDailyTargets(storedProfile));
 
-      if (!isSupabaseConfigured) return;
+      if (!isSupabaseConfigured) {
+        setHydrationReady(true);
+        return;
+      }
       try {
         const cloudState = await hydrateCloudState();
         if (!active) return;
@@ -135,12 +182,17 @@ export function AppProvider({ children }: PropsWithChildren) {
           return;
         }
         setMeals(cloudState.meals);
+        setMealHistory(cloudState.mealHistory);
+        setFreeScanUsed(cloudState.hasEverLoggedScan);
         setTargets(cloudState.targets);
-        setUserName(cloudState.userName);
+        setProfile(cloudState.profile);
+        await saveProfile(cloudState.profile);
         setSyncMode('cloud');
       } catch (error) {
         captureOperationalError(error, { area: 'cloud_sync', operation: 'initial_hydration' });
         if (active) setSyncMode('error');
+      } finally {
+        if (active) setHydrationReady(true);
       }
     })();
 
@@ -157,13 +209,57 @@ export function AppProvider({ children }: PropsWithChildren) {
     [detectedItems, mealTitle, scanId],
   );
   const hasLoggedScan = meals.some((meal) => meal.origin === 'scan');
+  const hasEverLoggedScan = freeScanUsed || mealHistory.some((meal) => meal.origin === 'scan');
+  const isCurrentScanLogged = mealHistory.some((meal) => meal.id === scanId);
+  const userName = profile.displayName;
+
+  const completeOnboarding = useCallback(async (nextProfile: UserProfile) => {
+    const completedProfile = { ...nextProfile, completedAt: nextProfile.completedAt ?? new Date().toISOString() };
+    const nextTargets = calculateDailyTargets(completedProfile);
+    const weights = await saveWeightEntry({ date: localDateKey(), weightKg: completedProfile.weightKg });
+    await saveProfile(completedProfile);
+    setProfile(completedProfile);
+    setTargets(nextTargets);
+    setWeightEntries(weights);
+    setHydrationReady(true);
+
+    if (isSupabaseConfigured) {
+      setSyncMode('syncing');
+      void syncUserSetup(completedProfile, nextTargets)
+        .then(() => setSyncMode('cloud'))
+        .catch((error) => {
+          setSyncMode('error');
+          captureOperationalError(error, { area: 'cloud_sync', operation: 'save_personalization' });
+        });
+    }
+  }, []);
+
+  const addWeightEntry = useCallback(async (weightKg: number) => {
+    const roundedWeight = Math.round(Math.min(350, Math.max(35, weightKg)) * 10) / 10;
+    const nextProfile = { ...profile, weightKg: roundedWeight };
+    const nextTargets = calculateDailyTargets(nextProfile);
+    const weights = await saveWeightEntry({ date: localDateKey(), weightKg: roundedWeight });
+    await saveProfile(nextProfile);
+    setProfile(nextProfile);
+    setTargets(nextTargets);
+    setWeightEntries(weights);
+    if (isSupabaseConfigured) {
+      void syncUserSetup(nextProfile, nextTargets).catch((error) => {
+        setSyncMode('error');
+        captureOperationalError(error, { area: 'cloud_sync', operation: 'save_weight' });
+      });
+    }
+  }, [profile]);
 
   const setCapturedPhoto = useCallback((uri: string) => {
     photoUriRef.current = uri;
     scanModeRef.current = 'live';
     setPhotoUri(uri);
     setScanMode('live');
+    setScanId(makeScanId());
     setQueuedInput(null);
+    setDescriptionInput('');
+    setBarcodeInput('');
     setAnalysisStatus('idle');
     trackEvent('meal scan started', { scan_source: 'camera' });
   }, []);
@@ -174,7 +270,10 @@ export function AppProvider({ children }: PropsWithChildren) {
     scanModeRef.current = 'demo';
     setPhotoUri(null);
     setScanMode('demo');
+    setScanId(makeScanId());
     setQueuedInput(null);
+    setDescriptionInput('');
+    setBarcodeInput('');
     setDetectedItems(DETECTED_ITEMS);
     setMealTitle('Hähnchen-Reis-Bowl');
     setAnalysisStatus('idle');
@@ -182,6 +281,38 @@ export function AppProvider({ children }: PropsWithChildren) {
     setAnalysisMessage(null);
     trackEvent('meal scan started', { scan_source: 'demo' });
   }, [photoUri]);
+
+  const startDescriptionScan = useCallback((description: string) => {
+    deleteTemporaryPhoto(photoUriRef.current);
+    photoUriRef.current = null;
+    scanModeRef.current = 'description';
+    setPhotoUri(null);
+    setScanMode('description');
+    setScanId(makeScanId());
+    setQueuedInput(null);
+    setDescriptionInput(description.trim());
+    setBarcodeInput('');
+    setAnalysisStatus('idle');
+    setAnalysisError(null);
+    setAnalysisMessage(null);
+    trackEvent('meal scan started', { scan_source: 'description' });
+  }, []);
+
+  const startBarcodeScan = useCallback((barcode: string) => {
+    deleteTemporaryPhoto(photoUriRef.current);
+    photoUriRef.current = null;
+    scanModeRef.current = 'barcode';
+    setPhotoUri(null);
+    setScanMode('barcode');
+    setScanId(makeScanId());
+    setQueuedInput(null);
+    setDescriptionInput('');
+    setBarcodeInput(barcode);
+    setAnalysisStatus('idle');
+    setAnalysisError(null);
+    setAnalysisMessage(null);
+    trackEvent('meal scan started', { scan_source: 'barcode' });
+  }, []);
 
   const analyzeCurrentPhoto = useCallback(async (forceDemo = false) => {
     setAnalysisStatus('analyzing');
@@ -205,7 +336,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
     let input = queuedInput;
     try {
-      if (!input) {
+      if ((activeScanMode === 'live' || activeScanMode === 'queued') && !input) {
         const originalUri = photoUriRef.current ?? photoUri;
         if (!originalUri) throw new MealAnalysisError('unclear-image', 'Bitte fotografiere den ganzen Teller erneut.');
         const prepared = await prepareMealPhoto(originalUri);
@@ -215,7 +346,11 @@ export function AppProvider({ children }: PropsWithChildren) {
         if (prepared.previewUri !== originalUri) deleteTemporaryPhoto(originalUri);
       }
 
-      const result = await analyzePreparedPhoto(input);
+      const result = activeScanMode === 'description'
+        ? await analyzeDescription(descriptionInput)
+        : activeScanMode === 'barcode'
+          ? await analyzeBarcode(barcodeInput)
+          : await analyzePreparedPhoto(input!);
       setDetectedItems(result.items);
       setMealTitle(result.title);
       setMealPortionState(1);
@@ -234,7 +369,9 @@ export function AppProvider({ children }: PropsWithChildren) {
       const failure = error instanceof MealAnalysisError
         ? error
         : new MealAnalysisError('provider-error', 'Die Analyse konnte nicht abgeschlossen werden.');
-      const shouldQueue = input && (failure.kind === 'offline' || failure.kind === 'provider-error');
+      const shouldQueue = activeScanMode === 'live' || activeScanMode === 'queued'
+        ? input && (failure.kind === 'offline' || failure.kind === 'provider-error')
+        : false;
       if (shouldQueue && input) {
         const count = await queueAnalysis({ ...input, id: scanId, createdAt: new Date().toISOString() });
         setPendingAnalysisCount(count);
@@ -251,11 +388,11 @@ export function AppProvider({ children }: PropsWithChildren) {
       });
       captureOperationalError(failure, {
         area: 'analysis',
-        operation: 'analyze_photo',
+        operation: `analyze_${telemetryScanSource(activeScanMode)}`,
         code: failure.kind,
       });
     }
-  }, [photoUri, queuedInput, scanId, scanMode]);
+  }, [barcodeInput, descriptionInput, photoUri, queuedInput, scanId, scanMode]);
 
   const resumeLatestAnalysis = useCallback(async () => {
     const queue = await loadAnalysisQueue();
@@ -308,6 +445,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     setScanId(makeScanId());
     setScanMode('demo');
     setQueuedInput(null);
+    setDescriptionInput('');
+    setBarcodeInput('');
     setMealPortionState(1);
     setAnalysisStatus('idle');
     setAnalysisError(null);
@@ -318,15 +457,20 @@ export function AppProvider({ children }: PropsWithChildren) {
     deleteTemporaryPhoto(photoUriRef.current);
     photoUriRef.current = null;
     scanModeRef.current = 'demo';
-    setUserName('Alex');
+    setProfile(DEFAULT_PROFILE);
     setTargets(DEFAULT_TARGETS);
-    setMeals(INITIAL_MEALS);
+    setMeals([]);
+    setMealHistory([]);
+    setFreeScanUsed(false);
+    setWeightEntries([]);
     setDetectedItems(DETECTED_ITEMS);
     setMealTitle('Hähnchen-Reis-Bowl');
     setPhotoUri(null);
     setScanId(makeScanId());
     setScanMode('demo');
     setQueuedInput(null);
+    setDescriptionInput('');
+    setBarcodeInput('');
     setMealPortionState(1);
     setAnalysisStatus('idle');
     setAnalysisError(null);
@@ -343,20 +487,30 @@ export function AppProvider({ children }: PropsWithChildren) {
       date: localDateKey(now),
       savedAt: now.toISOString(),
     };
-    setMeals(await saveSyncedMeal(persistedMeal));
+    await saveSyncedMeal(persistedMeal);
+    setMeals((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
+    setMealHistory((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
+    setFreeScanUsed(true);
   }, [detectedItems, scannedMeal]);
 
   const value = useMemo<AppContextValue>(
     () => ({
       userName,
+      profile,
+      hydrationReady,
       targets,
       meals,
+      mealHistory,
+      weightEntries,
       consumed,
       remaining,
       detectedItems,
       scannedMeal: { ...scannedMeal, ...nutritionFromItems(detectedItems) },
       photoUri,
+      scanMode,
       hasLoggedScan,
+      hasEverLoggedScan,
+      isCurrentScanLogged,
       mealPortion,
       analysisStatus,
       analysisError,
@@ -364,8 +518,12 @@ export function AppProvider({ children }: PropsWithChildren) {
       pendingAnalysisCount,
       syncMode,
       refreshCloudState,
+      completeOnboarding,
+      addWeightEntry,
       setCapturedPhoto,
       startDemoScan,
+      startDescriptionScan,
+      startBarcodeScan,
       analyzeCurrentPhoto,
       resumeLatestAnalysis,
       adjustItem,
@@ -375,7 +533,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       resetAfterAccountDeletion,
       logScannedMeal,
     }),
-    [analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, consumed, detectedItems, hasLoggedScan, logScannedMeal, mealPortion, meals, pendingAnalysisCount, photoUri, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scannedMeal, setCapturedPhoto, startDemoScan, syncMode, targets, userName],
+    [addWeightEntry, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, detectedItems, hasEverLoggedScan, hasLoggedScan, hydrationReady, isCurrentScanLogged, logScannedMeal, mealHistory, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

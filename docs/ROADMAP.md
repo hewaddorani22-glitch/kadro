@@ -5,6 +5,7 @@
 - [x] Kadro name, mark, app icon, and exact brand tokens
 - [x] German product UI
 - [x] Six-step personalized onboarding with visible wellness guardrails
+- [x] Persist onboarding completion, calculate real targets from the entered profile, and apply saved preferences to recommendations
 - [x] Today dashboard with derived calories and macros
 - [x] Central full-screen camera flow with permission and demo states
 - [x] Staged analyzing state
@@ -13,10 +14,12 @@
 - [x] Zuhause, Supermarkt, and Unterwegs recommendation contexts
 - [x] Exactly three suggestions per context
 - [x] Progress and profile screens
+- [x] Replace placeholder progress metrics with saved weight entries and actual meal history
 - [x] Transparent mock paywall
 - [x] Expo Go compatibility on SDK 54
 - [x] TypeScript, Expo Doctor, web export, and iOS bundle checks
 - [x] Typed service contracts for analysis, nutrition lookup, persistence, retry, and recommendations
+- [x] Real Describe and camera Barcode fallbacks plus lifetime one-free-scan enforcement
 - [x] Credentialed real-photo smoke test on an iPhone with OpenRouter and USDA
 
 ## Day 2: real meal intelligence
@@ -27,6 +30,8 @@ Priority order:
 2. [x] Return structured detected foods, portions, and confidence from a multimodal model.
 3. [x] Resolve normalized nutrition through USDA FoodData Central for fresh food.
 4. [x] Add Open Food Facts as the packaged-food and barcode source.
+   - [x] Add the user-facing Expo Camera barcode mode and 100-g correction handoff.
+   - [x] Add a structured meal-description fallback through the same USDA boundary.
 5. [x] Preserve the existing confirmation UI as the correction layer.
 6. [x] Save the confirmed meal and reload Today from the repository.
 7. [x] Add a local-first retry queue plus unclear-image and multiple-dish error states.
@@ -51,6 +56,7 @@ Acceptance criteria:
 - [x] RLS, least-privilege grants, constraints, and user/date indexes on every exposed table
 - [x] Local-first confirmed-meal persistence with background cloud synchronization
 - [x] Remaining macro calculation from cloud-hydrated targets and meals
+- [x] Sync the actual onboarding profile, target, and preferences instead of display-only defaults
 - [x] Exactly three deterministic catalog recommendations from the persisted daily state
 - [x] Structured recommendation impressions plus acceptance/rejection feedback adapter
 - [x] Create the dedicated Kadro Supabase project, enable anonymous auth, apply the migration, and run live RLS tests
@@ -83,6 +89,9 @@ Acceptance criteria:
 - [ ] Publish the landing page after legal contact details are complete
 - [x] EAS production/preview configuration and App Store metadata/screenshot handoff
 - [ ] Build and submit TestFlight after Expo and Apple Developer authentication; capture final native screenshots from that build
+- [ ] Re-check the current transitive Expo/Metro npm advisories during an isolated SDK upgrade; do not force-upgrade this Expo Go branch to SDK 57
+
+The full core-plus-33-section audit is maintained in `docs/PLAN_34_AUDIT.md`. The source plan contains no fifth build day.
 
 ## Explicitly out of scope for v0.1
 

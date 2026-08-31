@@ -3,7 +3,7 @@ import PostHog from 'posthog-react-native';
 import { AnalysisErrorKind } from '@/services/contracts';
 import { MealContext } from '@/types/nutrition';
 
-type ScanSource = 'camera' | 'demo' | 'queued_retry';
+type ScanSource = 'camera' | 'demo' | 'queued_retry' | 'description' | 'barcode';
 type CountBucket = '1' | '2-3' | '4+';
 type BillingMode = 'preview' | 'test_store' | 'native_store' | 'web';
 

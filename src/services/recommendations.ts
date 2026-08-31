@@ -6,6 +6,23 @@ type CatalogEntry = Omit<MealSuggestion, 'contexts' | 'preferences' | 'source'> 
   tags: string[];
 };
 
+const porkWords = /schwein|speck|schinken|salami/i;
+const lactoseWords = /skyr|joghurt|käse|quark|kefir|milch|mozzarella|ricotta|halloumi|frischkäse/i;
+
+function matchesDietaryConstraints(entry: CatalogEntry, preferences: string[]) {
+  const copy = `${entry.title} ${entry.detail}`;
+  if (preferences.includes('vegetarian') && !entry.tags.some((tag) => tag === 'vegetarian' || tag === 'vegan')) return false;
+  if (preferences.includes('pork-free') && porkWords.test(copy)) return false;
+  if (preferences.includes('lactose-free') && lactoseWords.test(copy)) return false;
+  return true;
+}
+
+function isQuick(entry: CatalogEntry) {
+  if (/direkt|ohne kochen|mikrowelle/i.test(entry.time)) return true;
+  const minutes = Number(entry.time.match(/\d+/)?.[0] ?? 99);
+  return minutes <= 20;
+}
+
 function score(entry: CatalogEntry, remaining: Nutrition, preferences: string[]) {
   const calorieTarget = Math.min(550, Math.max(380, remaining.calories * 0.38));
   const proteinTarget = Math.min(45, Math.max(28, remaining.protein * 0.48));
@@ -13,7 +30,8 @@ function score(entry: CatalogEntry, remaining: Nutrition, preferences: string[])
     + Math.abs(entry.protein - proteinTarget) / 12
     + Math.max(0, entry.fat - remaining.fat * 0.35) / 10;
   const preferenceBonus = preferences.some((preference) => entry.tags.includes(preference)) ? -1.5 : 0;
-  return macroDistance + preferenceBonus;
+  const quickBonus = preferences.includes('quick') && isQuick(entry) ? -1.2 : 0;
+  return macroDistance + preferenceBonus + quickBonus;
 }
 
 export function recommendMeals(
@@ -23,6 +41,7 @@ export function recommendMeals(
 ): MealSuggestion[] {
   return (catalog as CatalogEntry[])
     .filter((entry) => entry.context === context)
+    .filter((entry) => matchesDietaryConstraints(entry, preferences))
     .map((entry) => ({ entry, score: score(entry, remaining, preferences) }))
     .sort((a, b) => a.score - b.score || a.entry.id.localeCompare(b.entry.id))
     .slice(0, 3)
@@ -33,4 +52,3 @@ export function recommendMeals(
       source: { provider: 'kadro-catalog', label: 'Kadro-Katalog · geprüfte Schätzung' },
     }));
 }
-

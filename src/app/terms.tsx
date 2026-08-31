@@ -4,7 +4,7 @@ const sections: LegalSection[] = [
   {
     title: '1. Leistungsumfang',
     paragraphs: [
-      'Kadro ist ein allgemeines Wellness- und Planungstool. Die App schätzt sichtbare Lebensmittel und Nährwerte, berechnet einen Tagesrahmen und schlägt passende nächste Mahlzeiten aus einer überprüften Bibliothek vor.',
+      'Kadro ist ein allgemeines Wellness- und Planungstool. Die App strukturiert fotografierte oder beschriebene Lebensmittel beziehungsweise verpackte Produkte per Barcode, schätzt Nährwerte, berechnet einen Tagesrahmen und schlägt passende nächste Mahlzeiten aus einer überprüften Bibliothek vor.',
       'Alle Angaben sind Schätzungen. Du kannst erkannte Zutaten und Portionsgrößen vor dem Speichern korrigieren.',
     ],
   },

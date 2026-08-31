@@ -1,12 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { PendingAnalysis } from '@/services/contracts';
-import { INITIAL_MEALS } from '@/services/mockNutrition';
-import { Meal } from '@/types/nutrition';
+import { DEFAULT_PROFILE } from '@/services/personalization';
+import { Meal, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 
 const MEALS_KEY = '@kadro/meals:v1';
 const QUEUE_KEY = '@kadro/analysis-queue:v1';
+const PROFILE_KEY = '@kadro/profile:v1';
+const WEIGHTS_KEY = '@kadro/weight-entries:v1';
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -19,13 +21,19 @@ async function readJson<T>(key: string, fallback: T): Promise<T> {
 
 export async function loadMeals(): Promise<Meal[]> {
   const date = localDateKey();
-  const scans = await loadStoredScans(date);
-  return [...INITIAL_MEALS, ...scans];
+  return loadStoredScans(date);
 }
 
 export async function loadStoredScans(date = localDateKey()): Promise<Meal[]> {
   const stored = await readJson<Meal[]>(MEALS_KEY, []);
   return stored.filter((meal) => meal.origin === 'scan' && meal.date === date);
+}
+
+export async function loadAllStoredScans(): Promise<Meal[]> {
+  const stored = await readJson<Meal[]>(MEALS_KEY, []);
+  return stored
+    .filter((meal) => meal.origin === 'scan')
+    .sort((a, b) => (a.savedAt ?? '').localeCompare(b.savedAt ?? ''));
 }
 
 export async function saveMeal(meal: Meal): Promise<Meal[]> {
@@ -53,6 +61,35 @@ export async function removeQueuedAnalysis(id: string): Promise<number> {
   return next.length;
 }
 
+export async function loadProfile(): Promise<UserProfile> {
+  const stored = await readJson<Partial<UserProfile> | null>(PROFILE_KEY, null);
+  if (!stored) return DEFAULT_PROFILE;
+  return {
+    ...DEFAULT_PROFILE,
+    ...stored,
+    preferences: Array.isArray(stored.preferences) ? stored.preferences.filter((item): item is string => typeof item === 'string') : [],
+  };
+}
+
+export async function saveProfile(profile: UserProfile) {
+  await AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+}
+
+export async function loadWeightEntries(): Promise<WeightEntry[]> {
+  const stored = await readJson<WeightEntry[]>(WEIGHTS_KEY, []);
+  return stored
+    .filter((entry) => /^\d{4}-\d{2}-\d{2}$/.test(entry.date) && Number.isFinite(entry.weightKg) && entry.weightKg >= 35 && entry.weightKg <= 350)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export async function saveWeightEntry(entry: WeightEntry): Promise<WeightEntry[]> {
+  const current = await loadWeightEntries();
+  const next = [...current.filter((item) => item.date !== entry.date), entry]
+    .sort((a, b) => a.date.localeCompare(b.date));
+  await AsyncStorage.setItem(WEIGHTS_KEY, JSON.stringify(next));
+  return next;
+}
+
 export async function clearLocalKadroData() {
-  await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY]);
+  await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY]);
 }

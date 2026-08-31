@@ -13,8 +13,8 @@ import { formatNumber } from '@/utils/format';
 
 export default function ResultScreen() {
   const router = useRouter();
-  const { consumed, hasLoggedScan, logScannedMeal, photoUri, remaining, scannedMeal, targets } = useApp();
-  const projected = hasLoggedScan
+  const { consumed, isCurrentScanLogged, logScannedMeal, photoUri, remaining, scanMode, scannedMeal, targets } = useApp();
+  const projected = isCurrentScanLogged
     ? remaining
     : getRemaining(targets, {
       calories: consumed.calories + scannedMeal.calories,
@@ -22,14 +22,25 @@ export default function ResultScreen() {
       carbs: consumed.carbs + scannedMeal.carbs,
       fat: consumed.fat + scannedMeal.fat,
     });
-  const startingRemaining = hasLoggedScan
+  const startingRemaining = isCurrentScanLogged
     ? Math.min(targets.calories, projected.calories + scannedMeal.calories)
     : remaining.calories;
+  const calorieCenter = Math.round(Math.min(550, Math.max(380, projected.calories * 0.38)) / 10) * 10;
+  const proteinCenter = Math.round(Math.min(45, Math.max(28, projected.protein * 0.48)) / 5) * 5;
   const mealProgress = useRef(new Animated.Value(0)).current;
   const remainingProgress = useRef(new Animated.Value(0)).current;
   const recommendationReveal = useRef(new Animated.Value(0)).current;
+  const savedOnArrival = useRef(false);
   const [displayedCalories, setDisplayedCalories] = useState(0);
   const [displayedRemaining, setDisplayedRemaining] = useState(startingRemaining);
+
+  useEffect(() => {
+    if (savedOnArrival.current || isCurrentScanLogged) return;
+    savedOnArrival.current = true;
+    void logScannedMeal().catch(() => {
+      savedOnArrival.current = false;
+    });
+  }, [isCurrentScanLogged, logScannedMeal]);
 
   useEffect(() => {
     const mealListener = mealProgress.addListener(({ value }) => {
@@ -83,13 +94,13 @@ export default function ResultScreen() {
   }, [mealProgress, projected.calories, recommendationReveal, remainingProgress, scannedMeal.calories, startingRemaining]);
 
   const showOptions = async () => {
-    await logScannedMeal();
+    if (!isCurrentScanLogged) await logScannedMeal();
     trackEvent('meal saved', { next_destination: 'recommendations' });
     router.replace({ pathname: '/(tabs)/plan', params: { context: 'home', fromScan: '1' } });
   };
 
   const saveForLater = async () => {
-    await logScannedMeal();
+    if (!isCurrentScanLogged) await logScannedMeal();
     trackEvent('meal saved', { next_destination: 'today' });
     router.replace('/(tabs)/today');
   };
@@ -113,7 +124,7 @@ export default function ResultScreen() {
         </Pressable>
       </View>
 
-      <MealPhoto height={270} uri={photoUri} />
+      <MealPhoto height={270} placeholder={scanMode === 'barcode' ? 'barcode' : scanMode === 'description' ? 'description' : 'demo'} uri={photoUri} />
 
       <View style={styles.resultHeading}>
         <View style={styles.titleRow}>
@@ -135,7 +146,7 @@ export default function ResultScreen() {
         <MacroResult label="Protein" value={scannedMeal.protein} unit="g" />
         <MacroResult label="Kohlenh." value={scannedMeal.carbs} unit="g" />
         <MacroResult label="Fett" value={scannedMeal.fat} unit="g" />
-        <MacroResult label="Ballastst." value={scannedMeal.fiber ?? 8} unit="g" />
+        <MacroResult label="Ballastst." value={scannedMeal.fiber ?? 0} unit="g" />
       </View>
 
       <View style={styles.section}>
@@ -195,11 +206,11 @@ export default function ResultScreen() {
         </View>
         <View style={styles.aimRow}>
           <View style={styles.aimBlock}>
-            <Text style={styles.aimValue}>450–550</Text>
+            <Text style={styles.aimValue}>{Math.max(300, calorieCenter - 50)}–{calorieCenter + 50}</Text>
             <Text style={styles.aimLabel}>Kilokalorien</Text>
           </View>
           <View style={styles.aimBlock}>
-            <Text style={styles.aimValue}>35–45 g</Text>
+            <Text style={styles.aimValue}>{Math.max(20, proteinCenter - 5)}–{proteinCenter + 5} g</Text>
             <Text style={styles.aimLabel}>Protein</Text>
           </View>
           <View style={styles.aimBlock}>
@@ -211,7 +222,7 @@ export default function ResultScreen() {
       </Card>
       </Animated.View>
 
-      <PrimaryButton label="Mahlzeit speichern" onPress={saveForLater} variant="ghost" />
+      <PrimaryButton label="Zum Tagesstand" onPress={saveForLater} variant="ghost" />
       <Text style={styles.estimateNote}>Nährwerte sind Schätzungen. Du behältst die Kontrolle über jede Zutat und Portion.</Text>
     </Screen>
   );

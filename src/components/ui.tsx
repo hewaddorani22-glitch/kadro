@@ -168,8 +168,20 @@ export function ConfidenceBadge({ uncertain = false }: { uncertain?: boolean }) 
   );
 }
 
-export function MealPhoto({ uri, height = 250, style }: { uri?: string | null; height?: number; style?: StyleProp<ViewStyle> }) {
+export function MealPhoto({ uri, height = 250, placeholder = 'demo', style }: { uri?: string | null; height?: number; placeholder?: 'demo' | 'description' | 'barcode'; style?: StyleProp<ViewStyle> }) {
   const source: ImageSourcePropType = uri ? { uri } : require('../../assets/meal-bowl.jpg');
+  if (!uri && placeholder !== 'demo') {
+    const barcode = placeholder === 'barcode';
+    return (
+      <View accessibilityLabel={barcode ? 'Mahlzeit über Barcode erfasst' : 'Mahlzeit per Beschreibung erfasst'} accessible style={[styles.photoFrame, styles.photoPlaceholder, { height }, style]}>
+        <View style={styles.photoPlaceholderIcon}>
+          <Ionicons color={colors.text} name={barcode ? 'barcode-outline' : 'create-outline'} size={36} />
+        </View>
+        <Text style={styles.photoPlaceholderTitle}>{barcode ? 'Barcode erkannt' : 'Mahlzeit beschrieben'}</Text>
+        <Text style={styles.photoPlaceholderText}>{barcode ? 'Die Portion bestätigst du im nächsten Schritt.' : 'Deine Angaben werden mit Nährwertdaten abgeglichen.'}</Text>
+      </View>
+    );
+  }
   return (
     <View style={[styles.photoFrame, { height }, style]}>
       <Image
@@ -370,6 +382,10 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     backgroundColor: colors.cameraSoft,
   },
+  photoPlaceholder: { backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  photoPlaceholderIcon: { width: 70, height: 70, borderRadius: 26, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  photoPlaceholderTitle: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 13 },
+  photoPlaceholderText: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 5, maxWidth: 260 },
   photo: {
     width: '100%',
     height: '100%',

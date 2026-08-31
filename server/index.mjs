@@ -79,7 +79,7 @@ function extractResponseText(response) {
   throw new Error('missing_structured_output');
 }
 
-async function detectFoods({ imageBase64, mimeType }) {
+async function requestDetection(content) {
   if (!['openai', 'openrouter'].includes(aiProvider)) throw new Error('ai_provider_invalid');
   if (!aiApiKey) throw new Error('ai_key_missing');
   const response = await fetch(aiApiUrl, {
@@ -102,13 +102,7 @@ async function detectFoods({ imageBase64, mimeType }) {
       } : {}),
       input: [{
         role: 'user',
-        content: [
-          {
-            type: 'input_text',
-            text: 'Analysiere genau eine sichtbare Mahlzeit. Erkenne nur sichtbare Lebensmittel, schätze Gramm-Portionen, markiere unsichere Saucen als optional und gib deutsche Namen plus kurze englische USDA-Suchbegriffe aus. Gib keine Kalorien oder Makros aus. Bei Unschärfe clarity=unclear; bei mehreren getrennten Tellern dishCount>1.',
-          },
-          { type: 'input_image', image_url: `data:${mimeType};base64,${imageBase64}`, detail: 'low' },
-        ],
+        content,
       }],
       text: {
         format: {
@@ -126,6 +120,23 @@ async function detectFoods({ imageBase64, mimeType }) {
     throw new Error(`${aiProvider}_${response.status}:${detail.slice(0, 300)}`);
   }
   return JSON.parse(extractResponseText(await response.json()));
+}
+
+async function detectFoods({ imageBase64, mimeType }) {
+  return requestDetection([
+    {
+      type: 'input_text',
+      text: 'Analysiere genau eine sichtbare Mahlzeit. Erkenne nur sichtbare Lebensmittel, schätze Gramm-Portionen, markiere unsichere Saucen als optional und gib deutsche Namen plus kurze englische USDA-Suchbegriffe aus. Gib keine Kalorien oder Makros aus. Bei Unschärfe clarity=unclear; bei mehreren getrennten Tellern dishCount>1.',
+    },
+    { type: 'input_image', image_url: `data:${mimeType};base64,${imageBase64}`, detail: 'low' },
+  ]);
+}
+
+async function detectDescription(description) {
+  return requestDetection([{
+    type: 'input_text',
+    text: `Strukturiere genau die beschriebene Mahlzeit in Zutaten und realistische Gramm-Portionen. Erfinde keine nicht genannten Lebensmittel. Markiere unklare Mengen oder Saucen als optional bzw. medium confidence. Gib deutsche Namen und kurze englische USDA-Suchbegriffe aus, aber keine Kalorien oder Makros. Beschreibung: ${description}`,
+  }]);
 }
 
 async function resolveUsdaItem(item, index) {
@@ -146,6 +157,10 @@ async function analyzeMeal(input) {
   }
 
   const detection = await detectFoods(input);
+  return resolveDetection(detection);
+}
+
+async function resolveDetection(detection) {
   const classificationError = classifyDetection(detection);
   if (classificationError) return classificationError;
 
@@ -154,6 +169,14 @@ async function analyzeMeal(input) {
     ? ['Mindestens eine Zutat konnte in USDA nicht eindeutig zugeordnet werden und muss geprüft werden.']
     : [];
   return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };
+}
+
+async function analyzeDescription(input) {
+  const description = typeof input?.description === 'string' ? input.description.trim() : '';
+  if (description.length < 3 || description.length > 500) {
+    return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
+  }
+  return resolveDetection(await detectDescription(description));
 }
 
 async function lookupBarcode(barcode) {
@@ -199,6 +222,10 @@ const server = createServer(async (request, response) => {
   try {
     if (request.method === 'POST' && request.url === '/v1/analyze') {
       const result = await analyzeMeal(await readBody(request));
+      return json(response, result.status, result.body);
+    }
+    if (request.method === 'POST' && request.url === '/v1/describe') {
+      const result = await analyzeDescription(await readBody(request));
       return json(response, result.status, result.body);
     }
     const barcodeMatch = request.method === 'GET' && request.url?.match(/^\/v1\/barcode\/(\d{7,14})$/);

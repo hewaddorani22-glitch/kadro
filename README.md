@@ -8,17 +8,19 @@ An iOS-first, production-shaped nutrition MVP built with React Native, Expo Rout
 
 ## Included product loop
 
-1. Six-step German onboarding with transparent wellness guardrails
-2. Daily calorie and macro dashboard with no empty start state
-3. Full-screen meal camera with a deterministic demo fallback
+1. Six-step German onboarding that persists a real personalized target and transparent wellness guardrails
+2. Daily calorie and macro dashboard with an honest empty timeline before the first meal
+3. Full-screen meal camera with real Describe, Barcode, and deterministic demo fallbacks
 4. Real photo compression plus structured vision analysis through a local server boundary
 5. One-tap `weniger / passt / mehr` portion confirmation plus optional gram-level editing
 6. Animated meal result with confidence and estimated nutrition
 7. Recalculated daily balance
 8. Three deterministic contextual suggestions from a 200-meal German catalog
-9. Progress, profile and transparent subscription paywall
+9. Real local weight/meal progress, profile and transparent subscription paywall
 
-The demo meal remains available as a deterministic fallback. Real scans use OpenRouter or direct OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. The barcode adapter reads packaged-food data from Open Food Facts. RevenueCat-backed purchase and restore actions use a non-billing preview until its public SDK keys and offering are configured. Typed integration contracts keep raw provider payloads out of the UI.
+The demo meal remains available as a deterministic fallback. Real scans use OpenRouter or direct OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. Typed meal descriptions use the same structured detection and USDA boundary. The barcode adapter reads packaged-food data from Open Food Facts and starts at 100 g for explicit correction. RevenueCat-backed purchase and restore actions use a non-billing preview until its public SDK keys and offering are configured. Typed integration contracts keep raw provider payloads out of the UI.
+
+The first complete scan is free. A confirmed result is saved automatically so closing the screen cannot silently lose the meal; subsequent scans require an active `kadro_pro` RevenueCat entitlement. The paywall still appears only after the first result and recommendation Aha moment.
 
 When configured, Supabase provides an anonymous authenticated session, RLS-isolated profiles, daily targets, confirmed meals, ingredients, recommendation impressions, and acceptance/rejection feedback. The profile screen can upgrade that same anonymous user ID to a verified email/password account without placing a login wall before the first scan. Without Supabase configuration the app remains fully local-first.
 
@@ -61,7 +63,7 @@ npm run api
 npx expo start --clear
 ```
 
-Check the local gateway with `curl http://127.0.0.1:8787/health`. The right-hand Play button in the scanner always runs the deterministic demo and needs no keys.
+Check the local gateway with `curl http://127.0.0.1:8787/health`. The right-hand Play button in Photo mode always runs the deterministic demo and needs no keys. Describe and Barcode use the same local gateway URL as live photo analysis.
 
 ## Enable Day 3 cloud sync
 
@@ -145,6 +147,8 @@ npm run verify
 
 The gate includes a deterministic 30-case Day 4 matrix: 25 representative German meals plus poor-light, blurred, partial-plate, multiple-dish, and unknown-food behavior. This protects mapping and error handling, but it does not replace the pending review of at least 30 real iPhone meal photos.
 
+The complete plan audit, including the external TestFlight and legal gates, lives in [docs/PLAN_34_AUDIT.md](./docs/PLAN_34_AUDIT.md).
+
 ## Prepare TestFlight
 
 The repository includes `eas.json` with internal-preview and production profiles. The remaining authenticated steps are creating/linking the Expo EAS project, adding production environment values, creating App Store Connect subscriptions, and running the native StoreKit sandbox flow. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
@@ -168,4 +172,5 @@ Contributions should follow [CONTRIBUTING.md](./CONTRIBUTING.md). Pull requests 
 - Versioned wellness-data consent, privacy/terms drafts, and authenticated account deletion with local cleanup
 - Confirmed meal records never retain photos; only a compressed failed scan can live temporarily in the local retry queue
 - Confirmed meals survive restarts in local AsyncStorage
+- Onboarding, calculated targets, preferences, weight entries, and the one-free-scan boundary survive restarts
 - Failed network scans are queued locally (maximum three) until the user explicitly retries

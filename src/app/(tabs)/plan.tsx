@@ -23,7 +23,7 @@ const contexts: { id: MealContext; title: string; detail: string; icon: keyof ty
 export default function PlanScreen() {
   const params = useLocalSearchParams<{ context?: string; fromScan?: string }>();
   const router = useRouter();
-  const { hasLoggedScan, remaining } = useApp();
+  const { hasLoggedScan, profile, remaining } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const [selected, setSelected] = useState<MealContext | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
@@ -35,7 +35,9 @@ export default function PlanScreen() {
     }
   }, [params.context]);
 
-  const suggestions = useMemo(() => (selected ? recommendMeals(selected, remaining) : []), [remaining, selected]);
+  const suggestions = useMemo(() => (selected ? recommendMeals(selected, remaining, profile.preferences) : []), [profile.preferences, remaining, selected]);
+  const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
+  const proteinCenter = Math.round(Math.min(45, Math.max(28, remaining.protein * 0.48)) / 5) * 5;
 
   useEffect(() => {
     if (!selected || suggestions.length !== 3) return;
@@ -115,7 +117,7 @@ export default function PlanScreen() {
           <View style={styles.resultsHeading}>
             <View>
               <Text style={styles.resultsTitle}>3 Optionen für heute</Text>
-              <Text style={styles.resultsMeta}>Ziel · 450–550 kcal · 35–45 g Protein</Text>
+              <Text style={styles.resultsMeta}>Ziel · {Math.max(300, calorieCenter - 50)}–{calorieCenter + 50} kcal · {Math.max(20, proteinCenter - 5)}–{proteinCenter + 5} g Protein</Text>
             </View>
             <Ionicons color={colors.accentDeep} name="checkmark-done" size={24} />
           </View>

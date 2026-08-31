@@ -53,3 +53,23 @@ export type MealSuggestion = Nutrition & {
 };
 
 export type PortionFactor = 0.7 | 1 | 1.4;
+
+export type NutritionGoal = 'lose' | 'maintain' | 'gain';
+
+export type ActivityLevel = 'low' | 'light' | 'high';
+
+export type UserProfile = {
+  displayName: string;
+  goal: NutritionGoal;
+  age: number;
+  heightCm: number;
+  weightKg: number;
+  activityLevel: ActivityLevel;
+  preferences: string[];
+  completedAt: string | null;
+};
+
+export type WeightEntry = {
+  date: string;
+  weightKg: number;
+};

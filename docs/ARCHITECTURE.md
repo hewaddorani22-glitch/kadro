@@ -7,7 +7,7 @@ Onboarding
    ↓
 Today dashboard
    ↓
-Camera / demo capture
+Camera / description / barcode / demo capture
    ↓
 Local resize/compression
    ↓
@@ -36,14 +36,16 @@ Expo Router uses `src/app` as the route root.
 - `src/app/index.tsx`: initial redirect to onboarding.
 - `src/app/onboarding.tsx`: six-step local German onboarding flow.
 - `src/app/(tabs)/_layout.tsx`: Today, Plan, Scan, Progress, and Profile tabs.
-- `src/app/(tabs)/scan.tsx`: camera preview and demo capture fallback.
+- `src/app/(tabs)/scan.tsx`: photo-first camera plus real description, barcode, and demo fallbacks; the second completed scan is gated by RevenueCat.
 - `src/app/analyzing.tsx`: staged mock analysis animation.
 - `src/app/confirm.tsx`: ingredient inclusion, one-tap meal portion sizing, and optional gram-level correction.
-- `src/app/result.tsx`: animated meal estimate, projected remaining targets, and delayed recommendation reveal.
+- `src/app/result.tsx`: animated meal estimate, projected remaining targets, automatic idempotent meal save, and delayed recommendation reveal.
 - `src/app/paywall.tsx`: transparent annual/monthly choice backed by RevenueCat Offering prices, purchase, and user-triggered restore.
 - `src/app/privacy.tsx` and `src/app/terms.tsx`: in-app legal drafts linked from onboarding, Profile, and the paywall.
 - `src/app/account-deletion.tsx`: explicit irreversible deletion confirmation and subscription-separation warning.
+- `src/app/(tabs)/progress.tsx`: real locally persisted weight history and meal-derived progress instead of fixture achievements.
 - `src/components/AccountLinkCard.tsx`: anonymous account upgrade, email verification, password setup, and existing-account recovery from Profile.
+- `src/components/AppRouteGuard.tsx`: keeps analysis, progress, account, and paywall deep links behind completed onboarding consent while leaving the legal drafts readable beforehand.
 
 Root stack routes sit above the tab navigator so camera analysis, confirmation, result, and paywall can focus the user on one step.
 
@@ -51,14 +53,16 @@ Root stack routes sit above the tab navigator so camera analysis, confirmation, 
 
 `AppProvider` owns active UI state, hydrates local storage first, and then optionally reconciles with Supabase:
 
-- user targets;
+- saved user profile, onboarding completion, targets, and dietary preferences;
 - logged meals;
+- 90-day meal history and local weight entries;
 - detected meal items;
 - temporary compressed photo URI;
 - current analysis status and local retry count;
 - derived consumed and remaining nutrition.
 - current quick portion selection (`0.7×`, `1×`, or `1.4×`; `null` after custom gram edits).
-- sync state (`local`, `syncing`, `cloud`, or `error`).
+- sync state (`local`, `syncing`, `cloud`, or `error`);
+- lifetime free-scan usage derived from local or cloud meal existence.
 
 `mockNutrition.ts` owns the deterministic scan fixture and pure calculations:
 
@@ -67,7 +71,7 @@ Root stack routes sit above the tab navigator so camera analysis, confirmation, 
 - `sumMeals` derives daily consumption;
 - `getRemaining` derives the daily balance;
 
-`recommendations.ts` scores the 200-entry German catalog by context and the user's remaining calories, protein, and fat. It sorts deterministically and returns exactly three entries; no model invents nutrition values. The catalog validator enforces balanced context coverage, known preference tags, plausible nutrition ranges, calorie-to-macro consistency, and 90 deterministic recommendation sets across 30 budget/preference scenarios.
+`recommendations.ts` scores the 200-entry German catalog by context, remaining calories/protein/fat, and saved preferences. Vegetarian, pork-free, and lactose-free choices are hard constraints; high-protein and quick choices affect ranking. It sorts deterministically and returns exactly three entries; no model invents nutrition values. The catalog validator enforces balanced context coverage, known catalog tags, plausible nutrition ranges, calorie-to-macro consistency, and 90 deterministic recommendation sets across 30 budget/preference scenarios.
 
 Screens must not maintain separate copies of these totals.
 
@@ -84,14 +88,14 @@ RecommendationService
 
 Current responsibilities:
 
-- `mealAnalysis.ts`: client-side compression, temporary-file cleanup, gateway calls, and typed errors.
-- `server/index.mjs`: secret-bearing local gateway. OpenRouter or direct OpenAI returns food identity, portion estimate, and confidence only; USDA provides normalized calories and macros; Open Food Facts provides packaged-food barcode data. OpenRouter routing requires supported parameters, denies data collection, and defaults to ZDR.
-- `localRepository.ts`: confirmed meals and a maximum-three local retry queue in AsyncStorage.
+- `mealAnalysis.ts`: client-side compression, temporary-file cleanup, photo/description/barcode gateway calls, mapping, and typed errors.
+- `server/index.mjs`: secret-bearing local gateway. OpenRouter or direct OpenAI returns food identity, portion estimate, and confidence from a photo or description only; USDA provides normalized calories and macros; Open Food Facts provides packaged-food barcode data. OpenRouter routing requires supported parameters, denies data collection, and defaults to ZDR.
+- `localRepository.ts`: profile/onboarding, weight entries, confirmed meals, lifetime scan history, and a maximum-three local retry queue in AsyncStorage.
 - `supabaseClient.ts`: optional public-client initialization, persisted React Native sessions, foreground token refresh, and anonymous authenticated bootstrap.
 - `accountLinking.ts`: ID-preserving email upgrade with `updateUser`, email-change verification, password setup, and existing-account sign-in.
 - `consent.ts`: versioned local wellness-data consent mirrored to the user's RLS-protected profile.
 - `accountDeletion.ts`: authenticated Edge Function invocation, local cleanup, analytics reset/opt-out, and deliberate cloud-disable state after deletion.
-- `cloudRepository.ts`: maps Kadro domain records to RLS-protected Supabase rows and records recommendation feedback.
+- `cloudRepository.ts`: maps the actual profile/targets and meal domain records to RLS-protected Supabase rows, checks cloud scan history for the free boundary, and records recommendation feedback.
 - `syncRepository.ts`: preserves local-first writes, uploads pending local scans during hydration, and merges cloud meals back into domain state.
 - `subscription.ts` + `SubscriptionContext.tsx`: platform/Test Store key selection, Supabase-user identity, current Offering, `kadro_pro` entitlement state, purchase cancellation, and user-triggered restore. Without public SDK configuration, the paywall remains a clearly labeled non-billing preview.
 - `telemetry.ts`: optional PostHog client with a typed event allowlist, anonymous-only profiles, no health-value properties, persisted opt-in/out, and scrubbed operational error capture. It is a no-op when the public project token is absent.

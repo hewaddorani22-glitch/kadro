@@ -14,15 +14,15 @@ const sections: LegalSection[] = [
   {
     title: '2. Welche Daten verarbeitet werden',
     paragraphs: [
-      'Auf deinem Gerät verarbeitet Kadro deine Zielwerte, bestätigte Mahlzeiten und höchstens drei fehlgeschlagene, komprimierte Scans für einen von dir ausgelösten Wiederholungsversuch.',
-      'Wenn die Cloud aktiv ist, speichert Supabase in der EU eine zufällige Account-ID, deine Zielwerte, bestätigte Mahlzeiten, Zutaten, Empfehlungen und Feedback. Eine E-Mail-Adresse wird nur gespeichert, wenn du den Gast-Account bewusst sicherst.',
+      'Auf deinem Gerät verarbeitet Kadro dein Profil, Zielwerte, Gewichtseinträge, bestätigte Mahlzeiten und höchstens drei fehlgeschlagene, komprimierte Fotoscans für einen von dir ausgelösten Wiederholungsversuch.',
+      'Wenn die Cloud aktiv ist, speichert Supabase in der EU eine zufällige Account-ID, dein Profil, deine aktuellen Zielwerte, bestätigte Mahlzeiten, Zutaten, Empfehlungen und Feedback. Gewichtseinträge bleiben im MVP lokal; eine E-Mail-Adresse wird nur gespeichert, wenn du den Gast-Account bewusst sicherst.',
       'PostHog erhält nur freiwillig aktivierte, anonyme Funktionsereignisse und bereinigte Fehler. Fotos, E-Mail-Adressen, Lebensmittel, Kalorien, Makros und Supabase-IDs werden nicht an PostHog gesendet.',
     ],
   },
   {
     title: '3. Fotoanalyse und Empfänger',
     paragraphs: [
-      'Ein Foto wird auf dem Gerät verkleinert. Das Original wird danach verworfen. Die Arbeitskopie geht nur an den konfigurierten Kadro-Analysezugang und von dort zur Erkennung sichtbarer Lebensmittel an OpenRouter oder OpenAI. USDA FoodData Central wird anschließend nur mit Textsuchbegriffen abgefragt.',
+      'Ein Foto wird auf dem Gerät verkleinert. Das Original wird danach verworfen. Die Arbeitskopie oder deine bewusst eingegebene Mahlzeitenbeschreibung geht nur an den konfigurierten Kadro-Analysezugang und von dort zur Lebensmittel- und Portionserkennung an OpenRouter oder OpenAI. USDA FoodData Central wird anschließend nur mit Textsuchbegriffen abgefragt. Bei einem Barcode wird die Nummer über den Kadro-Analysezugang bei Open Food Facts nachgeschlagen.',
       'Bestätigte Mahlzeiten enthalten kein Foto. Die lokale Fehlerwarteschlange wird auf drei Scans begrenzt und nach erfolgreicher Analyse entfernt.',
     ],
   },
@@ -30,7 +30,7 @@ const sections: LegalSection[] = [
     title: '4. Zweck, Einwilligung und Speicherdauer',
     paragraphs: [
       'Ernährungs- und Zieldaten werden ausschließlich verarbeitet, um Schätzungen, Tagesstände und Empfehlungen für dich bereitzustellen. Deine ausdrückliche Einwilligung wird mit Zeitstempel und Hinweisversion lokal sowie bei aktiver Cloud im geschützten Profil gespeichert. Die finale Rechtsgrundlagen- und Einwilligungsprüfung bleibt vor externer Veröffentlichung erforderlich.',
-      'Lokale Daten bleiben bis zur Löschung der App-Daten oder deines Accounts erhalten. Cloud-Daten bleiben bis zur Accountlöschung erhalten. Technisch notwendige Sicherungskopien können nach den Fristen des jeweiligen Auftragsverarbeiters auslaufen.',
+      'Lokale Daten bleiben bis zur Löschung der App-Daten oder deines Accounts erhalten. Bestätigte Mahlzeiten werden lokal für den Verlauf gespeichert; die App lädt für den Cloud-Verlauf derzeit höchstens 90 Tage. Cloud-Daten bleiben bis zur Accountlöschung erhalten. Technisch notwendige Sicherungskopien können nach den Fristen des jeweiligen Auftragsverarbeiters auslaufen.',
     ],
   },
   {

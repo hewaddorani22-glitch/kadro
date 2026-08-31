@@ -1,13 +1,12 @@
-import { DailyTargets, Meal, MealContext, MealItem, MealSuggestion, Nutrition } from '@/types/nutrition';
+import { DailyTargets, Meal, MealContext, MealItem, MealSuggestion, Nutrition, UserProfile } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 
 import { ensureSupabaseUser, isSupabaseConfigured, supabase } from './supabaseClient';
 
 export type CloudProfile = {
   userId: string;
-  userName: string;
+  profile: UserProfile;
   targets: DailyTargets;
-  preferences: string[];
 };
 
 type MealItemRow = {
@@ -129,7 +128,7 @@ function mapMeal(row: MealRow): Meal {
   };
 }
 
-export async function initializeCloudProfile(defaultTargets: DailyTargets): Promise<CloudProfile | null> {
+export async function initializeCloudProfile(defaultProfile: UserProfile, defaultTargets: DailyTargets): Promise<CloudProfile | null> {
   if (!supabase || !isSupabaseConfigured) return null;
   const user = await ensureSupabaseUser();
   if (!user) return null;
@@ -138,7 +137,14 @@ export async function initializeCloudProfile(defaultTargets: DailyTargets): Prom
   const now = new Date().toISOString();
   const [profileWrite, targetWrite] = await Promise.all([
     supabase.from('profiles').upsert(
-      { user_id: user.id, display_name: 'Alex', updated_at: now },
+      {
+        user_id: user.id,
+        display_name: defaultProfile.displayName,
+        goal: defaultProfile.goal,
+        activity_level: defaultProfile.activityLevel,
+        preferences: defaultProfile.preferences,
+        updated_at: now,
+      },
       { onConflict: 'user_id', ignoreDuplicates: true },
     ),
     supabase.from('daily_targets').upsert(
@@ -158,7 +164,7 @@ export async function initializeCloudProfile(defaultTargets: DailyTargets): Prom
   if (targetWrite.error) throw targetWrite.error;
 
   const [profileResult, targetResult] = await Promise.all([
-    supabase.from('profiles').select('display_name,preferences').eq('user_id', user.id).single(),
+    supabase.from('profiles').select('display_name,goal,age,height_cm,weight_kg,activity_level,preferences,updated_at').eq('user_id', user.id).single(),
     supabase.from('daily_targets').select('calories,protein,carbs,fat').eq('user_id', user.id).eq('target_date', today).single(),
   ]);
   if (profileResult.error) throw profileResult.error;
@@ -166,10 +172,54 @@ export async function initializeCloudProfile(defaultTargets: DailyTargets): Prom
 
   return {
     userId: user.id,
-    userName: profileResult.data.display_name,
-    preferences: profileResult.data.preferences ?? [],
+    profile: {
+      displayName: profileResult.data.display_name,
+      goal: profileResult.data.goal,
+      age: Number(profileResult.data.age ?? defaultProfile.age),
+      heightCm: Number(profileResult.data.height_cm ?? defaultProfile.heightCm),
+      weightKg: Number(profileResult.data.weight_kg ?? defaultProfile.weightKg),
+      activityLevel: profileResult.data.activity_level === 'high' ? 'high' : profileResult.data.activity_level === 'low' ? 'low' : 'light',
+      preferences: profileResult.data.preferences ?? [],
+      completedAt: profileResult.data.age && profileResult.data.height_cm && profileResult.data.weight_kg
+        ? profileResult.data.updated_at
+        : null,
+    },
     targets: targetResult.data,
   };
+}
+
+export async function saveCloudProfile(profile: UserProfile, targets: DailyTargets): Promise<boolean> {
+  if (!supabase || !isSupabaseConfigured) return false;
+  const user = await ensureSupabaseUser();
+  if (!user) return false;
+
+  const now = new Date().toISOString();
+  const today = localDateKey();
+  const [profileWrite, targetWrite] = await Promise.all([
+    supabase.from('profiles').upsert({
+      user_id: user.id,
+      display_name: profile.displayName,
+      goal: profile.goal,
+      age: profile.age,
+      height_cm: profile.heightCm,
+      weight_kg: profile.weightKg,
+      activity_level: profile.activityLevel,
+      preferences: profile.preferences,
+      updated_at: now,
+    }, { onConflict: 'user_id' }),
+    supabase.from('daily_targets').upsert({
+      user_id: user.id,
+      target_date: today,
+      calories: targets.calories,
+      protein: targets.protein,
+      carbs: targets.carbs,
+      fat: targets.fat,
+      updated_at: now,
+    }, { onConflict: 'user_id,target_date' }),
+  ]);
+  if (profileWrite.error) throw profileWrite.error;
+  if (targetWrite.error) throw targetWrite.error;
+  return true;
 }
 
 export async function saveCloudMeal(meal: Meal): Promise<boolean> {
@@ -202,6 +252,36 @@ export async function loadCloudMeals(date = localDateKey()): Promise<Meal[]> {
     .order('eaten_at', { ascending: true });
   if (error) throw error;
   return (data as MealRow[]).map(mapMeal);
+}
+
+export async function loadCloudMealHistory(days = 90): Promise<Meal[]> {
+  if (!supabase || !isSupabaseConfigured) return [];
+  const user = await ensureSupabaseUser();
+  if (!user) return [];
+
+  const since = new Date();
+  since.setDate(since.getDate() - Math.max(1, days - 1));
+  const { data, error } = await supabase
+    .from('meals')
+    .select('id,title,meal_type,eaten_at,meal_date,calories,protein,carbs,fat,fiber,confidence,origin,saved_at,meal_items(id,name,amount_g,base_amount_g,portion_factor,calories,protein,carbs,fat,fiber,confidence,optional,included,source_provider,source_reference_id,source_label)')
+    .eq('user_id', user.id)
+    .gte('meal_date', localDateKey(since))
+    .order('eaten_at', { ascending: true });
+  if (error) throw error;
+  return (data as MealRow[]).map(mapMeal);
+}
+
+export async function hasCloudMeal(): Promise<boolean> {
+  if (!supabase || !isSupabaseConfigured) return false;
+  const user = await ensureSupabaseUser();
+  if (!user) return false;
+  const { data, error } = await supabase
+    .from('meals')
+    .select('id')
+    .eq('user_id', user.id)
+    .limit(1);
+  if (error) throw error;
+  return (data?.length ?? 0) > 0;
 }
 
 export async function recordRecommendationSet(

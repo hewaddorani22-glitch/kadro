@@ -20,14 +20,16 @@ Kadro measures only whether the core product loop works. `src/services/telemetry
 
 Counts are coarse buckets (`1`, `2-3`, `4+`). Events must never contain photos, local file paths, meal or ingredient names, email addresses, account IDs, free text, exact calories/macros, body measurements, goals, or provider payloads.
 
+`scan_source` is limited to the categorical values `camera`, `description`, `barcode`, `demo`, and `queued_retry`; a typed description itself is never sent.
+
 ## Privacy defaults
 
 - EU ingestion host by default.
 - Person profiles are never created and Supabase identity is never passed to PostHog.
 - Device name/model/manufacturer, locale, timezone, and screen dimensions are removed before every send.
 - GeoIP, lifecycle/touch/screen autocapture, feature flags, surveys, push capture, session replay, and persistent cross-restart session IDs are disabled.
-- Collection is off unless `EXPO_PUBLIC_POSTHOG_ENABLED=true` or the user enables it from Profile.
-- Collection defaults to opted out. The Profile switch calls PostHog's persisted `optIn`/`optOut` controls.
+- The integration is unavailable unless `EXPO_PUBLIC_POSTHOG_ENABLED=true`; even then collection defaults to opted out.
+- The Profile switch calls PostHog's persisted `optIn`/`optOut` controls, so both deployment configuration and deliberate user opt-in are required.
 - A final privacy policy and consent review are still required before external distribution.
 
 ## Error boundary

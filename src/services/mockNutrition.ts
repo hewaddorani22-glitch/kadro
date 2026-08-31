@@ -35,6 +35,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     protein: 36,
     carbs: 0,
     fat: 12,
+    fiber: 0,
     confidence: 'high',
     included: true,
     source: { provider: 'demo', label: 'Kadro Demo' },
@@ -49,6 +50,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     protein: 6,
     carbs: 62,
     fat: 1,
+    fiber: 1,
     confidence: 'high',
     included: true,
     source: { provider: 'demo', label: 'Kadro Demo' },
@@ -63,6 +65,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     protein: 2,
     carbs: 6,
     fat: 10,
+    fiber: 5,
     confidence: 'high',
     included: true,
     source: { provider: 'demo', label: 'Kadro Demo' },
@@ -77,6 +80,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     protein: 4,
     carbs: 8,
     fat: 1,
+    fiber: 1,
     confidence: 'medium',
     optional: true,
     included: true,
@@ -93,16 +97,18 @@ export function nutritionFromItems(items: MealItem[]): Nutrition {
       fat: sum.fat + item.fat,
       fiber: (sum.fiber ?? 0) + (item.fiber ?? 0),
     }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 8 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
   );
 }
 
 export function createScannedMeal(items: MealItem[], title = 'Hähnchen-Reis-Bowl', id = 'scan-chicken-bowl'): Meal {
+  const now = new Date();
+  const hour = now.getHours();
   return {
     id,
     title,
-    type: 'Lunch',
-    time: '13:24',
+    type: hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack',
+    time: new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(now),
     confidence: items.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
     items,
     origin: 'scan',

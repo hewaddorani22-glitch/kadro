@@ -21,7 +21,7 @@ Do not upgrade Expo, React, React Native, Expo Router, or other native packages 
 - `src/components/`: reusable visual components. Extend these before duplicating card, button, progress, badge, or photo patterns.
 - `src/components/KadroMark.tsx`: reusable vector brand mark used in the application UI.
 - `src/constants/theme.ts`: the design tokens and source of truth for color, spacing, radii, and shadows.
-- `src/context/AppContext.tsx`: temporary in-memory application state and derived daily nutrition values.
+- `src/context/AppContext.tsx`: hydrated local/cloud application state, personalization, progress data, scan state, and derived daily nutrition values.
 - `src/services/mockNutrition.ts`: the current mock service boundary. Real data sources should replace or sit behind this layer, not leak into UI components.
 - `src/services/contracts.ts`: typed interfaces for analysis, nutrition lookup, persistence, retry, and recommendations.
 - `src/types/nutrition.ts`: shared domain types.
@@ -65,7 +65,7 @@ For camera or navigation changes, also run the app in Expo Go and manually verif
 1. Camera permission denied and granted states.
 2. Demo capture through analyzing and confirmation.
 3. `weniger / passt / mehr` and gram-level detail correction both update the estimate.
-4. Saving the meal updates Today from 1,800 to 1,090 kcal remaining in the default fixture.
+4. Confirming the result saves it once and updates Today by exactly the corrected meal totals.
 5. Choosing a recommendation opens the mock paywall.
 6. The result sequence counts the meal up, the remaining day down, then reveals the recommendation; Reduce Motion skips the sequence.
 

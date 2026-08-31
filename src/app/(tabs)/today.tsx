@@ -12,6 +12,11 @@ export default function TodayScreen() {
   const router = useRouter();
   const { consumed, hasLoggedScan, meals, pendingAnalysisCount, remaining, resetScan, resumeLatestAnalysis, targets, userName } = useApp();
   const dateLabel = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date());
+  const greeting = userName === 'Du' ? 'Guten Morgen' : `Guten Morgen, ${userName}`;
+  const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
+  const calorieRange = `${Math.max(300, calorieCenter - 50)}–${calorieCenter + 50}`;
+  const proteinCenter = Math.round(Math.min(45, Math.max(28, remaining.protein * 0.48)) / 5) * 5;
+  const proteinRange = `${Math.max(20, proteinCenter - 5)}–${proteinCenter + 5}`;
 
   const startScan = () => {
     resetScan();
@@ -27,10 +32,10 @@ export default function TodayScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.date}>{dateLabel}</Text>
-          <Text style={styles.greeting}>Guten Morgen, {userName}</Text>
+          <Text style={styles.greeting}>{greeting}</Text>
         </View>
         <Pressable accessibilityLabel="Profil öffnen" onPress={() => router.push('/(tabs)/profile')} style={styles.avatar}>
-          <Text style={styles.avatarText}>A</Text>
+          <Text style={styles.avatarText}>{userName === 'Du' ? 'K' : userName.trim().charAt(0).toUpperCase()}</Text>
         </Pressable>
       </View>
 
@@ -51,9 +56,6 @@ export default function TodayScreen() {
             <Eyebrow>Dein Tagesstand</Eyebrow>
             <Text style={styles.onTrack}>{hasLoggedScan ? 'Weiter im Plan' : 'Dein nächster Zug steht'}</Text>
           </View>
-          <View style={styles.moreButton}>
-            <Ionicons color={colors.muted} name="ellipsis-horizontal" size={20} />
-          </View>
         </View>
         <CalorieRing remaining={remaining.calories} total={targets.calories} />
         <Text style={styles.consumed}>{formatNumber(consumed.calories)} gegessen · {formatNumber(targets.calories)} Ziel</Text>
@@ -70,26 +72,26 @@ export default function TodayScreen() {
           <IconCircle name="navigate" size={48} />
           <View style={styles.nextHeading}>
             <Eyebrow>Dein nächster Zug</Eyebrow>
-            <Text style={styles.mealMoment}>{hasLoggedScan ? 'Abendessen' : 'Mittagessen'}</Text>
+            <Text style={styles.mealMoment}>{hasLoggedScan ? 'Nächste Mahlzeit' : 'Erste Mahlzeit'}</Text>
           </View>
           <Ionicons color={colors.text} name="arrow-forward" size={22} />
         </View>
         <View style={styles.targetRow}>
           <View style={styles.targetBlock}>
             <Text style={styles.targetLabel}>ZIELBEREICH</Text>
-            <Text style={styles.targetValue}>{hasLoggedScan ? '450–550' : '600–750'} kcal</Text>
+            <Text style={styles.targetValue}>{calorieRange} kcal</Text>
           </View>
           <View style={styles.targetDivider} />
           <View style={styles.targetBlock}>
             <Text style={styles.targetLabel}>PROTEIN</Text>
-            <Text style={styles.targetValue}>{hasLoggedScan ? '35–45' : '40+'} g</Text>
+            <Text style={styles.targetValue}>{proteinRange} g</Text>
           </View>
         </View>
         <PrimaryButton icon="arrow-forward" label="3 Ideen zeigen" onPress={() => router.push('/(tabs)/plan')} />
       </Card>
 
       <View style={styles.sectionBlock}>
-        <SectionTitle action={<Text style={styles.link}>Alle zeigen</Text>}>Heute</SectionTitle>
+        <SectionTitle>Heute</SectionTitle>
         <Card style={styles.timelineCard}>
           {meals.map((meal, index) => (
             <View key={meal.id}>
@@ -113,7 +115,7 @@ export default function TodayScreen() {
             <View style={styles.addIcon}>
               <Ionicons color={colors.text} name="add" size={20} />
             </View>
-            <Text style={styles.addMealText}>{hasLoggedScan ? 'Weitere Mahlzeit scannen' : 'Mittagessen scannen'}</Text>
+            <Text style={styles.addMealText}>{hasLoggedScan ? 'Weitere Mahlzeit scannen' : 'Erste Mahlzeit scannen'}</Text>
             <Ionicons color={colors.muted} name="chevron-forward" size={18} />
           </Pressable>
         </Card>
@@ -136,7 +138,6 @@ const styles = StyleSheet.create({
   heroCard: { gap: 18, paddingVertical: 22 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   onTrack: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 4 },
-  moreButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   consumed: { color: colors.muted, fontSize: 12, textAlign: 'center', fontVariant: ['tabular-nums'] },
   macroRow: { flexDirection: 'row', gap: 9 },
   nextCard: { backgroundColor: colors.accentSoft, borderColor: colors.accent, gap: 18 },
@@ -149,7 +150,6 @@ const styles = StyleSheet.create({
   targetValue: { color: colors.text, fontSize: 18, fontWeight: '700' },
   targetDivider: { width: 1, height: 42, backgroundColor: colors.accent, marginHorizontal: 14 },
   sectionBlock: { gap: 14 },
-  link: { color: colors.accentDeep, fontSize: 13, fontWeight: '700' },
   timelineCard: { padding: 8 },
   mealRow: { minHeight: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 12 },
   mealIcon: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.attentionSoft, alignItems: 'center', justifyContent: 'center' },

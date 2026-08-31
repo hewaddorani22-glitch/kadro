@@ -51,12 +51,13 @@
     "typecheck": "tsc --noEmit",
     "validate:meals": "node scripts/validate-meal-cases.mjs",
     "validate:catalog": "node scripts/validate-catalog.mjs",
+    "validate:product": "node scripts/validate-product-flow.mjs",
     "validate:supabase": "node scripts/validate-supabase.mjs",
     "validate:deletion:live": "node scripts/validate-account-deletion.mjs",
     "validate:subscription": "node scripts/validate-subscription.mjs",
     "doctor": "npx expo-doctor",
     "check": "npm run typecheck && npx expo export --platform web",
-    "verify": "npm run typecheck && npm run validate:meals && npm run validate:catalog && npm run validate:supabase && npm run validate:subscription && node --check server/index.mjs && npm run doctor && npx expo export --platform web"
+    "verify": "npm run typecheck && npm run validate:meals && npm run validate:catalog && npm run validate:product && npm run validate:supabase && npm run validate:subscription && node --check server/index.mjs && npm run doctor && npx expo export --platform web"
   },
   "private": true
 }
