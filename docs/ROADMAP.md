@@ -54,7 +54,7 @@ Acceptance criteria:
 - [x] Exactly three deterministic catalog recommendations from the persisted daily state
 - [x] Structured recommendation impressions plus acceptance/rejection feedback adapter
 - [x] Create the dedicated Kadro Supabase project, enable anonymous auth, apply the migration, and run live RLS tests
-- [ ] Link an authorized Supabase CLI profile and reconcile the dashboard-applied migration with CLI migration history
+- [x] Link an authorized Supabase CLI profile and reconcile the dashboard-applied migration with CLI migration history
 - [x] Run the cloud-hydration smoke test in Expo Go and verify the persisted anonymous session after an app restart
 - [ ] Add permanent account linking with email or Apple before public launch
 - [ ] Expand the verified German catalog from 45 toward 200 meals after live schema and ranking validation

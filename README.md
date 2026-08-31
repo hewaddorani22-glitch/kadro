@@ -66,11 +66,13 @@ Check the local gateway with `curl http://127.0.0.1:8787/health`. The right-hand
 ## Enable Day 3 cloud sync
 
 1. Create a Supabase project in an EU region and enable **Anonymous Sign-Ins** under Authentication settings.
-2. Link the repository and apply the checked-in schema:
+2. Sign in with the repository's isolated CLI profile, link the project, and apply the checked-in schema. The ignored CLI home keeps Kadro credentials separate from any default Supabase CLI account:
 
 ```bash
-npx supabase link --project-ref YOUR_PROJECT_REF
-npx supabase db push
+export SUPABASE_HOME="$PWD/supabase/.cli-home"
+npx supabase login --profile "$PWD/supabase/kadro.profile.yml" --name kadro
+npx supabase link --profile "$PWD/supabase/kadro.profile.yml" --project-ref YOUR_PROJECT_REF
+npx supabase db push --linked --profile "$PWD/supabase/kadro.profile.yml"
 ```
 
 3. From the project's Connect dialog, put only these public client values in `.env`:
@@ -88,6 +90,13 @@ Local database validation requires Docker Desktop or Podman:
 npm run db:start
 npm run db:reset
 npm run db:lint
+```
+
+For an already linked hosted project, verify migration alignment without changing the database:
+
+```bash
+npm run db:remote:list
+npm run db:remote:check
 ```
 
 OpenRouter requests require providers that support every requested parameter, deny provider data collection, use `store: false`, and enable ZDR by default. Set `OPENROUTER_ZDR=false` only for local debugging if your selected model has no ZDR-compatible endpoint.
