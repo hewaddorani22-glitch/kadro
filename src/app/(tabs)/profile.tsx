@@ -10,7 +10,7 @@ import { formatNumber } from '@/utils/format';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { targets } = useApp();
+  const { syncMode, targets, userName } = useApp();
   const [savePhotos, setSavePhotos] = useState(false);
   const [notifications, setNotifications] = useState(true);
 
@@ -20,8 +20,16 @@ export default function ProfileScreen() {
         <View style={styles.avatar}><Text style={styles.avatarText}>A</Text></View>
         <View style={styles.headerCopy}>
           <Eyebrow>Dein Profil</Eyebrow>
-          <PageTitle>Alex Morgan</PageTitle>
-          <Text style={styles.subtitle}>alex@example.com</Text>
+          <PageTitle>{userName}</PageTitle>
+          <Text style={styles.subtitle}>
+            {syncMode === 'cloud'
+              ? 'Cloud-Synchronisierung aktiv'
+              : syncMode === 'syncing'
+                ? 'Konto wird verbunden …'
+                : syncMode === 'error'
+                  ? 'Offline · wird später synchronisiert'
+                  : 'Lokal auf diesem Gerät'}
+          </Text>
         </View>
         <Pressable style={styles.editButton}><Ionicons color={colors.text} name="create-outline" size={20} /></Pressable>
       </View>
@@ -91,7 +99,7 @@ export default function ProfileScreen() {
         <Text style={styles.wellnessText}>Kadro liefert allgemeine Wellness-Schätzungen und ist kein medizinischer Dienst.</Text>
       </View>
 
-      <Text style={styles.version}>Kadro · Demo 0.1.0</Text>
+      <Text style={styles.version}>Kadro · MVP 0.1.0</Text>
     </Screen>
   );
 }

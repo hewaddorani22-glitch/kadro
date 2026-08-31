@@ -2,7 +2,7 @@ import { createContext, PropsWithChildren, useCallback, useContext, useEffect, u
 
 import { AnalysisErrorKind, MealAnalysisInput } from '@/services/contracts';
 import { analyzePreparedPhoto, deleteTemporaryPhoto, MealAnalysisError, prepareMealPhoto } from '@/services/mealAnalysis';
-import { loadAnalysisQueue, loadMeals, queueAnalysis, removeQueuedAnalysis, saveMeal } from '@/services/localRepository';
+import { loadAnalysisQueue, loadMeals, queueAnalysis, removeQueuedAnalysis } from '@/services/localRepository';
 import {
   createScannedMeal,
   DEFAULT_TARGETS,
@@ -12,6 +12,8 @@ import {
   nutritionFromItems,
   sumMeals,
 } from '@/services/mockNutrition';
+import { hydrateCloudState, saveSyncedMeal, SyncMode } from '@/services/syncRepository';
+import { isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/supabaseClient';
 import { DailyTargets, Meal, MealItem, Nutrition, PortionFactor } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 
@@ -33,6 +35,7 @@ type AppContextValue = {
   analysisError: AnalysisErrorKind | null;
   analysisMessage: string | null;
   pendingAnalysisCount: number;
+  syncMode: SyncMode;
   setCapturedPhoto: (uri: string) => void;
   startDemoScan: () => void;
   analyzeCurrentPhoto: (forceDemo?: boolean) => Promise<void>;
@@ -64,6 +67,8 @@ function scaleItem(item: MealItem, nextAmount: number): MealItem {
 }
 
 export function AppProvider({ children }: PropsWithChildren) {
+  const [userName, setUserName] = useState('Alex');
+  const [targets, setTargets] = useState(DEFAULT_TARGETS);
   const [meals, setMeals] = useState<Meal[]>(INITIAL_MEALS);
   const [detectedItems, setDetectedItems] = useState<MealItem[]>(DETECTED_ITEMS);
   const [mealTitle, setMealTitle] = useState('Hähnchen-Reis-Bowl');
@@ -78,21 +83,42 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [analysisError, setAnalysisError] = useState<AnalysisErrorKind | null>(null);
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
   const [pendingAnalysisCount, setPendingAnalysisCount] = useState(0);
+  const [syncMode, setSyncMode] = useState<SyncMode>(isSupabaseConfigured ? 'syncing' : 'local');
 
   useEffect(() => {
     let active = true;
-    void Promise.all([loadMeals(), loadAnalysisQueue()]).then(([storedMeals, queue]) => {
+    const stopAuthLifecycle = startSupabaseAuthLifecycle();
+    void (async () => {
+      const [storedMeals, queue] = await Promise.all([loadMeals(), loadAnalysisQueue()]);
       if (!active) return;
       setMeals(storedMeals);
       setPendingAnalysisCount(queue.length);
-    });
+
+      if (!isSupabaseConfigured) return;
+      try {
+        const cloudState = await hydrateCloudState();
+        if (!active) return;
+        if (!cloudState) {
+          setSyncMode('local');
+          return;
+        }
+        setMeals(cloudState.meals);
+        setTargets(cloudState.targets);
+        setUserName(cloudState.userName);
+        setSyncMode('cloud');
+      } catch {
+        if (active) setSyncMode('error');
+      }
+    })();
+
     return () => {
       active = false;
+      stopAuthLifecycle();
     };
   }, []);
 
   const consumed = useMemo(() => sumMeals(meals), [meals]);
-  const remaining = useMemo(() => getRemaining(DEFAULT_TARGETS, consumed), [consumed]);
+  const remaining = useMemo(() => getRemaining(targets, consumed), [consumed, targets]);
   const scannedMeal = useMemo(
     () => createScannedMeal(detectedItems, mealTitle, scanId),
     [detectedItems, mealTitle, scanId],
@@ -239,13 +265,13 @@ export function AppProvider({ children }: PropsWithChildren) {
       date: localDateKey(now),
       savedAt: now.toISOString(),
     };
-    setMeals(await saveMeal(persistedMeal));
+    setMeals(await saveSyncedMeal(persistedMeal));
   }, [detectedItems, scannedMeal]);
 
   const value = useMemo<AppContextValue>(
     () => ({
-      userName: 'Alex',
-      targets: DEFAULT_TARGETS,
+      userName,
+      targets,
       meals,
       consumed,
       remaining,
@@ -258,6 +284,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       analysisError,
       analysisMessage,
       pendingAnalysisCount,
+      syncMode,
       setCapturedPhoto,
       startDemoScan,
       analyzeCurrentPhoto,
@@ -268,7 +295,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       resetScan,
       logScannedMeal,
     }),
-    [analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, consumed, detectedItems, hasLoggedScan, logScannedMeal, mealPortion, meals, pendingAnalysisCount, photoUri, remaining, resetScan, resumeLatestAnalysis, scannedMeal, setCapturedPhoto, startDemoScan],
+    [analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, consumed, detectedItems, hasLoggedScan, logScannedMeal, mealPortion, meals, pendingAnalysisCount, photoUri, remaining, resetScan, resumeLatestAnalysis, scannedMeal, setCapturedPhoto, startDemoScan, syncMode, targets, userName],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -20,6 +20,8 @@ An iOS-first, production-shaped nutrition MVP built with React Native, Expo Rout
 
 The demo meal and billing remain mocked. Real scans use OpenRouter or direct OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. The barcode adapter reads packaged-food data from Open Food Facts. Typed integration contracts keep raw provider payloads out of the UI.
 
+When configured, Supabase provides an anonymous authenticated session, RLS-isolated profiles, daily targets, confirmed meals, ingredients, recommendation impressions, and acceptance/rejection feedback. The anonymous identity can later be linked to email or Apple without placing a login wall before the first scan. Without Supabase configuration the app remains fully local-first.
+
 ## Open with Expo Go
 
 Install the current Expo Go app from the App Store, then run:
@@ -61,6 +63,33 @@ npx expo start --clear
 
 Check the local gateway with `curl http://127.0.0.1:8787/health`. The right-hand Play button in the scanner always runs the deterministic demo and needs no keys.
 
+## Enable Day 3 cloud sync
+
+1. Create a Supabase project in an EU region and enable **Anonymous Sign-Ins** under Authentication settings.
+2. Link the repository and apply the checked-in schema:
+
+```bash
+npx supabase link --project-ref YOUR_PROJECT_REF
+npx supabase db push
+```
+
+3. From the project's Connect dialog, put only these public client values in `.env`:
+
+```bash
+EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```
+
+Never put a Supabase secret key or legacy `service_role` key in an `EXPO_PUBLIC_` variable. The migration revokes anonymous table access, grants only the required authenticated operations, and applies owner-only RLS to every exposed table. Meal photos are not stored in Supabase.
+
+Local database validation requires Docker Desktop or Podman:
+
+```bash
+npm run db:start
+npm run db:reset
+npm run db:lint
+```
+
 OpenRouter requests require providers that support every requested parameter, deny provider data collection, use `store: false`, and enable ZDR by default. Set `OPENROUTER_ZDR=false` only for local debugging if your selected model has no ZDR-compatible endpoint.
 
 ## Quality checks
@@ -81,7 +110,7 @@ Contributions should follow [CONTRIBUTING.md](./CONTRIBUTING.md). Pull requests 
 - React Native + Expo Router + TypeScript
 - Kadro brand system and German product UI
 - Real camera preview when permission is granted
-- Local development analysis gateway; no hosted production backend, auth or live billing yet
+- Local development analysis gateway; optional Supabase Auth and data sync; no hosted production analysis gateway or live billing yet
 - Confirmed meal records never retain photos; only a compressed failed scan can live temporarily in the local retry queue
 - Confirmed meals survive restarts in local AsyncStorage
 - Failed network scans are queued locally (maximum three) until the user explicitly retries

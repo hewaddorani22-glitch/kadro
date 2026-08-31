@@ -1,12 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { recordRecommendationFeedback, recordRecommendationSet } from '@/services/cloudRepository';
 import { recommendMeals } from '@/services/recommendations';
 import { MealContext } from '@/types/nutrition';
 import { formatNumber } from '@/utils/format';
@@ -23,6 +24,7 @@ export default function PlanScreen() {
   const { hasLoggedScan, remaining } = useApp();
   const [selected, setSelected] = useState<MealContext | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
+  const recordedSet = useRef('');
 
   useEffect(() => {
     if (params.context && contexts.some((context) => context.id === params.context)) {
@@ -32,6 +34,16 @@ export default function PlanScreen() {
 
   const suggestions = useMemo(() => (selected ? recommendMeals(selected, remaining) : []), [remaining, selected]);
 
+  useEffect(() => {
+    if (!selected || suggestions.length !== 3) return;
+    const key = `${selected}:${remaining.calories}:${remaining.protein}:${suggestions.map((suggestion) => suggestion.id).join(',')}`;
+    if (recordedSet.current === key) return;
+    recordedSet.current = key;
+    void recordRecommendationSet(selected, remaining, suggestions).catch(() => {
+      recordedSet.current = '';
+    });
+  }, [remaining, selected, suggestions]);
+
   const chooseContext = (context: MealContext) => {
     void Haptics.selectionAsync();
     setSelected(context);
@@ -40,6 +52,10 @@ export default function PlanScreen() {
 
   const chooseMeal = (id: string) => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (selected && chosen !== id) {
+      if (chosen && chosen !== id) void recordRecommendationFeedback(selected, chosen, 'rejected').catch(() => undefined);
+      void recordRecommendationFeedback(selected, id, 'accepted').catch(() => undefined);
+    }
     setChosen(id);
     if (params.fromScan === '1') {
       setTimeout(() => router.push('/paywall'), 350);

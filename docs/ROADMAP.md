@@ -1,6 +1,6 @@
 # Roadmap
 
-## Current status: Day 2 implementation complete; credentialed device validation pending
+## Current status: Day 2 complete; Day 3 cloud foundation implemented locally
 
 - [x] Kadro name, mark, app icon, and exact brand tokens
 - [x] German product UI
@@ -17,6 +17,7 @@
 - [x] Expo Go compatibility on SDK 54
 - [x] TypeScript, Expo Doctor, web export, and iOS bundle checks
 - [x] Typed service contracts for analysis, nutrition lookup, persistence, retry, and recommendations
+- [x] Credentialed real-photo smoke test on an iPhone with OpenRouter and USDA
 
 ## Day 2: real meal intelligence
 
@@ -31,7 +32,7 @@ Priority order:
 7. [x] Add a local-first retry queue plus unclear-image and multiple-dish error states.
 8. [x] Seed 45 reviewed German meal estimates and rank exactly three deterministically by context, remaining macros, and preferences.
 
-The code path, mock path, gateway health endpoint, Open Food Facts lookup, catalog validator, TypeScript, Expo Doctor, and exports are automated or locally testable without credentials. One real-photo smoke test on an iPhone remains required after either `OPENROUTER_API_KEY` or `OPENAI_API_KEY`, a fresh USDA key, and the Mac LAN URL are configured.
+The code path, mock path, gateway health endpoint, Open Food Facts lookup, catalog validator, TypeScript, Expo Doctor, exports, and one credentialed real-photo iPhone smoke test are complete.
 
 Acceptance criteria:
 
@@ -45,14 +46,18 @@ Acceptance criteria:
 
 ## Day 3: real Autopilot and accounts
 
-- Supabase Auth and profile persistence
-- Postgres meal, item, target, and recommendation records
-- Remaining macro calculation on persisted data
-- Structured recommendation generation with exactly three results
-- Expand the verified German catalog toward 200 meals after schema and ranking validation
-- Preference and rejection feedback
-- RevenueCat subscription and restore flow
-- PostHog product events and Sentry error reporting
+- [x] Optional Supabase client with persisted React Native session and anonymous authenticated bootstrap
+- [x] Postgres profile, target, meal, item, recommendation, and feedback migration
+- [x] RLS, least-privilege grants, constraints, and user/date indexes on every exposed table
+- [x] Local-first confirmed-meal persistence with background cloud synchronization
+- [x] Remaining macro calculation from cloud-hydrated targets and meals
+- [x] Exactly three deterministic catalog recommendations from the persisted daily state
+- [x] Structured recommendation impressions plus acceptance/rejection feedback adapter
+- [ ] Create/link the dedicated Kadro Supabase project, enable anonymous auth, push the migration, and run live RLS tests
+- [ ] Add permanent account linking with email or Apple before public launch
+- [ ] Expand the verified German catalog from 45 toward 200 meals after live schema and ranking validation
+- [ ] RevenueCat subscription and restore flow
+- [ ] PostHog product events and Sentry error reporting
 
 ## Day 4: launch quality
 

@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@supabase/supabase-js": "^2.112.4",
     "dotenv": "^17.2.3",
     "expo": "~54.0.0",
     "expo-camera": "~17.0.10",
@@ -22,24 +23,30 @@
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
+    "react-native-url-polyfill": "^4.0.0",
     "react-native-web": "^0.21.2"
   },
   "devDependencies": {
     "@expo/ngrok": "^4.1.3",
     "@types/react": "~19.1.10",
+    "supabase": "^2.116.0",
     "typescript": "~5.9.2"
   },
   "scripts": {
     "start": "expo start",
     "api": "node server/index.mjs",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:lint": "supabase db lint --local",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "validate:catalog": "node scripts/validate-catalog.mjs",
+    "validate:supabase": "node scripts/validate-supabase.mjs",
     "doctor": "npx expo-doctor",
     "check": "npm run typecheck && npx expo export --platform web",
-    "verify": "npm run typecheck && npm run validate:catalog && node --check server/index.mjs && npm run doctor && npx expo export --platform web"
+    "verify": "npm run typecheck && npm run validate:catalog && npm run validate:supabase && node --check server/index.mjs && npm run doctor && npx expo export --platform web"
   },
   "private": true
 }

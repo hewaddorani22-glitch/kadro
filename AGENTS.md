@@ -44,7 +44,9 @@ Do not upgrade Expo, React, React Native, Expo Router, or other native packages 
 
 ## Engineering boundaries
 
-- The current MVP has no backend, live AI, authentication, analytics, or billing. Do not imply that mock actions are real.
+- The MVP has a local analysis gateway with live OpenRouter/OpenAI and USDA adapters plus an optional Supabase Auth/data-sync layer. Billing and product analytics remain mocked or absent; do not imply those actions are live.
+- Supabase access from the app uses only the publishable key and a user JWT. Never add a secret or `service_role` key to Expo code or an `EXPO_PUBLIC_` variable.
+- Every table in an exposed Supabase schema must enable RLS, revoke unnecessary grants, and include owner-scoped policies before it is used by the client.
 - UI components should consume typed domain data, not raw third-party API responses.
 - Put external integrations behind small service interfaces. Keep USDA/Open Food Facts mapping, vision parsing, storage, and billing separate.
 - Derived totals must come from meal data and daily targets. Do not hard-code remaining calories or macros in screens.

@@ -17,6 +17,8 @@ Analyzing / retry state
    ↓
 Detected-food confirmation
    ↓
+Local save → optional Supabase sync (Auth + RLS)
+   ↓
 Meal result + projected daily balance
    ↓
 Three contextual next-meal suggestions
@@ -44,7 +46,7 @@ Root stack routes sit above the tab navigator so camera analysis, confirmation, 
 
 ## State and calculations
 
-`AppProvider` owns active UI state and hydrates saved meals from local storage:
+`AppProvider` owns active UI state, hydrates local storage first, and then optionally reconciles with Supabase:
 
 - user targets;
 - logged meals;
@@ -53,6 +55,7 @@ Root stack routes sit above the tab navigator so camera analysis, confirmation, 
 - current analysis status and local retry count;
 - derived consumed and remaining nutrition.
 - current quick portion selection (`0.7×`, `1×`, or `1.4×`; `null` after custom gram edits).
+- sync state (`local`, `syncing`, `cloud`, or `error`).
 
 `mockNutrition.ts` owns the deterministic scan fixture and pure calculations:
 
@@ -81,6 +84,9 @@ Current responsibilities:
 - `mealAnalysis.ts`: client-side compression, temporary-file cleanup, gateway calls, and typed errors.
 - `server/index.mjs`: secret-bearing local gateway. OpenRouter or direct OpenAI returns food identity, portion estimate, and confidence only; USDA provides normalized calories and macros; Open Food Facts provides packaged-food barcode data. OpenRouter routing requires supported parameters, denies data collection, and defaults to ZDR.
 - `localRepository.ts`: confirmed meals and a maximum-three local retry queue in AsyncStorage.
+- `supabaseClient.ts`: optional public-client initialization, persisted React Native sessions, foreground token refresh, and anonymous authenticated bootstrap.
+- `cloudRepository.ts`: maps Kadro domain records to RLS-protected Supabase rows and records recommendation feedback.
+- `syncRepository.ts`: preserves local-first writes, uploads pending local scans during hydration, and merges cloud meals back into domain state.
 - RevenueCat adapter: entitlement state and purchase/restore actions.
 - `recommendations.ts`: deterministic scoring over the reviewed German MVP catalog.
 
@@ -98,3 +104,9 @@ The current local development pipeline:
 6. never retains photos as part of saved meal records.
 
 The compressed preview lives only in the app cache during the active flow. A production-hosted gateway still needs a documented retention/deletion policy, provider disclosure, authentication, rate limiting, and explicit consent before launch.
+
+## Supabase ownership boundary
+
+The mobile app receives only the project URL and publishable key. Supabase Auth supplies a per-user JWT, and Postgres RLS limits every row to `(select auth.uid()) = user_id`. The client never receives a secret or `service_role` key. `profiles`, `daily_targets`, `meals`, `meal_items`, `recommendations`, and `recommendation_feedback` all enable RLS and revoke access from the unauthenticated `anon` role.
+
+Anonymous sign-in is used to avoid blocking the first scan. It is an authenticated Supabase user, not unauthenticated public database access. A later account-upgrade flow can link email or Apple to the same user ID. Clearing app data before that upgrade can make the anonymous account inaccessible, so permanent account linking remains a Day 3 follow-up before public launch.

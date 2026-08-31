@@ -19,9 +19,13 @@ async function readJson<T>(key: string, fallback: T): Promise<T> {
 
 export async function loadMeals(): Promise<Meal[]> {
   const date = localDateKey();
-  const stored = await readJson<Meal[]>(MEALS_KEY, []);
-  const scans = stored.filter((meal) => meal.origin === 'scan' && meal.date === date);
+  const scans = await loadStoredScans(date);
   return [...INITIAL_MEALS, ...scans];
+}
+
+export async function loadStoredScans(date = localDateKey()): Promise<Meal[]> {
+  const stored = await readJson<Meal[]>(MEALS_KEY, []);
+  return stored.filter((meal) => meal.origin === 'scan' && meal.date === date);
 }
 
 export async function saveMeal(meal: Meal): Promise<Meal[]> {
