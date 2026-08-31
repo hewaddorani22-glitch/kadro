@@ -1,0 +1,52 @@
+import { Component, ErrorInfo, ReactNode } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { colors, radii } from '@/constants/theme';
+import { captureOperationalError } from '@/services/telemetry';
+
+type Props = { children: ReactNode };
+type State = { failed: boolean };
+
+export class AppErrorBoundary extends Component<Props, State> {
+  state: State = { failed: false };
+
+  static getDerivedStateFromError(): State {
+    return { failed: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    captureOperationalError(error, {
+      area: 'ui',
+      operation: info.componentStack ? 'react_render' : 'unknown_render',
+      code: error.name,
+      fatal: true,
+    });
+  }
+
+  render() {
+    if (!this.state.failed) return this.props.children;
+
+    return (
+      <View style={styles.screen}>
+        <View style={styles.card}>
+          <Text style={styles.eyebrow}>KADRO</Text>
+          <Text style={styles.title}>Etwas ist schiefgelaufen.</Text>
+          <Text style={styles.copy}>Deine gespeicherten Mahlzeiten bleiben erhalten. Versuche die Ansicht noch einmal zu laden.</Text>
+          <Pressable onPress={() => this.setState({ failed: false })} style={styles.button}>
+            <Text style={styles.buttonText}>Erneut versuchen</Text>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 24 },
+  card: { width: '100%', maxWidth: 420, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 24, gap: 12 },
+  eyebrow: { color: colors.accentDeep, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
+  title: { color: colors.text, fontSize: 24, lineHeight: 29, fontWeight: '700' },
+  copy: { color: colors.muted, fontSize: 14, lineHeight: 21 },
+  button: { minHeight: 48, marginTop: 6, borderRadius: radii.pill, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
+  buttonText: { color: colors.white, fontSize: 14, fontWeight: '700' },
+});

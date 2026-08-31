@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AccountLinkCard } from '@/components/AccountLinkCard';
@@ -8,6 +8,11 @@ import { Card, Eyebrow, PageTitle, Screen, SectionTitle } from '@/components/ui'
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
+import {
+  getAnalyticsCollectionEnabled,
+  isTelemetryConfigured,
+  setAnalyticsCollectionEnabled,
+} from '@/services/telemetry';
 import { formatNumber } from '@/utils/format';
 
 export default function ProfileScreen() {
@@ -16,6 +21,21 @@ export default function ProfileScreen() {
   const { status: subscriptionStatus } = useSubscription();
   const [savePhotos, setSavePhotos] = useState(false);
   const [notifications, setNotifications] = useState(true);
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void getAnalyticsCollectionEnabled().then((enabled) => {
+      if (active) setAnalyticsEnabled(enabled);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const updateAnalytics = async (enabled: boolean) => {
+    setAnalyticsEnabled(await setAnalyticsCollectionEnabled(enabled));
+  };
 
   return (
     <Screen>
@@ -88,6 +108,17 @@ export default function ProfileScreen() {
             onValueChange={setNotifications}
             value={notifications}
           />
+          <View style={styles.divider} />
+          <ToggleRow
+            detail={isTelemetryConfigured
+              ? 'Nur anonyme Funktionsereignisse und bereinigte Fehler – keine Fotos, E-Mail, Lebensmittel oder Nährwerte.'
+              : 'Wird verfügbar, sobald PostHog für den Test verbunden ist.'}
+            disabled={!isTelemetryConfigured}
+            icon="analytics-outline"
+            label="Anonyme Nutzungsanalyse"
+            onValueChange={(enabled) => void updateAnalytics(enabled)}
+            value={analyticsEnabled}
+          />
         </Card>
       </View>
 
@@ -121,15 +152,15 @@ function PlanStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ToggleRow({ detail, icon, label, onValueChange, value }: { detail: string; icon: keyof typeof Ionicons.glyphMap; label: string; onValueChange: (value: boolean) => void; value: boolean }) {
+function ToggleRow({ detail, disabled, icon, label, onValueChange, value }: { detail: string; disabled?: boolean; icon: keyof typeof Ionicons.glyphMap; label: string; onValueChange: (value: boolean) => void; value: boolean }) {
   return (
-    <View style={styles.toggleRow}>
+    <View style={[styles.toggleRow, disabled && styles.disabledRow]}>
       <View style={styles.rowIcon}><Ionicons color={colors.text} name={icon} size={20} /></View>
       <View style={styles.rowCopy}>
         <Text style={styles.rowLabel}>{label}</Text>
         <Text style={styles.rowDetail}>{detail}</Text>
       </View>
-      <Switch ios_backgroundColor={colors.border} onValueChange={onValueChange} thumbColor={colors.surface} trackColor={{ false: colors.border, true: colors.accentDeep }} value={value} />
+      <Switch disabled={disabled} ios_backgroundColor={colors.border} onValueChange={onValueChange} thumbColor={colors.surface} trackColor={{ false: colors.border, true: colors.accentDeep }} value={value} />
     </View>
   );
 }
@@ -168,6 +199,7 @@ const styles = StyleSheet.create({
   updateText: { flex: 1, color: colors.accentDeep, fontSize: 12, fontWeight: '700' },
   listCard: { padding: 8 },
   toggleRow: { minHeight: 78, padding: 9, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  disabledRow: { opacity: 0.55 },
   menuRow: { minHeight: 58, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 11 },
   rowIcon: { width: 40, height: 40, borderRadius: 15, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   rowCopy: { flex: 1, gap: 3 },

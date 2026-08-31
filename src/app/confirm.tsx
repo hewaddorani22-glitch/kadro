@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, ConfidenceBadge, MealPhoto, PrimaryButton, Screen } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { countBucket, trackEvent } from '@/services/telemetry';
 import { PortionFactor } from '@/types/nutrition';
 
 export default function ConfirmScreen() {
@@ -16,6 +17,12 @@ export default function ConfirmScreen() {
 
   const confirm = () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const includedItems = detectedItems.filter((item) => item.included);
+    trackEvent('meal confirmed', {
+      confidence: scannedMeal.confidence,
+      correction_applied: mealPortion !== 1 || detectedItems.some((item) => !item.included || item.amountG !== item.baseAmountG),
+      included_item_count: countBucket(includedItems.length),
+    });
     router.push('/result');
   };
 

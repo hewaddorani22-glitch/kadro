@@ -41,7 +41,8 @@
           "cameraPermission": "Erlaube Kadro, Mahlzeiten für die Analyse zu fotografieren."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,6 +9,7 @@ import { PrimaryButton } from '@/components/ui';
 import { KadroMark } from '@/components/KadroMark';
 import { colors, radii } from '@/constants/theme';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { toBillingMode, trackEvent } from '@/services/telemetry';
 
 type Plan = 'yearly' | 'monthly';
 
@@ -20,6 +21,14 @@ export default function PaywallScreen() {
   const monthly = snapshot?.plans.monthly ?? null;
   const selectedPlan = snapshot?.plans[selected] ?? null;
   const testStore = snapshot?.mode === 'test-store';
+  const billingMode = toBillingMode(snapshot?.mode);
+  const paywallViewed = useRef(false);
+
+  useEffect(() => {
+    if (status === 'loading' || paywallViewed.current) return;
+    paywallViewed.current = true;
+    trackEvent('paywall viewed', { billing_mode: billingMode });
+  }, [billingMode, status]);
 
   useEffect(() => {
     if (!snapshot?.configured || selectedPlan) return;
@@ -50,6 +59,7 @@ export default function PaywallScreen() {
     }
     const result = await purchase(selected);
     if (result !== 'active') return;
+    trackEvent('subscription purchase completed', { billing_mode: billingMode, plan: selected });
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert(
       testStore ? 'Test-Abo aktiviert' : 'Kadro Pro aktiviert',
@@ -66,6 +76,7 @@ export default function PaywallScreen() {
     const result = await restore();
     if (result === 'failed') return;
     const active = result === 'active';
+    trackEvent('subscription restore completed', { active, billing_mode: billingMode });
     Alert.alert(
       active ? 'Käufe wiederhergestellt' : 'Kein aktives Abo gefunden',
       active ? 'Kadro Pro ist wieder aktiv.' : 'Für dieses Store-Konto wurde kein aktiver Kadro-Pro-Kauf gefunden.',

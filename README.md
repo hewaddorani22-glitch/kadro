@@ -121,6 +121,20 @@ Expo Go then displays the RevenueCat Test Store offering and safely simulates pu
 
 The app uses the current Supabase user ID as RevenueCat's App User ID, so an email-upgraded Kadro account keeps a stable purchase identity. Only public SDK keys belong in `EXPO_PUBLIC_` variables—never a RevenueCat secret API key.
 
+## Enable privacy-minimal analytics
+
+Create a PostHog project in the EU region and copy its public project token into `.env`:
+
+```bash
+EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN=phc_...
+EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
+EXPO_PUBLIC_POSTHOG_ENABLED=true
+```
+
+Restart Expo after changing these values. Kadro sends only a typed allowlist of anonymous funnel events. Person profiles, GeoIP lookup, lifecycle autocapture, touch autocapture, feature flags, push capture, session replay, and health-value properties are disabled. Users can opt out under **Du → Einstellungen → Anonyme Nutzungsanalyse**. No photo, email, food name, ingredient, calorie value, macro value, or Supabase user ID is sent.
+
+JavaScript render failures and explicitly handled integration failures use the same scrubbed PostHog boundary while the app is tested in Expo Go. The official Sentry React Native SDK contains custom native code, so full Sentry crash reporting and source-map upload are intentionally deferred to the first development/TestFlight build. See [docs/ANALYTICS.md](./docs/ANALYTICS.md).
+
 ## Quality checks
 
 ```bash
@@ -140,6 +154,7 @@ Contributions should follow [CONTRIBUTING.md](./CONTRIBUTING.md). Pull requests 
 - Kadro brand system and German product UI
 - Real camera preview when permission is granted
 - Local development analysis gateway; optional Supabase Auth and data sync; no hosted production analysis gateway or live billing yet
+- Optional anonymous PostHog product analytics; native Sentry reporting begins with the development/TestFlight build
 - Confirmed meal records never retain photos; only a compressed failed scan can live temporarily in the local retry queue
 - Confirmed meals survive restarts in local AsyncStorage
 - Failed network scans are queued locally (maximum three) until the user explicitly retries

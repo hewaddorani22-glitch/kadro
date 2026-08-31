@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { KadroMark } from '@/components/KadroMark';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { colors, radii, spacing } from '@/constants/theme';
+import { trackEvent } from '@/services/telemetry';
 
 type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap };
 
@@ -50,10 +51,16 @@ export default function OnboardingScreen() {
   const next = () => {
     void Haptics.selectionAsync();
     if (step === TOTAL_STEPS - 1) {
+      trackEvent('onboarding completed', { completion: 'finished' });
       router.replace('/(tabs)/scan');
       return;
     }
     setStep((current) => current + 1);
+  };
+
+  const skip = () => {
+    trackEvent('onboarding completed', { completion: 'skipped' });
+    router.replace('/(tabs)/today');
   };
 
   const back = () => {
@@ -81,7 +88,7 @@ export default function OnboardingScreen() {
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
         <Text style={styles.stepLabel}>{step + 1} von {TOTAL_STEPS}</Text>
-        <Pressable onPress={() => router.replace('/(tabs)/today')}>
+        <Pressable onPress={skip}>
           <Text style={styles.skip}>Überspringen</Text>
         </Pressable>
       </View>

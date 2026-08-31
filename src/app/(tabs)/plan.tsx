@@ -10,6 +10,7 @@ import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { recordRecommendationFeedback, recordRecommendationSet } from '@/services/cloudRepository';
 import { recommendMeals } from '@/services/recommendations';
+import { trackEvent } from '@/services/telemetry';
 import { MealContext } from '@/types/nutrition';
 import { formatNumber } from '@/utils/format';
 
@@ -41,6 +42,7 @@ export default function PlanScreen() {
     const key = `${selected}:${remaining.calories}:${remaining.protein}:${suggestions.map((suggestion) => suggestion.id).join(',')}`;
     if (recordedSet.current === key) return;
     recordedSet.current = key;
+    trackEvent('recommendation set viewed', { meal_context: selected });
     void recordRecommendationSet(selected, remaining, suggestions).catch(() => {
       recordedSet.current = '';
     });
@@ -55,6 +57,10 @@ export default function PlanScreen() {
   const chooseMeal = (id: string) => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     if (selected && chosen !== id) {
+      const rank = suggestions.findIndex((suggestion) => suggestion.id === id) + 1;
+      if (rank >= 1 && rank <= 3) {
+        trackEvent('recommendation selected', { meal_context: selected, rank: rank as 1 | 2 | 3 });
+      }
       if (chosen && chosen !== id) void recordRecommendationFeedback(selected, chosen, 'rejected').catch(() => undefined);
       void recordRecommendationFeedback(selected, id, 'accepted').catch(() => undefined);
     }

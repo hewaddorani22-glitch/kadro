@@ -14,11 +14,18 @@ import {
 } from '@/services/mockNutrition';
 import { hydrateCloudState, saveSyncedMeal, SyncMode } from '@/services/syncRepository';
 import { isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/supabaseClient';
+import { captureOperationalError, countBucket, trackEvent } from '@/services/telemetry';
 import { DailyTargets, Meal, MealItem, Nutrition, PortionFactor } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
 type ScanMode = 'live' | 'demo' | 'queued';
+
+function telemetryScanSource(mode: ScanMode) {
+  if (mode === 'live') return 'camera' as const;
+  if (mode === 'queued') return 'queued_retry' as const;
+  return 'demo' as const;
+}
 
 type AppContextValue = {
   userName: string;
@@ -104,6 +111,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       setSyncMode('cloud');
     } catch (error) {
       setSyncMode('error');
+      captureOperationalError(error, { area: 'cloud_sync', operation: 'refresh_cloud_state' });
       throw error;
     }
   }, []);
@@ -129,7 +137,8 @@ export function AppProvider({ children }: PropsWithChildren) {
         setTargets(cloudState.targets);
         setUserName(cloudState.userName);
         setSyncMode('cloud');
-      } catch {
+      } catch (error) {
+        captureOperationalError(error, { area: 'cloud_sync', operation: 'initial_hydration' });
         if (active) setSyncMode('error');
       }
     })();
@@ -155,6 +164,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setScanMode('live');
     setQueuedInput(null);
     setAnalysisStatus('idle');
+    trackEvent('meal scan started', { scan_source: 'camera' });
   }, []);
 
   const startDemoScan = useCallback(() => {
@@ -169,6 +179,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setAnalysisStatus('idle');
     setAnalysisError(null);
     setAnalysisMessage(null);
+    trackEvent('meal scan started', { scan_source: 'demo' });
   }, [photoUri]);
 
   const analyzeCurrentPhoto = useCallback(async (forceDemo = false) => {
@@ -182,6 +193,12 @@ export function AppProvider({ children }: PropsWithChildren) {
       setDetectedItems(DETECTED_ITEMS);
       setMealTitle('Hähnchen-Reis-Bowl');
       setAnalysisStatus('ready');
+      trackEvent('meal analysis completed', {
+        confidence: DETECTED_ITEMS.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
+        detected_item_count: countBucket(DETECTED_ITEMS.length),
+        scan_source: 'demo',
+        warning_present: false,
+      });
       return;
     }
 
@@ -203,6 +220,12 @@ export function AppProvider({ children }: PropsWithChildren) {
       setMealPortionState(1);
       setAnalysisMessage(result.warnings[0] ?? null);
       setAnalysisStatus('ready');
+      trackEvent('meal analysis completed', {
+        confidence: result.items.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
+        detected_item_count: countBucket(result.items.length),
+        scan_source: telemetryScanSource(activeScanMode),
+        warning_present: result.warnings.length > 0,
+      });
       if (scanMode === 'queued') {
         setPendingAnalysisCount(await removeQueuedAnalysis(scanId));
       }
@@ -220,6 +243,16 @@ export function AppProvider({ children }: PropsWithChildren) {
       }
       setAnalysisError(failure.kind);
       setAnalysisMessage(failure.message);
+      trackEvent('meal analysis failed', {
+        failure_reason: failure.kind,
+        queued_for_retry: Boolean(shouldQueue),
+        scan_source: telemetryScanSource(activeScanMode),
+      });
+      captureOperationalError(failure, {
+        area: 'analysis',
+        operation: 'analyze_photo',
+        code: failure.kind,
+      });
     }
   }, [photoUri, queuedInput, scanId, scanMode]);
 

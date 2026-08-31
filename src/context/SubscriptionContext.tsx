@@ -10,6 +10,7 @@ import {
   subscriptionErrorMessage,
 } from '@/services/subscription';
 import { supabase } from '@/services/supabaseClient';
+import { captureOperationalError } from '@/services/telemetry';
 
 type SubscriptionStatus = 'loading' | 'unconfigured' | 'ready' | 'active' | 'error';
 
@@ -40,6 +41,7 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
     } catch (failure) {
       setStatus('error');
       setError(subscriptionErrorMessage(failure));
+      captureOperationalError(failure, { area: 'subscription', operation: 'refresh' });
     }
   }, []);
 
@@ -75,6 +77,7 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
     } catch (failure) {
       if (isSubscriptionPurchaseCancelled(failure)) return 'cancelled';
       setError(subscriptionErrorMessage(failure));
+      captureOperationalError(failure, { area: 'subscription', operation: `purchase_${planId}` });
       return 'failed';
     } finally {
       setBusy(false);
@@ -91,6 +94,7 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
       return active ? 'active' : 'none';
     } catch (failure) {
       setError(subscriptionErrorMessage(failure));
+      captureOperationalError(failure, { area: 'subscription', operation: 'restore' });
       return 'failed';
     } finally {
       setBusy(false);

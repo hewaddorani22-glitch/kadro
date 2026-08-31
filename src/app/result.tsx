@@ -8,6 +8,7 @@ import { Card, ConfidenceBadge, Eyebrow, MealPhoto, PrimaryButton, Screen, Secti
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getRemaining } from '@/services/mockNutrition';
+import { trackEvent } from '@/services/telemetry';
 import { formatNumber } from '@/utils/format';
 
 export default function ResultScreen() {
@@ -83,11 +84,13 @@ export default function ResultScreen() {
 
   const showOptions = async () => {
     await logScannedMeal();
+    trackEvent('meal saved', { next_destination: 'recommendations' });
     router.replace({ pathname: '/(tabs)/plan', params: { context: 'home', fromScan: '1' } });
   };
 
   const saveForLater = async () => {
     await logScannedMeal();
+    trackEvent('meal saved', { next_destination: 'today' });
     router.replace('/(tabs)/today');
   };
 
