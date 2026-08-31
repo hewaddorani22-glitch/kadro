@@ -1,6 +1,6 @@
 # Roadmap
 
-## Current status: Day 2 complete; Day 3 cloud foundation implemented locally
+## Current status: Day 2 complete; Day 3 cloud foundation live on Supabase
 
 - [x] Kadro name, mark, app icon, and exact brand tokens
 - [x] German product UI
@@ -53,7 +53,9 @@ Acceptance criteria:
 - [x] Remaining macro calculation from cloud-hydrated targets and meals
 - [x] Exactly three deterministic catalog recommendations from the persisted daily state
 - [x] Structured recommendation impressions plus acceptance/rejection feedback adapter
-- [ ] Create/link the dedicated Kadro Supabase project, enable anonymous auth, push the migration, and run live RLS tests
+- [x] Create the dedicated Kadro Supabase project, enable anonymous auth, apply the migration, and run live RLS tests
+- [ ] Link an authorized Supabase CLI profile and reconcile the dashboard-applied migration with CLI migration history
+- [ ] Run the cloud-hydration smoke test in Expo Go and verify the persisted anonymous session after an app restart
 - [ ] Add permanent account linking with email or Apple before public launch
 - [ ] Expand the verified German catalog from 45 toward 200 meals after live schema and ranking validation
 - [ ] RevenueCat subscription and restore flow
