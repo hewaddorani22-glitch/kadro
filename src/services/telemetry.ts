@@ -62,6 +62,21 @@ const allowedEvents = new Set<string>([
   ] satisfies AnalyticsEventName[]),
   '$exception',
 ]);
+const blockedAutomaticProperties = new Set([
+  '$device_manufacturer',
+  '$device_model',
+  '$device_name',
+  '$locale',
+  '$screen_height',
+  '$screen_width',
+  '$timezone',
+]);
+
+function sanitizeAutomaticProperties<Event extends { properties?: Record<string, unknown> }>(event: Event) {
+  if (!event.properties) return event;
+  for (const property of blockedAutomaticProperties) delete event.properties[property];
+  return event;
+}
 
 const posthog = projectToken
   ? new PostHog(projectToken, {
@@ -83,7 +98,7 @@ const posthog = projectToken
       preloadFeatureFlags: false,
       sendFeatureFlagEvent: false,
       setDefaultPersonProperties: false,
-      before_send: (event) => event && allowedEvents.has(event.event) ? event : null,
+      before_send: (event) => event && allowedEvents.has(event.event) ? sanitizeAutomaticProperties(event) : null,
     })
   : null;
 

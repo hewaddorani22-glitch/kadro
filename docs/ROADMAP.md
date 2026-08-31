@@ -64,7 +64,7 @@ Acceptance criteria:
   - [ ] Configure App Store Connect products and run a native StoreKit sandbox purchase in a development/TestFlight build
 - [ ] PostHog product events and Sentry error reporting
   - [x] Add an Expo Go-compatible PostHog adapter with typed event allowlist, anonymous-only profiles, GeoIP/session replay/autocapture disabled, persisted opt-out, and scrubbed JavaScript error reporting
-  - [ ] Create the EU PostHog project, enable local collection, and run a live funnel/error smoke test
+  - [x] Create the EU PostHog project, enable local collection, and run a live funnel/error smoke test
   - [ ] Add the native Sentry SDK, DSN, release source maps, and a live crash test in the first development/TestFlight build
 
 ## Day 4: launch quality
