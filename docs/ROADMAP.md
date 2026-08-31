@@ -57,7 +57,7 @@ Acceptance criteria:
 - [x] Link an authorized Supabase CLI profile and reconcile the dashboard-applied migration with CLI migration history
 - [x] Run the cloud-hydration smoke test in Expo Go and verify the persisted anonymous session after an app restart
 - [ ] Add permanent account linking with email or Apple before public launch
-- [ ] Expand the verified German catalog from 45 toward 200 meals after live schema and ranking validation
+- [ ] Expand the verified German catalog from 45 toward 200 meals after live schema and ranking validation (90/200 complete)
 - [ ] RevenueCat subscription and restore flow
 - [ ] PostHog product events and Sentry error reporting
 
