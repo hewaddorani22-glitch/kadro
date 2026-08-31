@@ -31,7 +31,7 @@ Priority order:
 7. [x] Add a local-first retry queue plus unclear-image and multiple-dish error states.
 8. [x] Seed 45 reviewed German meal estimates and rank exactly three deterministically by context, remaining macros, and preferences.
 
-The code path, mock path, gateway health endpoint, Open Food Facts lookup, catalog validator, TypeScript, Expo Doctor, and exports are automated or locally testable without credentials. One real-photo smoke test on an iPhone remains required after `OPENAI_API_KEY` and the Mac LAN URL are configured.
+The code path, mock path, gateway health endpoint, Open Food Facts lookup, catalog validator, TypeScript, Expo Doctor, and exports are automated or locally testable without credentials. One real-photo smoke test on an iPhone remains required after either `OPENROUTER_API_KEY` or `OPENAI_API_KEY`, a fresh USDA key, and the Mac LAN URL are configured.
 
 Acceptance criteria:
 

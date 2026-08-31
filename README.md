@@ -18,7 +18,7 @@ An iOS-first, production-shaped nutrition MVP built with React Native, Expo Rout
 8. Three deterministic contextual suggestions from a 45-meal German catalog
 9. Progress, profile and transparent subscription paywall
 
-The demo meal and billing remain mocked. Real scans use OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. The barcode adapter reads packaged-food data from Open Food Facts. Typed integration contracts keep raw provider payloads out of the UI.
+The demo meal and billing remain mocked. Real scans use OpenRouter or direct OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. The barcode adapter reads packaged-food data from Open Food Facts. Typed integration contracts keep raw provider payloads out of the UI.
 
 ## Open with Expo Go
 
@@ -46,12 +46,13 @@ npm run web
 
 ## Enable real photo analysis
 
-The Expo app never receives an OpenAI or USDA secret. A small local gateway holds those keys and returns normalized Kadro domain data.
+The Expo app never receives an OpenRouter, OpenAI or USDA secret. A small local gateway holds those keys and returns normalized Kadro domain data.
 
 1. Copy `.env.example` to `.env`.
-2. Add `OPENAI_API_KEY`; add a personal `USDA_API_KEY` for more than the low `DEMO_KEY` limits.
-3. Replace the sample IP in `EXPO_PUBLIC_ANALYSIS_API_URL` with the Mac Wi-Fi IP from `ipconfig getifaddr en0`. Do not use `localhost` from an iPhone.
-4. Keep phone and Mac on the same network, then run the two processes in separate terminals:
+2. For OpenRouter, set `AI_PROVIDER=openrouter` plus `OPENROUTER_API_KEY`. Alternatively use `AI_PROVIDER=openai` plus `OPENAI_API_KEY`.
+3. Add a personal `USDA_API_KEY` for more than the low `DEMO_KEY` limits.
+4. Replace the sample IP in `EXPO_PUBLIC_ANALYSIS_API_URL` with the Mac Wi-Fi IP from `ipconfig getifaddr en0`. Do not use `localhost` from an iPhone.
+5. Keep phone and Mac on the same network, then run the two processes in separate terminals:
 
 ```bash
 npm run api
@@ -59,6 +60,8 @@ npx expo start --clear
 ```
 
 Check the local gateway with `curl http://127.0.0.1:8787/health`. The right-hand Play button in the scanner always runs the deterministic demo and needs no keys.
+
+OpenRouter requests require providers that support every requested parameter, deny provider data collection, use `store: false`, and enable ZDR by default. Set `OPENROUTER_ZDR=false` only for local debugging if your selected model has no ZDR-compatible endpoint.
 
 ## Quality checks
 

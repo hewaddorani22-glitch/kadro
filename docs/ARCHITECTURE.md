@@ -79,7 +79,7 @@ RecommendationService
 Current responsibilities:
 
 - `mealAnalysis.ts`: client-side compression, temporary-file cleanup, gateway calls, and typed errors.
-- `server/index.mjs`: secret-bearing local gateway. OpenAI returns food identity, portion estimate, and confidence only; USDA provides normalized calories and macros; Open Food Facts provides packaged-food barcode data.
+- `server/index.mjs`: secret-bearing local gateway. OpenRouter or direct OpenAI returns food identity, portion estimate, and confidence only; USDA provides normalized calories and macros; Open Food Facts provides packaged-food barcode data. OpenRouter routing requires supported parameters, denies data collection, and defaults to ZDR.
 - `localRepository.ts`: confirmed meals and a maximum-three local retry queue in AsyncStorage.
 - RevenueCat adapter: entitlement state and purchase/restore actions.
 - `recommendations.ts`: deterministic scoring over the reviewed German MVP catalog.

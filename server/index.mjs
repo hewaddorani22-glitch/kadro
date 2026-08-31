@@ -2,7 +2,14 @@ import 'dotenv/config';
 import { createServer } from 'node:http';
 
 const port = Number(process.env.PORT || 8787);
-const openAiModel = process.env.OPENAI_VISION_MODEL || 'gpt-4o';
+const aiProvider = (process.env.AI_PROVIDER || (process.env.OPENROUTER_API_KEY ? 'openrouter' : 'openai')).toLowerCase();
+const isOpenRouter = aiProvider === 'openrouter';
+const aiApiKey = isOpenRouter ? process.env.OPENROUTER_API_KEY : process.env.OPENAI_API_KEY;
+const aiApiUrl = isOpenRouter ? 'https://openrouter.ai/api/v1/responses' : 'https://api.openai.com/v1/responses';
+const visionModel = isOpenRouter
+  ? process.env.OPENROUTER_VISION_MODEL || 'openai/gpt-4o'
+  : process.env.OPENAI_VISION_MODEL || 'gpt-4o';
+const openRouterZdr = process.env.OPENROUTER_ZDR !== 'false';
 const usdaApiKey = process.env.USDA_API_KEY || 'DEMO_KEY';
 
 const detectionSchema = {
@@ -66,17 +73,26 @@ function extractResponseText(response) {
 }
 
 async function detectFoods({ imageBase64, mimeType }) {
-  if (!process.env.OPENAI_API_KEY) throw new Error('openai_key_missing');
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  if (!['openai', 'openrouter'].includes(aiProvider)) throw new Error('ai_provider_invalid');
+  if (!aiApiKey) throw new Error('ai_key_missing');
+  const response = await fetch(aiApiUrl, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      Authorization: `Bearer ${aiApiKey}`,
       'Content-Type': 'application/json',
+      ...(isOpenRouter ? { 'X-Title': 'Kadro' } : {}),
     },
     body: JSON.stringify({
-      model: openAiModel,
+      model: visionModel,
       store: false,
       max_output_tokens: 1400,
+      ...(isOpenRouter ? {
+        provider: {
+          data_collection: 'deny',
+          require_parameters: true,
+          ...(openRouterZdr ? { zdr: true } : {}),
+        },
+      } : {}),
       input: [{
         role: 'user',
         content: [
@@ -100,7 +116,7 @@ async function detectFoods({ imageBase64, mimeType }) {
 
   if (!response.ok) {
     const detail = await response.text();
-    throw new Error(`openai_${response.status}:${detail.slice(0, 300)}`);
+    throw new Error(`${aiProvider}_${response.status}:${detail.slice(0, 300)}`);
   }
   return JSON.parse(extractResponseText(await response.json()));
 }
@@ -220,7 +236,14 @@ async function lookupBarcode(barcode) {
 const server = createServer(async (request, response) => {
   if (request.method === 'OPTIONS') return json(response, 204, {});
   if (request.method === 'GET' && request.url === '/health') {
-    return json(response, 200, { ok: true, model: openAiModel, openaiConfigured: Boolean(process.env.OPENAI_API_KEY), usdaMode: process.env.USDA_API_KEY ? 'personal-key' : 'demo-key' });
+    return json(response, 200, {
+      ok: true,
+      aiProvider,
+      model: visionModel,
+      aiConfigured: Boolean(aiApiKey),
+      privacyMode: isOpenRouter ? (openRouterZdr ? 'zdr' : 'no-data-collection') : 'provider-default',
+      usdaMode: process.env.USDA_API_KEY ? 'personal-key' : 'demo-key',
+    });
   }
 
   try {
@@ -236,10 +259,10 @@ const server = createServer(async (request, response) => {
     return json(response, 404, { code: 'not_found', message: 'Route nicht gefunden.' });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'unknown_error';
-    const setupError = message === 'openai_key_missing';
+    const setupError = message === 'ai_key_missing' || message === 'ai_provider_invalid';
     return json(response, setupError ? 503 : 502, {
       code: setupError ? 'server_not_configured' : 'provider_error',
-      message: setupError ? 'OPENAI_API_KEY fehlt auf dem Server.' : 'Ein externer Analysedienst ist gerade nicht erreichbar.',
+      message: setupError ? 'Der gewählte KI-Provider ist nicht vollständig konfiguriert.' : 'Ein externer Analysedienst ist gerade nicht erreichbar.',
     });
   }
 });
