@@ -27,7 +27,7 @@ Counts are coarse buckets (`1`, `2-3`, `4+`). Events must never contain photos, 
 - Device name/model/manufacturer, locale, timezone, and screen dimensions are removed before every send.
 - GeoIP, lifecycle/touch/screen autocapture, feature flags, surveys, push capture, session replay, and persistent cross-restart session IDs are disabled.
 - Collection is off unless `EXPO_PUBLIC_POSTHOG_ENABLED=true` or the user enables it from Profile.
-- The Profile switch calls PostHog's persisted `optIn`/`optOut` controls.
+- Collection defaults to opted out. The Profile switch calls PostHog's persisted `optIn`/`optOut` controls.
 - A final privacy policy and consent review are still required before external distribution.
 
 ## Error boundary

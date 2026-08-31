@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { Card, ConfidenceBadge, Eyebrow, MealPhoto, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
@@ -94,14 +94,21 @@ export default function ResultScreen() {
     router.replace('/(tabs)/today');
   };
 
+  const shareResult = async () => {
+    await Share.share({
+      message: `${scannedMeal.title}: ca. ${scannedMeal.calories} kcal, ${scannedMeal.protein} g Protein, ${scannedMeal.carbs} g Kohlenhydrate und ${scannedMeal.fat} g Fett. Nährwerte sind Schätzungen von Kadro.`,
+      title: 'Kadro Mahlzeitenschätzung',
+    });
+  };
+
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Zurück" onPress={() => router.back()} style={styles.iconButton}>
+        <Pressable accessibilityLabel="Zurück" accessibilityRole="button" onPress={() => router.back()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
         <Text style={styles.topTitle}>Ergebnis</Text>
-        <Pressable accessibilityLabel="Ergebnis teilen" style={styles.iconButton}>
+        <Pressable accessibilityLabel="Ergebnis teilen" accessibilityRole="button" onPress={() => void shareResult()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="share-outline" size={21} />
         </Pressable>
       </View>
@@ -132,7 +139,7 @@ export default function ResultScreen() {
       </View>
 
       <View style={styles.section}>
-        <SectionTitle action={<Pressable onPress={() => router.replace('/confirm')}><Text style={styles.edit}>Bearbeiten</Text></Pressable>}>Erkannte Zutaten</SectionTitle>
+        <SectionTitle action={<Pressable accessibilityRole="button" onPress={() => router.replace('/confirm')}><Text style={styles.edit}>Bearbeiten</Text></Pressable>}>Erkannte Zutaten</SectionTitle>
         <Card style={styles.ingredientsCard}>
           {scannedMeal.items.filter((item) => item.included).map((item, index, list) => (
             <View key={item.id}>

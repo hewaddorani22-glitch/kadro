@@ -8,6 +8,7 @@ import { useApp } from '@/context/AppContext';
 import {
   AccountLinkState,
   accountLinkErrorMessage,
+  enableNewCloudAccount,
   getAccountLinkState,
   refreshEmailLink,
   requestEmailLink,
@@ -97,6 +98,23 @@ export function AccountLinkCard() {
     );
   }
 
+  if (account.status === 'disabled') {
+    return (
+      <Card style={styles.card}>
+        <AccountHeader icon="cloud-offline-outline" title="Cloud nach Löschung deaktiviert" />
+        <Text style={styles.body}>Kadro legt nicht automatisch wieder einen Gast-Account an. Du kannst die Cloud später bewusst neu aktivieren.</Text>
+        <PrimaryButton
+          disabled={busy}
+          icon="cloud-upload-outline"
+          label={busy ? 'Cloud wird aktiviert …' : 'Neuen Cloud-Account anlegen'}
+          onPress={() => void run(enableNewCloudAccount, 'Ein neuer leerer Cloud-Account wurde angelegt.', true)}
+          variant="secondary"
+        />
+        <Feedback error={error} message={message} />
+      </Card>
+    );
+  }
+
   if (account.status === 'linked') {
     return (
       <Card style={[styles.card, styles.linkedCard]}>
@@ -106,7 +124,7 @@ export function AccountLinkCard() {
           <Ionicons color={colors.accentDeep} name="mail-outline" size={16} />
           <Text style={styles.emailText}>{account.email}</Text>
         </View>
-        <Pressable onPress={() => setShowPassword((current) => !current)} style={styles.textButton}>
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: showPassword }} onPress={() => setShowPassword((current) => !current)} style={styles.textButton}>
           <Text style={styles.textButtonLabel}>{showPassword ? 'Passwortfeld schließen' : 'Passwort setzen oder ändern'}</Text>
           <Ionicons color={colors.accentDeep} name={showPassword ? 'chevron-up' : 'chevron-down'} size={17} />
         </Pressable>
@@ -147,7 +165,7 @@ export function AccountLinkCard() {
             onPress={() => void run(() => signInToExistingAccount(email, password), 'Konto geladen und synchronisiert.', true)}
           />
         </View>
-        <Pressable onPress={() => { setMode('upgrade'); setError(null); setMessage(null); }} style={styles.centerButton}>
+        <Pressable accessibilityRole="button" onPress={() => { setMode('upgrade'); setError(null); setMessage(null); }} style={styles.centerButton}>
           <Text style={styles.textButtonLabel}>Zurück zur Kontosicherung</Text>
         </Pressable>
         <Feedback error={error} message={message} />
@@ -176,7 +194,7 @@ export function AccountLinkCard() {
             variant="secondary"
           />
         </View>
-        <Pressable disabled={busy} onPress={() => void resend()} style={styles.centerButton}>
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} onPress={() => void resend()} style={styles.centerButton}>
           <Text style={styles.textButtonLabel}>E-Mail erneut senden</Text>
         </Pressable>
         <Feedback error={error} message={message} />
@@ -197,7 +215,7 @@ export function AccountLinkCard() {
           onPress={() => void run(() => requestEmailLink(email), 'Prüfe jetzt dein E-Mail-Postfach.')}
         />
       </View>
-      <Pressable onPress={() => { setMode('sign-in'); setError(null); setMessage(null); }} style={styles.centerButton}>
+      <Pressable accessibilityRole="button" onPress={() => { setMode('sign-in'); setError(null); setMessage(null); }} style={styles.centerButton}>
         <Text style={styles.textButtonLabel}>Vorhandenes Konto laden</Text>
       </Pressable>
       <Feedback error={error} message={message} />
@@ -236,6 +254,7 @@ function AccountInput({
       autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
       autoComplete={autoComplete}
       autoCorrect={false}
+      accessibilityLabel={placeholder}
       keyboardType={keyboardType}
       maxLength={maxLength}
       onChangeText={onChangeText}
@@ -251,7 +270,7 @@ function AccountInput({
 function Feedback({ error, message }: { error: string | null; message: string | null }) {
   if (!error && !message) return null;
   return (
-    <View style={[styles.feedback, error ? styles.errorFeedback : styles.successFeedback]}>
+    <View accessibilityLiveRegion={error ? 'assertive' : 'polite'} style={[styles.feedback, error ? styles.errorFeedback : styles.successFeedback]}>
       <Ionicons color={error ? colors.attention : colors.success} name={error ? 'alert-circle-outline' : 'checkmark-circle-outline'} size={17} />
       <Text style={[styles.feedbackText, error ? styles.errorText : styles.successText]}>{error ?? message}</Text>
     </View>

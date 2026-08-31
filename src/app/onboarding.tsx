@@ -2,12 +2,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { KadroMark } from '@/components/KadroMark';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { colors, radii, spacing } from '@/constants/theme';
+import { recordWellnessConsent } from '@/services/consent';
 import { trackEvent } from '@/services/telemetry';
 
 type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap };
@@ -35,6 +36,10 @@ export default function OnboardingScreen() {
   const [weight, setWeight] = useState(78);
   const [activity, setActivity] = useState('Leicht aktiv');
   const [preferences, setPreferences] = useState<string[]>(['Proteinreich']);
+  const [showConsent, setShowConsent] = useState(false);
+  const [consentBusy, setConsentBusy] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
+  const [skippedPersonalization, setSkippedPersonalization] = useState(false);
 
   const title = useMemo(
     () => [
@@ -51,16 +56,30 @@ export default function OnboardingScreen() {
   const next = () => {
     void Haptics.selectionAsync();
     if (step === TOTAL_STEPS - 1) {
-      trackEvent('onboarding completed', { completion: 'finished' });
-      router.replace('/(tabs)/scan');
+      setShowConsent(true);
       return;
     }
     setStep((current) => current + 1);
   };
 
   const skip = () => {
-    trackEvent('onboarding completed', { completion: 'skipped' });
-    router.replace('/(tabs)/today');
+    setSkippedPersonalization(true);
+    setStep(TOTAL_STEPS - 1);
+  };
+
+  const acceptConsent = async () => {
+    setConsentBusy(true);
+    setConsentError(null);
+    try {
+      await recordWellnessConsent();
+      trackEvent('onboarding completed', { completion: skippedPersonalization ? 'skipped' : 'finished' });
+      setShowConsent(false);
+      router.replace('/(tabs)/scan');
+    } catch {
+      setConsentError('Die Einwilligung konnte gerade nicht gespeichert werden. Prüfe deine Verbindung und versuche es erneut.');
+    } finally {
+      setConsentBusy(false);
+    }
   };
 
   const back = () => {
@@ -81,6 +100,8 @@ export default function OnboardingScreen() {
       <View style={styles.topBar}>
         <Pressable
           accessibilityLabel="Zurück"
+          accessibilityRole="button"
+          accessibilityState={{ disabled: step === 0 }}
           disabled={step === 0}
           onPress={back}
           style={[styles.backButton, step === 0 && styles.hidden]}
@@ -88,9 +109,11 @@ export default function OnboardingScreen() {
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
         <Text style={styles.stepLabel}>{step + 1} von {TOTAL_STEPS}</Text>
-        <Pressable onPress={skip}>
-          <Text style={styles.skip}>Überspringen</Text>
-        </Pressable>
+        {step < TOTAL_STEPS - 1 ? (
+          <Pressable accessibilityRole="button" onPress={skip}>
+            <Text style={styles.skip}>Überspringen</Text>
+          </Pressable>
+        ) : <View style={styles.skipPlaceholder} />}
       </View>
 
       <ProgressBar value={(step + 1) / TOTAL_STEPS} />
@@ -118,6 +141,8 @@ export default function OnboardingScreen() {
                 const selected = preferences.includes(item);
                 return (
                   <Pressable
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
                     key={item}
                     onPress={() => togglePreference(item)}
                     style={[styles.chip, selected && styles.chipSelected]}
@@ -142,6 +167,23 @@ export default function OnboardingScreen() {
           onPress={next}
         />
       </View>
+
+      <Modal animationType="fade" onRequestClose={() => setShowConsent(false)} transparent visible={showConsent}>
+        <View style={styles.modalScrim}>
+          <View accessibilityViewIsModal style={styles.consentSheet}>
+            <View style={styles.consentIcon}><Ionicons color={colors.text} name="shield-checkmark-outline" size={26} /></View>
+            <Text accessibilityRole="header" style={styles.consentTitle}>Deine Daten, deine Entscheidung</Text>
+            <Text style={styles.consentText}>Ich willige ausdrücklich ein, dass Kadro meine Ernährungs-, Ziel- und Mahlzeitendaten verarbeitet, um Tagesstände und Empfehlungen bereitzustellen. Ich kann diese Einwilligung für die Zukunft widerrufen und meinen Account samt Daten löschen.</Text>
+            <View style={styles.consentLinks}>
+              <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/privacy'); }}><Text style={styles.consentLink}>Datenschutz lesen</Text></Pressable>
+              <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/terms'); }}><Text style={styles.consentLink}>Bedingungen lesen</Text></Pressable>
+            </View>
+            {consentError ? <Text accessibilityLiveRegion="assertive" style={styles.consentError}>{consentError}</Text> : null}
+            <PrimaryButton disabled={consentBusy} icon="checkmark" label={consentBusy ? 'Wird gespeichert …' : 'Einwilligen und starten'} onPress={() => void acceptConsent()} />
+            <PrimaryButton disabled={consentBusy} label="Noch nicht" onPress={() => setShowConsent(false)} variant="ghost" />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -163,7 +205,7 @@ function ChoiceList({ choices, selected, onSelect }: { choices: Choice[]; select
       {choices.map((choice) => {
         const active = choice.label === selected;
         return (
-          <Pressable key={choice.label} onPress={() => onSelect(choice.label)} style={[styles.choice, active && styles.choiceActive]}>
+          <Pressable accessibilityRole="radio" accessibilityState={{ selected: active }} key={choice.label} onPress={() => onSelect(choice.label)} style={[styles.choice, active && styles.choiceActive]}>
             <View style={[styles.choiceIcon, active && styles.choiceIconActive]}>
               <Ionicons color={colors.text} name={choice.icon} size={22} />
             </View>
@@ -193,11 +235,11 @@ function MetricRow({ label, max, min, onChange, unit, value }: { label: string; 
   return (
     <View style={styles.metricRow}>
       <Text style={styles.metricLabel}>{label}</Text>
-      <Pressable accessibilityLabel={`${label} verringern`} onPress={() => onChange(Math.max(min, value - 1))} style={styles.metricButton}>
+      <Pressable accessibilityLabel={`${label} verringern`} accessibilityRole="button" onPress={() => onChange(Math.max(min, value - 1))} style={styles.metricButton}>
         <Ionicons color={colors.text} name="remove" size={20} />
       </Pressable>
       <Text style={styles.metricValue}>{value} <Text style={styles.metricUnit}>{unit}</Text></Text>
-      <Pressable accessibilityLabel={`${label} erhöhen`} onPress={() => onChange(Math.min(max, value + 1))} style={styles.metricButton}>
+      <Pressable accessibilityLabel={`${label} erhöhen`} accessibilityRole="button" onPress={() => onChange(Math.min(max, value + 1))} style={styles.metricButton}>
         <Ionicons color={colors.text} name="add" size={20} />
       </Pressable>
     </View>
@@ -268,6 +310,7 @@ const styles = StyleSheet.create({
   hidden: { opacity: 0 },
   stepLabel: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   skip: { minWidth: 92, color: colors.muted, fontSize: 13, fontWeight: '600', textAlign: 'right' },
+  skipPlaceholder: { width: 92 },
   content: { flex: 1, paddingTop: 26 },
   headingBlock: { gap: 10 },
   brandMark: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
@@ -319,4 +362,12 @@ const styles = StyleSheet.create({
   adaptsRow: { marginTop: 22, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.neutralSoft, borderRadius: radii.pill, paddingHorizontal: 13, paddingVertical: 9 },
   adaptsText: { color: colors.accentDeep, fontSize: 12, fontWeight: '700' },
   safetyText: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 16 },
+  modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'flex-end' },
+  consentSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 18, gap: 14 },
+  consentIcon: { width: 50, height: 50, borderRadius: 18, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  consentTitle: { color: colors.text, fontSize: 25, lineHeight: 30, fontWeight: '700' },
+  consentText: { color: colors.muted, fontSize: 13, lineHeight: 20 },
+  consentLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
+  consentLink: { color: colors.accentDeep, fontSize: 12, fontWeight: '800', textDecorationLine: 'underline' },
+  consentError: { color: colors.attention, fontSize: 12, lineHeight: 18 },
 });

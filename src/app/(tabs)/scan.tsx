@@ -9,14 +9,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 
-type CaptureMode = 'Foto' | 'Beschreiben' | 'Barcode';
-
 export default function ScanScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const { setCapturedPhoto, startDemoScan } = useApp();
   const [permission, requestPermission] = useCameraPermissions();
-  const [mode, setMode] = useState<CaptureMode>('Foto');
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
@@ -54,11 +51,6 @@ export default function ScanScreen() {
 
   const capture = async () => {
     if (capturing) return;
-    if (mode !== 'Foto') {
-      Alert.alert(`${mode}`, 'In diesem MVP ist zunächst der Foto-Scan aktiv. Diese Option folgt in einem späteren Schritt.');
-      return;
-    }
-
     setCapturing(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -102,7 +94,7 @@ export default function ScanScreen() {
           <Text style={styles.fallbackText}>Natürliches Licht und eine klare Ansicht helfen bei der Portionsschätzung.</Text>
           {!permission ? <Text style={styles.permissionStatus}>Kameraberechtigung wird geprüft …</Text> : null}
           {permission && !permission.granted ? (
-            <Pressable onPress={() => void requestCameraAccess()} style={styles.permissionButton}>
+            <Pressable accessibilityRole="button" onPress={() => void requestCameraAccess()} style={styles.permissionButton}>
               <Ionicons color={colors.text} name="camera-outline" size={18} />
               <Text style={styles.permissionText}>{permission.canAskAgain ? 'Kamera erlauben' : 'Einstellungen öffnen'}</Text>
             </Pressable>
@@ -115,16 +107,14 @@ export default function ScanScreen() {
 
       <SafeAreaView edges={['top', 'bottom']} pointerEvents="box-none" style={styles.overlay}>
         <View style={styles.topBar}>
-          <Pressable accessibilityLabel="Scanner schließen" onPress={close} style={styles.circleButton}>
+          <Pressable accessibilityLabel="Scanner schließen" accessibilityRole="button" onPress={close} style={styles.circleButton}>
             <Ionicons color={colors.white} name="close" size={24} />
           </Pressable>
           <View style={styles.titlePill}>
             <Ionicons color={colors.accent} name="sparkles" size={15} />
             <Text style={styles.screenTitle}>Mahlzeit scannen</Text>
           </View>
-          <Pressable accessibilityLabel="Blitz umschalten" style={styles.circleButton}>
-            <Ionicons color={colors.white} name="flash-outline" size={22} />
-          </Pressable>
+          <View style={styles.circlePlaceholder} />
         </View>
 
         <View style={styles.guideArea}>
@@ -139,22 +129,15 @@ export default function ScanScreen() {
         </View>
 
         <View style={styles.controls}>
-          <View style={styles.modeRow}>
-            {(['Foto', 'Beschreiben', 'Barcode'] as CaptureMode[]).map((item) => (
-              <Pressable key={item} onPress={() => setMode(item)} style={styles.modeButton}>
-                <Text style={[styles.modeText, mode === item && styles.modeTextActive]}>{item}</Text>
-                {mode === item ? <View style={styles.modeDot} /> : null}
-              </Pressable>
-            ))}
+          <View style={styles.modeLabel}>
+            <Text style={styles.modeTextActive}>FOTO</Text>
           </View>
           <View style={styles.shutterRow}>
-            <Pressable accessibilityLabel="Foto auswählen" onPress={() => Alert.alert('Foto auswählen', 'Die Mediathek folgt in einem späteren MVP-Schritt.')} style={styles.smallControl}>
-              <Ionicons color={colors.white} name="images-outline" size={23} />
-            </Pressable>
-            <Pressable accessibilityLabel="Mahlzeit fotografieren" onPress={capture} style={({ pressed }) => [styles.shutterOuter, pressed && styles.shutterPressed]}>
+            <View style={styles.smallPlaceholder} />
+            <Pressable accessibilityLabel="Mahlzeit fotografieren" accessibilityRole="button" accessibilityState={{ disabled: capturing }} disabled={capturing} onPress={capture} style={({ pressed }) => [styles.shutterOuter, pressed && styles.shutterPressed]}>
               <View style={styles.shutterInner} />
             </Pressable>
-            <Pressable accessibilityLabel="Demo-Mahlzeit verwenden" onPress={runDemo} style={styles.demoControl}>
+            <Pressable accessibilityLabel="Demo-Mahlzeit verwenden" accessibilityRole="button" onPress={runDemo} style={styles.demoControl}>
               <Ionicons color={colors.white} name="play-outline" size={17} />
               <Text style={styles.demoControlText}>Demo</Text>
             </Pressable>
@@ -180,6 +163,7 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'space-between' },
   topBar: { height: 66, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   circleButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(17,19,15,0.48)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  circlePlaceholder: { width: 42, height: 42 },
   titlePill: { height: 38, borderRadius: 19, backgroundColor: 'rgba(17,19,15,0.58)', paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 7 },
   screenTitle: { color: colors.white, fontSize: 15, fontWeight: '700' },
   guideArea: { pointerEvents: 'none', flex: 1, marginHorizontal: 28, marginVertical: 42 },
@@ -191,16 +175,13 @@ const styles = StyleSheet.create({
   tipDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent },
   tipText: { color: colors.white, fontSize: 11, fontWeight: '600' },
   controls: { paddingHorizontal: 24, paddingBottom: 7, alignItems: 'center', gap: 16 },
-  modeRow: { flexDirection: 'row', gap: 25 },
-  modeButton: { minWidth: 58, alignItems: 'center', gap: 5 },
-  modeText: { color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: '600' },
-  modeTextActive: { color: colors.white },
-  modeDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent },
+  modeLabel: { borderRadius: radii.pill, backgroundColor: 'rgba(17,19,15,0.48)', paddingHorizontal: 14, paddingVertical: 7 },
+  modeTextActive: { color: colors.white, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
   shutterRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   shutterOuter: { width: 82, height: 82, borderRadius: 41, borderWidth: 3, borderColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 66, height: 66, borderRadius: 33, backgroundColor: colors.accent },
   shutterPressed: { transform: [{ scale: 0.92 }] },
-  smallControl: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  smallPlaceholder: { width: 62, height: 46 },
   demoControl: { width: 62, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 3 },
   demoControlText: { color: colors.white, fontSize: 10, fontWeight: '700' },
   privacy: { color: 'rgba(255,255,255,0.48)', fontSize: 10 },

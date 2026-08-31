@@ -7,11 +7,13 @@ const migrationPath = resolve(projectRoot, 'supabase/migrations/20260831111459_d
 const configPath = resolve(projectRoot, 'supabase/config.toml');
 const accountLinkingPath = resolve(projectRoot, 'src/services/accountLinking.ts');
 const emailTemplatePath = resolve(projectRoot, 'supabase/templates/email_change.html');
-const [migration, config, accountLinking, emailTemplate] = await Promise.all([
+const accountDeletionPath = resolve(projectRoot, 'supabase/functions/delete-account/index.ts');
+const [migration, config, accountLinking, emailTemplate, accountDeletion] = await Promise.all([
   readFile(migrationPath, 'utf8'),
   readFile(configPath, 'utf8'),
   readFile(accountLinkingPath, 'utf8'),
   readFile(emailTemplatePath, 'utf8'),
+  readFile(accountDeletionPath, 'utf8'),
 ]);
 
 const tables = [
@@ -55,6 +57,18 @@ for (const invariant of [
   if (!accountLinking.includes(invariant)) failures.push(`account linking invariant missing: ${invariant}`);
 }
 if (accountLinking.includes('signInWithOtp')) failures.push('anonymous account upgrade must not create or switch to a separate OTP user');
+
+for (const invariant of [
+  "withSupabase({ auth: 'user' }",
+  'context.supabase.auth.getUser()',
+  'context.supabaseAdmin.auth.admin.deleteUser(data.user.id)',
+  "request.method !== 'DELETE'",
+]) {
+  if (!accountDeletion.includes(invariant)) failures.push(`account deletion invariant missing: ${invariant}`);
+}
+if (!config.includes('[functions.delete-account]') || !config.includes('verify_jwt = true')) {
+  failures.push('delete-account function must keep platform JWT verification enabled');
+}
 
 if (failures.length) {
   throw new Error(`Supabase schema validation failed:\n- ${failures.join('\n- ')}`);

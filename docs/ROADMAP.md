@@ -1,6 +1,6 @@
 # Roadmap
 
-## Current status: Day 2 complete; Day 3 cloud foundation live on Supabase
+## Current status: Day 4 app work complete; native TestFlight and legal gates remain
 
 - [x] Kadro name, mark, app icon, and exact brand tokens
 - [x] German product UI
@@ -38,7 +38,7 @@ Acceptance criteria:
 
 - A real photo produces editable structured ingredients rather than a single calorie guess.
 - Nutrition values identify their source and remain explicitly estimated.
-- The original image is deleted after analysis unless the user opted in to retention.
+- The original image is deleted after local compression; confirmed meals never retain a photo.
 - Corrections change totals before persistence.
 - A saved meal survives an application restart.
 - The current mock service remains available for deterministic previews and development.
@@ -69,12 +69,20 @@ Acceptance criteria:
 
 ## Day 4: launch quality
 
-- Thirty representative meal tests
-- Poor light, blurry, partial plate, multiple dishes, and no-network cases
-- Accessibility and reduced-motion review
-- Subscription restore and entitlement testing
-- Privacy policy, terms, deletion flow, and medical disclaimer
-- App Store screenshots, landing page, and TestFlight build
+- [x] Deterministic 30-case regression matrix: 25 representative German meals plus poor light, blur, partial plate, multiple dishes, and unknown-food handling
+- [ ] Review at least 30 real iPhone meal photos against confirmed foods and portions before external beta distribution
+- [x] Local-first no-network queue and explicit retry/unclear/multiple-dish states
+- [x] Portion selector and gram correction browser smoke test
+- [x] Semantic accessibility pass, meaningful labels/states, and Reduce Motion handling for navigation and analysis/result sequences
+- [ ] Native VoiceOver, Dynamic Type, contrast, camera-permission, and offline retry pass on a physical iPhone
+- [x] RevenueCat Test Store purchase, entitlement, and restore smoke test
+- [ ] App Store Connect products plus native StoreKit sandbox purchase/restore in the TestFlight build
+- [x] Explicit wellness-data consent, privacy/terms drafts, non-medical guardrails, and live Supabase account-deletion test
+- [ ] Add legal controller/contact details and complete legal/provider/retention review
+- [x] Responsive Kadro landing page with private deployment plus privacy and terms routes
+- [ ] Publish the landing page after legal contact details are complete
+- [x] EAS production/preview configuration and App Store metadata/screenshot handoff
+- [ ] Build and submit TestFlight after Expo and Apple Developer authentication; capture final native screenshots from that build
 
 ## Explicitly out of scope for v0.1
 

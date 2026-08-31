@@ -52,6 +52,7 @@ type AppContextValue = {
   setMealPortion: (factor: PortionFactor) => void;
   toggleItem: (id: string) => void;
   resetScan: () => void;
+  resetAfterAccountDeletion: () => void;
   logScannedMeal: () => Promise<void>;
 };
 
@@ -313,6 +314,27 @@ export function AppProvider({ children }: PropsWithChildren) {
     setAnalysisMessage(null);
   }, [photoUri]);
 
+  const resetAfterAccountDeletion = useCallback(() => {
+    deleteTemporaryPhoto(photoUriRef.current);
+    photoUriRef.current = null;
+    scanModeRef.current = 'demo';
+    setUserName('Alex');
+    setTargets(DEFAULT_TARGETS);
+    setMeals(INITIAL_MEALS);
+    setDetectedItems(DETECTED_ITEMS);
+    setMealTitle('Hähnchen-Reis-Bowl');
+    setPhotoUri(null);
+    setScanId(makeScanId());
+    setScanMode('demo');
+    setQueuedInput(null);
+    setMealPortionState(1);
+    setAnalysisStatus('idle');
+    setAnalysisError(null);
+    setAnalysisMessage(null);
+    setPendingAnalysisCount(0);
+    setSyncMode('local');
+  }, []);
+
   const logScannedMeal = useCallback(async () => {
     const now = new Date();
     const persistedMeal: Meal = {
@@ -350,9 +372,10 @@ export function AppProvider({ children }: PropsWithChildren) {
       setMealPortion,
       toggleItem,
       resetScan,
+      resetAfterAccountDeletion,
       logScannedMeal,
     }),
-    [analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, consumed, detectedItems, hasLoggedScan, logScannedMeal, mealPortion, meals, pendingAnalysisCount, photoUri, refreshCloudState, remaining, resetScan, resumeLatestAnalysis, scannedMeal, setCapturedPhoto, startDemoScan, syncMode, targets, userName],
+    [analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, consumed, detectedItems, hasLoggedScan, logScannedMeal, mealPortion, meals, pendingAnalysisCount, photoUri, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scannedMeal, setCapturedPhoto, startDemoScan, syncMode, targets, userName],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

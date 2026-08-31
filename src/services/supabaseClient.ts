@@ -5,6 +5,7 @@ import 'react-native-url-polyfill/auto';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+const CLOUD_DISABLED_KEY = '@kadro/cloud-disabled-after-deletion:v1';
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
@@ -20,6 +21,24 @@ export const supabase = isSupabaseConfigured
   : null;
 
 let sessionPromise: Promise<User | null> | null = null;
+let cloudDisabledPromise: Promise<boolean> | null = null;
+
+export function isCloudSyncDisabledAfterDeletion() {
+  cloudDisabledPromise ??= AsyncStorage.getItem(CLOUD_DISABLED_KEY).then((value) => value === 'true');
+  return cloudDisabledPromise;
+}
+
+export async function disableCloudSyncAfterDeletion() {
+  await AsyncStorage.setItem(CLOUD_DISABLED_KEY, 'true');
+  cloudDisabledPromise = Promise.resolve(true);
+  sessionPromise = null;
+}
+
+export async function enableCloudSyncAfterDeletion() {
+  await AsyncStorage.removeItem(CLOUD_DISABLED_KEY);
+  cloudDisabledPromise = Promise.resolve(false);
+  sessionPromise = null;
+}
 
 export function rememberSupabaseUser(user: User | null) {
   sessionPromise = user ? Promise.resolve(user) : null;
@@ -45,6 +64,7 @@ export function ensureSupabaseUser(): Promise<User | null> {
   if (sessionPromise) return sessionPromise;
 
   sessionPromise = (async () => {
+    if (await isCloudSyncDisabledAfterDeletion()) return null;
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) throw sessionError;
     if (sessionData.session?.user) return sessionData.session.user;

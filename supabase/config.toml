@@ -237,6 +237,9 @@ otp_expiry = 3600
 subject = "Bestätige deine Kadro E-Mail-Adresse"
 content_path = "./supabase/templates/email_change.html"
 
+[functions.delete-account]
+verify_jwt = true
+
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true

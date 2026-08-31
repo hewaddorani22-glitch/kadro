@@ -44,7 +44,7 @@ Do not upgrade Expo, React, React Native, Expo Router, or other native packages 
 
 ## Engineering boundaries
 
-- The MVP has a local analysis gateway with live OpenRouter/OpenAI and USDA adapters plus an optional Supabase Auth/data-sync layer. Billing and product analytics remain mocked or absent; do not imply those actions are live.
+- The MVP has a local analysis gateway with live OpenRouter/OpenAI and USDA adapters, optional Supabase Auth/data sync, RevenueCat Test Store billing, and privacy-minimal EU PostHog analytics. Native StoreKit billing, native Sentry, and a hosted production analysis gateway remain release gates; do not imply those are live.
 - Supabase access from the app uses only the publishable key and a user JWT. Never add a secret or `service_role` key to Expo code or an `EXPO_PUBLIC_` variable.
 - Every table in an exposed Supabase schema must enable RLS, revoke unnecessary grants, and include owner-scoped policies before it is used by the client.
 - UI components should consume typed domain data, not raw third-party API responses.

@@ -96,7 +96,7 @@ export default function PlanScreen() {
         {contexts.map((context) => {
           const active = selected === context.id;
           return (
-            <Pressable key={context.id} onPress={() => chooseContext(context.id)} style={[styles.contextCard, active && styles.contextActive]}>
+            <Pressable accessibilityRole="radio" accessibilityState={{ selected: active }} key={context.id} onPress={() => chooseContext(context.id)} style={[styles.contextCard, active && styles.contextActive]}>
               <IconCircle name={context.icon} size={52} tone={active ? 'accent' : 'neutral'} />
               <View style={styles.contextCopy}>
                 <Text style={styles.contextTitle}>{context.title}</Text>
@@ -149,7 +149,7 @@ export default function PlanScreen() {
           })}
 
           {hasLoggedScan && params.fromScan !== '1' && subscriptionStatus !== 'active' ? (
-            <Pressable onPress={() => router.push('/paywall')} style={styles.proBanner}>
+            <Pressable accessibilityRole="button" onPress={() => router.push('/paywall')} style={styles.proBanner}>
               <View style={styles.proIcon}><Ionicons color={colors.white} name="infinite" size={20} /></View>
               <View style={styles.proCopy}>
                 <Text style={styles.proTitle}>Kadro weiterlaufen lassen</Text>

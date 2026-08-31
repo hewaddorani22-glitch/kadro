@@ -45,7 +45,7 @@ type ErrorContext = {
 
 const projectToken = process.env.EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
 const host = process.env.EXPO_PUBLIC_POSTHOG_HOST?.trim() || 'https://eu.i.posthog.com';
-const defaultOptIn = process.env.EXPO_PUBLIC_POSTHOG_ENABLED?.trim().toLowerCase() === 'true';
+const telemetryAvailable = process.env.EXPO_PUBLIC_POSTHOG_ENABLED?.trim().toLowerCase() === 'true';
 const allowedEvents = new Set<string>([
   ...([
     'onboarding completed',
@@ -78,10 +78,10 @@ function sanitizeAutomaticProperties<Event extends { properties?: Record<string,
   return event;
 }
 
-const posthog = projectToken
+const posthog = projectToken && telemetryAvailable
   ? new PostHog(projectToken, {
       host,
-      defaultOptIn,
+      defaultOptIn: false,
       personProfiles: 'never',
       captureAppLifecycleEvents: false,
       capturePushNotificationOpened: false,
@@ -142,6 +142,12 @@ export async function setAnalyticsCollectionEnabled(enabled: boolean) {
   if (enabled) await posthog.optIn();
   else await posthog.optOut();
   return enabled;
+}
+
+export async function clearTelemetryAfterAccountDeletion() {
+  if (!posthog) return;
+  posthog.reset();
+  await posthog.optOut();
 }
 
 export function toBillingMode(mode: 'unconfigured' | 'test-store' | 'native-store' | 'web' | undefined): BillingMode {

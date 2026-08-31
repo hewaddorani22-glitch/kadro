@@ -41,6 +41,8 @@ Expo Router uses `src/app` as the route root.
 - `src/app/confirm.tsx`: ingredient inclusion, one-tap meal portion sizing, and optional gram-level correction.
 - `src/app/result.tsx`: animated meal estimate, projected remaining targets, and delayed recommendation reveal.
 - `src/app/paywall.tsx`: transparent annual/monthly choice backed by RevenueCat Offering prices, purchase, and user-triggered restore.
+- `src/app/privacy.tsx` and `src/app/terms.tsx`: in-app legal drafts linked from onboarding, Profile, and the paywall.
+- `src/app/account-deletion.tsx`: explicit irreversible deletion confirmation and subscription-separation warning.
 - `src/components/AccountLinkCard.tsx`: anonymous account upgrade, email verification, password setup, and existing-account recovery from Profile.
 
 Root stack routes sit above the tab navigator so camera analysis, confirmation, result, and paywall can focus the user on one step.
@@ -87,6 +89,8 @@ Current responsibilities:
 - `localRepository.ts`: confirmed meals and a maximum-three local retry queue in AsyncStorage.
 - `supabaseClient.ts`: optional public-client initialization, persisted React Native sessions, foreground token refresh, and anonymous authenticated bootstrap.
 - `accountLinking.ts`: ID-preserving email upgrade with `updateUser`, email-change verification, password setup, and existing-account sign-in.
+- `consent.ts`: versioned local wellness-data consent mirrored to the user's RLS-protected profile.
+- `accountDeletion.ts`: authenticated Edge Function invocation, local cleanup, analytics reset/opt-out, and deliberate cloud-disable state after deletion.
 - `cloudRepository.ts`: maps Kadro domain records to RLS-protected Supabase rows and records recommendation feedback.
 - `syncRepository.ts`: preserves local-first writes, uploads pending local scans during hydration, and merges cloud meals back into domain state.
 - `subscription.ts` + `SubscriptionContext.tsx`: platform/Test Store key selection, Supabase-user identity, current Offering, `kadro_pro` entitlement state, purchase cancellation, and user-triggered restore. Without public SDK configuration, the paywall remains a clearly labeled non-billing preview.
@@ -111,6 +115,8 @@ The compressed preview lives only in the app cache during the active flow. A pro
 Product analytics never receives photos, food or ingredient names, email addresses, Supabase user IDs, calories, macros, weights, or goals. Only the events and categorical properties documented in `docs/ANALYTICS.md` are accepted by the client. PostHog person profiles, GeoIP, automatic lifecycle/touch/screen capture, feature flags, push capture, and session replay are disabled; device name/model/manufacturer, locale, timezone, and screen dimensions are stripped before send. The user can persistently opt out from Profile.
 
 During Expo Go testing, the root React error boundary and explicitly caught integration failures report scrubbed JavaScript errors through PostHog. Native Sentry crash reporting is reserved for the development/TestFlight build because the official React Native SDK includes native iOS and Android code that Expo Go does not bundle.
+
+The `delete-account` Edge Function requires a valid user JWT, deletes that exact Auth user with server-only admin privileges, and relies on foreign-key cascades for owned rows. After a successful response, the app clears local meals, queued scans, consent, and telemetry state and does not silently create a replacement anonymous account. The live deletion regression verifies the profile cascade and that the deleted refresh token cannot mint another session.
 
 ## Supabase ownership boundary
 

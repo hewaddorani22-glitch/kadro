@@ -1,0 +1,114 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+
+import { Card, PrimaryButton, Screen } from '@/components/ui';
+import { colors, radii } from '@/constants/theme';
+import { useApp } from '@/context/AppContext';
+import { accountDeletionErrorMessage, deleteKadroAccount } from '@/services/accountDeletion';
+
+const appleSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
+
+export default function AccountDeletionScreen() {
+  const router = useRouter();
+  const { resetAfterAccountDeletion } = useApp();
+  const [confirmed, setConfirmed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deleted, setDeleted] = useState(false);
+
+  const removeAccount = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteKadroAccount();
+      resetAfterAccountDeletion();
+      setDeleted(true);
+    } catch (failure) {
+      setError(accountDeletionErrorMessage(failure));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (deleted) {
+    return (
+      <Screen>
+        <View style={styles.success} accessibilityLiveRegion="polite">
+          <View style={styles.successIcon}><Ionicons color={colors.text} name="checkmark" size={28} /></View>
+          <Text accessibilityRole="header" style={styles.title}>Account und Daten gelöscht</Text>
+          <Text style={styles.copy}>Cloud-Synchronisierung bleibt aus, bis du später bewusst einen neuen leeren Account anlegst.</Text>
+        </View>
+        <PrimaryButton icon="arrow-forward" label="Zurück zu Kadro" onPress={() => router.replace('/(tabs)/today')} />
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen>
+      <View style={styles.topBar}>
+        <Pressable accessibilityLabel="Zurück" accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons color={colors.text} name="arrow-back" size={22} />
+        </Pressable>
+      </View>
+      <View style={styles.heading}>
+        <Text accessibilityRole="header" style={styles.title}>Account und Daten löschen</Text>
+        <Text style={styles.copy}>Dieser Schritt löscht den Supabase-Account, alle damit verknüpften Cloud-Daten, lokale Mahlzeiten, wartende Scans und die lokale Analysekennung.</Text>
+      </View>
+
+      <Card style={styles.warningCard}>
+        <Ionicons color={colors.attention} name="information-circle-outline" size={22} />
+        <View style={styles.warningCopy}>
+          <Text style={styles.warningTitle}>Ein Store-Abo läuft separat weiter</Text>
+          <Text style={styles.warningText}>Die Accountlöschung kündigt ein Apple-Abonnement nicht. Verwalte oder kündige es vor der Löschung in deinen Apple-Einstellungen.</Text>
+          <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(appleSubscriptionsUrl)}>
+            <Text style={styles.link}>Apple-Abonnements öffnen</Text>
+          </Pressable>
+        </View>
+      </Card>
+
+      <Pressable
+        accessibilityLabel="Ich verstehe, dass die Löschung nicht rückgängig gemacht werden kann"
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: confirmed }}
+        onPress={() => setConfirmed((current) => !current)}
+        style={styles.confirmRow}
+      >
+        <View style={[styles.checkbox, confirmed && styles.checkboxSelected]}>
+          {confirmed ? <Ionicons color={colors.white} name="checkmark" size={16} /> : null}
+        </View>
+        <Text style={styles.confirmText}>Ich verstehe, dass die Löschung endgültig ist und mein Verlauf nicht wiederhergestellt werden kann.</Text>
+      </Pressable>
+
+      {error ? <Text accessibilityLiveRegion="assertive" style={styles.error}>{error}</Text> : null}
+      <PrimaryButton
+        disabled={!confirmed || busy}
+        icon="trash-outline"
+        label={busy ? 'Account wird gelöscht …' : 'Account endgültig löschen'}
+        onPress={() => void removeAccount()}
+        variant="dark"
+      />
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  topBar: { flexDirection: 'row' },
+  backButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  heading: { gap: 10 },
+  title: { color: colors.text, fontSize: 31, lineHeight: 37, fontWeight: '700', letterSpacing: -0.8 },
+  copy: { color: colors.muted, fontSize: 14, lineHeight: 21 },
+  warningCard: { flexDirection: 'row', gap: 12, backgroundColor: colors.attentionSoft, borderColor: colors.attention },
+  warningCopy: { flex: 1, gap: 7 },
+  warningTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  warningText: { color: colors.muted, fontSize: 12, lineHeight: 18 },
+  link: { color: colors.accentDeep, fontSize: 12, fontWeight: '800', textDecorationLine: 'underline' },
+  confirmRow: { minHeight: 74, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  checkbox: { width: 24, height: 24, borderRadius: 8, borderWidth: 1, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
+  checkboxSelected: { backgroundColor: colors.accentDeep, borderColor: colors.accentDeep },
+  confirmText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 19 },
+  error: { color: colors.attention, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  success: { flex: 1, minHeight: 440, alignItems: 'center', justifyContent: 'center', gap: 14 },
+  successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+});

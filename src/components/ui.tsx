@@ -41,6 +41,7 @@ export function PrimaryButton({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => [
@@ -118,9 +119,10 @@ export function SectionTitle({ children, action }: PropsWithChildren<{ action?: 
 }
 
 export function ProgressBar({ value, color = colors.accentDeep }: { value: number; color?: string }) {
+  const percentage = Math.round(Math.min(1, Math.max(0, value)) * 100);
   return (
-    <View style={styles.progressTrack}>
-      <View style={[styles.progressFill, { width: `${Math.min(100, Math.max(0, value * 100))}%`, backgroundColor: color }]} />
+    <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percentage }} style={styles.progressTrack}>
+      <View style={[styles.progressFill, { width: `${percentage}%`, backgroundColor: color }]} />
     </View>
   );
 }
@@ -170,7 +172,13 @@ export function MealPhoto({ uri, height = 250, style }: { uri?: string | null; h
   const source: ImageSourcePropType = uri ? { uri } : require('../../assets/meal-bowl.jpg');
   return (
     <View style={[styles.photoFrame, { height }, style]}>
-      <Image resizeMode="cover" source={source} style={styles.photo} />
+      <Image
+        accessibilityLabel={uri ? 'Foto der aufgenommenen Mahlzeit' : 'Demo-Mahlzeit: Hähnchen-Reis-Bowl'}
+        accessible
+        resizeMode="cover"
+        source={source}
+        style={styles.photo}
+      />
       {!uri ? (
         <View style={styles.demoBadge}>
           <Text style={styles.demoBadgeText}>DEMO-MAHLZEIT</Text>

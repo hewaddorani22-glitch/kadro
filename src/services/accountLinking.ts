@@ -2,6 +2,8 @@ import { User } from '@supabase/supabase-js';
 
 import {
   ensureSupabaseUser,
+  enableCloudSyncAfterDeletion,
+  isCloudSyncDisabledAfterDeletion,
   isSupabaseConfigured,
   rememberSupabaseUser,
   supabase,
@@ -9,6 +11,7 @@ import {
 
 export type AccountLinkState =
   | { status: 'unavailable' }
+  | { status: 'disabled' }
   | { status: 'anonymous'; userId: string }
   | { status: 'pending'; userId: string; email: string }
   | { status: 'linked'; userId: string; email: string };
@@ -52,7 +55,15 @@ async function currentUser() {
 
 export async function getAccountLinkState(): Promise<AccountLinkState> {
   if (!supabase || !isSupabaseConfigured) return { status: 'unavailable' };
+  if (await isCloudSyncDisabledAfterDeletion()) return { status: 'disabled' };
   return stateFromUser(await currentUser());
+}
+
+export async function enableNewCloudAccount(): Promise<AccountLinkState> {
+  if (!supabase || !isSupabaseConfigured) return { status: 'unavailable' };
+  await enableCloudSyncAfterDeletion();
+  const user = await ensureSupabaseUser();
+  return stateFromUser(user);
 }
 
 export async function requestEmailLink(email: string): Promise<AccountLinkState> {

@@ -52,3 +52,7 @@ export async function removeQueuedAnalysis(id: string): Promise<number> {
   await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(next));
   return next.length;
 }
+
+export async function clearLocalKadroData() {
+  await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY]);
+}

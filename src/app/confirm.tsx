@@ -29,13 +29,11 @@ export default function ConfirmScreen() {
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Zurück" onPress={() => router.back()} style={styles.iconButton}>
+        <Pressable accessibilityLabel="Zurück" accessibilityRole="button" onPress={() => router.back()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
         <Text style={styles.topTitle}>Mahlzeit bestätigen</Text>
-        <Pressable style={styles.iconButton}>
-          <Ionicons color={colors.text} name="ellipsis-horizontal" size={21} />
-        </Pressable>
+        <View style={styles.iconButtonSpacer} />
       </View>
 
       <MealPhoto height={230} uri={photoUri} />
@@ -57,7 +55,14 @@ export default function ConfirmScreen() {
 
       <View style={styles.chips}>
         {detectedItems.map((item) => (
-          <Pressable key={item.id} onPress={() => toggleItem(item.id)} style={[styles.detectedChip, !item.included && styles.detectedChipOff, item.optional && item.included && styles.detectedChipQuestion]}>
+          <Pressable
+            accessibilityLabel={`${item.name} ${item.included ? 'entfernen' : 'hinzufügen'}`}
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: item.included }}
+            key={item.id}
+            onPress={() => toggleItem(item.id)}
+            style={[styles.detectedChip, !item.included && styles.detectedChipOff, item.optional && item.included && styles.detectedChipQuestion]}
+          >
             <Ionicons
               color={!item.included ? colors.muted : item.optional ? colors.attention : colors.success}
               name={!item.included ? 'add-circle-outline' : item.optional ? 'help-circle' : 'checkmark-circle'}
@@ -85,6 +90,7 @@ export default function ConfirmScreen() {
             const active = mealPortion === choice.factor;
             return (
               <Pressable
+                accessibilityRole="radio"
                 accessibilityState={{ selected: active }}
                 key={choice.label}
                 onPress={() => setMealPortion(choice.factor)}
@@ -96,7 +102,7 @@ export default function ConfirmScreen() {
             );
           })}
         </View>
-        <Pressable onPress={() => setDetailsOpen((current) => !current)} style={styles.detailsToggle}>
+        <Pressable accessibilityRole="button" accessibilityState={{ expanded: detailsOpen }} onPress={() => setDetailsOpen((current) => !current)} style={styles.detailsToggle}>
           <Text style={styles.detailsToggleText}>{detailsOpen ? 'Detailkorrektur schließen' : 'Grammangaben im Detail bearbeiten'}</Text>
           <Ionicons color={colors.muted} name={detailsOpen ? 'chevron-up' : 'chevron-down'} size={18} />
         </Pressable>
@@ -107,7 +113,7 @@ export default function ConfirmScreen() {
           {detectedItems.map((item, index) => (
             <View key={item.id}>
               <View style={[styles.itemRow, !item.included && styles.itemRowOff]}>
-                <Pressable onPress={() => toggleItem(item.id)} style={[styles.checkButton, item.included && styles.checkButtonOn]}>
+                <Pressable accessibilityLabel={`${item.name} einbeziehen`} accessibilityRole="checkbox" accessibilityState={{ checked: item.included }} onPress={() => toggleItem(item.id)} style={[styles.checkButton, item.included && styles.checkButtonOn]}>
                   <Ionicons color={item.included ? colors.text : colors.muted} name={item.included ? 'checkmark' : 'add'} size={17} />
                 </Pressable>
                 <View style={styles.itemCopy}>
@@ -118,11 +124,11 @@ export default function ConfirmScreen() {
                   <Text style={styles.itemCalories}>~{item.calories} kcal · {item.source.label}</Text>
                 </View>
                 <View style={styles.stepper}>
-                  <Pressable accessibilityLabel={`${item.name} verringern`} onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
+                  <Pressable accessibilityLabel={`${item.name} verringern`} accessibilityRole="button" onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
                     <Ionicons color={colors.text} name="remove" size={17} />
                   </Pressable>
                   <Text style={styles.amount}>{item.amountG} g</Text>
-                  <Pressable accessibilityLabel={`${item.name} erhöhen`} onPress={() => adjustItem(item.id, 1)} style={styles.stepperButton}>
+                  <Pressable accessibilityLabel={`${item.name} erhöhen`} accessibilityRole="button" onPress={() => adjustItem(item.id, 1)} style={styles.stepperButton}>
                     <Ionicons color={colors.text} name="add" size={17} />
                   </Pressable>
                 </View>
@@ -156,6 +162,7 @@ export default function ConfirmScreen() {
 const styles = StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  iconButtonSpacer: { width: 42, height: 42 },
   topTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
   heading: { gap: 8 },
   headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },

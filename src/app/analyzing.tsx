@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MealPhoto, PrimaryButton } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { AnalysisErrorKind } from '@/services/contracts';
 
 const stages = ['Foto vorbereitet', 'Lebensmittel erkannt', 'Nährwerte abgeglichen', 'Bereit zur Bestätigung'];
@@ -46,6 +47,7 @@ export default function AnalyzingScreen() {
   } = useApp();
   const [visible, setVisible] = useState(0);
   const started = useRef(false);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (started.current) return;
@@ -55,17 +57,21 @@ export default function AnalyzingScreen() {
 
   useEffect(() => {
     if (analysisStatus !== 'analyzing') return;
+    if (reduceMotion) {
+      setVisible(stages.length);
+      return;
+    }
     setVisible(0);
     const timers = stages.map((_, index) => setTimeout(() => setVisible(index + 1), 300 + index * 430));
     return () => timers.forEach(clearTimeout);
-  }, [analysisStatus]);
+  }, [analysisStatus, reduceMotion]);
 
   useEffect(() => {
     if (analysisStatus !== 'ready') return;
     setVisible(stages.length);
-    const timer = setTimeout(() => router.replace('/confirm'), 260);
+    const timer = setTimeout(() => router.replace('/confirm'), reduceMotion ? 0 : 260);
     return () => clearTimeout(timer);
-  }, [analysisStatus, router]);
+  }, [analysisStatus, reduceMotion, router]);
 
   const runDemo = () => {
     startDemoScan();
@@ -84,7 +90,7 @@ export default function AnalyzingScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.replace('/(tabs)/scan')} style={styles.closeButton}>
+        <Pressable accessibilityLabel="Analyse schließen" accessibilityRole="button" onPress={() => router.replace('/(tabs)/scan')} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={23} />
         </Pressable>
         <Text style={styles.topTitle}>Mahlzeitenanalyse</Text>
@@ -104,7 +110,7 @@ export default function AnalyzingScreen() {
         <View style={[styles.sparkleCircle, failed && styles.warningCircle]}>
           <Ionicons color={colors.text} name={failed ? 'alert-outline' : 'sparkles'} size={25} />
         </View>
-        <Text style={styles.title}>{failed ? error?.title : 'Wir analysieren deine Mahlzeit …'}</Text>
+        <Text accessibilityLiveRegion="polite" style={styles.title}>{failed ? error?.title : 'Wir analysieren deine Mahlzeit …'}</Text>
         <Text style={styles.subtitle}>
           {failed ? analysisMessage ?? error?.detail : 'Kadro erkennt Lebensmittel und schätzt Portionen. Im nächsten Schritt bestätigst du alles.'}
         </Text>

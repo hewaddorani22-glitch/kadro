@@ -110,10 +110,10 @@ export default function PaywallScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Paywall schließen" onPress={() => router.back()} style={styles.closeButton}>
+        <Pressable accessibilityLabel="Paywall schließen" accessibilityRole="button" onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={22} />
         </Pressable>
-        <Pressable disabled={busy || status === 'loading'} onPress={() => void restorePurchase()}>
+        <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || status === 'loading' }} disabled={busy || status === 'loading'} onPress={() => void restorePurchase()}>
           <Text style={[styles.restore, (busy || status === 'loading') && styles.disabledText]}>Wiederherstellen</Text>
         </Pressable>
       </View>
@@ -162,9 +162,9 @@ export default function PaywallScreen() {
         />
         <Text style={styles.billing}>{billingCopy}</Text>
         <View style={styles.legalRow}>
-          <Text style={styles.legal}>Bedingungen</Text>
+          <Pressable accessibilityRole="link" onPress={() => router.push('/terms')}><Text style={styles.legal}>Bedingungen</Text></Pressable>
           <View style={styles.legalDot} />
-          <Text style={styles.legal}>Datenschutz</Text>
+          <Pressable accessibilityRole="link" onPress={() => router.push('/privacy')}><Text style={styles.legal}>Datenschutz</Text></Pressable>
         </View>
       </View>
     </SafeAreaView>
@@ -182,7 +182,7 @@ function Benefit({ label }: { label: string }) {
 
 function PlanCard({ badge, detail, disabled, label, onPress, price, selected }: { badge?: string; detail: string; disabled?: boolean; label: string; onPress: () => void; price: string; selected: boolean }) {
   return (
-    <Pressable disabled={disabled} onPress={onPress} style={[styles.planCard, selected && styles.planCardSelected, disabled && styles.planCardDisabled]}>
+    <Pressable accessibilityRole="radio" accessibilityState={{ disabled: Boolean(disabled), selected }} disabled={disabled} onPress={onPress} style={[styles.planCard, selected && styles.planCardSelected, disabled && styles.planCardDisabled]}>
       <View style={[styles.radio, selected && styles.radioSelected]}>
         {selected ? <View style={styles.radioDot} /> : null}
       </View>

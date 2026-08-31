@@ -133,6 +133,8 @@ EXPO_PUBLIC_POSTHOG_ENABLED=true
 
 Restart Expo after changing these values. Kadro sends only a typed allowlist of anonymous funnel events. Person profiles, GeoIP lookup, lifecycle autocapture, touch autocapture, feature flags, push capture, session replay, and health-value properties are disabled. Device name/model/manufacturer, locale, timezone, and screen dimensions are removed before every send. Users can opt out under **Du → Einstellungen → Anonyme Nutzungsanalyse**. No photo, email, food name, ingredient, calorie value, macro value, or Supabase user ID is sent.
 
+Collection starts opted out even when the integration is available. The user must enable **Anonyme Nutzungsanalyse** deliberately in Profile; the choice is persisted by PostHog.
+
 JavaScript render failures and explicitly handled integration failures use the same scrubbed PostHog boundary while the app is tested in Expo Go. The official Sentry React Native SDK contains custom native code, so full Sentry crash reporting and source-map upload are intentionally deferred to the first development/TestFlight build. See [docs/ANALYTICS.md](./docs/ANALYTICS.md).
 
 ## Quality checks
@@ -140,6 +142,14 @@ JavaScript render failures and explicitly handled integration failures use the s
 ```bash
 npm run verify
 ```
+
+The gate includes a deterministic 30-case Day 4 matrix: 25 representative German meals plus poor-light, blurred, partial-plate, multiple-dish, and unknown-food behavior. This protects mapping and error handling, but it does not replace the pending review of at least 30 real iPhone meal photos.
+
+## Prepare TestFlight
+
+The repository includes `eas.json` with internal-preview and production profiles. The remaining authenticated steps are creating/linking the Expo EAS project, adding production environment values, creating App Store Connect subscriptions, and running the native StoreKit sandbox flow. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
+
+The in-app privacy policy and terms are deliberately marked as MVP drafts. They need the legal publisher/controller identity, a real contact channel, final retention periods, and legal/provider review before public distribution. The authenticated Supabase deletion function is live and its regression test confirms account deletion, profile cascade, and refresh-token revocation.
 
 ## Working with coding agents
 
@@ -155,6 +165,7 @@ Contributions should follow [CONTRIBUTING.md](./CONTRIBUTING.md). Pull requests 
 - Real camera preview when permission is granted
 - Local development analysis gateway; optional Supabase Auth and data sync; no hosted production analysis gateway or live billing yet
 - Optional anonymous PostHog product analytics; native Sentry reporting begins with the development/TestFlight build
+- Versioned wellness-data consent, privacy/terms drafts, and authenticated account deletion with local cleanup
 - Confirmed meal records never retain photos; only a compressed failed scan can live temporarily in the local retry queue
 - Confirmed meals survive restarts in local AsyncStorage
 - Failed network scans are queued locally (maximum three) until the user explicitly retries

@@ -19,8 +19,6 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { syncMode, targets, userName } = useApp();
   const { status: subscriptionStatus } = useSubscription();
-  const [savePhotos, setSavePhotos] = useState(false);
-  const [notifications, setNotifications] = useState(true);
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
 
   useEffect(() => {
@@ -40,7 +38,7 @@ export default function ProfileScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <View style={styles.avatar}><Text style={styles.avatarText}>A</Text></View>
+        <View style={styles.avatar}><Text style={styles.avatarText}>{userName.trim().charAt(0).toUpperCase() || 'K'}</Text></View>
         <View style={styles.headerCopy}>
           <Eyebrow>Dein Profil</Eyebrow>
           <PageTitle>{userName}</PageTitle>
@@ -54,7 +52,6 @@ export default function ProfileScreen() {
                   : 'Lokal auf diesem Gerät'}
           </Text>
         </View>
-        <Pressable style={styles.editButton}><Ionicons color={colors.text} name="create-outline" size={20} /></Pressable>
       </View>
 
       <View style={styles.section}>
@@ -62,7 +59,7 @@ export default function ProfileScreen() {
         <AccountLinkCard />
       </View>
 
-      <Pressable onPress={() => router.push('/paywall')}>
+      <Pressable accessibilityLabel="Kadro Pro ansehen" accessibilityRole="button" onPress={() => router.push('/paywall')}>
         <Card style={styles.proCard}>
           <View style={styles.proIcon}><Ionicons color={colors.text} name="infinite" size={26} /></View>
           <View style={styles.proCopy}>
@@ -82,31 +79,16 @@ export default function ProfileScreen() {
             <PlanStat label="Ziel" value="Reduzieren" />
             <PlanStat label="Aktivität" value="Leicht" />
           </View>
-          <Pressable style={styles.updateRow}>
-            <Ionicons color={colors.accentDeep} name="options-outline" size={19} />
-            <Text style={styles.updateText}>Ziele und Präferenzen anpassen</Text>
-            <Ionicons color={colors.muted} name="chevron-forward" size={18} />
-          </Pressable>
         </Card>
       </View>
 
       <View style={styles.section}>
-        <SectionTitle>Einstellungen</SectionTitle>
+        <SectionTitle>Datenschutz-Einstellungen</SectionTitle>
         <Card style={styles.listCard}>
-          <ToggleRow
+          <InfoRow
             detail="Originalfotos werden nach der Analyse verworfen."
             icon="image-outline"
-            label="Mahlzeitenfotos speichern"
-            onValueChange={setSavePhotos}
-            value={savePhotos}
-          />
-          <View style={styles.divider} />
-          <ToggleRow
-            detail="Sanfte Hinweise zu deinen üblichen Essenszeiten."
-            icon="notifications-outline"
-            label="Intelligente Erinnerungen"
-            onValueChange={setNotifications}
-            value={notifications}
+            label="Umgang mit Fotos"
           />
           <View style={styles.divider} />
           <ToggleRow
@@ -125,11 +107,11 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <SectionTitle>Support und Datenschutz</SectionTitle>
         <Card style={styles.listCard}>
-          <MenuRow icon="shield-checkmark-outline" label="Datenschutz" />
+          <MenuRow icon="shield-checkmark-outline" label="Datenschutz" onPress={() => router.push('/privacy')} />
           <View style={styles.divider} />
-          <MenuRow icon="document-text-outline" label="Nutzungsbedingungen" />
+          <MenuRow icon="document-text-outline" label="Nutzungsbedingungen" onPress={() => router.push('/terms')} />
           <View style={styles.divider} />
-          <MenuRow icon="help-circle-outline" label="Hilfe und Feedback" />
+          <MenuRow icon="trash-outline" label="Account und Daten löschen" onPress={() => router.push('/account-deletion')} />
         </Card>
       </View>
 
@@ -165,9 +147,21 @@ function ToggleRow({ detail, disabled, icon, label, onValueChange, value }: { de
   );
 }
 
-function MenuRow({ icon, label }: { icon: keyof typeof Ionicons.glyphMap; label: string }) {
+function InfoRow({ detail, icon, label }: { detail: string; icon: keyof typeof Ionicons.glyphMap; label: string }) {
   return (
-    <Pressable style={styles.menuRow}>
+    <View style={styles.toggleRow}>
+      <View style={styles.rowIcon}><Ionicons color={colors.text} name={icon} size={20} /></View>
+      <View style={styles.rowCopy}>
+        <Text style={styles.rowLabel}>{label}</Text>
+        <Text style={styles.rowDetail}>{detail}</Text>
+      </View>
+    </View>
+  );
+}
+
+function MenuRow({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.menuRow}>
       <View style={styles.rowIcon}><Ionicons color={colors.text} name={icon} size={20} /></View>
       <Text style={styles.menuLabel}>{label}</Text>
       <Ionicons color={colors.muted} name="chevron-forward" size={18} />
@@ -181,7 +175,6 @@ const styles = StyleSheet.create({
   avatarText: { color: colors.white, fontSize: 20, fontWeight: '800' },
   headerCopy: { flex: 1, gap: 3 },
   subtitle: { color: colors.muted, fontSize: 13 },
-  editButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   proCard: { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
   proIcon: { width: 46, height: 46, borderRadius: 17, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   proCopy: { flex: 1, gap: 4 },
@@ -195,8 +188,6 @@ const styles = StyleSheet.create({
   planStat: { width: '50%', padding: 14, gap: 4 },
   planStatLabel: { color: colors.muted, fontSize: 11 },
   planStatValue: { color: colors.text, fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  updateRow: { minHeight: 54, borderRadius: 18, backgroundColor: colors.neutralSoft, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  updateText: { flex: 1, color: colors.accentDeep, fontSize: 12, fontWeight: '700' },
   listCard: { padding: 8 },
   toggleRow: { minHeight: 78, padding: 9, flexDirection: 'row', alignItems: 'center', gap: 11 },
   disabledRow: { opacity: 0.55 },
