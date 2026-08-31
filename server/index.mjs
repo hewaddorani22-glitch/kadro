@@ -7,7 +7,7 @@ const isOpenRouter = aiProvider === 'openrouter';
 const aiApiKey = isOpenRouter ? process.env.OPENROUTER_API_KEY : process.env.OPENAI_API_KEY;
 const aiApiUrl = isOpenRouter ? 'https://openrouter.ai/api/v1/responses' : 'https://api.openai.com/v1/responses';
 const visionModel = isOpenRouter
-  ? process.env.OPENROUTER_VISION_MODEL || 'openai/gpt-4o'
+  ? process.env.OPENROUTER_VISION_MODEL || 'openai/gpt-4.1-mini'
   : process.env.OPENAI_VISION_MODEL || 'gpt-4o';
 const openRouterZdr = process.env.OPENROUTER_ZDR !== 'false';
 const usdaApiKey = process.env.USDA_API_KEY || 'DEMO_KEY';

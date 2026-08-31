@@ -2,8 +2,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
 import { usePathname, useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { colors, radii } from '@/constants/theme';
@@ -20,7 +20,35 @@ export default function ScanScreen() {
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
-  const cameraActive = pathname === '/scan' && permission?.granted;
+  const cameraActive = pathname.endsWith('/scan') && permission?.granted === true;
+
+  useEffect(() => {
+    setCameraReady(false);
+  }, [cameraActive]);
+
+  const requestCameraAccess = async () => {
+    if (permission && !permission.canAskAgain) {
+      Alert.alert(
+        'Kamera in den Einstellungen erlauben',
+        'Öffne die iPhone-Einstellungen, wähle Expo Go und aktiviere dort die Kamera.',
+        [
+          { text: 'Abbrechen', style: 'cancel' },
+          { text: 'Einstellungen öffnen', onPress: () => void Linking.openSettings() },
+        ],
+      );
+      return;
+    }
+
+    const nextPermission = await requestPermission();
+    if (!nextPermission.granted) {
+      Alert.alert(
+        'Kamerazugriff fehlt',
+        nextPermission.canAskAgain
+          ? 'Bitte erlaube den Kamerazugriff, damit Kadro dein Essen fotografieren kann.'
+          : 'Aktiviere die Kamera bitte in den iPhone-Einstellungen unter Expo Go.',
+      );
+    }
+  };
 
   const close = () => router.replace('/(tabs)/today');
 
@@ -72,10 +100,11 @@ export default function ScanScreen() {
           </View>
           <Text style={styles.fallbackTitle}>Zeig die ganze Mahlzeit</Text>
           <Text style={styles.fallbackText}>Natürliches Licht und eine klare Ansicht helfen bei der Portionsschätzung.</Text>
+          {!permission ? <Text style={styles.permissionStatus}>Kameraberechtigung wird geprüft …</Text> : null}
           {permission && !permission.granted ? (
-            <Pressable onPress={requestPermission} style={styles.permissionButton}>
+            <Pressable onPress={() => void requestCameraAccess()} style={styles.permissionButton}>
               <Ionicons color={colors.text} name="camera-outline" size={18} />
-              <Text style={styles.permissionText}>Kamera erlauben</Text>
+              <Text style={styles.permissionText}>{permission.canAskAgain ? 'Kamera erlauben' : 'Einstellungen öffnen'}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -144,6 +173,7 @@ const styles = StyleSheet.create({
   fallbackText: { color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 8 },
   permissionButton: { marginTop: 18, minHeight: 44, borderRadius: radii.pill, paddingHorizontal: 16, backgroundColor: colors.accent, flexDirection: 'row', alignItems: 'center', gap: 8 },
   permissionText: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  permissionStatus: { color: 'rgba(255,255,255,0.58)', fontSize: 12, marginTop: 16 },
   scrimTop: { pointerEvents: 'none', position: 'absolute', left: 0, right: 0, top: 0, height: 160, backgroundColor: 'rgba(0,0,0,0.36)' },
   scrimBottom: { pointerEvents: 'none', position: 'absolute', left: 0, right: 0, bottom: 0, height: 250, backgroundColor: 'rgba(0,0,0,0.48)' },
   overlay: { flex: 1, justifyContent: 'space-between' },
