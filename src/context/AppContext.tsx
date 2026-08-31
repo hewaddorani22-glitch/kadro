@@ -1,4 +1,4 @@
-import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { AnalysisErrorKind, MealAnalysisInput } from '@/services/contracts';
 import { analyzePreparedPhoto, deleteTemporaryPhoto, MealAnalysisError, prepareMealPhoto } from '@/services/mealAnalysis';
@@ -70,6 +70,8 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [scanId, setScanId] = useState(makeScanId);
   const [scanMode, setScanMode] = useState<ScanMode>('demo');
+  const photoUriRef = useRef<string | null>(null);
+  const scanModeRef = useRef<ScanMode>('demo');
   const [queuedInput, setQueuedInput] = useState<MealAnalysisInput | null>(null);
   const [mealPortion, setMealPortionState] = useState<PortionFactor | null>(1);
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>('idle');
@@ -98,6 +100,8 @@ export function AppProvider({ children }: PropsWithChildren) {
   const hasLoggedScan = meals.some((meal) => meal.origin === 'scan');
 
   const setCapturedPhoto = useCallback((uri: string) => {
+    photoUriRef.current = uri;
+    scanModeRef.current = 'live';
     setPhotoUri(uri);
     setScanMode('live');
     setQueuedInput(null);
@@ -106,6 +110,8 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const startDemoScan = useCallback(() => {
     deleteTemporaryPhoto(photoUri);
+    photoUriRef.current = null;
+    scanModeRef.current = 'demo';
     setPhotoUri(null);
     setScanMode('demo');
     setQueuedInput(null);
@@ -121,7 +127,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     setAnalysisError(null);
     setAnalysisMessage(null);
 
-    if (forceDemo || scanMode === 'demo') {
+    const activeScanMode = scanModeRef.current;
+    if (forceDemo || activeScanMode === 'demo') {
       await new Promise((resolve) => setTimeout(resolve, 1900));
       setDetectedItems(DETECTED_ITEMS);
       setMealTitle('Hähnchen-Reis-Bowl');
@@ -132,10 +139,11 @@ export function AppProvider({ children }: PropsWithChildren) {
     let input = queuedInput;
     try {
       if (!input) {
-        if (!photoUri) throw new MealAnalysisError('unclear-image', 'Bitte fotografiere den ganzen Teller erneut.');
-        const originalUri = photoUri;
+        const originalUri = photoUriRef.current ?? photoUri;
+        if (!originalUri) throw new MealAnalysisError('unclear-image', 'Bitte fotografiere den ganzen Teller erneut.');
         const prepared = await prepareMealPhoto(originalUri);
         input = prepared;
+        photoUriRef.current = prepared.previewUri;
         setPhotoUri(prepared.previewUri);
         if (prepared.previewUri !== originalUri) deleteTemporaryPhoto(originalUri);
       }
@@ -170,10 +178,13 @@ export function AppProvider({ children }: PropsWithChildren) {
     const queue = await loadAnalysisQueue();
     const latest = queue.at(-1);
     if (!latest) return false;
+    const queuedPhotoUri = `data:${latest.mimeType};base64,${latest.imageBase64}`;
+    scanModeRef.current = 'queued';
+    photoUriRef.current = queuedPhotoUri;
     setScanId(latest.id);
     setScanMode('queued');
     setQueuedInput(latest);
-    setPhotoUri(`data:${latest.mimeType};base64,${latest.imageBase64}`);
+    setPhotoUri(queuedPhotoUri);
     setAnalysisStatus('idle');
     setAnalysisError(null);
     setAnalysisMessage(null);
@@ -206,6 +217,8 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const resetScan = useCallback(() => {
     deleteTemporaryPhoto(photoUri);
+    photoUriRef.current = null;
+    scanModeRef.current = 'demo';
     setDetectedItems(DETECTED_ITEMS);
     setMealTitle('Hähnchen-Reis-Bowl');
     setPhotoUri(null);

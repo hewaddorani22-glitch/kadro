@@ -148,14 +148,15 @@ export default function ScanScreen() {
             ))}
           </View>
           <View style={styles.shutterRow}>
-            <Pressable accessibilityLabel="Foto auswählen" style={styles.smallControl}>
+            <Pressable accessibilityLabel="Foto auswählen" onPress={() => Alert.alert('Foto auswählen', 'Die Mediathek folgt in einem späteren MVP-Schritt.')} style={styles.smallControl}>
               <Ionicons color={colors.white} name="images-outline" size={23} />
             </Pressable>
             <Pressable accessibilityLabel="Mahlzeit fotografieren" onPress={capture} style={({ pressed }) => [styles.shutterOuter, pressed && styles.shutterPressed]}>
               <View style={styles.shutterInner} />
             </Pressable>
-            <Pressable accessibilityLabel="Demo-Mahlzeit verwenden" onPress={runDemo} style={styles.smallControl}>
-              <Ionicons color={colors.white} name="play-outline" size={24} />
+            <Pressable accessibilityLabel="Demo-Mahlzeit verwenden" onPress={runDemo} style={styles.demoControl}>
+              <Ionicons color={colors.white} name="play-outline" size={17} />
+              <Text style={styles.demoControlText}>Demo</Text>
             </Pressable>
           </View>
           <Text style={styles.privacy}>Original nicht gespeichert · bei Netzfehler lokal vorgemerkt</Text>
@@ -200,5 +201,7 @@ const styles = StyleSheet.create({
   shutterInner: { width: 66, height: 66, borderRadius: 33, backgroundColor: colors.accent },
   shutterPressed: { transform: [{ scale: 0.92 }] },
   smallControl: { width: 46, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' },
+  demoControl: { width: 62, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 3 },
+  demoControlText: { color: colors.white, fontSize: 10, fontWeight: '700' },
   privacy: { color: 'rgba(255,255,255,0.48)', fontSize: 10 },
 });
