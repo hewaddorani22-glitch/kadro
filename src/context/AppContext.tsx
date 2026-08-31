@@ -36,6 +36,7 @@ type AppContextValue = {
   analysisMessage: string | null;
   pendingAnalysisCount: number;
   syncMode: SyncMode;
+  refreshCloudState: () => Promise<void>;
   setCapturedPhoto: (uri: string) => void;
   startDemoScan: () => void;
   analyzeCurrentPhoto: (forceDemo?: boolean) => Promise<void>;
@@ -84,6 +85,28 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
   const [pendingAnalysisCount, setPendingAnalysisCount] = useState(0);
   const [syncMode, setSyncMode] = useState<SyncMode>(isSupabaseConfigured ? 'syncing' : 'local');
+
+  const refreshCloudState = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setSyncMode('local');
+      return;
+    }
+    setSyncMode('syncing');
+    try {
+      const cloudState = await hydrateCloudState();
+      if (!cloudState) {
+        setSyncMode('local');
+        return;
+      }
+      setMeals(cloudState.meals);
+      setTargets(cloudState.targets);
+      setUserName(cloudState.userName);
+      setSyncMode('cloud');
+    } catch (error) {
+      setSyncMode('error');
+      throw error;
+    }
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -285,6 +308,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       analysisMessage,
       pendingAnalysisCount,
       syncMode,
+      refreshCloudState,
       setCapturedPhoto,
       startDemoScan,
       analyzeCurrentPhoto,
@@ -295,7 +319,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       resetScan,
       logScannedMeal,
     }),
-    [analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, consumed, detectedItems, hasLoggedScan, logScannedMeal, mealPortion, meals, pendingAnalysisCount, photoUri, remaining, resetScan, resumeLatestAnalysis, scannedMeal, setCapturedPhoto, startDemoScan, syncMode, targets, userName],
+    [analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, consumed, detectedItems, hasLoggedScan, logScannedMeal, mealPortion, meals, pendingAnalysisCount, photoUri, refreshCloudState, remaining, resetScan, resumeLatestAnalysis, scannedMeal, setCapturedPhoto, startDemoScan, syncMode, targets, userName],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

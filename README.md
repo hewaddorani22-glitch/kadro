@@ -20,7 +20,7 @@ An iOS-first, production-shaped nutrition MVP built with React Native, Expo Rout
 
 The demo meal and billing remain mocked. Real scans use OpenRouter or direct OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. The barcode adapter reads packaged-food data from Open Food Facts. Typed integration contracts keep raw provider payloads out of the UI.
 
-When configured, Supabase provides an anonymous authenticated session, RLS-isolated profiles, daily targets, confirmed meals, ingredients, recommendation impressions, and acceptance/rejection feedback. The anonymous identity can later be linked to email or Apple without placing a login wall before the first scan. Without Supabase configuration the app remains fully local-first.
+When configured, Supabase provides an anonymous authenticated session, RLS-isolated profiles, daily targets, confirmed meals, ingredients, recommendation impressions, and acceptance/rejection feedback. The profile screen can upgrade that same anonymous user ID to a verified email/password account without placing a login wall before the first scan. Without Supabase configuration the app remains fully local-first.
 
 ## Open with Expo Go
 
@@ -81,6 +81,10 @@ npx supabase db push --linked --profile "$PWD/supabase/kadro.profile.yml"
 EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
+
+4. Under **Authentication → Sign In / Providers**, keep **Anonymous Sign-Ins** and email confirmation enabled, enable **Allow manual linking**, then save. Kadro starts the upgrade with `updateUser`, verifies the email change, and only then allows a password to be set, so the existing user ID and its RLS-owned rows are retained.
+
+The hosted default mailer sends a confirmation link. Kadro also accepts a 6- to 8-digit code when a custom SMTP provider and an email-change template containing `{{ .Token }}` are configured.
 
 Never put a Supabase secret key or legacy `service_role` key in an `EXPO_PUBLIC_` variable. The migration revokes anonymous table access, grants only the required authenticated operations, and applies owner-only RLS to every exposed table. Meal photos are not stored in Supabase.
 

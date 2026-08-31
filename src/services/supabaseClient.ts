@@ -21,6 +21,10 @@ export const supabase = isSupabaseConfigured
 
 let sessionPromise: Promise<User | null> | null = null;
 
+export function rememberSupabaseUser(user: User | null) {
+  sessionPromise = user ? Promise.resolve(user) : null;
+}
+
 export function startSupabaseAuthLifecycle() {
   if (!supabase || Platform.OS === 'web') return () => undefined;
 

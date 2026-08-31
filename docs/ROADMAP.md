@@ -56,7 +56,7 @@ Acceptance criteria:
 - [x] Create the dedicated Kadro Supabase project, enable anonymous auth, apply the migration, and run live RLS tests
 - [x] Link an authorized Supabase CLI profile and reconcile the dashboard-applied migration with CLI migration history
 - [x] Run the cloud-hydration smoke test in Expo Go and verify the persisted anonymous session after an app restart
-- [ ] Add permanent account linking with email or Apple before public launch
+- [x] Add permanent account linking with verified email and password recovery; Apple remains optional after MVP validation
 - [x] Expand the verified German catalog from 45 to 200 meals after live schema and ranking validation
 - [ ] RevenueCat subscription and restore flow
 - [ ] PostHog product events and Sentry error reporting

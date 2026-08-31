@@ -5,7 +5,14 @@ import { fileURLToPath } from 'node:url';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const migrationPath = resolve(projectRoot, 'supabase/migrations/20260831111459_day3_core_schema.sql');
 const configPath = resolve(projectRoot, 'supabase/config.toml');
-const [migration, config] = await Promise.all([readFile(migrationPath, 'utf8'), readFile(configPath, 'utf8')]);
+const accountLinkingPath = resolve(projectRoot, 'src/services/accountLinking.ts');
+const emailTemplatePath = resolve(projectRoot, 'supabase/templates/email_change.html');
+const [migration, config, accountLinking, emailTemplate] = await Promise.all([
+  readFile(migrationPath, 'utf8'),
+  readFile(configPath, 'utf8'),
+  readFile(accountLinkingPath, 'utf8'),
+  readFile(emailTemplatePath, 'utf8'),
+]);
 
 const tables = [
   'profiles',
@@ -32,9 +39,25 @@ if (!migration.includes('cardinality(suggestion_ids) = 3')) failures.push('recom
 if (/grant\s+.+\s+to\s+(anon|public)\b/i.test(migration)) failures.push('migration grants exposed data to anon/public');
 if (/service_role|secret key/i.test(migration)) failures.push('migration unexpectedly references privileged client credentials');
 if (!config.includes('enable_anonymous_sign_ins = true')) failures.push('local anonymous sign-in is not enabled');
+if (!config.includes('enable_manual_linking = true')) failures.push('local manual account linking is not enabled');
+if (!config.includes('enable_confirmations = true')) failures.push('local email confirmation is not enabled');
+if (!config.includes('minimum_password_length = 8')) failures.push('local password minimum is not eight characters');
+if (!emailTemplate.includes('{{ .Token }}') || !emailTemplate.includes('{{ .ConfirmationURL }}')) {
+  failures.push('email-change template must support both OTP and confirmation-link flows');
+}
+
+for (const invariant of [
+  'client.auth.updateUser({ email: normalizedEmail })',
+  "type: 'email_change'",
+  'assertSameUser(user.id',
+  'client.auth.signInWithPassword',
+]) {
+  if (!accountLinking.includes(invariant)) failures.push(`account linking invariant missing: ${invariant}`);
+}
+if (accountLinking.includes('signInWithOtp')) failures.push('anonymous account upgrade must not create or switch to a separate OTP user');
 
 if (failures.length) {
   throw new Error(`Supabase schema validation failed:\n- ${failures.join('\n- ')}`);
 }
 
-console.log(`Validated ${tables.length} RLS-protected Kadro tables.`);
+console.log(`Validated ${tables.length} RLS-protected Kadro tables and ID-preserving account linking.`);

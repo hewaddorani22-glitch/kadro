@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { AccountLinkCard } from '@/components/AccountLinkCard';
 import { Card, Eyebrow, PageTitle, Screen, SectionTitle } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -32,6 +33,11 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <Pressable style={styles.editButton}><Ionicons color={colors.text} name="create-outline" size={20} /></Pressable>
+      </View>
+
+      <View style={styles.section}>
+        <SectionTitle>Dein Konto</SectionTitle>
+        <AccountLinkCard />
       </View>
 
       <Pressable onPress={() => router.push('/paywall')}>

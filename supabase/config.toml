@@ -176,10 +176,10 @@ refresh_token_reuse_interval = 10
 enable_signup = true
 # Allow/disallow anonymous sign-ins to your project.
 enable_anonymous_sign_ins = true
-# Allow/disallow testing manual linking of accounts
-enable_manual_linking = false
+# Preserve the anonymous user ID when it is upgraded with a verified identity.
+enable_manual_linking = true
 # Passwords shorter than this value will be rejected as weak. Minimum 6, recommended 8 or more.
-minimum_password_length = 6
+minimum_password_length = 8
 # Passwords that do not meet the following requirements will be rejected as weak. Supported values
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
@@ -223,7 +223,7 @@ enable_signup = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
@@ -232,6 +232,10 @@ max_frequency = "1s"
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
+
+[auth.email.template.email_change]
+subject = "Bestätige deine Kadro E-Mail-Adresse"
+content_path = "./supabase/templates/email_change.html"
 
 # Use a production-ready SMTP server
 # [auth.email.smtp]

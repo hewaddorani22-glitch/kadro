@@ -41,6 +41,7 @@ Expo Router uses `src/app` as the route root.
 - `src/app/confirm.tsx`: ingredient inclusion, one-tap meal portion sizing, and optional gram-level correction.
 - `src/app/result.tsx`: animated meal estimate, projected remaining targets, and delayed recommendation reveal.
 - `src/app/paywall.tsx`: transparent mock subscription choice.
+- `src/components/AccountLinkCard.tsx`: anonymous account upgrade, email verification, password setup, and existing-account recovery from Profile.
 
 Root stack routes sit above the tab navigator so camera analysis, confirmation, result, and paywall can focus the user on one step.
 
@@ -85,6 +86,7 @@ Current responsibilities:
 - `server/index.mjs`: secret-bearing local gateway. OpenRouter or direct OpenAI returns food identity, portion estimate, and confidence only; USDA provides normalized calories and macros; Open Food Facts provides packaged-food barcode data. OpenRouter routing requires supported parameters, denies data collection, and defaults to ZDR.
 - `localRepository.ts`: confirmed meals and a maximum-three local retry queue in AsyncStorage.
 - `supabaseClient.ts`: optional public-client initialization, persisted React Native sessions, foreground token refresh, and anonymous authenticated bootstrap.
+- `accountLinking.ts`: ID-preserving email upgrade with `updateUser`, email-change verification, password setup, and existing-account sign-in.
 - `cloudRepository.ts`: maps Kadro domain records to RLS-protected Supabase rows and records recommendation feedback.
 - `syncRepository.ts`: preserves local-first writes, uploads pending local scans during hydration, and merges cloud meals back into domain state.
 - RevenueCat adapter: entitlement state and purchase/restore actions.
@@ -109,4 +111,4 @@ The compressed preview lives only in the app cache during the active flow. A pro
 
 The mobile app receives only the project URL and publishable key. Supabase Auth supplies a per-user JWT, and Postgres RLS limits every row to `(select auth.uid()) = user_id`. The client never receives a secret or `service_role` key. `profiles`, `daily_targets`, `meals`, `meal_items`, `recommendations`, and `recommendation_feedback` all enable RLS and revoke access from the unauthenticated `anon` role.
 
-Anonymous sign-in is used to avoid blocking the first scan. It is an authenticated Supabase user, not unauthenticated public database access. A later account-upgrade flow can link email or Apple to the same user ID. Clearing app data before that upgrade can make the anonymous account inaccessible, so permanent account linking remains a Day 3 follow-up before public launch.
+Anonymous sign-in is used to avoid blocking the first scan. It is an authenticated Supabase user, not unauthenticated public database access. The Profile account card upgrades it with a verified email through `updateUser`, verifies that the returned identity still has the same user ID, and then lets the user set a password. Existing accounts can sign back in and rehydrate their RLS-owned cloud data. Clearing app data before the upgrade can still make an anonymous account inaccessible.
