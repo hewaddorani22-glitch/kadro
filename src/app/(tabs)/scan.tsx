@@ -113,7 +113,7 @@ export default function ScanScreen() {
       <View style={styles.scrimTop} />
       <View style={styles.scrimBottom} />
 
-      <SafeAreaView edges={['top', 'bottom']} style={styles.overlay}>
+      <SafeAreaView edges={['top', 'bottom']} pointerEvents="box-none" style={styles.overlay}>
         <View style={styles.topBar}>
           <Pressable accessibilityLabel="Scanner schließen" onPress={close} style={styles.circleButton}>
             <Ionicons color={colors.white} name="close" size={24} />
