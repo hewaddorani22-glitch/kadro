@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 
-import { buildMealItem, chooseFood, mapUsdaFood, normalizeSearchTerm, toFoodFacts } from '../server/core.mjs';
+import {
+  buildMealItem,
+  chooseFood,
+  chooseFoodMatch,
+  mapUsdaFood,
+  normalizeSearchTerm,
+  toFoodFacts,
+  usdaCacheKey,
+} from '../server/core.mjs';
 
 /** Shapes a USDA search hit the way FoodData Central returns one. */
 function usdaFood(fdcId, { calories, protein, carbs, fat, fiber }) {
@@ -22,7 +30,10 @@ function throughCacheTable(facts) {
   if (!facts) return null;
   const numeric = (value) => Number(Number(value).toFixed(2));
   return {
-    fdcId: String(facts.fdcId),
+    provider: 'usda',
+    referenceId: String(facts.referenceId),
+    label: `USDA FDC ${facts.referenceId}`,
+    matchConfidence: 'high',
     calories: numeric(facts.calories),
     protein: numeric(facts.protein),
     carbs: numeric(facts.carbs),
@@ -38,6 +49,9 @@ const variants = ['Grilled Chicken Breast', 'grilled chicken breast', '  GRILLED
 const keys = new Set(variants.map(normalizeSearchTerm));
 if (keys.size !== 1) failures.push(`normalizeSearchTerm produced ${keys.size} keys for one term`);
 if (normalizeSearchTerm(undefined) !== '') failures.push('normalizeSearchTerm must tolerate missing terms');
+if (new Set(variants.map(usdaCacheKey)).size !== 1 || !usdaCacheKey(variants[0]).startsWith('v2:')) {
+  failures.push('versioned cache keys must be stable and invalidate the old matcher');
+}
 
 // 2. A cached lookup must produce byte-identical items to a fresh one. This is
 //    the whole point: caching may save requests, never change a number.
@@ -125,10 +139,19 @@ for (const [term, rows, acceptable] of matchCases) {
   }
 }
 
-// A single candidate is always the answer, and an empty list must not throw.
+// A result must still be relevant even if USDA only returns one row. Blindly
+// accepting an unrelated single candidate is how bad values become confident.
 if (chooseFood([], 'anything') !== undefined) failures.push('an empty USDA result must resolve to nothing');
-if (chooseFood([{ fdcId: 1, dataType: 'Branded', description: 'ANYTHING' }], 'x')?.fdcId !== 1) {
-  failures.push('a single USDA candidate must be selected as-is');
+if (chooseFood([{ fdcId: 1, dataType: 'Branded', description: 'ANYTHING' }], 'x') !== undefined) {
+  failures.push('an unrelated single USDA candidate must be rejected');
+}
+
+const ambiguous = chooseFoodMatch([
+  { fdcId: 1, dataType: 'Survey (FNDDS)', description: 'Chicken breast, cooked, skinless' },
+  { fdcId: 2, dataType: 'Survey (FNDDS)', description: 'Chicken breast, cooked, boneless' },
+], 'chicken breast');
+if (ambiguous.confidence !== 'medium' || ambiguous.cacheable) {
+  failures.push('a close USDA tie may be shown for review but must never enter the shared cache');
 }
 
 if (failures.length) {

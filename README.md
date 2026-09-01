@@ -18,7 +18,7 @@ An iOS-first, production-shaped nutrition MVP built with React Native, Expo Rout
 8. Three deterministic contextual suggestions from a 200-meal German catalog
 9. Real local weight/meal progress, profile and transparent subscription paywall
 
-The demo meal remains available as a deterministic fallback. Real scans use OpenRouter or direct OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. Typed meal descriptions use the same structured detection and USDA boundary. The barcode adapter reads packaged-food data from Open Food Facts and starts at 100 g for explicit correction. RevenueCat-backed purchase and restore actions use a non-billing preview until its public SDK keys and offering are configured. Typed integration contracts keep raw provider payloads out of the UI.
+The demo meal remains available as a deterministic fallback. Real scans use GPT-4.1-mini through OpenRouter or direct OpenAI only for visible-food, preparation, hidden-calorie risk, and portion detection. Nutrition then resolves through a 64-dish German BLS 4.0 reference set, with USDA FoodData Central as the ingredient fallback. Typed meal descriptions use the same structured boundary. The barcode adapter reads packaged-food data from Open Food Facts and starts at 100 g for explicit correction. RevenueCat-backed purchase and restore actions use a non-billing preview until its public SDK keys and offering are configured. Typed integration contracts keep raw provider payloads out of the UI.
 
 The first complete scan is free. A confirmed result is saved automatically so closing the screen cannot silently lose the meal; subsequent scans require an active `kandro_pro` RevenueCat entitlement. The paywall still appears only after the first result and recommendation Aha moment.
 
@@ -147,7 +147,7 @@ JavaScript render failures and explicitly handled integration failures use the s
 npm run verify
 ```
 
-The gate includes a deterministic 30-case Day 4 matrix: 25 representative German meals plus poor-light, blurred, partial-plate, multiple-dish, and unknown-food behavior. This protects mapping and error handling, but it does not replace the pending review of at least 30 real iPhone meal photos.
+The gate includes the original deterministic 30-case Day 4 matrix plus 64 weighed German BLS 4.0 reference meals. This protects source mapping, portion scaling, cache selection and error handling, but it does not replace the pending review of at least 30 weighed real iPhone meal photos. See [docs/ACCURACY.md](./docs/ACCURACY.md).
 
 The complete plan audit, including the external TestFlight and legal gates, lives in [docs/PLAN_34_AUDIT.md](./docs/PLAN_34_AUDIT.md).
 
@@ -169,7 +169,7 @@ Contributions should follow [CONTRIBUTING.md](./CONTRIBUTING.md). Pull requests 
 - React Native + Expo Router + TypeScript
 - Kandro brand system and German product UI
 - Real camera preview when permission is granted
-- Authenticated, metered Supabase analysis gateway for Preview/Production plus an optional local development gateway; live billing is still pending
+- Authenticated, metered Supabase analysis gateway using GPT-4.1-mini, BLS 4.0, USDA fallback and Open Food Facts for Preview/Production plus an optional local development gateway; live billing is still pending
 - Optional anonymous PostHog product analytics; native Sentry reporting begins with the development/TestFlight build
 - Versioned wellness-data consent, privacy/terms drafts, and authenticated account deletion with local cleanup
 - Confirmed meal records never retain photos; only a compressed failed scan can live temporarily in the local retry queue

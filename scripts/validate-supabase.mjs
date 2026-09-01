@@ -11,8 +11,9 @@ const accountDeletionPath = resolve(projectRoot, 'supabase/functions/delete-acco
 const gatewayPath = resolve(projectRoot, 'supabase/functions/nutrition/index.ts');
 const quotaMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901120000_add_analysis_quota.sql');
 const cacheMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901140000_add_usda_food_cache.sql');
+const accuracyMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901150000_harden_nutrition_accuracy.sql');
 const mealAnalysisPath = resolve(projectRoot, 'src/services/mealAnalysis.ts');
-const [migration, config, accountLinking, emailTemplate, accountDeletion, gateway, quotaMigration, cacheMigration, mealAnalysis] = await Promise.all([
+const [migration, config, accountLinking, emailTemplate, accountDeletion, gateway, quotaMigration, cacheMigration, accuracyMigration, mealAnalysis] = await Promise.all([
   readFile(migrationPath, 'utf8'),
   readFile(configPath, 'utf8'),
   readFile(accountLinkingPath, 'utf8'),
@@ -21,6 +22,7 @@ const [migration, config, accountLinking, emailTemplate, accountDeletion, gatewa
   readFile(gatewayPath, 'utf8'),
   readFile(quotaMigrationPath, 'utf8'),
   readFile(cacheMigrationPath, 'utf8'),
+  readFile(accuracyMigrationPath, 'utf8'),
   readFile(mealAnalysisPath, 'utf8'),
 ]);
 
@@ -119,6 +121,15 @@ if (!gateway.includes('context.supabaseAdmin') || !gateway.includes('usda_food_c
 }
 if (!gateway.includes('normalizeSearchTerm')) {
   failures.push('USDA cache keys must be normalized or the cache will miss constantly');
+}
+if (!gateway.includes('usdaCacheKey') || !gateway.includes('match.cacheable')) {
+  failures.push('USDA cache must be versioned and reject ambiguous shared entries');
+}
+if (!gateway.includes("resolveBlsFacts") || !accuracyMigration.includes("'bls'")) {
+  failures.push('BLS references must retain their provider in the gateway and database');
+}
+if (!gateway.includes("'openai/gpt-4.1-mini'") || !gateway.includes("'gpt-4.1-mini'")) {
+  failures.push('the cost-controlled vision default must stay GPT-4.1-mini');
 }
 
 if (!mealAnalysis.includes('functionsBaseUrl') || !mealAnalysis.includes('Authorization: `Bearer ${accessToken}`')) {

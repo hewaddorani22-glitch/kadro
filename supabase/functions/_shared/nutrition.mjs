@@ -53,10 +53,29 @@ export function normalizeSearchTerm(term) {
   return String(term ?? '').trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 120);
 }
 
+/** Changing the matcher invalidates previous choices without deleting data. */
+export const USDA_MATCHER_VERSION = 2;
+
+export function usdaCacheKey(term) {
+  return `v${USDA_MATCHER_VERSION}:${normalizeSearchTerm(term)}`;
+}
+
 const DATA_TYPE_PRIORITY = ['Foundation', 'SR Legacy', 'Survey (FNDDS)', 'Branded'];
 
+const PREPARATION_WORDS = new Set([
+  'baked', 'boiled', 'breaded', 'canned', 'cooked', 'dried', 'fried', 'grilled',
+  'raw', 'roasted', 'steamed', 'stewed', 'sweetened', 'unsweetened',
+]);
+
+const LOW_INFORMATION_WORDS = new Set([
+  'and', 'in', 'of', 'the', 'with', 'without', 'style', 'prepared', 'food',
+]);
+
 function words(value) {
-  return normalizeSearchTerm(value).split(/[\s,()]+/).filter(Boolean);
+  return normalizeSearchTerm(value)
+    .replace(/[^a-z0-9]+/g, ' ')
+    .split(/\s+/)
+    .filter((word) => word && !LOW_INFORMATION_WORDS.has(word));
 }
 
 /**
@@ -68,9 +87,9 @@ function words(value) {
  * decides and the data type only breaks ties, because a precise match in a
  * lesser data set beats a confident match on the wrong food.
  */
-export function chooseFood(foods, term = '') {
+export function chooseFoodMatch(foods, term = '') {
   const list = [...(foods || [])];
-  if (list.length < 2) return list[0];
+  if (!list.length) return { food: undefined, score: 0, margin: 0, confidence: 'low', cacheable: false };
 
   const target = normalizeSearchTerm(term);
   const targetWords = words(term);
@@ -83,27 +102,62 @@ export function chooseFood(foods, term = '') {
   const score = (food) => {
     const description = normalizeSearchTerm(food.description);
     const descriptionWords = words(food.description);
-    let value = rank(food) * 3;
+    const descriptionSet = new Set(descriptionWords);
+    const targetSet = new Set(targetWords);
+    let value = Math.max(0, 12 - rank(food) * 3);
 
     if (!target) return value;
 
-    if (description === target) value -= 100;
-    else if (description.startsWith(target)) value -= 40;
+    if (description === target) value += 120;
+    else if (description.startsWith(target)) value += 35;
 
-    const covered = targetWords.filter((word) => descriptionWords.includes(word)).length;
-    value -= covered * 20;
+    const covered = targetWords.filter((word) => descriptionSet.has(word)).length;
+    const coverage = targetWords.length ? covered / targetWords.length : 0;
+    const precision = descriptionWords.length ? covered / descriptionWords.length : 0;
+    value += coverage * 65 + precision * 25;
 
-    // Every word beyond the search term is a qualifier the user did not ask for
-    // ("fried", "beef and", "with cheese sauce"). Capped so that verbose but
-    // correct Foundation descriptions are not ruled out.
-    value += Math.min(5, Math.max(0, descriptionWords.length - targetWords.length)) * 6;
+    // Preparation changes calories dramatically. An unrequested "fried" result
+    // must not beat a raw/cooked base food merely because one noun overlaps.
+    for (const preparation of PREPARATION_WORDS) {
+      if (descriptionSet.has(preparation) && !targetSet.has(preparation)) {
+        value -= preparation === 'raw' || preparation === 'cooked' ? 5 : 35;
+      }
+      if (targetSet.has(preparation) && !descriptionSet.has(preparation)) value -= 18;
+    }
+
+    // Extra food nouns often indicate a different composite dish ("beef and
+    // broccoli", "rice pudding"). Cap the penalty for verbose USDA labels.
+    const extras = descriptionWords.filter((word) => !targetSet.has(word) && !PREPARATION_WORDS.has(word)).length;
+    value -= Math.min(extras, 5) * 5;
 
     return value;
   };
 
-  return list
+  const ranked = list
     .map((food, index) => ({ food, index, score: score(food) }))
-    .sort((a, b) => a.score - b.score || a.index - b.index)[0].food;
+    .sort((a, b) => b.score - a.score || a.index - b.index);
+  const winner = ranked[0];
+  const margin = winner.score - (ranked[1]?.score ?? 0);
+  const accepted = targetWords.length > 0 && winner.score >= 52;
+  const confidence = accepted && winner.score >= 75 && (ranked.length === 1 || margin >= 8)
+    ? 'high'
+    : accepted
+      ? 'medium'
+      : 'low';
+
+  return {
+    food: accepted ? winner.food : undefined,
+    score: Number(winner.score.toFixed(2)),
+    margin: Number(margin.toFixed(2)),
+    confidence,
+    // Ambiguous matches may be usable for this review screen, but caching them
+    // would amplify one uncertain lookup across every user for months.
+    cacheable: confidence === 'high',
+  };
+}
+
+export function chooseFood(foods, term = '') {
+  return chooseFoodMatch(foods, term).food;
 }
 
 /**
@@ -111,10 +165,17 @@ export function chooseFood(foods, term = '') {
  * what gets cached; the raw search response is orders of magnitude larger and
  * carries nothing else we use.
  */
-export function toFoodFacts(food) {
+export function toFoodFacts(food, match = null) {
   if (!food) return null;
   return {
-    fdcId: String(food.fdcId),
+    provider: 'usda',
+    referenceId: String(food.fdcId),
+    label: `USDA FDC ${food.fdcId}`,
+    description: String(food.description || ''),
+    dataType: String(food.dataType || ''),
+    matchConfidence: match?.confidence || 'high',
+    matchScore: match?.score,
+    matchMargin: match?.margin,
     calories: nutrient(food, [1008, 208]),
     protein: nutrient(food, [1003, 203]),
     carbs: nutrient(food, [1005, 205]),
@@ -145,8 +206,10 @@ export function buildMealItem(item, facts, index) {
   }
 
   const factor = item.estimatedGrams / 100;
+  const provider = facts.provider || 'usda';
+  const referenceId = String(facts.referenceId || facts.fdcId || 'unknown');
   return {
-    id: `fdc-${facts.fdcId}-${index}`,
+    id: `${provider}-${referenceId}-${index}`,
     name: item.nameDe,
     amountG: item.estimatedGrams,
     baseAmountG: item.estimatedGrams,
@@ -156,17 +219,36 @@ export function buildMealItem(item, facts, index) {
     carbs: Math.round(Number(facts.carbs) * factor),
     fat: Math.round(Number(facts.fat) * factor),
     fiber: Math.round(Number(facts.fiber) * factor),
-    confidence: item.confidence,
+    confidence: item.confidence === 'medium' || facts.matchConfidence === 'medium' ? 'medium' : 'high',
     optional: item.optional,
     included: true,
     source: {
-      provider: 'usda',
-      referenceId: facts.fdcId,
-      label: `USDA FDC ${facts.fdcId}`,
+      provider,
+      referenceId,
+      label: facts.label || `USDA FDC ${referenceId}`,
     },
   };
 }
 
 export function mapUsdaFood(item, food, index) {
   return buildMealItem(item, toFoodFacts(food), index);
+}
+
+export function buildAccuracyWarnings(detection, items) {
+  const warnings = [];
+  if (items.some((item) => item.calories === 0)) {
+    warnings.push('Mindestens eine Zutat konnte keiner verlässlichen Referenz zugeordnet werden. Bitte prüfe sie.');
+  }
+  if (detection.items.some((item) => item.hiddenCaloriesRisk === 'high')) {
+    warnings.push('Öl oder Sauce ist auf dem Foto schwer messbar. Prüfe Menge und Zutaten besonders genau.');
+  }
+  const widePortionRange = detection.items.some((item) => {
+    const low = Number(item.estimatedGramsLow || item.estimatedGrams);
+    const high = Number(item.estimatedGramsHigh || item.estimatedGrams);
+    return high - low > Math.max(40, Number(item.estimatedGrams) * 0.35);
+  });
+  if (widePortionRange) {
+    warnings.push('Die Portionsgröße ist optisch unsicher. Passe die Grammangabe kurz an.');
+  }
+  return warnings;
 }

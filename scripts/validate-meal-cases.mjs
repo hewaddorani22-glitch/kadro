@@ -94,6 +94,9 @@ assert.equal(unknown.confidence, 'medium', 'unknown-ingredient: Unsicherheit wir
 assert.equal(representativeMeals.length + edgeCases.length + 1, 30, 'Die Tag-4-Matrix muss genau 30 Fälle enthalten.');
 assert.equal(validateAnalysisInput({ mimeType: 'image/jpeg', imageBase64: 'x'.repeat(100) }), true);
 assert.equal(validateAnalysisInput({ mimeType: 'image/png', imageBase64: 'x'.repeat(100) }), false);
-assert.equal(chooseFood([{ dataType: 'Branded' }, { dataType: 'Foundation' }]).dataType, 'Foundation');
+assert.equal(chooseFood([
+  { dataType: 'Branded', description: 'Apple, raw' },
+  { dataType: 'Foundation', description: 'Apple, raw' },
+], 'apple raw').dataType, 'Foundation');
 
 console.log('Validated 30 representative Kandro meal and image-quality cases.');

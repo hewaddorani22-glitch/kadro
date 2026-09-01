@@ -11,7 +11,7 @@ Camera / description / barcode / demo capture
    ↓
 Local resize/compression
    ↓
-Authenticated hosted gateway → vision detection → nutrition lookup
+Authenticated hosted gateway → GPT-4.1-mini detection → BLS/USDA nutrition lookup
    ↓
 Analyzing / retry state
    ↓
@@ -90,7 +90,7 @@ Current responsibilities:
 
 - `mealAnalysis.ts`: client-side compression, temporary-file cleanup, photo/description/barcode gateway calls, mapping, and typed errors.
 - `supabase/functions/nutrition/index.ts`: deployed authenticated and metered production gateway. It verifies the user JWT in the handler, applies the private daily counter, rejects oversized images, and keeps provider errors off the device.
-- `server/index.mjs`: optional secret-bearing local development gateway. OpenRouter or direct OpenAI returns food identity, portion estimate, and confidence from a photo or description only; USDA provides normalized calories and macros; Open Food Facts provides packaged-food barcode data. Both gateways share the mapping in `supabase/functions/_shared/nutrition.mjs`. OpenRouter routing requires supported parameters, denies data collection, and defaults to ZDR.
+- `server/index.mjs`: optional secret-bearing local development gateway. GPT-4.1-mini through OpenRouter or direct OpenAI returns food identity, preparation, portion range, hidden-calorie risk, and confidence from a photo or description only. BLS 4.0 supplies deterministic values for 64 reviewed German composite dishes; USDA is the ingredient fallback; Open Food Facts provides packaged-food barcode data. Both gateways share detection, BLS and USDA logic under `supabase/functions/_shared`. OpenRouter routing requires supported parameters, denies data collection, and defaults to ZDR.
 - `localRepository.ts`: profile/onboarding, weight entries, confirmed meals, lifetime scan history, and a maximum-three local retry queue in AsyncStorage.
 - `supabaseClient.ts`: optional public-client initialization, persisted React Native sessions, foreground token refresh, and anonymous authenticated bootstrap.
 - `accountLinking.ts`: ID-preserving email upgrade with `updateUser`, email-change verification, password setup, and existing-account sign-in.
@@ -108,7 +108,7 @@ Raw provider payloads should be mapped to the domain types in `src/types/nutriti
 
 The current analysis pipeline:
 
-1. resizes to 1280 px and compresses to JPEG locally;
+1. resizes to 1600 px and compresses to JPEG locally;
 2. deletes the camera original after the compressed working copy exists;
 3. sends the working copy to the authenticated Supabase gateway, or to the explicit local development override;
 4. keeps at most three failed scans locally for explicit retry;

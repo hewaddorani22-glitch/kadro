@@ -2,11 +2,17 @@ import 'dotenv/config';
 import { createServer } from 'node:http';
 
 import {
+  buildAccuracyWarnings,
   buildMealItem,
-  chooseFood,
+  chooseFoodMatch,
   classifyDetection,
+  descriptionDetectionPrompt,
+  detectionSchema,
   normalizeSearchTerm,
+  photoDetectionPrompt,
+  resolveBlsFacts,
   toFoodFacts,
+  usdaCacheKey,
   validateAnalysisInput,
 } from './core.mjs';
 
@@ -17,38 +23,11 @@ const aiApiKey = isOpenRouter ? process.env.OPENROUTER_API_KEY : process.env.OPE
 const aiApiUrl = isOpenRouter ? 'https://openrouter.ai/api/v1/responses' : 'https://api.openai.com/v1/responses';
 const visionModel = isOpenRouter
   ? process.env.OPENROUTER_VISION_MODEL || 'openai/gpt-4.1-mini'
-  : process.env.OPENAI_VISION_MODEL || 'gpt-4o';
+  : process.env.OPENAI_VISION_MODEL || 'gpt-4.1-mini';
+const configuredImageDetail = (process.env.VISION_IMAGE_DETAIL || 'high').toLowerCase();
+const imageDetail = ['low', 'high', 'auto'].includes(configuredImageDetail) ? configuredImageDetail : 'high';
 const openRouterZdr = process.env.OPENROUTER_ZDR !== 'false';
 const usdaApiKey = process.env.USDA_API_KEY || 'DEMO_KEY';
-
-const detectionSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['title', 'clarity', 'dishCount', 'confidence', 'items'],
-  properties: {
-    title: { type: 'string' },
-    clarity: { type: 'string', enum: ['clear', 'unclear'] },
-    dishCount: { type: 'integer', minimum: 0, maximum: 8 },
-    confidence: { type: 'string', enum: ['high', 'medium'] },
-    items: {
-      type: 'array',
-      minItems: 0,
-      maxItems: 12,
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['nameDe', 'searchTermEn', 'estimatedGrams', 'confidence', 'optional'],
-        properties: {
-          nameDe: { type: 'string' },
-          searchTermEn: { type: 'string' },
-          estimatedGrams: { type: 'integer', minimum: 5, maximum: 2000 },
-          confidence: { type: 'string', enum: ['high', 'medium'] },
-          optional: { type: 'boolean' },
-        },
-      },
-    },
-  },
-};
 
 function json(response, status, body) {
   response.writeHead(status, {
@@ -94,7 +73,7 @@ async function requestDetection(content) {
     body: JSON.stringify({
       model: visionModel,
       store: false,
-      max_output_tokens: 1400,
+      max_output_tokens: 2000,
       ...(isOpenRouter ? {
         provider: {
           data_collection: 'deny',
@@ -126,18 +105,15 @@ async function requestDetection(content) {
 
 async function detectFoods({ imageBase64, mimeType }) {
   return requestDetection([
-    {
-      type: 'input_text',
-      text: 'Analysiere genau eine sichtbare Mahlzeit. Erkenne nur sichtbare Lebensmittel, schätze Gramm-Portionen, markiere unsichere Saucen als optional und gib deutsche Namen plus kurze englische USDA-Suchbegriffe aus. Gib keine Kalorien oder Makros aus. Bei Unschärfe clarity=unclear; bei mehreren getrennten Tellern dishCount>1.',
-    },
-    { type: 'input_image', image_url: `data:${mimeType};base64,${imageBase64}`, detail: 'low' },
+    { type: 'input_text', text: photoDetectionPrompt() },
+    { type: 'input_image', image_url: `data:${mimeType};base64,${imageBase64}`, detail: imageDetail },
   ]);
 }
 
 async function detectDescription(description) {
   return requestDetection([{
     type: 'input_text',
-    text: `Strukturiere genau die beschriebene Mahlzeit in Zutaten und realistische Gramm-Portionen. Erfinde keine nicht genannten Lebensmittel. Markiere unklare Mengen oder Saucen als optional bzw. medium confidence. Gib deutsche Namen und kurze englische USDA-Suchbegriffe aus, aber keine Kalorien oder Makros. Beschreibung: ${description}`,
+    text: descriptionDetectionPrompt(description),
   }]);
 }
 
@@ -148,17 +124,26 @@ const usdaCache = new Map();
 
 async function resolveUsdaItem(item, index) {
   const term = normalizeSearchTerm(item.searchTermEn);
-  if (!usdaCache.has(term)) {
+  const cacheKey = usdaCacheKey(term);
+  let facts = usdaCache.get(cacheKey);
+  if (!usdaCache.has(cacheKey)) {
     const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: term, pageSize: 8 }),
+      body: JSON.stringify({ query: term, pageSize: 15 }),
     });
     if (!response.ok) throw new Error(`usda_${response.status}`);
     const result = await response.json();
-    usdaCache.set(term, toFoodFacts(chooseFood(result.foods || [], term)));
+    const match = chooseFoodMatch(result.foods || [], term);
+    facts = toFoodFacts(match.food, match);
+    if (match.cacheable || !facts) usdaCache.set(cacheKey, facts);
   }
-  return buildMealItem(item, usdaCache.get(term), index);
+  return buildMealItem(item, facts ?? null, index);
+}
+
+async function resolveItem(item, index) {
+  const blsFacts = resolveBlsFacts(item);
+  return blsFacts ? buildMealItem(item, blsFacts, index) : resolveUsdaItem(item, index);
 }
 
 async function analyzeMeal(input) {
@@ -174,10 +159,8 @@ async function resolveDetection(detection, source = 'photo') {
   const classificationError = classifyDetection(detection, source);
   if (classificationError) return classificationError;
 
-  const items = await Promise.all(detection.items.map(resolveUsdaItem));
-  const warnings = items.some((item) => item.calories === 0)
-    ? ['Mindestens eine Zutat konnte in USDA nicht eindeutig zugeordnet werden und muss geprüft werden.']
-    : [];
+  const items = await Promise.all(detection.items.map(resolveItem));
+  const warnings = buildAccuracyWarnings(detection, items);
   return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };
 }
 

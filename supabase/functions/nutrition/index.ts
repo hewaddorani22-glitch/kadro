@@ -1,13 +1,21 @@
 import { withSupabase } from 'npm:@supabase/server@1.5.1';
 
 import {
+  buildAccuracyWarnings,
   buildMealItem,
-  chooseFood,
+  chooseFoodMatch,
   classifyDetection,
   normalizeSearchTerm,
   toFoodFacts,
+  usdaCacheKey,
   validateAnalysisInput,
 } from '../_shared/nutrition.mjs';
+import { resolveBlsFacts } from '../_shared/bls-reference.mjs';
+import {
+  descriptionDetectionPrompt,
+  detectionSchema,
+  photoDetectionPrompt,
+} from '../_shared/detection.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
@@ -21,7 +29,9 @@ const aiApiKey = isOpenRouter ? Deno.env.get('OPENROUTER_API_KEY') : Deno.env.ge
 const aiApiUrl = isOpenRouter ? 'https://openrouter.ai/api/v1/responses' : 'https://api.openai.com/v1/responses';
 const visionModel = isOpenRouter
   ? Deno.env.get('OPENROUTER_VISION_MODEL') || 'openai/gpt-4.1-mini'
-  : Deno.env.get('OPENAI_VISION_MODEL') || 'gpt-4o';
+  : Deno.env.get('OPENAI_VISION_MODEL') || 'gpt-4.1-mini';
+const configuredImageDetail = (Deno.env.get('VISION_IMAGE_DETAIL') || 'high').toLowerCase();
+const imageDetail = ['low', 'high', 'auto'].includes(configuredImageDetail) ? configuredImageDetail : 'high';
 const openRouterZdr = Deno.env.get('OPENROUTER_ZDR') !== 'false';
 const usdaApiKey = Deno.env.get('USDA_API_KEY') || 'DEMO_KEY';
 const configuredDailyLimit = Number(Deno.env.get('ANALYSIS_DAILY_LIMIT') || '60');
@@ -29,7 +39,7 @@ const dailyLimit = Number.isSafeInteger(configuredDailyLimit) && configuredDaily
   ? configuredDailyLimit
   : 60;
 
-/** Largest base64 payload we accept. The client sends a 1280px JPEG at q0.72. */
+/** Largest base64 payload we accept. The client sends a 1600px JPEG at q0.82. */
 const MAX_IMAGE_BASE64 = 3_000_000;
 
 /** USDA values do not change; a miss only needs re-checking now and then. */
@@ -37,7 +47,10 @@ const CACHE_TTL_HIT_DAYS = 90;
 const CACHE_TTL_MISS_DAYS = 7;
 
 type FoodFacts = {
-  fdcId: string | null;
+  provider: 'usda';
+  referenceId: string;
+  label: string;
+  matchConfidence: 'high' | 'medium';
   calories: number;
   protein: number;
   carbs: number;
@@ -61,35 +74,6 @@ function rememberInMemory(term: string, facts: FoodFacts | null) {
 }
 
 type Result = { status: number; body: Record<string, unknown> };
-
-const detectionSchema = {
-  type: 'object',
-  additionalProperties: false,
-  required: ['title', 'clarity', 'dishCount', 'confidence', 'items'],
-  properties: {
-    title: { type: 'string' },
-    clarity: { type: 'string', enum: ['clear', 'unclear'] },
-    dishCount: { type: 'integer', minimum: 0, maximum: 8 },
-    confidence: { type: 'string', enum: ['high', 'medium'] },
-    items: {
-      type: 'array',
-      minItems: 0,
-      maxItems: 12,
-      items: {
-        type: 'object',
-        additionalProperties: false,
-        required: ['nameDe', 'searchTermEn', 'estimatedGrams', 'confidence', 'optional'],
-        properties: {
-          nameDe: { type: 'string' },
-          searchTermEn: { type: 'string' },
-          estimatedGrams: { type: 'integer', minimum: 5, maximum: 2000 },
-          confidence: { type: 'string', enum: ['high', 'medium'] },
-          optional: { type: 'boolean' },
-        },
-      },
-    },
-  },
-};
 
 function reply(result: Result) {
   return Response.json(result.body, { status: result.status, headers: corsHeaders });
@@ -121,7 +105,7 @@ async function requestDetection(content: unknown[]): Promise<any> {
     body: JSON.stringify({
       model: visionModel,
       store: false,
-      max_output_tokens: 1400,
+      max_output_tokens: 2000,
       ...(isOpenRouter ? {
         provider: {
           data_collection: 'deny',
@@ -143,15 +127,16 @@ async function requestDetection(content: unknown[]): Promise<any> {
   return JSON.parse(extractResponseText(await response.json()));
 }
 
-async function searchUsda(term: string): Promise<FoodFacts | null> {
+async function searchUsda(term: string): Promise<{ facts: FoodFacts | null; cacheable: boolean }> {
   const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: term, pageSize: 8 }),
+    body: JSON.stringify({ query: term, pageSize: 15 }),
   });
   if (!response.ok) throw new Error(`usda_${response.status}`);
   const result = await response.json();
-  return toFoodFacts(chooseFood(result.foods || [], term));
+  const match = chooseFoodMatch(result.foods || [], term);
+  return { facts: toFoodFacts(match.food, match), cacheable: match.cacheable };
 }
 
 /**
@@ -164,23 +149,30 @@ async function resolveFacts(terms: string[], admin: any): Promise<Map<string, Fo
   const unknown: string[] = [];
 
   for (const term of terms) {
-    if (memoryCache.has(term)) resolved.set(term, memoryCache.get(term) ?? null);
+    const cacheKey = usdaCacheKey(term);
+    if (memoryCache.has(cacheKey)) resolved.set(term, memoryCache.get(cacheKey) ?? null);
     else if (!resolved.has(term)) unknown.push(term);
   }
 
   if (unknown.length) {
+    const termsByCacheKey = new Map(unknown.map((term) => [usdaCacheKey(term), term]));
     const { data } = await admin
       .from('usda_food_cache')
       .select('search_term, fdc_id, calories, protein, carbs, fat, fiber, fetched_at')
-      .in('search_term', unknown);
+      .in('search_term', [...termsByCacheKey.keys()]);
 
     for (const row of data ?? []) {
       const ageDays = (Date.now() - new Date(row.fetched_at).getTime()) / 86_400_000;
       const ttl = row.fdc_id ? CACHE_TTL_HIT_DAYS : CACHE_TTL_MISS_DAYS;
       if (ageDays > ttl) continue;
+      const term = termsByCacheKey.get(row.search_term);
+      if (!term) continue;
       const facts: FoodFacts | null = row.fdc_id
         ? {
-          fdcId: row.fdc_id,
+          provider: 'usda',
+          referenceId: row.fdc_id,
+          label: `USDA FDC ${row.fdc_id}`,
+          matchConfidence: 'high',
           calories: Number(row.calories),
           protein: Number(row.protein),
           carbs: Number(row.carbs),
@@ -188,25 +180,26 @@ async function resolveFacts(terms: string[], admin: any): Promise<Map<string, Fo
           fiber: Number(row.fiber),
         }
         : null;
-      resolved.set(row.search_term, facts);
+      resolved.set(term, facts);
       rememberInMemory(row.search_term, facts);
     }
   }
 
   const missing = [...new Set(unknown.filter((term) => !resolved.has(term)))];
-  const fetched = await Promise.all(missing.map(async (term) => ({ term, facts: await searchUsda(term) })));
+  const fetched = await Promise.all(missing.map(async (term) => ({ term, ...await searchUsda(term) })));
 
-  for (const { term, facts } of fetched) {
+  for (const { term, facts, cacheable } of fetched) {
     resolved.set(term, facts);
-    rememberInMemory(term, facts);
+    if (cacheable) rememberInMemory(usdaCacheKey(term), facts);
   }
 
-  if (fetched.length) {
+  const safeToCache = fetched.filter(({ cacheable }) => cacheable);
+  if (safeToCache.length) {
     // Writing the cache must never fail a scan the user already paid for.
     await admin.from('usda_food_cache').upsert(
-      fetched.map(({ term, facts }) => ({
-        search_term: term,
-        fdc_id: facts?.fdcId ?? null,
+      safeToCache.map(({ term, facts }) => ({
+        search_term: usdaCacheKey(term),
+        fdc_id: facts?.referenceId ?? null,
         calories: facts?.calories ?? 0,
         protein: facts?.protein ?? 0,
         carbs: facts?.carbs ?? 0,
@@ -227,15 +220,16 @@ async function resolveDetection(detection: any, admin: any, source: 'photo' | 't
   if (classificationError) return classificationError;
 
   // deno-lint-ignore no-explicit-any
-  const terms = detection.items.map((item: any) => normalizeSearchTerm(item.searchTermEn));
+  const terms = detection.items
+    .filter((item: any) => !resolveBlsFacts(item))
+    .map((item: any) => normalizeSearchTerm(item.searchTermEn));
   const facts = await resolveFacts(terms, admin);
   // deno-lint-ignore no-explicit-any
-  const items = detection.items.map((item: any, index: number) =>
-    buildMealItem(item, facts.get(normalizeSearchTerm(item.searchTermEn)) ?? null, index));
-  // deno-lint-ignore no-explicit-any
-  const warnings = items.some((item: any) => item.calories === 0)
-    ? ['Mindestens eine Zutat konnte in USDA nicht eindeutig zugeordnet werden und muss geprüft werden.']
-    : [];
+  const items = detection.items.map((item: any, index: number) => {
+    const blsFacts = resolveBlsFacts(item);
+    return buildMealItem(item, blsFacts ?? facts.get(normalizeSearchTerm(item.searchTermEn)) ?? null, index);
+  });
+  const warnings = buildAccuracyWarnings(detection, items);
   return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };
 }
 
@@ -248,11 +242,8 @@ async function analyzePhoto(input: any, admin: any): Promise<Result> {
     return { status: 413, body: { code: 'invalid_input', message: 'Das Foto ist zu groß.' } };
   }
   return resolveDetection(await requestDetection([
-    {
-      type: 'input_text',
-      text: 'Analysiere genau eine sichtbare Mahlzeit. Erkenne nur sichtbare Lebensmittel, schätze Gramm-Portionen, markiere unsichere Saucen als optional und gib deutsche Namen plus kurze englische USDA-Suchbegriffe aus. Gib keine Kalorien oder Makros aus. Bei Unschärfe clarity=unclear; bei mehreren getrennten Tellern dishCount>1.',
-    },
-    { type: 'input_image', image_url: `data:${input.mimeType};base64,${input.imageBase64}`, detail: 'low' },
+    { type: 'input_text', text: photoDetectionPrompt() },
+    { type: 'input_image', image_url: `data:${input.mimeType};base64,${input.imageBase64}`, detail: imageDetail },
   ]), admin);
 }
 
@@ -264,7 +255,7 @@ async function analyzeDescription(input: any, admin: any): Promise<Result> {
   }
   return resolveDetection(await requestDetection([{
     type: 'input_text',
-    text: `Strukturiere genau die beschriebene Mahlzeit in Zutaten und realistische Gramm-Portionen. Erfinde keine nicht genannten Lebensmittel. Markiere unklare Mengen oder Saucen als optional bzw. medium confidence. Gib deutsche Namen und kurze englische USDA-Suchbegriffe aus, aber keine Kalorien oder Makros. Beschreibung: ${description}`,
+    text: descriptionDetectionPrompt(description),
   }]), admin, 'text');
 }
 

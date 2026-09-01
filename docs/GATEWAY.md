@@ -12,6 +12,7 @@ ein Gerät gelangen — eine App im App Store ist für jeden auslesbar.
 | Client findet ihn über | `EXPO_PUBLIC_ANALYSIS_API_URL` | Supabase-URL der App |
 | Auth | keine | Supabase-JWT, an Plattform- und Handler-Grenze geprüft |
 | Limit | keins | `ANALYSIS_DAILY_LIMIT` pro Nutzer und Tag |
+| Erkennung | GPT-4.1-mini, standardmäßig Bilddetail `high` | GPT-4.1-mini, standardmäßig Bilddetail `high` |
 
 Die App bevorzugt `EXPO_PUBLIC_ANALYSIS_API_URL`, wenn gesetzt. **In Preview- und
 Produktionsbuilds muss diese Variable leer sein**, sonst versucht die App, dein
@@ -82,17 +83,32 @@ Jeder Foto- und Beschreiben-Aufruf kostet echtes Geld beim Vision-Provider. Ein
 - Ungültige Payloads werden vor dem Zählen abgewiesen.
 - Fotos werden bei > 3 MB Base64 abgewiesen.
 
+## Deutsche BLS-Referenzen
+
+Vor USDA prüft der Gateway 64 häufige deutsche Komplettgerichte aus dem
+Bundeslebensmittelschlüssel 4.0. GPT-4.1-mini darf nur den kontrollierten
+`referenceKey` auswählen und die Portion schätzen; Kalorien und Makros werden
+deterministisch aus dem BLS-Datensatz skaliert. So wird beispielsweise ein
+passender Döner, eine Pizza Margherita oder Linsensuppe nicht in zufällige
+USDA-Einzelzutaten zerlegt.
+
+Die Momentaufnahme stammt vom Max Rubner-Institut, BLS 4.0 (2025), CC BY 4.0,
+DOI `10.25826/Data20251217-134202-0`. Details und Testgrenzen stehen in
+`docs/ACCURACY.md`.
+
 ## USDA-Cache
 
 Pro Zutat geht eine USDA-Anfrage, bis zu zwölf pro Scan. api.data.gov begrenzt
 das **pro API-Key**, nicht pro Nutzer — die Lebensmitteldatenbank ist damit der
 erste Engpass unter Last, nicht das Vision-Modell.
 
-`usda_food_cache` speichert die Nährwerte je normalisiertem Suchbegriff.
-Nährwerte sind praktisch statisch, also wird derselbe Begriff nie zweimal
-angefragt.
+`usda_food_cache` speichert die Nährwerte je normalisiertem und mit der
+Matcher-Version versehenem Suchbegriff. Ein neuer Ranking-Algorithmus liest
+damit keine alten Entscheidungen weiter. Nur eindeutige Treffer mit genügend
+Abstand zum zweitbesten Kandidaten werden geteilt; mehrdeutige Ergebnisse
+bleiben auf den aktuellen Prüfschritt begrenzt.
 
-- Treffer laufen nach 90 Tagen ab, Fehlschläge nach 7.
+- Eindeutige Treffer laufen nach 90 Tagen ab.
 - Zusätzlich hält jede warme Function-Instanz bis zu 500 Begriffe im Speicher.
 - Die Tabelle enthält **keine Nutzerdaten** — nur englische Gattungsbegriffe wie
   `grilled chicken breast`, die das Modell erzeugt.
@@ -108,8 +124,10 @@ keinen Foundation-Eintrag, also gewann der erste Survey-Treffer:
 Zeilen darunter stand. Mit Cache wäre dieser Fehler 90 Tage lang an alle
 ausgeliefert worden.
 
-Jetzt entscheidet die Namensähnlichkeit, der Datentyp ist nur noch
-Gleichstandskriterium. `npm run validate:cache` pinnt diese Fälle fest.
+Jetzt zählen Wortabdeckung, zusätzliche Lebensmittelbegriffe, Zubereitung und
+Abstand zum zweitbesten Kandidaten; der Datentyp ist nur noch ein Teil des
+Rankings. Widersprüchliche Zubereitungen wie „fried“ erhalten eine starke
+Strafe. `npm run validate:cache` pinnt diese Fälle fest.
 
 ## Fehler nachsehen
 
@@ -120,6 +138,7 @@ nie Nutzerinhalte.
 
 ## Geteilte Logik
 
-`supabase/functions/_shared/nutrition.mjs` enthält die USDA-Zuordnung und die
-Klassifikation. `server/core.mjs` re-exportiert sie nur, damit der lokale
-Node-Gateway und die deployte Function nicht auseinanderlaufen können.
+`supabase/functions/_shared/detection.mjs`, `bls-reference.mjs` und
+`nutrition.mjs` enthalten Modellschema/Prompt, BLS-Zuordnung und USDA-Mapping.
+`server/core.mjs` re-exportiert sie nur, damit der lokale Node-Gateway und die
+deployte Function nicht auseinanderlaufen können.

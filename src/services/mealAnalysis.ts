@@ -79,8 +79,8 @@ async function gatewayFetch(path: string, init?: { method: 'POST'; body: unknown
 export async function prepareMealPhoto(photoUri: string): Promise<PreparedMealPhoto> {
   const result = await manipulateAsync(
     photoUri,
-    [{ resize: { width: 1280 } }],
-    { base64: true, compress: 0.72, format: SaveFormat.JPEG },
+    [{ resize: { width: 1600 } }],
+    { base64: true, compress: 0.82, format: SaveFormat.JPEG },
   );
 
   if (!result.base64) {

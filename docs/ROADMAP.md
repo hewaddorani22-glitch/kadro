@@ -77,6 +77,7 @@ Acceptance criteria:
 ## Day 4: launch quality
 
 - [x] Deterministic 30-case regression matrix: 25 representative German meals plus poor light, blur, partial plate, multiple dishes, and unknown-food handling
+- [x] Add 64 weighed German BLS 4.0 reference meals, exact source attribution, GPT-4.1-mini structured matching, portion ranges, and ambiguity-safe USDA caching
 - [ ] Review at least 30 real iPhone meal photos against confirmed foods and portions before external beta distribution
 - [x] Local-first no-network queue and explicit retry/unclear/multiple-dish states
 - [x] Portion selector and gram correction browser smoke test
