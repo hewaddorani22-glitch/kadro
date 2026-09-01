@@ -11,7 +11,7 @@ import { useSubscription } from '@/context/SubscriptionContext';
 import { recordRecommendationFeedback, recordRecommendationSet } from '@/services/cloudRepository';
 import { recommendMeals } from '@/services/recommendations';
 import { trackEvent } from '@/services/telemetry';
-import { MealContext } from '@/types/nutrition';
+import { MealContext, MealSuggestion, PortionFactor } from '@/types/nutrition';
 import { formatNumber } from '@/utils/format';
 
 const contexts: { id: MealContext; title: string; detail: string; icon: keyof typeof Ionicons.glyphMap }[] = [
@@ -23,10 +23,13 @@ const contexts: { id: MealContext; title: string; detail: string; icon: keyof ty
 export default function PlanScreen() {
   const params = useLocalSearchParams<{ context?: string; fromScan?: string }>();
   const router = useRouter();
-  const { hasLoggedScan, profile, remaining } = useApp();
+  const { hasLoggedScan, logPlannedMeal, profile, remaining } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const [selected, setSelected] = useState<MealContext | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
+  const [portion, setPortion] = useState<PortionFactor>(1);
+  const [logging, setLogging] = useState(false);
+  const [loggedTitle, setLoggedTitle] = useState<string | null>(null);
   const recordedSet = useRef('');
 
   useEffect(() => {
@@ -57,7 +60,7 @@ export default function PlanScreen() {
   };
 
   const chooseMeal = (id: string) => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void Haptics.selectionAsync();
     if (selected && chosen !== id) {
       const rank = suggestions.findIndex((suggestion) => suggestion.id === id) + 1;
       if (rank >= 1 && rank <= 3) {
@@ -66,9 +69,30 @@ export default function PlanScreen() {
       if (chosen && chosen !== id) void recordRecommendationFeedback(selected, chosen, 'rejected').catch(() => undefined);
       void recordRecommendationFeedback(selected, id, 'accepted').catch(() => undefined);
     }
-    setChosen(id);
-    if (params.fromScan === '1' && subscriptionStatus !== 'active') {
-      setTimeout(() => router.push('/paywall'), 350);
+    setChosen((current) => (current === id ? null : id));
+    setPortion(1);
+  };
+
+  /**
+   * Choosing a suggestion used to set local state and nothing else — no entry,
+   * no calories, no change to the day. The one thing the whole product promises
+   * is that the day re-plans after every meal, so this is where it happens.
+   */
+  const logMeal = async (suggestion: MealSuggestion) => {
+    if (logging) return;
+    setLogging(true);
+    try {
+      await logPlannedMeal(suggestion, portion);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      trackEvent('meal saved', { next_destination: 'today' });
+      setLoggedTitle(suggestion.title);
+      setChosen(null);
+      // The paywall belongs after the value, never between choosing and eating.
+      if (params.fromScan === '1' && subscriptionStatus !== 'active') {
+        setTimeout(() => router.push('/paywall'), 900);
+      }
+    } finally {
+      setLogging(false);
     }
   };
 
@@ -114,6 +138,23 @@ export default function PlanScreen() {
 
       {selected ? (
         <View style={styles.results}>
+          {loggedTitle ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/(tabs)/today')}
+              style={styles.loggedBanner}
+            >
+              <View style={styles.loggedIcon}><Ionicons color={colors.text} name="checkmark" size={18} /></View>
+              <View style={styles.loggedCopy}>
+                <Text style={styles.loggedTitle}>{loggedTitle} eingetragen</Text>
+                <Text style={styles.loggedText}>
+                  Noch {formatNumber(remaining.calories)} kcal und {remaining.protein} g Protein übrig · Tagesstand ansehen
+                </Text>
+              </View>
+              <Ionicons color={colors.text} name="chevron-forward" size={18} />
+            </Pressable>
+          ) : null}
+
           <View style={styles.resultsHeading}>
             <View>
               <Text style={styles.resultsTitle}>3 Optionen für heute</Text>
@@ -141,11 +182,46 @@ export default function PlanScreen() {
                   <NutritionStat label="carbs" value={`~${suggestion.carbs} g`} />
                 </View>
                 <PrimaryButton
-                  icon={isChosen ? 'checkmark' : 'arrow-forward'}
-                  label={isChosen ? 'Ausgewählt' : 'Auswählen'}
+                  icon={isChosen ? 'chevron-up' : 'arrow-forward'}
+                  label={isChosen ? 'Doch nicht' : 'Das nehme ich'}
                   onPress={() => chooseMeal(suggestion.id)}
-                  variant={isChosen ? 'primary' : 'secondary'}
+                  variant={isChosen ? 'ghost' : 'secondary'}
                 />
+                {isChosen ? (
+                  <View style={styles.portionBlock}>
+                    <Text style={styles.portionLabel}>Wie viel davon?</Text>
+                    <View style={styles.portionSelector}>
+                      {([
+                        { factor: 0.7 as PortionFactor, label: 'Weniger', multiplier: '0,7×' },
+                        { factor: 1 as PortionFactor, label: 'Normal', multiplier: '1×' },
+                        { factor: 1.4 as PortionFactor, label: 'Mehr', multiplier: '1,4×' },
+                      ]).map((choice) => {
+                        const active = portion === choice.factor;
+                        return (
+                          <Pressable
+                            accessibilityRole="radio"
+                            accessibilityState={{ selected: active }}
+                            key={choice.label}
+                            onPress={() => { void Haptics.selectionAsync(); setPortion(choice.factor); }}
+                            style={[styles.portionChoice, active && styles.portionChoiceActive]}
+                          >
+                            <Text style={[styles.portionChoiceLabel, active && styles.portionChoiceActiveText]}>{choice.label}</Text>
+                            <Text style={[styles.portionMultiplier, active && styles.portionChoiceActiveText]}>{choice.multiplier}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <Text style={styles.portionResult}>
+                      ~{Math.round(suggestion.calories * portion)} kcal · ~{Math.round(suggestion.protein * portion)} g Protein
+                    </Text>
+                    <PrimaryButton
+                      disabled={logging}
+                      icon="checkmark"
+                      label={logging ? 'Wird eingetragen …' : 'Gegessen, Tag aktualisieren'}
+                      onPress={() => void logMeal(suggestion)}
+                    />
+                  </View>
+                ) : null}
               </Card>
             );
           })}
@@ -219,6 +295,20 @@ const styles = StyleSheet.create({
   nutritionStat: { flex: 1, alignItems: 'center', gap: 2 },
   nutritionValue: { color: colors.text, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },
   nutritionLabel: { color: colors.muted, fontSize: 10 },
+  portionBlock: { gap: 10, marginTop: 2 },
+  portionLabel: { color: colors.muted, fontSize: 12, fontWeight: '700' },
+  portionSelector: { flexDirection: 'row', borderRadius: radii.input, backgroundColor: colors.background, padding: 4, gap: 4 },
+  portionChoice: { flex: 1, minWidth: 0, minHeight: 48, borderRadius: 11, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  portionChoiceActive: { backgroundColor: colors.accent },
+  portionChoiceLabel: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  portionChoiceActiveText: { color: colors.text },
+  portionMultiplier: { color: colors.muted, fontSize: 10, fontVariant: ['tabular-nums'] },
+  portionResult: { color: colors.text, fontSize: 13, fontWeight: '700', textAlign: 'center', fontVariant: ['tabular-nums'] },
+  loggedBanner: { minHeight: 66, borderRadius: radii.card, backgroundColor: colors.accent, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  loggedIcon: { width: 34, height: 34, borderRadius: 13, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  loggedCopy: { flex: 1, minWidth: 0, gap: 2 },
+  loggedTitle: { color: colors.text, fontSize: 14, fontWeight: '800' },
+  loggedText: { color: colors.text, fontSize: 11, opacity: 0.75, lineHeight: 15 },
   catalogNote: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', paddingHorizontal: 12 },
   hint: { alignItems: 'center', gap: 8, paddingVertical: 14 },
   hintText: { color: colors.muted, fontSize: 13 },

@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CalorieRing } from '@/components/CalorieRing';
 import { Card, Eyebrow, IconCircle, MacroCard, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
@@ -10,7 +11,8 @@ import { formatNumber, mealTypeLabel } from '@/utils/format';
 
 export default function TodayScreen() {
   const router = useRouter();
-  const { consumed, hasLoggedScan, meals, pendingAnalysisCount, remaining, resetScan, resumeLatestAnalysis, targets, userName } = useApp();
+  const { consumed, hasLoggedScan, logRepeatMeal, meals, pendingAnalysisCount, remaining, repeatMeals, resetScan, resumeLatestAnalysis, targets, userName } = useApp();
+  const [repeating, setRepeating] = useState<string | null>(null);
   const dateLabel = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date());
   // The greeting was hard-coded to "Guten Morgen", so the app said good morning
   // at 22:00.
@@ -30,6 +32,19 @@ export default function TodayScreen() {
 
   const resumePending = async () => {
     if (await resumeLatestAnalysis()) router.push('/analyzing');
+  };
+
+  // People eat the same things over and over. One tap beats a new scan, costs
+  // no analysis call and no waiting.
+  const repeat = async (key: string) => {
+    const candidate = repeatMeals.find((entry) => entry.key === key);
+    if (!candidate || repeating) return;
+    setRepeating(key);
+    try {
+      await logRepeatMeal(candidate);
+    } finally {
+      setRepeating(null);
+    }
   };
 
   return (
@@ -100,6 +115,37 @@ export default function TodayScreen() {
         </View>
         <PrimaryButton icon="arrow-forward" label="3 Ideen zeigen" onPress={() => router.push('/(tabs)/plan')} />
       </Card>
+
+      {repeatMeals.length ? (
+        <View style={styles.sectionBlock}>
+          <SectionTitle>Nochmal essen</SectionTitle>
+          <ScrollView
+            contentContainerStyle={styles.repeatRow}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.repeatScroll}
+          >
+            {repeatMeals.map((candidate) => (
+              <Pressable
+                accessibilityLabel={`${candidate.title} noch einmal eintragen`}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: repeating !== null }}
+                disabled={repeating !== null}
+                key={candidate.key}
+                onPress={() => void repeat(candidate.key)}
+                style={({ pressed }) => [styles.repeatCard, pressed && styles.repeatPressed, repeating === candidate.key && styles.repeatBusy]}
+              >
+                <View style={styles.repeatTop}>
+                  <Ionicons color={colors.text} name="refresh" size={15} />
+                  {candidate.count > 1 ? <Text style={styles.repeatCount}>{candidate.count}×</Text> : null}
+                </View>
+                <Text numberOfLines={2} style={styles.repeatTitle}>{candidate.title}</Text>
+                <Text style={styles.repeatMacros}>~{candidate.calories} kcal · {candidate.protein} g P</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      ) : null}
 
       <View style={styles.sectionBlock}>
         <SectionTitle>Heute</SectionTitle>
@@ -186,6 +232,15 @@ const styles = StyleSheet.create({
   addMealRow: { minHeight: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 12 },
   addIcon: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   addMealText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
+  repeatScroll: { marginHorizontal: -20 },
+  repeatRow: { paddingHorizontal: 20, gap: 10 },
+  repeatCard: { width: 148, minHeight: 104, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 13, justifyContent: 'space-between' },
+  repeatPressed: { backgroundColor: colors.neutralSoft, transform: [{ scale: 0.98 }] },
+  repeatBusy: { opacity: 0.5 },
+  repeatTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  repeatCount: { color: colors.muted, fontSize: 10, fontWeight: '800' },
+  repeatTitle: { color: colors.text, fontSize: 13, fontWeight: '700', lineHeight: 17, marginTop: 6 },
+  repeatMacros: { color: colors.muted, fontSize: 10, marginTop: 4, fontVariant: ['tabular-nums'] },
   eveningRow: { minHeight: 66, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   eveningIcon: { width: 40, height: 40, borderRadius: 15, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   eveningCopy: { flex: 1, minWidth: 0, gap: 2 },

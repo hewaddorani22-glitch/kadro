@@ -33,7 +33,8 @@ export type Meal = Nutrition & {
   time: string;
   confidence: 'high' | 'medium';
   items: MealItem[];
-  origin?: 'seed' | 'scan';
+  /** 'scan' = analysed by the user, 'plan' = chosen from Kandro's suggestions. */
+  origin?: 'seed' | 'scan' | 'plan';
   date?: string;
   savedAt?: string;
 };
@@ -58,6 +59,9 @@ export type NutritionGoal = 'lose' | 'maintain' | 'gain';
 
 export type ActivityLevel = 'low' | 'light' | 'high';
 
+/** Target change in body weight per week, in kilograms. */
+export type WeeklyRateKg = 0.25 | 0.5;
+
 export type UserProfile = {
   displayName: string;
   goal: NutritionGoal;
@@ -65,6 +69,8 @@ export type UserProfile = {
   heightCm: number;
   weightKg: number;
   activityLevel: ActivityLevel;
+  /** Only meaningful when goal is 'lose' or 'gain'. */
+  weeklyRateKg: WeeklyRateKg;
   preferences: string[];
   completedAt: string | null;
 };

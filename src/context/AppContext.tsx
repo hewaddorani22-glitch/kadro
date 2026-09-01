@@ -17,6 +17,7 @@ import {
   saveWeightEntry,
 } from '@/services/localRepository';
 import {
+  createPlannedMeal,
   createScannedMeal,
   DEFAULT_TARGETS,
   DETECTED_ITEMS,
@@ -26,10 +27,11 @@ import {
 } from '@/services/mockNutrition';
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { calculateDailyTargets, DEFAULT_PROFILE } from '@/services/personalization';
+import { availableRepeats, RepeatCandidate } from '@/services/repeatMeals';
 import { hydrateCloudState, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
 import { isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/supabaseClient';
 import { captureOperationalError, countBucket, trackEvent } from '@/services/telemetry';
-import { DailyTargets, Meal, MealItem, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
+import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
@@ -83,6 +85,9 @@ type AppContextValue = {
   resetScan: () => void;
   resetAfterAccountDeletion: () => void;
   logScannedMeal: () => Promise<void>;
+  logPlannedMeal: (suggestion: MealSuggestion, portion: PortionFactor) => Promise<Meal>;
+  repeatMeals: RepeatCandidate[];
+  logRepeatMeal: (candidate: RepeatCandidate) => Promise<Meal>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -245,7 +250,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     () => createScannedMeal(detectedItems, mealTitle, scanId),
     [detectedItems, mealTitle, scanId],
   );
-  const hasLoggedScan = meals.some((meal) => meal.origin === 'scan');
+  const hasLoggedScan = meals.some((meal) => meal.origin === 'scan' || meal.origin === 'plan');
   const hasEverLoggedScan = lifetimeScanCount > 0 || mealHistory.some((meal) => meal.origin === 'scan');
   const freeScansLeft = Math.max(0, FREE_SCAN_ALLOWANCE - lifetimeScanCount);
   const isCurrentScanLogged = mealHistory.some((meal) => meal.id === scanId);
@@ -536,6 +541,44 @@ export function AppProvider({ children }: PropsWithChildren) {
     }
   }, [detectedItems, mealHistory, scannedMeal]);
 
+  /**
+   * Logs a meal the user picked from Kandro's own suggestions. It never touches
+   * the free-scan allowance: no analysis ran, so it cost nothing, and charging
+   * for the app's own recommendation would be absurd.
+   */
+  const logPlannedMeal = useCallback(async (suggestion: MealSuggestion, portion: PortionFactor) => {
+    const now = new Date();
+    const planned = createPlannedMeal(suggestion, portion, `plan-${suggestion.id}-${now.getTime()}`);
+    const persisted: Meal = { ...planned, date: localDateKey(now), savedAt: now.toISOString() };
+    await saveSyncedMeal(persisted);
+    setMeals((current) => [...current, persisted]);
+    setMealHistory((current) => [...current, persisted]);
+    return persisted;
+  }, []);
+
+  const repeatMeals = useMemo(() => availableRepeats(mealHistory, meals), [mealHistory, meals]);
+
+  /**
+   * Logs a meal the user has eaten before. Costs no analysis call, so like a
+   * planned meal it never spends part of the free allowance.
+   */
+  const logRepeatMeal = useCallback(async (candidate: RepeatCandidate) => {
+    const now = new Date();
+    const hour = now.getHours();
+    const repeated: Meal = {
+      ...candidate.source,
+      id: `repeat-${candidate.key.replace(/[^a-z0-9]+/gi, '-')}-${now.getTime()}`,
+      type: hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack',
+      time: new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(now),
+      date: localDateKey(now),
+      savedAt: now.toISOString(),
+    };
+    await saveSyncedMeal(repeated);
+    setMeals((current) => [...current, repeated]);
+    setMealHistory((current) => [...current, repeated]);
+    return repeated;
+  }, []);
+
   const value = useMemo<AppContextValue>(
     () => ({
       userName,
@@ -577,8 +620,11 @@ export function AppProvider({ children }: PropsWithChildren) {
       resetScan,
       resetAfterAccountDeletion,
       logScannedMeal,
+      logPlannedMeal,
+      repeatMeals,
+      logRepeatMeal,
     }),
-    [addWeightEntry, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logScannedMeal, mealHistory, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
+    [addWeightEntry, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

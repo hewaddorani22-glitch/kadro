@@ -1,4 +1,4 @@
-import { DailyTargets, Meal, MealContext, MealItem, MealSuggestion, Nutrition } from '@/types/nutrition';
+import { DailyTargets, Meal, MealContext, MealItem, MealSuggestion, Nutrition, PortionFactor } from '@/types/nutrition';
 
 export const DEFAULT_TARGETS: DailyTargets = {
   calories: 2230,
@@ -113,6 +113,49 @@ export function createScannedMeal(items: MealItem[], title = 'Hähnchen-Reis-Bow
     items,
     origin: 'scan',
     ...nutritionFromItems(items),
+  };
+}
+
+/**
+ * Turns a chosen recommendation into a logged meal.
+ *
+ * The suggestion is one dish, not a detected ingredient list, so it becomes a
+ * single item. That keeps the meal shape identical to a scanned one, so the
+ * timeline, the cloud sync and the ingredient list all work unchanged.
+ */
+export function createPlannedMeal(suggestion: MealSuggestion, portion: PortionFactor, id: string): Meal {
+  const now = new Date();
+  const hour = now.getHours();
+  const scale = (value: number) => Math.round(value * portion);
+
+  const item: MealItem = {
+    id: `${suggestion.id}-portion`,
+    name: suggestion.title,
+    amountG: 100,
+    baseAmountG: 100,
+    portionFactor: portion,
+    calories: scale(suggestion.calories),
+    protein: scale(suggestion.protein),
+    carbs: scale(suggestion.carbs),
+    fat: scale(suggestion.fat),
+    fiber: scale(suggestion.fiber ?? 0),
+    // A catalog value is a typical preparation, never a measurement of the
+    // plate in front of the user.
+    confidence: 'medium',
+    optional: false,
+    included: true,
+    source: suggestion.source ?? { provider: 'kandro-catalog', label: 'Kandro-Katalog · typischer Richtwert' },
+  };
+
+  return {
+    id,
+    title: suggestion.title,
+    type: hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack',
+    time: new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(now),
+    confidence: 'medium',
+    items: [item],
+    origin: 'plan',
+    ...nutritionFromItems([item]),
   };
 }
 

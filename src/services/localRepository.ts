@@ -11,6 +11,13 @@ const PROFILE_KEY = '@kandro/profile:v1';
 const WEIGHTS_KEY = '@kandro/weight-entries:v1';
 const LIFETIME_SCANS_KEY = '@kandro/lifetime-scans:v1';
 
+/** Origins that count as "the user ate this". 'seed' is demo filler and never persists. */
+const LOGGED_ORIGINS = new Set(['scan', 'plan']);
+
+function isLogged(meal: Meal) {
+  return LOGGED_ORIGINS.has(meal.origin ?? '');
+}
+
 async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
     const stored = await AsyncStorage.getItem(key);
@@ -27,19 +34,19 @@ export async function loadMeals(): Promise<Meal[]> {
 
 export async function loadStoredScans(date = localDateKey()): Promise<Meal[]> {
   const stored = await readJson<Meal[]>(MEALS_KEY, []);
-  return stored.filter((meal) => meal.origin === 'scan' && meal.date === date);
+  return stored.filter((meal) => isLogged(meal) && meal.date === date);
 }
 
 export async function loadAllStoredScans(): Promise<Meal[]> {
   const stored = await readJson<Meal[]>(MEALS_KEY, []);
   return stored
-    .filter((meal) => meal.origin === 'scan')
+    .filter(isLogged)
     .sort((a, b) => (a.savedAt ?? '').localeCompare(b.savedAt ?? ''));
 }
 
 export async function saveMeal(meal: Meal): Promise<Meal[]> {
   const current = await readJson<Meal[]>(MEALS_KEY, []);
-  const next = [...current.filter((entry) => entry.origin === 'scan' && entry.id !== meal.id), meal];
+  const next = [...current.filter((entry) => isLogged(entry) && entry.id !== meal.id), meal];
   await AsyncStorage.setItem(MEALS_KEY, JSON.stringify(next));
   return loadMeals();
 }
@@ -85,6 +92,8 @@ export async function loadProfile(): Promise<UserProfile> {
   return {
     ...DEFAULT_PROFILE,
     ...stored,
+    // Profiles written before the rate existed must not deserialize as undefined.
+    weeklyRateKg: stored.weeklyRateKg === 0.25 ? 0.25 : 0.5,
     preferences: Array.isArray(stored.preferences) ? stored.preferences.filter((item): item is string => typeof item === 'string') : [],
   };
 }

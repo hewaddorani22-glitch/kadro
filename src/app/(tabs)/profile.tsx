@@ -20,7 +20,7 @@ import {
   isTelemetryConfigured,
   setAnalyticsCollectionEnabled,
 } from '@/services/telemetry';
-import { activityLabel, goalLabel } from '@/services/personalization';
+import { activityLabel, goalLabel, weeklyRateLabel } from '@/services/personalization';
 import { formatNumber } from '@/utils/format';
 
 export default function ProfileScreen() {
@@ -96,6 +96,7 @@ export default function ProfileScreen() {
             <PlanStat label="Kalorien" value={formatNumber(targets.calories)} />
             <PlanStat label="Protein" value={`${targets.protein} g`} />
             <PlanStat label="Ziel" value={goalLabel(profile.goal)} />
+            <PlanStat label="Tempo" value={weeklyRateLabel(profile.goal, profile.weeklyRateKg)} />
             <PlanStat label="Aktivität" value={activityLabel(profile.activityLevel)} />
           </View>
         </Card>

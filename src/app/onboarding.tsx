@@ -10,9 +10,9 @@ import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { colors, radii, spacing } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { recordWellnessConsent } from '@/services/consent';
-import { calculateDailyTargets, estimatedPace } from '@/services/personalization';
+import { calculateDailyTargets, estimatedPace, isRateLimited, weeklyRateLabel } from '@/services/personalization';
 import { trackEvent } from '@/services/telemetry';
-import { NutritionGoal, UserProfile } from '@/types/nutrition';
+import { NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
 
 type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap };
 
@@ -36,11 +36,12 @@ const preferenceChoices = [
   { id: 'quick', label: 'Schnelle Mahlzeiten' },
 ] as const;
 
-const STEPS = ['goal', 'name', 'age', 'height', 'weight', 'activity', 'preferences', 'building', 'plan'] as const;
+const STEPS = ['goal', 'rate', 'name', 'age', 'height', 'weight', 'activity', 'preferences', 'building', 'plan'] as const;
 type StepId = (typeof STEPS)[number];
 
 const copy: Record<StepId, { title: string; subtitle: string }> = {
   goal: { title: 'Was möchtest du erreichen?', subtitle: 'Danach richtet sich dein täglicher Energiebedarf.' },
+  rate: { title: 'Wie schnell?', subtitle: 'Langsamer heißt mehr Muskeln behalten und weniger Verzicht im Alltag.' },
   name: { title: 'Wie dürfen wir dich nennen?', subtitle: 'Nur für die Begrüßung. Du kannst das überspringen.' },
   age: { title: 'Wie alt bist du?', subtitle: 'Das Alter beeinflusst deinen Grundumsatz.' },
   height: { title: 'Wie groß bist du?', subtitle: 'Ungefähre Angaben reichen völlig.' },
@@ -65,12 +66,15 @@ export default function OnboardingScreen() {
   const [height, setHeight] = useState(178);
   const [weight, setWeight] = useState(78);
   const [activity, setActivity] = useState('Leicht aktiv');
+  const [weeklyRate, setWeeklyRate] = useState<WeeklyRateKg>(0.5);
   const [preferences, setPreferences] = useState<string[]>(['high-protein']);
   const [showConsent, setShowConsent] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
   const [skippedAnything, setSkippedAnything] = useState(false);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const goalRef = useRef(goal);
+  goalRef.current = goal;
 
   const step = STEPS[stepIndex];
 
@@ -83,13 +87,22 @@ export default function OnboardingScreen() {
 
   const goNext = useCallback(() => {
     clearAdvance();
-    setStepIndex((current) => Math.min(STEPS.length - 1, current + 1));
+    setStepIndex((current) => {
+      let next = Math.min(STEPS.length - 1, current + 1);
+      // Holding weight has no rate to choose.
+      if (STEPS[next] === 'rate' && goalRef.current === 'Gewicht halten') next += 1;
+      return Math.min(STEPS.length - 1, next);
+    });
   }, [clearAdvance]);
 
   const goBack = () => {
     void Haptics.selectionAsync();
     clearAdvance();
-    setStepIndex((current) => Math.max(0, current - 1));
+    setStepIndex((current) => {
+      let previous = Math.max(0, current - 1);
+      if (STEPS[previous] === 'rate' && goalRef.current === 'Gewicht halten') previous -= 1;
+      return Math.max(0, previous);
+    });
   };
 
   // Single-choice steps move on by themselves. The short delay lets the user
@@ -123,9 +136,10 @@ export default function OnboardingScreen() {
     heightCm: height,
     weightKg: weight,
     activityLevel: activity === 'Meist sitzend' ? 'low' : activity === 'Sehr aktiv' ? 'high' : 'light',
+    weeklyRateKg: weeklyRate,
     preferences,
     completedAt: null,
-  }), [activity, age, displayName, goal, height, preferences, weight]);
+  }), [activity, age, displayName, goal, height, preferences, weeklyRate, weight]);
   const startingTargets = useMemo(() => calculateDailyTargets(draftProfile), [draftProfile]);
 
   const acceptConsent = async () => {
@@ -201,6 +215,36 @@ export default function OnboardingScreen() {
               <ChoiceList choices={goalChoices} onSelect={(value) => selectAndAdvance(() => setGoal(value))} selected={goal} />
             ) : null}
 
+            {step === 'rate' ? (
+              <View style={styles.choiceList}>
+                {([0.25, 0.5] as WeeklyRateKg[]).map((rate) => {
+                  const active = weeklyRate === rate;
+                  const daily = Math.round((rate * 7700) / 7);
+                  const applied = draftProfile.goal === 'gain' ? Math.min(350, daily) : daily;
+                  return (
+                    <Pressable
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                      key={rate}
+                      onPress={() => selectAndAdvance(() => setWeeklyRate(rate))}
+                      style={({ pressed }) => [styles.choice, active && styles.choiceActive, pressed && styles.choicePressed]}
+                    >
+                      <View style={[styles.choiceIcon, active && styles.choiceIconActive]}>
+                        <Ionicons color={colors.text} name={rate === 0.25 ? 'leaf-outline' : 'flash-outline'} size={22} />
+                      </View>
+                      <View style={styles.choiceTextBlock}>
+                        <Text style={styles.choiceTitle}>{weeklyRateLabel(draftProfile.goal, rate)}</Text>
+                        <Text style={styles.choiceDetail}>
+                          {rate === 0.25 ? 'Ruhig und gut durchzuhalten' : 'Zügig, verlangt mehr Disziplin'} · {draftProfile.goal === 'lose' ? '−' : '+'}{applied} kcal pro Tag
+                        </Text>
+                      </View>
+                      <Ionicons color={active ? colors.accentDeep : colors.border} name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+
             {step === 'name' ? (
               <View style={styles.nameField}>
                 <TextInput
@@ -260,7 +304,7 @@ export default function OnboardingScreen() {
             ) : null}
 
             {step === 'building' ? <BuildingState goal={goal} /> : null}
-            {step === 'plan' ? <StartingPlan goal={draftProfile.goal} targets={startingTargets} /> : null}
+            {step === 'plan' ? <StartingPlan limited={isRateLimited(draftProfile)} profile={draftProfile} targets={startingTargets} /> : null}
           </View>
         </ScrollView>
 
@@ -296,7 +340,7 @@ export default function OnboardingScreen() {
 }
 
 function isChoiceStep(step: StepId) {
-  return step === 'goal' || step === 'activity';
+  return step === 'goal' || step === 'rate' || step === 'activity';
 }
 
 function ChoiceList({ choices, onSelect, selected }: { choices: Choice[]; onSelect: (choice: string) => void; selected: string }) {
@@ -402,7 +446,7 @@ function BuildingState({ goal }: { goal: string }) {
   );
 }
 
-function StartingPlan({ goal, targets }: { goal: NutritionGoal; targets: ReturnType<typeof calculateDailyTargets> }) {
+function StartingPlan({ limited, profile, targets }: { limited: boolean; profile: UserProfile; targets: ReturnType<typeof calculateDailyTargets> }) {
   return (
     <View style={styles.startingCard}>
       <Text style={styles.cardEyebrow}>TAGESZIEL</Text>
@@ -415,7 +459,7 @@ function StartingPlan({ goal, targets }: { goal: NutritionGoal; targets: ReturnT
           <Text style={styles.planStatLabel}>Protein</Text>
         </View>
         <View style={styles.planStat}>
-          <Text numberOfLines={2} style={styles.planStatValue}>{estimatedPace(goal)}</Text>
+          <Text numberOfLines={2} style={styles.planStatValue}>{estimatedPace(profile.goal, profile.weeklyRateKg)}</Text>
           <Text style={styles.planStatLabel}>geschätztes Tempo</Text>
         </View>
         <View style={styles.planStat}>
@@ -427,6 +471,14 @@ function StartingPlan({ goal, targets }: { goal: NutritionGoal; targets: ReturnT
         <Ionicons color={colors.accentDeep} name="sync" size={18} />
         <Text style={styles.adaptsText}>Dein Tag stellt sich nach jeder Mahlzeit neu auf</Text>
       </View>
+      {limited ? (
+        <View style={styles.limitRow}>
+          <Ionicons color={colors.attention} name="information-circle-outline" size={16} />
+          <Text style={styles.limitText}>
+            Dein gewähltes Tempo würde unter eine sichere Untergrenze führen. Kandro hat dein Ziel entsprechend angehoben.
+          </Text>
+        </View>
+      ) : null}
       <Text style={styles.safetyText}>Diese Ziele sind Schätzwerte für allgemeines Wohlbefinden und kein medizinischer Rat. Kandro vermeidet extreme Zielwerte. Bei gesundheitlichen Beschwerden besprich Veränderungen bitte ärztlich.</Text>
     </View>
   );
@@ -485,6 +537,8 @@ const styles = StyleSheet.create({
   planStatLabel: { color: colors.muted, fontSize: 11, textAlign: 'center' },
   adaptsRow: { marginTop: 22, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.neutralSoft, borderRadius: radii.pill, paddingHorizontal: 13, paddingVertical: 9 },
   adaptsText: { flex: 1, color: colors.accentDeep, fontSize: 12, fontWeight: '700' },
+  limitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 16, backgroundColor: colors.attentionSoft, borderRadius: 14, padding: 11 },
+  limitText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },
   safetyText: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 16 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'flex-end' },
   consentSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 24, gap: 14 },
