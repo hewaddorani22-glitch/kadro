@@ -1,0 +1,5 @@
+# Netlify/Cloudflare Pages: /privacy statt /privacy.html
+/privacy   /privacy.html   200
+/terms     /terms.html     200
+/support   /support.html   200
+/impressum /impressum.html 200

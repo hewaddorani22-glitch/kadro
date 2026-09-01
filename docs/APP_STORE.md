@@ -71,3 +71,23 @@ Capture native screenshots from the production/TestFlight build, not the web pre
 - Native StoreKit sandbox test and App Store subscription metadata/review screenshots.
 - At least 30 real iPhone meal-photo results reviewed against the confirmed food and portion, including poor light, blur, partial plates, multiple dishes, and offline retry.
 - Native accessibility pass with VoiceOver, Dynamic Type, Reduce Motion, and contrast on a physical iPhone.
+
+## Anbieter- und URL-Angaben
+
+Diese Werte sind gesetzt und werden von `npm run validate:release` erzwungen:
+
+| Feld | Wert |
+|---|---|
+| Anbieter | Hewad Dorani, Altenessener Str. 124, 45326 Essen |
+| Rechtsform | Einzelunternehmen (Kleingewerbe), § 19 UStG |
+| Kontakt | hewaddorani22@gmail.com |
+| Privacy Policy URL | https://getkandro.com/privacy |
+| Support URL | https://getkandro.com/support |
+| Bedingungen | https://getkandro.com/terms |
+| Impressum | https://getkandro.com/impressum |
+
+Die Website liegt in `site/` und wird als statische Dateien deployt; siehe
+[site/README.md](../site/README.md).
+
+Die Rechtstexte auf der Website und in der App sind wortgleich. Änderst du
+einen, ändere beide.
