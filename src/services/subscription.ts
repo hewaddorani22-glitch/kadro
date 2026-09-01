@@ -18,6 +18,11 @@ export type SubscriptionPlan = {
   detail: string;
   billing: string;
   hasFreeTrial: boolean;
+  /** Localised trial length, e.g. "7 Tage", when the store offers one. */
+  trialLabel: string | null;
+  /** Raw amounts so the UI can compare plans instead of asserting a saving. */
+  priceAmount: number;
+  monthlyEquivalent: number | null;
 };
 
 export type SubscriptionSnapshot = {
@@ -82,11 +87,34 @@ async function ensureRevenueCatConfigured() {
   return configured;
 }
 
+/** Turns the store's intro period into German copy, or null when there is none. */
+function trialLabelFrom(product: PurchasesPackage['product']): string | null {
+  const intro = product.introPrice;
+  if (!intro || intro.price !== 0) return null;
+
+  const count = intro.periodNumberOfUnits ?? 0;
+  if (count < 1) return null;
+
+  const unit = String(intro.periodUnit ?? '').toUpperCase();
+  const nouns: Record<string, [string, string]> = {
+    DAY: ['Tag', 'Tage'],
+    WEEK: ['Woche', 'Wochen'],
+    MONTH: ['Monat', 'Monate'],
+    YEAR: ['Jahr', 'Jahre'],
+  };
+  const noun = nouns[unit];
+  if (!noun) return null;
+  return `${count} ${count === 1 ? noun[0] : noun[1]}`;
+}
+
 function toPlan(id: SubscriptionPlanId, purchasePackage: PurchasesPackage | null): SubscriptionPlan | null {
   if (!purchasePackage) return null;
   const { product } = purchasePackage;
   const yearly = id === 'yearly';
   const hasFreeTrial = Boolean(product.introPrice && product.introPrice.price === 0);
+  const monthlyEquivalent = yearly
+    ? (typeof product.pricePerMonth === 'number' ? product.pricePerMonth : product.price / 12)
+    : product.price;
   return {
     id,
     package: purchasePackage,
@@ -98,6 +126,9 @@ function toPlan(id: SubscriptionPlanId, purchasePackage: PurchasesPackage | null
         : 'Flexibel, jederzeit kündbar',
     billing: `${product.priceString} pro ${yearly ? 'Jahr' : 'Monat'}. Automatische Verlängerung, jederzeit im Store kündbar.`,
     hasFreeTrial,
+    trialLabel: trialLabelFrom(product),
+    priceAmount: product.price,
+    monthlyEquivalent: Number.isFinite(monthlyEquivalent) ? monthlyEquivalent : null,
   };
 }
 

@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PrimaryButton } from '@/components/ui';
 import { KandroMark } from '@/components/KandroMark';
 import { colors, radii } from '@/constants/theme';
+import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
+import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { formatNumber } from '@/utils/format';
 import { toBillingMode, trackEvent } from '@/services/telemetry';
 
 type Plan = 'yearly' | 'monthly';
@@ -16,6 +19,8 @@ type Plan = 'yearly' | 'monthly';
 export default function PaywallScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const params = useLocalSearchParams<{ reason?: string }>();
+  const { consumed, lifetimeScanCount, meals } = useApp();
   const [selected, setSelected] = useState<Plan>('yearly');
   const { busy, error, purchase, refresh, restore, snapshot, status } = useSubscription();
   const yearly = snapshot?.plans.yearly ?? null;
@@ -24,6 +29,22 @@ export default function PaywallScreen() {
   const testStore = snapshot?.mode === 'test-store';
   const billingMode = toBillingMode(snapshot?.mode);
   const paywallViewed = useRef(false);
+
+  // The same screen has to work for someone interrupted mid-scan and for
+  // someone who tapped it out of curiosity. Pretending both are the same moment
+  // is why paywalls read as a wall.
+  const blocked = params.reason === 'blocked';
+  const afterMeal = params.reason === 'after-meal';
+  const headline = blocked
+    ? `Deine ${FREE_SCAN_ALLOWANCE} Mahlzeiten sind erfasst.`
+    : afterMeal
+      ? 'So läuft dein Tag ab jetzt.'
+      : 'Iss mit einem Plan.\nNicht nach Gefühl.';
+  const subline = blocked
+    ? 'Du hast gesehen, wie sich der Tag nach jeder Mahlzeit neu aufstellt. Mit Pro hört das nicht auf.'
+    : afterMeal
+      ? 'Jede weitere Mahlzeit rechnet den Rest des Tages neu und sagt dir, was als Nächstes passt.'
+      : 'Behalte die ruhige, adaptive Unterstützung, die du gerade erlebt hast – nach jeder Mahlzeit.';
 
   useEffect(() => {
     if (status === 'loading' || paywallViewed.current) return;
@@ -111,6 +132,11 @@ export default function PaywallScreen() {
   // App Store Review guideline 3.1.2 requires length, price and the renewal
   // terms to be visible before the purchase, not only in the store listing.
   // A missing renewal notice is one of the most common rejection reasons.
+  const savingPercent = yearly?.monthlyEquivalent && monthly?.priceAmount
+    ? Math.round((1 - yearly.monthlyEquivalent / monthly.priceAmount) * 100)
+    : null;
+  const yearlyBadge = savingPercent && savingPercent >= 5 ? `${savingPercent} % GÜNSTIGER` : 'BESTER PREIS';
+
   const renewalCopy = selected === 'yearly'
     ? 'Jahresabo. Verlängert sich automatisch um 12 Monate, bis du kündigst.'
     : 'Monatsabo. Verlängert sich automatisch um 1 Monat, bis du kündigst.';
@@ -134,19 +160,37 @@ export default function PaywallScreen() {
       >
         <View style={styles.heroMark}><KandroMark size={76} /></View>
         {testStore ? <View style={styles.testBadge}><Text style={styles.testBadgeText}>REVENUECAT TEST STORE</Text></View> : null}
-        <Text style={styles.title}>Iss mit einem Plan.{`\n`}Nicht nach Gefühl.</Text>
-        <Text style={styles.subtitle}>Behalte die ruhige, adaptive Unterstützung, die du gerade erlebt hast – nach jeder Mahlzeit.</Text>
+        <Text style={styles.title}>{headline}</Text>
+        <Text style={styles.subtitle}>{subline}</Text>
+
+        {lifetimeScanCount > 0 ? (
+          <View style={styles.progressCard}>
+            <Text style={styles.progressLabel}>BISHER MIT KANDRO</Text>
+            <Text style={styles.progressValue}>
+              {lifetimeScanCount} {lifetimeScanCount === 1 ? 'Mahlzeit' : 'Mahlzeiten'} erfasst
+              {meals.length ? ` · heute ${formatNumber(consumed.calories)} kcal eingeordnet` : ''}
+            </Text>
+          </View>
+        ) : null}
 
         <View style={styles.benefits}>
-          <Benefit label="Unbegrenzte Mahlzeiten-Scans" />
-          <Benefit label="Neue Aufstellung nach jeder Mahlzeit" />
-          <Benefit label="Persönliche Vorschläge für den nächsten Zug" />
+          <Benefit label="Jede Mahlzeit erfassen – Foto, Beschreibung oder Barcode" />
+          <Benefit label="Der Tag rechnet sich nach jeder Mahlzeit neu" />
+          <Benefit label="Drei konkrete Vorschläge für den nächsten Teller" />
+          <Benefit label="Abendabschluss und Verlauf über alle Tage" />
+        </View>
+
+        <View style={styles.keepsCard}>
+          <Ionicons color={colors.accentDeep} name="lock-open-outline" size={17} />
+          <Text style={styles.keepsText}>
+            Dein bisheriger Verlauf bleibt dir in jedem Fall erhalten – auch ohne Pro. Ohne Abo kommen nur keine neuen Analysen dazu.
+          </Text>
         </View>
 
         <View style={styles.plans}>
           <PlanCard
-            badge="BESTER PREIS"
-            detail={yearly?.detail ?? '€3,33 pro Monat'}
+            badge={yearlyBadge}
+            detail={yearly?.trialLabel ? `${yearly.trialLabel} gratis, dann ${yearly.detail}` : (yearly?.detail ?? '€3,33 pro Monat')}
             disabled={Boolean(snapshot?.configured && !yearly)}
             label="Jährlich"
             onPress={() => setSelected('yearly')}
@@ -154,7 +198,7 @@ export default function PaywallScreen() {
             selected={selected === 'yearly'}
           />
           <PlanCard
-            detail={monthly?.detail ?? 'Flexibel, jederzeit kündbar'}
+            detail={monthly?.trialLabel ? `${monthly.trialLabel} gratis, dann ${monthly.detail}` : (monthly?.detail ?? 'Flexibel, jederzeit kündbar')}
             disabled={Boolean(snapshot?.configured && !monthly)}
             label="Monatlich"
             onPress={() => setSelected('monthly')}
@@ -228,7 +272,12 @@ const styles = StyleSheet.create({
   testBadgeText: { color: colors.text, fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
   title: { color: colors.text, fontSize: 36, lineHeight: 41, fontWeight: '700', letterSpacing: -1.2, textAlign: 'center', marginTop: 20 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 340, marginTop: 10 },
-  benefits: { alignSelf: 'stretch', gap: 13, marginTop: 24, paddingHorizontal: 7 },
+  progressCard: { alignSelf: 'stretch', marginTop: 20, borderRadius: radii.card, backgroundColor: colors.neutralSoft, paddingHorizontal: 14, paddingVertical: 12, gap: 3 },
+  progressLabel: { color: colors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
+  progressValue: { color: colors.text, fontSize: 13, fontWeight: '700', lineHeight: 18 },
+  keepsCard: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 18, borderRadius: radii.card, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent, padding: 13 },
+  keepsText: { flex: 1, minWidth: 0, color: colors.text, fontSize: 11, lineHeight: 16 },
+  benefits: { alignSelf: 'stretch', gap: 13, marginTop: 22, paddingHorizontal: 7 },
   benefit: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   benefitCheck: { width: 30, height: 30, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   benefitText: { color: colors.text, fontSize: 14, fontWeight: '600' },

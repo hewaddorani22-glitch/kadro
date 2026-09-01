@@ -65,7 +65,9 @@ export default function ScanScreen() {
 
   const hasScanAccess = () => {
     if (subscribed || freeScansLeft > 0) return true;
-    router.push('/paywall');
+    // The paywall reads very differently when it interrupted someone mid-scan
+    // than when it was opened out of curiosity.
+    router.push('/paywall?reason=blocked');
     return false;
   };
 

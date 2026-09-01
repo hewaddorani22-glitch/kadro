@@ -89,7 +89,7 @@ export default function PlanScreen() {
       setChosen(null);
       // The paywall belongs after the value, never between choosing and eating.
       if (params.fromScan === '1' && subscriptionStatus !== 'active') {
-        setTimeout(() => router.push('/paywall'), 900);
+        setTimeout(() => router.push('/paywall?reason=after-meal'), 900);
       }
     } finally {
       setLogging(false);

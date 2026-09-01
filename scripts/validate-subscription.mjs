@@ -32,6 +32,22 @@ if (!service.includes('ExecutionEnvironment.StoreClient')) failures.push('Expo G
 if (!context.includes("'active' | 'cancelled' | 'failed'")) failures.push('purchase flow must distinguish cancellation from failure');
 if (!paywall.includes('Wiederherstellen')) failures.push('paywall has no user-triggered restore action');
 if (!paywall.includes('snapshot?.plans')) failures.push('paywall does not display RevenueCat offering prices');
+
+// The paywall must persuade with facts, not with pressure. These pin the
+// honest bits so a later "conversion optimisation" cannot quietly remove them.
+if (!paywall.includes('savingPercent')) {
+  failures.push('the yearly saving must be computed from the real prices, not asserted');
+}
+if (!paywall.includes('trialLabel')) failures.push('a free trial must state its actual length before the purchase');
+if (!paywall.includes('Verlauf bleibt dir in jedem Fall erhalten')) {
+  failures.push('the paywall must state that existing history stays accessible without Pro');
+}
+if (/Nur noch|läuft ab in|Angebot endet|verpasst|letzte Chance/i.test(paywall)) {
+  failures.push('the paywall must not use countdowns, scarcity or loss framing');
+}
+if (!service.includes('trialLabelFrom') || !service.includes('monthlyEquivalent')) {
+  failures.push('the subscription service must expose trial length and comparable amounts');
+}
 if (!scan.includes('freeScansLeft > 0') || !scan.includes("subscriptionStatus === 'active'")) {
   failures.push('scanner does not enforce the free-scan entitlement boundary');
 }
