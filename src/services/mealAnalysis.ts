@@ -2,9 +2,20 @@ import { File } from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 
 import { AnalysisErrorKind, MealAnalysisInput, MealAnalysisResult } from '@/services/contracts';
+import {
+  functionsBaseUrl,
+  getAccessToken,
+  isSupabaseConfigured,
+  supabaseAnonKey,
+} from '@/services/supabaseClient';
 import { MealItem, Nutrition } from '@/types/nutrition';
 
-const apiUrl = process.env.EXPO_PUBLIC_ANALYSIS_API_URL?.replace(/\/$/, '');
+/**
+ * Optional local override for development. When it is unset the app talks to
+ * the hosted Supabase edge function, which is what production builds do: the
+ * provider keys live there, never on the device.
+ */
+const localApiUrl = process.env.EXPO_PUBLIC_ANALYSIS_API_URL?.replace(/\/$/, '');
 
 export class MealAnalysisError extends Error {
   constructor(
@@ -21,7 +32,48 @@ export type PreparedMealPhoto = MealAnalysisInput & {
 };
 
 export function isLiveAnalysisConfigured() {
-  return Boolean(apiUrl);
+  return Boolean(localApiUrl || (isSupabaseConfigured && functionsBaseUrl));
+}
+
+/**
+ * Sends one gateway request. Network failures surface as `offline` so the
+ * caller can queue a photo; everything else is decided by the response body.
+ */
+async function gatewayFetch(path: string, init?: { method: 'POST'; body: unknown }): Promise<Response> {
+  if (localApiUrl) {
+    try {
+      return await fetch(`${localApiUrl}${path}`, init ? {
+        method: init.method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(init.body),
+      } : undefined);
+    } catch {
+      throw new MealAnalysisError('offline', 'Keine Verbindung. Der Scan wurde lokal vorgemerkt.');
+    }
+  }
+
+  if (!functionsBaseUrl || !supabaseAnonKey) {
+    throw new MealAnalysisError('not-configured', 'Die Analyse ist noch nicht eingerichtet.');
+  }
+
+  const accessToken = await getAccessToken().catch(() => null);
+  if (!accessToken) {
+    throw new MealAnalysisError('offline', 'Die Sitzung ist gerade nicht verfügbar. Der Scan wurde vorgemerkt.');
+  }
+
+  try {
+    return await fetch(`${functionsBaseUrl}/nutrition${path}`, {
+      method: init?.method ?? 'GET',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: supabaseAnonKey,
+        ...(init ? { 'Content-Type': 'application/json' } : {}),
+      },
+      ...(init ? { body: JSON.stringify(init.body) } : {}),
+    });
+  } catch {
+    throw new MealAnalysisError('offline', 'Keine Verbindung. Der Scan wurde lokal vorgemerkt.');
+  }
 }
 
 export async function prepareMealPhoto(photoUri: string): Promise<PreparedMealPhoto> {
@@ -54,40 +106,7 @@ export function deleteTemporaryPhoto(uri: string | null | undefined) {
 }
 
 export async function analyzePreparedPhoto(input: MealAnalysisInput): Promise<MealAnalysisResult> {
-  if (!apiUrl) {
-    throw new MealAnalysisError(
-      'not-configured',
-      'Der Analyse-Server ist lokal noch nicht konfiguriert.',
-    );
-  }
-
-  let response: Response;
-  try {
-    response = await fetch(`${apiUrl}/v1/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input),
-    });
-  } catch {
-    throw new MealAnalysisError('offline', 'Keine Verbindung. Der Scan wurde lokal vorgemerkt.');
-  }
-
-  const payload = (await response.json().catch(() => null)) as (MealAnalysisResult & { code?: string; message?: string }) | null;
-
-  if (!response.ok) {
-    const kind: AnalysisErrorKind = payload?.code === 'unclear_image'
-      ? 'unclear-image'
-      : payload?.code === 'multiple_dishes'
-        ? 'multiple-dishes'
-        : 'provider-error';
-    throw new MealAnalysisError(kind, payload?.message ?? 'Die Analyse konnte nicht abgeschlossen werden.');
-  }
-
-  if (!payload?.items?.length) {
-    throw new MealAnalysisError('unclear-image', 'Auf dem Foto wurde keine eindeutige Mahlzeit erkannt.');
-  }
-
-  return payload;
+  return readAnalysisResponse(await gatewayFetch('/v1/analyze', { method: 'POST', body: input }));
 }
 
 async function readAnalysisResponse(response: Response): Promise<MealAnalysisResult> {
@@ -97,7 +116,9 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
       ? 'unclear-image'
       : payload?.code === 'multiple_dishes'
         ? 'multiple-dishes'
-        : 'provider-error';
+        : payload?.code === 'server_not_configured'
+          ? 'not-configured'
+          : 'provider-error';
     throw new MealAnalysisError(kind, payload?.message ?? 'Die Analyse konnte nicht abgeschlossen werden.');
   }
   if (!payload?.items?.length) throw new MealAnalysisError('unclear-image', 'Es wurde keine eindeutige Mahlzeit erkannt.');
@@ -105,18 +126,10 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
 }
 
 export async function analyzeDescription(description: string): Promise<MealAnalysisResult> {
-  if (!apiUrl) throw new MealAnalysisError('not-configured', 'Der Analyse-Server ist lokal noch nicht konfiguriert.');
-  let response: Response;
-  try {
-    response = await fetch(`${apiUrl}/v1/describe`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: description.trim(), locale: 'de-DE' }),
-    });
-  } catch {
-    throw new MealAnalysisError('offline', 'Keine Verbindung. Bitte versuche die Beschreibung später erneut.');
-  }
-  return readAnalysisResponse(response);
+  return readAnalysisResponse(await gatewayFetch('/v1/describe', {
+    method: 'POST',
+    body: { description: description.trim(), locale: 'de-DE' },
+  }));
 }
 
 type BarcodePayload = {
@@ -129,13 +142,7 @@ type BarcodePayload = {
 };
 
 export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResult> {
-  if (!apiUrl) throw new MealAnalysisError('not-configured', 'Der Analyse-Server ist lokal noch nicht konfiguriert.');
-  let response: Response;
-  try {
-    response = await fetch(`${apiUrl}/v1/barcode/${encodeURIComponent(barcode)}`);
-  } catch {
-    throw new MealAnalysisError('offline', 'Keine Verbindung. Der Barcode konnte nicht nachgeschlagen werden.');
-  }
+  const response = await gatewayFetch(`/v1/barcode/${encodeURIComponent(barcode)}`);
   const payload = (await response.json().catch(() => null)) as BarcodePayload | null;
   if (!response.ok || !payload) {
     throw new MealAnalysisError('provider-error', payload?.message ?? 'Das Produkt wurde nicht gefunden.');

@@ -8,12 +8,18 @@ const configPath = resolve(projectRoot, 'supabase/config.toml');
 const accountLinkingPath = resolve(projectRoot, 'src/services/accountLinking.ts');
 const emailTemplatePath = resolve(projectRoot, 'supabase/templates/email_change.html');
 const accountDeletionPath = resolve(projectRoot, 'supabase/functions/delete-account/index.ts');
-const [migration, config, accountLinking, emailTemplate, accountDeletion] = await Promise.all([
+const gatewayPath = resolve(projectRoot, 'supabase/functions/nutrition/index.ts');
+const quotaMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901120000_add_analysis_quota.sql');
+const mealAnalysisPath = resolve(projectRoot, 'src/services/mealAnalysis.ts');
+const [migration, config, accountLinking, emailTemplate, accountDeletion, gateway, quotaMigration, mealAnalysis] = await Promise.all([
   readFile(migrationPath, 'utf8'),
   readFile(configPath, 'utf8'),
   readFile(accountLinkingPath, 'utf8'),
   readFile(emailTemplatePath, 'utf8'),
   readFile(accountDeletionPath, 'utf8'),
+  readFile(gatewayPath, 'utf8'),
+  readFile(quotaMigrationPath, 'utf8'),
+  readFile(mealAnalysisPath, 'utf8'),
 ]);
 
 const tables = [
@@ -70,8 +76,37 @@ if (!config.includes('[functions.delete-account]') || !config.includes('verify_j
   failures.push('delete-account function must keep platform JWT verification enabled');
 }
 
+// The hosted analysis gateway is the only place the paid provider keys exist.
+// These invariants keep it from silently becoming an open, unmetered endpoint.
+if (!config.includes('[functions.nutrition]') || !/\[functions\.nutrition\]\s*\nverify_jwt = true/.test(config)) {
+  failures.push('nutrition gateway must keep platform JWT verification enabled');
+}
+for (const invariant of [
+  "withSupabase({ auth: 'user' }",
+  'context.supabase.auth.getUser()',
+  "context.supabase.rpc('consume_analysis_quota')",
+  'daily_limit_reached',
+  'MAX_IMAGE_BASE64',
+]) {
+  if (!gateway.includes(invariant)) failures.push(`analysis gateway invariant missing: ${invariant}`);
+}
+if (/EXPO_PUBLIC_/.test(gateway)) failures.push('analysis gateway must not read client-visible configuration');
+if (!quotaMigration.includes('alter table public.analysis_usage enable row level security')) {
+  failures.push('analysis_usage must enable row level security');
+}
+if (!quotaMigration.includes('revoke all on table public.analysis_usage from anon, authenticated')) {
+  failures.push('analysis_usage must stay unreadable for client roles');
+}
+if (!quotaMigration.includes('security definer')) failures.push('quota counter must run as a definer function');
+if (/create function public\.consume_analysis_quota\([^)]+\)/.test(quotaMigration)) {
+  failures.push('the daily limit must not be a client-supplied argument');
+}
+if (!mealAnalysis.includes('functionsBaseUrl') || !mealAnalysis.includes('Authorization: `Bearer ${accessToken}`')) {
+  failures.push('the app must reach the gateway through an authenticated edge function call');
+}
+
 if (failures.length) {
   throw new Error(`Supabase schema validation failed:\n- ${failures.join('\n- ')}`);
 }
 
-console.log(`Validated ${tables.length} RLS-protected Kandro tables and ID-preserving account linking.`);
+console.log(`Validated ${tables.length} RLS-protected Kandro tables, ID-preserving account linking, and the metered analysis gateway.`);

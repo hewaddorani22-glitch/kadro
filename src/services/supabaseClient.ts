@@ -9,6 +9,22 @@ const CLOUD_DISABLED_KEY = '@kandro/cloud-disabled-after-deletion:v1';
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
+/** Base URL of the hosted edge functions, or null when Supabase is not set up. */
+export const functionsBaseUrl = isSupabaseConfigured ? `${supabaseUrl!.replace(/\/$/, '')}/functions/v1` : null;
+export const supabaseAnonKey = supabasePublishableKey ?? null;
+
+/**
+ * Access token for the current session, refreshing it first when needed.
+ * Returns null when Supabase is unavailable or the user opted out of the cloud.
+ */
+export async function getAccessToken(): Promise<string | null> {
+  if (!supabase) return null;
+  const user = await ensureSupabaseUser().catch(() => null);
+  if (!user) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.access_token ?? null;
+}
+
 export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabasePublishableKey!, {
       auth: {

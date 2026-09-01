@@ -240,6 +240,11 @@ content_path = "./supabase/templates/email_change.html"
 [functions.delete-account]
 verify_jwt = true
 
+# The analysis gateway holds the paid provider keys, so the platform must reject
+# every unauthenticated call before our code ever runs.
+[functions.nutrition]
+verify_jwt = true
+
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true

@@ -43,3 +43,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Secrets for the hosted analysis gateway
+supabase/.env.gateway
