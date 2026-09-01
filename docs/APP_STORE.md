@@ -54,7 +54,7 @@ Capture native screenshots from the production/TestFlight build, not the web pre
 ## Native TestFlight gate
 
 1. [x] Sign in to Expo and link the EAS project `@hewad/kandro`.
-2. Add production environment values in EAS. Only public client values use `EXPO_PUBLIC_`; AI/USDA secrets belong behind a hosted authenticated analysis gateway, never in the iOS bundle.
+2. [x] Add the public Supabase production values in EAS and keep the local gateway override absent. AI/USDA secrets are live behind the authenticated Supabase gateway, never in the iOS bundle.
 3. Create the App Store Connect app record for bundle ID `com.hewaddorani.kandro`.
 4. Create annual and monthly auto-renewable subscriptions, connect them to RevenueCat's `kandro_pro` entitlement, and add the public iOS RevenueCat SDK key to the production EAS environment.
 5. Build with the checked-in `production` profile and submit to TestFlight.
@@ -67,7 +67,7 @@ Capture native screenshots from the production/TestFlight build, not the web pre
 - Apple Developer Program activation is pending Apple's identity review. The signed bundle ID, App Store record, subscriptions, and TestFlight upload remain unavailable until Apple approves the paid enrollment.
 - Legal publisher/controller name, address, contact channel, processor/transfer review, and final retention periods.
 - Public privacy and support URLs.
-- Hosted production analysis gateway with authentication, rate limiting, deletion/retention policy, and production secrets.
+- Final legal/provider disclosure and retention review for the live production analysis gateway.
 - Native StoreKit sandbox test and App Store subscription metadata/review screenshots.
 - At least 30 real iPhone meal-photo results reviewed against the confirmed food and portion, including poor light, blur, partial plates, multiple dishes, and offline retry.
 - Native accessibility pass with VoiceOver, Dynamic Type, Reduce Motion, and contrast on a physical iPhone.

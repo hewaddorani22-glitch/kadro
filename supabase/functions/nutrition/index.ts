@@ -1,4 +1,4 @@
-import { withSupabase } from 'npm:@supabase/server';
+import { withSupabase } from 'npm:@supabase/server@1.5.1';
 
 import {
   chooseFood,
@@ -22,7 +22,10 @@ const visionModel = isOpenRouter
   : Deno.env.get('OPENAI_VISION_MODEL') || 'gpt-4o';
 const openRouterZdr = Deno.env.get('OPENROUTER_ZDR') !== 'false';
 const usdaApiKey = Deno.env.get('USDA_API_KEY') || 'DEMO_KEY';
-const dailyLimit = Number(Deno.env.get('ANALYSIS_DAILY_LIMIT') || '60');
+const configuredDailyLimit = Number(Deno.env.get('ANALYSIS_DAILY_LIMIT') || '60');
+const dailyLimit = Number.isSafeInteger(configuredDailyLimit) && configuredDailyLimit > 0
+  ? configuredDailyLimit
+  : 60;
 
 /** Largest base64 payload we accept. The client sends a 1280px JPEG at q0.72. */
 const MAX_IMAGE_BASE64 = 3_000_000;
@@ -226,6 +229,21 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     return reply({ status: 404, body: { code: 'not_found', message: 'Route nicht gefunden.' } });
   }
 
+  const payload = await request.json().catch(() => null);
+  if (route === '/v1/analyze') {
+    if (!validateAnalysisInput(payload)) {
+      return reply({ status: 400, body: { code: 'invalid_input', message: 'Ungültiges Fotoformat.' } });
+    }
+    if (typeof payload.imageBase64 !== 'string' || payload.imageBase64.length > MAX_IMAGE_BASE64) {
+      return reply({ status: 413, body: { code: 'invalid_input', message: 'Das Foto ist zu groß.' } });
+    }
+  } else {
+    const description = typeof payload?.description === 'string' ? payload.description.trim() : '';
+    if (description.length < 3 || description.length > 500) {
+      return reply({ status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } });
+    }
+  }
+
   const { data: used, error: quotaError } = await context.supabase.rpc('consume_analysis_quota');
   if (quotaError) {
     return reply({ status: 503, body: { code: 'provider_error', message: 'Die Analyse ist gerade nicht erreichbar.' } });
@@ -237,7 +255,6 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     });
   }
 
-  const payload = await request.json().catch(() => null);
   const result = route === '/v1/analyze' ? await analyzePhoto(payload) : await analyzeDescription(payload);
   return reply(result);
 });

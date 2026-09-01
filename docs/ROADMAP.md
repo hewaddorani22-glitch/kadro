@@ -61,6 +61,7 @@ Acceptance criteria:
 - [x] Structured recommendation impressions plus acceptance/rejection feedback adapter
 - [x] Create the dedicated Kandro Supabase project, enable anonymous auth, apply the migration, and run live RLS tests
 - [x] Link an authorized Supabase CLI profile and reconcile the dashboard-applied migration with CLI migration history
+- [x] Deploy the authenticated Supabase `nutrition` gateway with server-only provider secrets, a private per-user daily quota, and live barcode/text/photo security smoke tests
 - [x] Run the cloud-hydration smoke test in Expo Go and verify the persisted anonymous session after an app restart
 - [x] Add permanent account linking with verified email and password recovery; Apple remains optional after MVP validation
 - [x] Expand the verified German catalog from 45 to 200 meals after live schema and ranking validation
@@ -89,6 +90,7 @@ Acceptance criteria:
 - [ ] Publish the landing page after legal contact details are complete
 - [x] EAS production/preview configuration and App Store metadata/screenshot handoff
 - [x] Create and link the Expo EAS project `@hewad/kandro`, and configure public preview environment values
+- [x] Configure public Supabase values for production and keep the local analysis override absent from Preview and Production
 - [ ] Wait for Apple's identity approval of the paid Developer Program enrollment, then build and submit TestFlight; capture final native screenshots from that build
 - [ ] Re-check the current transitive Expo/Metro npm advisories during an isolated SDK upgrade; do not force-upgrade this Expo Go branch to SDK 57
 

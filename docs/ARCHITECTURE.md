@@ -11,7 +11,7 @@ Camera / description / barcode / demo capture
    ↓
 Local resize/compression
    ↓
-Local analysis gateway → vision detection → nutrition lookup
+Authenticated hosted gateway → vision detection → nutrition lookup
    ↓
 Analyzing / retry state
    ↓
@@ -89,7 +89,8 @@ RecommendationService
 Current responsibilities:
 
 - `mealAnalysis.ts`: client-side compression, temporary-file cleanup, photo/description/barcode gateway calls, mapping, and typed errors.
-- `server/index.mjs`: secret-bearing local gateway. OpenRouter or direct OpenAI returns food identity, portion estimate, and confidence from a photo or description only; USDA provides normalized calories and macros; Open Food Facts provides packaged-food barcode data. OpenRouter routing requires supported parameters, denies data collection, and defaults to ZDR.
+- `supabase/functions/nutrition/index.ts`: deployed authenticated and metered production gateway. It verifies the user JWT in the handler, applies the private daily counter, rejects oversized images, and keeps provider errors off the device.
+- `server/index.mjs`: optional secret-bearing local development gateway. OpenRouter or direct OpenAI returns food identity, portion estimate, and confidence from a photo or description only; USDA provides normalized calories and macros; Open Food Facts provides packaged-food barcode data. Both gateways share the mapping in `supabase/functions/_shared/nutrition.mjs`. OpenRouter routing requires supported parameters, denies data collection, and defaults to ZDR.
 - `localRepository.ts`: profile/onboarding, weight entries, confirmed meals, lifetime scan history, and a maximum-three local retry queue in AsyncStorage.
 - `supabaseClient.ts`: optional public-client initialization, persisted React Native sessions, foreground token refresh, and anonymous authenticated bootstrap.
 - `accountLinking.ts`: ID-preserving email upgrade with `updateUser`, email-change verification, password setup, and existing-account sign-in.
@@ -105,16 +106,16 @@ Raw provider payloads should be mapped to the domain types in `src/types/nutriti
 
 ## Privacy boundary
 
-The current local development pipeline:
+The current analysis pipeline:
 
 1. resizes to 1280 px and compresses to JPEG locally;
 2. deletes the camera original after the compressed working copy exists;
-3. sends the working copy only to the configured local gateway;
+3. sends the working copy to the authenticated Supabase gateway, or to the explicit local development override;
 4. keeps at most three failed scans locally for explicit retry;
 5. persists only the user-confirmed structured meal;
 6. never retains photos as part of saved meal records.
 
-The compressed preview lives only in the app cache during the active flow. A production-hosted gateway still needs a documented retention/deletion policy, provider disclosure, authentication, rate limiting, and explicit consent before launch.
+The compressed preview lives only in the app cache during the active flow. The production gateway is authenticated and metered, sends the image directly to the configured model provider with storage disabled, and does not persist it in Supabase. Final legal/provider disclosure and retention review remain launch gates.
 
 Product analytics never receives photos, food or ingredient names, email addresses, Supabase user IDs, calories, macros, weights, or goals. Only the events and categorical properties documented in `docs/ANALYTICS.md` are accepted by the client. PostHog person profiles, GeoIP, automatic lifecycle/touch/screen capture, feature flags, push capture, and session replay are disabled; device name/model/manufacturer, locale, timezone, and screen dimensions are stripped before send. The user can persistently opt out from Profile.
 
@@ -124,6 +125,6 @@ The `delete-account` Edge Function requires a valid user JWT, deletes that exact
 
 ## Supabase ownership boundary
 
-The mobile app receives only the project URL and publishable key. Supabase Auth supplies a per-user JWT, and Postgres RLS limits every row to `(select auth.uid()) = user_id`. The client never receives a secret or `service_role` key. `profiles`, `daily_targets`, `meals`, `meal_items`, `recommendations`, and `recommendation_feedback` all enable RLS and revoke access from the unauthenticated `anon` role.
+The mobile app receives only the project URL and publishable key. Supabase Auth supplies a per-user JWT, and Postgres RLS limits product rows to `(select auth.uid()) = user_id`. The client never receives a provider secret or `service_role` key. `profiles`, `daily_targets`, `meals`, `meal_items`, `recommendations`, `recommendation_feedback`, and `analysis_usage` all enable RLS and revoke access from the unauthenticated `anon` role. The quota table additionally has no client policies or table grants.
 
 Anonymous sign-in is used to avoid blocking the first scan. It is an authenticated Supabase user, not unauthenticated public database access. The Profile account card upgrades it with a verified email through `updateUser`, verifies that the returned identity still has the same user ID, and then lets the user set a password. Existing accounts can sign back in and rehydrate their RLS-owned cloud data. Clearing app data before the upgrade can still make an anonymous account inaccessible.

@@ -11,7 +11,7 @@ An iOS-first, production-shaped nutrition MVP built with React Native, Expo Rout
 1. Six-step German onboarding that persists a real personalized target and transparent wellness guardrails
 2. Daily calorie and macro dashboard with an honest empty timeline before the first meal
 3. Full-screen meal camera with real Describe, Barcode, and deterministic demo fallbacks
-4. Real photo compression plus structured vision analysis through a local server boundary
+4. Real photo compression plus structured vision analysis through an authenticated server boundary
 5. One-tap `weniger / passt / mehr` portion confirmation plus optional gram-level editing
 6. Animated meal result with confidence and estimated nutrition
 7. Recalculated daily balance
@@ -50,7 +50,9 @@ npm run web
 
 ## Enable real photo analysis
 
-The Expo app never receives an OpenRouter, OpenAI or USDA secret. A small local gateway holds those keys and returns normalized Kandro domain data.
+The Expo app never receives an OpenRouter, OpenAI or USDA secret. Preview and production use the deployed Supabase Edge Function `nutrition`; it verifies the user's Supabase JWT and applies a per-user daily limit before calling paid providers. The optional local gateway remains available for development.
+
+For the hosted setup, deployment, routes, security boundary, and live-test status, see [docs/GATEWAY.md](./docs/GATEWAY.md). To use the local gateway:
 
 1. Copy `.env.example` to `.env`.
 2. For OpenRouter, set `AI_PROVIDER=openrouter` plus `OPENROUTER_API_KEY`. Alternatively use `AI_PROVIDER=openai` plus `OPENAI_API_KEY`.
@@ -151,7 +153,7 @@ The complete plan audit, including the external TestFlight and legal gates, live
 
 ## Prepare TestFlight
 
-The repository is linked to the Expo EAS project `@hewad/kandro` and includes explicit preview and production profiles. Public Supabase, PostHog, and RevenueCat Test Store values are configured for the EAS preview environment. Apple Developer Program activation is currently pending Apple's identity approval; production analysis and billing values remain deliberately unset until the hosted gateway and real App Store products exist. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
+The repository is linked to the Expo EAS project `@hewad/kandro` and includes explicit preview and production profiles. Public Supabase values are configured for both environments; PostHog and RevenueCat Test Store values are configured for preview. The production analysis gateway is live, while production billing remains unset until the real App Store products exist. Apple Developer Program activation is currently pending Apple's identity approval. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
 
 The in-app privacy policy and terms are deliberately marked as MVP drafts. They need the legal publisher/controller identity, a real contact channel, final retention periods, and legal/provider review before public distribution. The authenticated Supabase deletion function is live and its regression test confirms account deletion, profile cascade, and refresh-token revocation.
 
@@ -167,7 +169,7 @@ Contributions should follow [CONTRIBUTING.md](./CONTRIBUTING.md). Pull requests 
 - React Native + Expo Router + TypeScript
 - Kandro brand system and German product UI
 - Real camera preview when permission is granted
-- Local development analysis gateway; optional Supabase Auth and data sync; no hosted production analysis gateway or live billing yet
+- Authenticated, metered Supabase analysis gateway for Preview/Production plus an optional local development gateway; live billing is still pending
 - Optional anonymous PostHog product analytics; native Sentry reporting begins with the development/TestFlight build
 - Versioned wellness-data consent, privacy/terms drafts, and authenticated account deletion with local cleanup
 - Confirmed meal records never retain photos; only a compressed failed scan can live temporarily in the local retry queue

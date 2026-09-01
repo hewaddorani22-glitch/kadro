@@ -1,6 +1,6 @@
 # Kandro: Abgleich mit dem 34-Punkte-MVP-Plan
 
-Stand: 31. August 2026
+Stand: 1. September 2026
 
 Der Anhang enthält einen unnummerierten Produktkern und 33 nummerierte Abschnitte. Zusammen sind das die vom Projekt so bezeichneten 34 Punkte. Abschnitt 33 endet ausdrücklich mit einem Vier-Tage-Build-Plan; ein Tag 5 ist nicht enthalten.
 
@@ -36,9 +36,9 @@ Der Anhang enthält einen unnummerierten Produktkern und 33 nummerierte Abschnit
 | 17 | Microinteractions | Fertig | Haptik, gestufte Analyse, Kalorien-Count-up, Remaining-Count-down, Reveal sowie Reduce Motion. |
 | 18 | Onboarding | Fertig | Sechs kurze gebündelte Schritte statt künstlich gestreckter neun; Name, Ziel, Alter, Größe, Gewicht, Aktivität und Vorlieben erzeugen jetzt echte persönliche Ziele und werden gespeichert. Beim Neustart wird es nicht wiederholt. |
 | 19 | Wellness, nicht Medizin | Fertig für Beta | Nicht-medizinische Sprache, Sicherheitsgrenzen, explizite Wellness-Einwilligung, Datenschutz- und Bedingungsentwürfe. Rechtliche Endprüfung bleibt Release-Gate. |
-| 20 | Technische Ernährungserkennung | Fertig lokal | Multimodales Modell erkennt Lebensmittel/Portionen; USDA berechnet Nährwerte; Confidence und Korrektur liegen davor; kein LLM-Kalorienraten. |
-| 21 | MVP-Technik | Teilweise | Expo/TypeScript/Router, Supabase/Postgres/Auth, RevenueCat, PostHog, USDA/OFF und Vision sind integriert. Native Sentry und ein abgesicherter gehosteter Analyse-Gateway fehlen bis zum Development-/TestFlight-Build. Storage ist absichtlich unnötig, weil Fotos nicht gespeichert werden. |
-| 22 | Datenschutz bei Fotos | Fertig lokal | Original wird nach Kompression gelöscht; bestätigte Mahlzeiten speichern kein Foto; höchstens drei fehlgeschlagene komprimierte Scans liegen bis zum manuellen Retry lokal. |
+| 20 | Technische Ernährungserkennung | Fertig | Multimodales Modell erkennt Lebensmittel/Portionen über den gehosteten Gateway; USDA berechnet Nährwerte; Confidence und Korrektur liegen davor; kein LLM-Kalorienraten. |
+| 21 | MVP-Technik | Teilweise | Expo/TypeScript/Router, Supabase/Postgres/Auth, authentifizierter Analyse-Gateway mit privatem Tageslimit, RevenueCat, PostHog, USDA/OFF und Vision sind integriert. Native Sentry fehlt bis zum Development-/TestFlight-Build. Storage ist absichtlich unnötig, weil Fotos nicht gespeichert werden. |
+| 22 | Datenschutz bei Fotos | Fertig für Beta | Original wird nach Kompression gelöscht; der Gateway speichert nicht und fordert beim Provider `store: false` plus ZDR an; bestätigte Mahlzeiten speichern kein Foto; höchstens drei fehlgeschlagene komprimierte Scans liegen bis zum manuellen Retry lokal. Finale Anbieter-/Retention-Prüfung bleibt Release-Gate. |
 | 23 | Minimales Datenmodell | Fertig | Profile, Tagesziele, Mahlzeiten, Zutaten, Empfehlungen und Feedback sind mit Constraints, Indizes, Least Privilege und Owner-RLS vorhanden. |
 | 24 | Nicht in Version 1 | Fertig | Keine der ausgeschlossenen Scope-Erweiterungen wurde eingebaut. |
 | 25 | MVP exakt | Fertig bis auf nativen Store-Nachweis | Personalisierung, Foto/Text/Barcode, Korrektur, Makros, Tagesstatus, Autopilot, drei Kontexte, echter lokaler Gewichtsverlauf und Free/Pro-Grenze sind vorhanden. |
@@ -59,7 +59,7 @@ Fertig: Onboarding, Heute, Scan, Bestätigung/Result, Plan, Verlauf und Paywall 
 
 ### Tag 2 – echte Meal Intelligence
 
-Fertig: Kamera, lokale Bildkompression, Modell-Erkennung, USDA, Open Food Facts, Beschreibungsfallback, Barcodefallback, Korrektur, Speicherung, Offline-Queue und Aktualisierung des Tagesstands. Der vorhandene OpenRouter-/USDA-Pfad und ein Open-Food-Facts-Barcode wurden live geprüft.
+Fertig: Kamera, lokale Bildkompression, Modell-Erkennung, USDA, Open Food Facts, Beschreibungsfallback, Barcodefallback, Korrektur, Speicherung, Offline-Queue und Aktualisierung des Tagesstands. Der gehostete Gateway wurde live mit abgewiesenen öffentlichen Zugriffen sowie echter Foto-, Text- und Barcodeanalyse geprüft.
 
 ### Tag 3 – Autopilot
 
@@ -86,9 +86,8 @@ Vor einer externen Beta zwingend offen:
 3. Freigabe der bereits bezahlten Apple-Developer-Mitgliedschaft, App-Store-Connect-Zugang, echte Abo-Produkte und nativer StoreKit-Test;
 4. nach Apples Identitätsprüfung: signierter Build, echte App-Store-Screenshots und TestFlight-Upload; Expo/EAS ist bereits als `@hewad/kandro` verknüpft;
 5. rechtliche Anbieter-/Verantwortlichen-Daten, Kontaktkanal, Aufbewahrungsfristen und finale Prüfung;
-6. abgesicherten Produktions-Gateway mit Authentifizierung, Rate Limit, Secrets und Lösch-/Providerdokumentation hosten;
-7. Sentry nativ mit DSN, Source Maps und Test-Crash aktivieren;
-8. Landingpage erst nach fertigen Rechtsangaben öffentlich schalten.
+6. Sentry nativ mit DSN, Source Maps und Test-Crash aktivieren;
+7. Landingpage erst nach fertigen Rechtsangaben öffentlich schalten.
 
 ## Bekannte Toolchain-Hinweise
 
@@ -99,10 +98,10 @@ Vor einer externen Beta zwingend offen:
 - TypeScript ohne Fehler
 - 30 deterministische Mahlzeiten-/Bildqualitätsfälle
 - 200 geprüfte Katalogmahlzeiten, 90 deterministische Empfehlungssätze
-- sechs RLS-geschützte Supabase-Tabellen und ID-erhaltendes Account-Linking
+- sieben RLS-geschützte Supabase-Tabellen und ID-erhaltendes Account-Linking
 - RevenueCat Offering/Entitlement/Kauf/Abbruch/Restore-Grenzen
 - Expo Doctor: 18/18
 - Expo Web Export
 - Expo iOS Bundle Export
 - visueller Browser-Smoke-Test für dynamisches Onboarding, Einwilligung, Foto/Beschreiben/Barcode und reale Progress-Zustände
-- live: Beschreibungsanalyse → strukturierte USDA-Zutaten; Barcode → Open Food Facts
+- live in der Cloud: öffentliche Zugriffe → 401; Textanalyse → zwei strukturierte USDA-Zutaten; Fotoanalyse → drei Zutaten; Barcode → Open Food Facts; Kontingenttabelle → 403
