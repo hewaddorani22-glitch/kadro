@@ -3,7 +3,13 @@
 Statische Website. Kein Build, keine Abhängigkeiten — die Dateien sind das
 Deployment.
 
-## Warum es sie geben muss
+**Live:** https://hewaddorani22-glitch.github.io/kadro/
+**Ziel:** https://getkandro.com (wartet nur noch auf DNS, siehe unten)
+
+Jeder Push auf `main`, der `site/` berührt, deployt automatisch über
+`.github/workflows/pages.yml`. Nichts manuell hochladen.
+
+## Warum es die Seite geben muss
 
 App Store Connect verlangt zwei öffentlich erreichbare URLs als Pflichtfelder,
 und die App verweist im Datenschutz und in den Bedingungen darauf:
@@ -19,33 +25,62 @@ Die Texte auf `/privacy` und `/terms` sind wortgleich mit den Screens in der
 App. **Wenn du einen davon änderst, ändere beide** — eine Abweichung zwischen
 App und Website fällt im Review auf.
 
-## Deployen
+## Domain anschließen — der einzige offene Schritt
 
-Beliebiger Static-Host. Ordner `site/` als Root, kein Build-Command.
+### 1. DNS beim Registrar von `getkandro.com` setzen
 
-**Cloudflare Pages / Netlify** lesen `_redirects`, sodass `/privacy` ohne
-`.html` funktioniert.
+Vier `A`-Records für die nackte Domain (`@` beziehungsweise leerer Name):
 
-**Vercel** liest `vercel.json` mit `cleanUrls`.
+```
+185.199.108.153
+185.199.109.153
+185.199.110.153
+185.199.111.153
+```
 
-**GitHub Pages** kann keine Extension-losen URLs. Dort entweder die
-`.html`-Endungen in den Links behalten oder einen der beiden Hosts oben nutzen.
+Optional zusätzlich vier `AAAA`-Records für IPv6:
 
-## DNS
+```
+2606:50c0:8000::153
+2606:50c0:8001::153
+2606:50c0:8002::153
+2606:50c0:8003::153
+```
 
-Beim Registrar von `getkandro.com` auf den Host zeigen:
+Und ein `CNAME` für `www`:
 
-- `A`/`ALIAS` für `getkandro.com` → Host-Adresse
-- `CNAME` für `www` → `getkandro.com`
+```
+www  ->  hewaddorani22-glitch.github.io
+```
 
-Danach prüfen, dass **https** greift — Apple akzeptiert keine reine
-http-Adresse, und `npm run validate:release` verlangt ebenfalls `https://`.
+### 2. Domain in GitHub eintragen
 
-## Nach dem Deploy prüfen
+Sobald die Records gesetzt sind (Verbreitung dauert meist Minuten, im
+Extremfall Stunden):
+
+```bash
+gh api -X PUT repos/hewaddorani22-glitch/kadro/pages -f cname=getkandro.com
+```
+
+Danach HTTPS erzwingen — GitHub stellt das Zertifikat automatisch aus, das
+kann einige Minuten dauern:
+
+```bash
+gh api -X PUT repos/hewaddorani22-glitch/kadro/pages -F https_enforced=true
+```
+
+### 3. Prüfen
 
 ```bash
 curl -sI https://getkandro.com/privacy | head -1
-curl -sI https://getkandro.com/support | head -1
 ```
 
-Beide müssen `200` liefern, nicht `301` auf eine Fehlerseite.
+Muss `HTTP/2 200` liefern. Erst dann die URLs in App Store Connect eintragen —
+Apple prüft sie beim Einreichen.
+
+## Reihenfolge beachten
+
+Die Domain ist bewusst **noch nicht** in GitHub hinterlegt. Wäre sie es, würde
+Pages die github.io-Adresse auf `getkandro.com` umleiten — und solange dort
+kein DNS zeigt, wäre die Seite überhaupt nicht erreichbar, genau während man
+sie prüfen will.

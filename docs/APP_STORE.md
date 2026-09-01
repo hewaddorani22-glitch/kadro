@@ -86,7 +86,10 @@ Diese Werte sind gesetzt und werden von `npm run validate:release` erzwungen:
 | Bedingungen | https://getkandro.com/terms |
 | Impressum | https://getkandro.com/impressum |
 
-Die Website liegt in `site/` und wird als statische Dateien deployt; siehe
+Die Website liegt in `site/` und wird bei jedem Push automatisch über GitHub
+Pages deployt. Sie ist bereits live unter
+https://hewaddorani22-glitch.github.io/kadro/ — für `getkandro.com` fehlt nur
+noch der DNS-Eintrag beim Registrar; die exakten Records stehen in
 [site/README.md](../site/README.md).
 
 Die Rechtstexte auf der Website und in der App sind wortgleich. Änderst du
