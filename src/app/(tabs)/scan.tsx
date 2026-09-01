@@ -10,6 +10,7 @@ import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { useLanguage } from '@/i18n/LanguageProvider';
 
 export default function ScanScreen() {
   const router = useRouter();
@@ -25,6 +26,7 @@ export default function ScanScreen() {
   const [barcodeBusy, setBarcodeBusy] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const cameraActive = pathname.endsWith('/scan') && mode !== 'description' && permission?.granted === true;
 
   useEffect(() => {
@@ -35,11 +37,11 @@ export default function ScanScreen() {
   const requestCameraAccess = async () => {
     if (permission && !permission.canAskAgain) {
       Alert.alert(
-        'Kamera in den Einstellungen erlauben',
-        'Öffne die Einstellungen deines Geräts, wähle Kandro und aktiviere dort die Kamera.',
+        t.scan.permissionTitle,
+        t.scan.permissionBody,
         [
-          { text: 'Abbrechen', style: 'cancel' },
-          { text: 'Einstellungen öffnen', onPress: () => void Linking.openSettings() },
+          { text: t.common.cancel, style: 'cancel' },
+          { text: t.scan.openSettings, onPress: () => void Linking.openSettings() },
         ],
       );
       return;
@@ -48,10 +50,8 @@ export default function ScanScreen() {
     const nextPermission = await requestPermission();
     if (!nextPermission.granted) {
       Alert.alert(
-        'Kamerazugriff fehlt',
-        nextPermission.canAskAgain
-          ? 'Bitte erlaube den Kamerazugriff, damit Kandro dein Essen fotografieren kann.'
-          : 'Aktiviere die Kamera bitte in den Geräteeinstellungen unter Kandro.',
+        t.scan.permissionMissingTitle,
+        nextPermission.canAskAgain ? t.scan.permissionAsk : t.scan.permissionDenied,
       );
     }
   };
@@ -79,7 +79,7 @@ export default function ScanScreen() {
 
     try {
       if (!permission?.granted || !cameraReady || !cameraRef.current) {
-        Alert.alert('Kamera noch nicht bereit', 'Erlaube die Kamera oder nutze rechts den Demo-Button.');
+        Alert.alert(t.scan.notReadyTitle, t.scan.notReadyBody);
         return;
       }
       const result = await cameraRef.current.takePictureAsync({ quality: 0.9 });
@@ -87,7 +87,7 @@ export default function ScanScreen() {
       setCapturedPhoto(result.uri);
       router.push('/analyzing');
     } catch {
-      Alert.alert('Foto nicht aufgenommen', 'Bitte versuche es noch einmal oder nutze die Demo-Mahlzeit.');
+      Alert.alert(t.scan.captureFailedTitle, t.scan.captureFailedBody);
     } finally {
       setCapturing(false);
     }
@@ -109,7 +109,7 @@ export default function ScanScreen() {
   const submitDescription = () => {
     const value = description.trim();
     if (value.length < 3) {
-      Alert.alert('Beschreibung zu kurz', 'Schreibe kurz auf, was und ungefähr wie viel du gegessen hast.');
+      Alert.alert(t.scan.describeShortTitle, t.scan.describeShortBody);
       return;
     }
     if (!hasScanAccess()) return;
@@ -147,13 +147,13 @@ export default function ScanScreen() {
           <View style={styles.fallbackOrb}>
             <Ionicons color={colors.accent} name="restaurant" size={58} />
           </View>
-          <Text style={styles.fallbackTitle}>{mode === 'description' ? 'Mahlzeit beschreiben' : 'Zeig die ganze Mahlzeit'}</Text>
-          <Text style={styles.fallbackText}>{mode === 'description' ? 'Zum Beispiel: eine Schüssel Pasta mit Hähnchen und etwas Sahnesauce.' : 'Natürliches Licht und eine klare Ansicht helfen bei der Portionsschätzung.'}</Text>
-          {mode !== 'description' && !permission ? <Text style={styles.permissionStatus}>Kameraberechtigung wird geprüft …</Text> : null}
+          <Text style={styles.fallbackTitle}>{mode === 'description' ? t.scan.fallbackDescribeTitle : t.scan.fallbackPhotoTitle}</Text>
+          <Text style={styles.fallbackText}>{mode === 'description' ? t.scan.fallbackDescribeText : t.scan.fallbackPhotoText}</Text>
+          {mode !== 'description' && !permission ? <Text style={styles.permissionStatus}>{t.scan.permissionChecking}</Text> : null}
           {mode !== 'description' && permission && !permission.granted ? (
             <Pressable accessibilityRole="button" onPress={() => void requestCameraAccess()} style={styles.permissionButton}>
               <Ionicons color={colors.text} name="camera-outline" size={18} />
-              <Text style={styles.permissionText}>{permission.canAskAgain ? 'Kamera erlauben' : 'Einstellungen öffnen'}</Text>
+              <Text style={styles.permissionText}>{permission.canAskAgain ? t.scan.allowCamera : t.scan.openSettings}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -164,12 +164,12 @@ export default function ScanScreen() {
 
       <SafeAreaView edges={['top', 'bottom']} style={styles.overlay}>
         <View style={styles.topBar}>
-          <Pressable accessibilityLabel="Scanner schließen" accessibilityRole="button" onPress={close} style={styles.circleButton}>
+          <Pressable accessibilityLabel={t.scan.close} accessibilityRole="button" onPress={close} style={styles.circleButton}>
             <Ionicons color={colors.white} name="close" size={24} />
           </Pressable>
           <View style={styles.titlePill}>
             <Ionicons color={colors.accent} name="sparkles" size={15} />
-            <Text style={styles.screenTitle}>Mahlzeit scannen</Text>
+            <Text style={styles.screenTitle}>{t.scan.title}</Text>
           </View>
           <View style={styles.circlePlaceholder} />
         </View>
@@ -182,7 +182,7 @@ export default function ScanScreen() {
             <View style={styles.cornerBottomRight} />
             <View style={styles.tipPill}>
               <View style={styles.tipDot} />
-              <Text style={styles.tipText}>{mode === 'barcode' ? 'Barcode ruhig in den Rahmen halten' : 'Den ganzen Teller sichtbar halten'}</Text>
+              <Text style={styles.tipText}>{mode === 'barcode' ? t.scan.framingBarcode : t.scan.framingPhoto}</Text>
             </View>
           </View>
         ) : (
@@ -194,63 +194,63 @@ export default function ScanScreen() {
             <View style={styles.allowancePill}>
               <Ionicons color={colors.accent} name="sparkles" size={13} />
               <Text style={styles.allowanceText}>
-                Noch {freeScansLeft} von {FREE_SCAN_ALLOWANCE} Mahlzeiten gratis
+                {t.scan.allowanceLeft(freeScansLeft, FREE_SCAN_ALLOWANCE)}
               </Text>
             </View>
           ) : null}
           <View accessibilityRole="radiogroup" style={styles.modeLabel}>
-            <ModeButton active={mode === 'photo'} label="Foto" onPress={() => chooseMode('photo')} />
-            <ModeButton active={mode === 'description'} label="Beschreiben" onPress={() => chooseMode('description')} />
-            <ModeButton active={mode === 'barcode'} label="Barcode" onPress={() => chooseMode('barcode')} />
+            <ModeButton active={mode === 'photo'} label={t.scan.modePhoto} onPress={() => chooseMode('photo')} />
+            <ModeButton active={mode === 'description'} label={t.scan.modeDescribe} onPress={() => chooseMode('description')} />
+            <ModeButton active={mode === 'barcode'} label={t.scan.modeBarcode} onPress={() => chooseMode('barcode')} />
           </View>
           {mode === 'photo' ? (
             <View style={styles.shutterRow}>
               <View style={styles.smallPlaceholder} />
-              <Pressable accessibilityLabel="Mahlzeit fotografieren" accessibilityRole="button" accessibilityState={{ disabled: capturing }} disabled={capturing} onPress={capture} style={({ pressed }) => [styles.shutterOuter, pressed && styles.shutterPressed]}>
+              <Pressable accessibilityLabel={t.scan.shutter} accessibilityRole="button" accessibilityState={{ disabled: capturing }} disabled={capturing} onPress={capture} style={({ pressed }) => [styles.shutterOuter, pressed && styles.shutterPressed]}>
                 <View style={styles.shutterInner} />
               </Pressable>
-              <Pressable accessibilityLabel="Demo-Mahlzeit verwenden" accessibilityRole="button" onPress={runDemo} style={styles.demoControl}>
+              <Pressable accessibilityLabel={t.scan.demoLabel} accessibilityRole="button" onPress={runDemo} style={styles.demoControl}>
                 <Ionicons color={colors.white} name="play-outline" size={17} />
-                <Text style={styles.demoControlText}>Demo</Text>
+                <Text style={styles.demoControlText}>{t.scan.demo}</Text>
               </Pressable>
             </View>
           ) : mode === 'barcode' ? (
             <View style={styles.barcodeState}>
               <Ionicons color={colors.accent} name="barcode-outline" size={30} />
-              <Text style={styles.barcodeText}>{barcodeBusy ? 'Produkt wird geöffnet …' : 'Scan startet automatisch'}</Text>
+              <Text style={styles.barcodeText}>{barcodeBusy ? t.scan.barcodeOpening : t.scan.barcodeWaiting}</Text>
             </View>
           ) : (
             <Pressable accessibilityRole="button" onPress={() => setShowDescription(true)} style={styles.describeButton}>
               <Ionicons color={colors.text} name="create-outline" size={19} />
-              <Text style={styles.describeButtonText}>Beschreibung öffnen</Text>
+              <Text style={styles.describeButtonText}>{t.scan.openDescription}</Text>
             </Pressable>
           )}
-          <Text style={styles.privacy}>{mode === 'photo' ? 'Original nicht gespeichert · bei Netzfehler lokal vorgemerkt' : 'Nur bestätigte Nährwerte werden gespeichert'}</Text>
+          <Text style={styles.privacy}>{mode === 'photo' ? t.scan.privacyPhoto : t.scan.privacyOther}</Text>
         </View>
       </SafeAreaView>
 
       <Modal animationType="fade" onRequestClose={() => { setShowDescription(false); setMode('photo'); }} transparent visible={showDescription}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
           <View accessibilityViewIsModal style={[styles.describeSheet, { paddingBottom: insets.bottom + 22 }]}>
-            <Text accessibilityRole="header" style={styles.describeTitle}>Was hast du gegessen?</Text>
-            <Text style={styles.describeText}>Lebensmittel und ungefähre Mengen helfen. Du kannst alles danach korrigieren.</Text>
+            <Text accessibilityRole="header" style={styles.describeTitle}>{t.scan.describeTitle}</Text>
+            <Text style={styles.describeText}>{t.scan.describeText}</Text>
             <TextInput
-              accessibilityLabel="Mahlzeit beschreiben"
+              accessibilityLabel={t.scan.describeTitle}
               autoFocus
               maxLength={500}
               multiline
               onChangeText={setDescription}
-              placeholder="z. B. 2 Eier, zwei Scheiben Brot und eine halbe Avocado"
+              placeholder={t.scan.describePlaceholder}
               placeholderTextColor={colors.muted}
               style={styles.describeInput}
               value={description}
             />
             <Pressable accessibilityRole="button" onPress={submitDescription} style={styles.describeSubmit}>
-              <Text style={styles.describeSubmitText}>Analysieren</Text>
+              <Text style={styles.describeSubmitText}>{t.scan.describeSubmit}</Text>
               <Ionicons color={colors.white} name="arrow-forward" size={18} />
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => { setShowDescription(false); setMode('photo'); }} style={styles.describeCancel}>
-              <Text style={styles.describeCancelText}>Abbrechen</Text>
+              <Text style={styles.describeCancelText}>{t.common.cancel}</Text>
             </Pressable>
           </View>
         </KeyboardAvoidingView>

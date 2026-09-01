@@ -36,7 +36,14 @@ if (files.localRepository.includes('INITIAL_MEALS')) failures.push('the daily ti
 requireText('result', 'isCurrentScanLogged', 'result projection cannot distinguish the current meal from prior scans');
 requireText('plan', 'profile.preferences', 'recommendation screen ignores saved preferences');
 requireText('recommendations', 'matchesDietaryConstraints', 'dietary constraints are not applied to the catalog');
-for (const mode of ['Foto', 'Beschreiben', 'Barcode']) requireText('scanner', `label="${mode}"`, `scanner mode missing: ${mode}`);
+// Checked by wiring, not by wording: the labels live in the dictionaries now,
+// so asserting on German text would break the moment anything is translated.
+for (const mode of ['modePhoto', 'modeDescribe', 'modeBarcode']) {
+  requireText('scanner', `t.scan.${mode}`, `scanner mode missing: ${mode}`);
+}
+for (const mode of ['photo', 'description', 'barcode']) {
+  requireText('scanner', `chooseMode('${mode}')`, `scanner cannot switch to ${mode}`);
+}
 requireText('server', "request.url === '/v1/describe'", 'description analysis endpoint is missing');
 requireText('server', 'barcodeMatch', 'barcode lookup endpoint is missing');
 

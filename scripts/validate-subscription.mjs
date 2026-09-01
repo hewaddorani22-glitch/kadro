@@ -53,7 +53,9 @@ if (!scan.includes('freeScansLeft > 0') || !scan.includes("subscriptionStatus ==
 }
 // A wall the user saw coming reads as a price; a wall that appears without
 // warning reads as a bait and switch.
-if (!scan.includes('FREE_SCAN_ALLOWANCE') || !scan.includes('Mahlzeiten gratis')) {
+// The wording moved into the dictionaries; the guarantee is that the scanner
+// surfaces the remaining allowance at all, in whichever language.
+if (!scan.includes('FREE_SCAN_ALLOWANCE') || !scan.includes('t.scan.allowanceLeft')) {
   failures.push('scanner does not show the remaining free allowance before the paywall');
 }
 if (!appContext.includes('saveLifetimeScanCount') || !appContext.includes('alreadyLogged')) {

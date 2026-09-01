@@ -8,12 +8,14 @@ import { Card, ConfidenceBadge, MealPhoto, PrimaryButton, Screen } from '@/compo
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { countBucket, trackEvent } from '@/services/telemetry';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { PortionFactor } from '@/types/nutrition';
 
 export default function ConfirmScreen() {
   const router = useRouter();
   const { adjustItem, analysisMessage, detectedItems, mealPortion, photoUri, scanMode, scannedMeal, setMealPortion, toggleItem } = useApp();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const { t } = useLanguage();
 
   const confirm = () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -29,10 +31,10 @@ export default function ConfirmScreen() {
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Zurück" accessibilityRole="button" onPress={() => router.back()} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t.common.back} accessibilityRole="button" onPress={() => router.back()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
-        <Text style={styles.topTitle}>Mahlzeit bestätigen</Text>
+        <Text style={styles.topTitle}>{t.confirm.title}</Text>
         <View style={styles.iconButtonSpacer} />
       </View>
 
@@ -40,10 +42,10 @@ export default function ConfirmScreen() {
 
       <View style={styles.heading}>
         <View style={styles.headingRow}>
-          <Text style={styles.title}>Passt das?</Text>
+          <Text style={styles.title}>{t.confirm.heading}</Text>
           <ConfidenceBadge uncertain={scannedMeal.confidence === 'medium'} />
         </View>
-        <Text style={styles.subtitle}>Bestätige die Zutaten und wähle mit einem Tap die passende Portionsgröße.</Text>
+        <Text style={styles.subtitle}>{t.confirm.subtitle}</Text>
       </View>
 
       {analysisMessage ? (
@@ -56,7 +58,7 @@ export default function ConfirmScreen() {
       <View style={styles.chips}>
         {detectedItems.map((item) => (
           <Pressable
-            accessibilityLabel={`${item.name} ${item.included ? 'entfernen' : 'hinzufügen'}`}
+            accessibilityLabel={`${item.name} ${item.included ? t.confirm.remove : t.confirm.add}`}
             accessibilityRole="checkbox"
             accessibilityState={{ checked: item.included }}
             key={item.id}
@@ -76,16 +78,16 @@ export default function ConfirmScreen() {
       <Card style={styles.portionCard}>
         <View style={styles.portionHeading}>
           <View>
-            <Text style={styles.portionTitle}>Wie groß war die Portion?</Text>
-            <Text style={styles.portionSubtitle}>{mealPortion ? 'Schnelle Schätzung für die ganze Mahlzeit' : 'Individuell angepasst'}</Text>
+            <Text style={styles.portionTitle}>{t.confirm.portionQuestion}</Text>
+            <Text style={styles.portionSubtitle}>{mealPortion ? t.confirm.portionQuick : t.confirm.portionCustom}</Text>
           </View>
           <Ionicons color={colors.accentDeep} name="resize-outline" size={22} />
         </View>
         <View style={styles.portionSelector}>
           {([
-            { factor: 0.7 as PortionFactor, label: 'Weniger', multiplier: '0,7×' },
-            { factor: 1 as PortionFactor, label: 'Passt', multiplier: '1×' },
-            { factor: 1.4 as PortionFactor, label: 'Mehr', multiplier: '1,4×' },
+            { factor: 0.7 as PortionFactor, label: t.confirm.less, multiplier: '0,7×' },
+            { factor: 1 as PortionFactor, label: t.confirm.fits, multiplier: '1×' },
+            { factor: 1.4 as PortionFactor, label: t.confirm.more, multiplier: '1,4×' },
           ]).map((choice) => {
             const active = mealPortion === choice.factor;
             return (
@@ -103,7 +105,7 @@ export default function ConfirmScreen() {
           })}
         </View>
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: detailsOpen }} onPress={() => setDetailsOpen((current) => !current)} style={styles.detailsToggle}>
-          <Text style={styles.detailsToggleText}>{detailsOpen ? 'Detailkorrektur schließen' : 'Grammangaben im Detail bearbeiten'}</Text>
+          <Text style={styles.detailsToggleText}>{detailsOpen ? t.confirm.closeDetails : t.confirm.openDetails}</Text>
           <Ionicons color={colors.muted} name={detailsOpen ? 'chevron-up' : 'chevron-down'} size={18} />
         </Pressable>
       </Card>
@@ -113,22 +115,22 @@ export default function ConfirmScreen() {
           {detectedItems.map((item, index) => (
             <View key={item.id}>
               <View style={[styles.itemRow, !item.included && styles.itemRowOff]}>
-                <Pressable accessibilityLabel={`${item.name} einbeziehen`} accessibilityRole="checkbox" accessibilityState={{ checked: item.included }} onPress={() => toggleItem(item.id)} style={[styles.checkButton, item.included && styles.checkButtonOn]}>
+                <Pressable accessibilityLabel={`${item.name} ${t.confirm.include}`} accessibilityRole="checkbox" accessibilityState={{ checked: item.included }} onPress={() => toggleItem(item.id)} style={[styles.checkButton, item.included && styles.checkButtonOn]}>
                   <Ionicons color={item.included ? colors.text : colors.muted} name={item.included ? 'checkmark' : 'add'} size={17} />
                 </Pressable>
                 <View style={styles.itemCopy}>
                   <View style={styles.itemNameRow}>
                     <Text style={styles.itemName}>{item.name}</Text>
-                    {item.optional ? <Text style={styles.uncertain}>PRÜFEN</Text> : null}
+                    {item.optional ? <Text style={styles.uncertain}>{t.confirm.check}</Text> : null}
                   </View>
                   <Text style={styles.itemCalories}>~{item.calories} kcal · {item.source.label}</Text>
                 </View>
                 <View style={styles.stepper}>
-                  <Pressable accessibilityLabel={`${item.name} verringern`} accessibilityRole="button" onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
+                  <Pressable accessibilityLabel={`${item.name} ${t.confirm.decrease}`} accessibilityRole="button" onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
                     <Ionicons color={colors.text} name="remove" size={17} />
                   </Pressable>
                   <Text style={styles.amount}>{item.amountG} g</Text>
-                  <Pressable accessibilityLabel={`${item.name} erhöhen`} accessibilityRole="button" onPress={() => adjustItem(item.id, 1)} style={styles.stepperButton}>
+                  <Pressable accessibilityLabel={`${item.name} ${t.confirm.increase}`} accessibilityRole="button" onPress={() => adjustItem(item.id, 1)} style={styles.stepperButton}>
                     <Ionicons color={colors.text} name="add" size={17} />
                   </Pressable>
                 </View>
@@ -141,7 +143,7 @@ export default function ConfirmScreen() {
 
       <Card style={styles.estimateCard}>
         <View>
-          <Text style={styles.estimateLabel}>AKTUELLE SCHÄTZUNG</Text>
+          <Text style={styles.estimateLabel}>{t.confirm.currentEstimate}</Text>
           <Text style={styles.estimateValue}>~{scannedMeal.calories} kcal</Text>
         </View>
         <View style={styles.macroSummary}>
@@ -153,8 +155,8 @@ export default function ConfirmScreen() {
         </View>
       </Card>
 
-      <PrimaryButton icon="arrow-forward" label="Passt, weiter" onPress={confirm} />
-      <PrimaryButton label="Foto wiederholen" onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+      <PrimaryButton icon="arrow-forward" label={t.confirm.proceed} onPress={confirm} />
+      <PrimaryButton label={t.confirm.retake} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
     </Screen>
   );
 }

@@ -176,6 +176,7 @@ export function MacroCard({
 }
 
 export function ConfidenceBadge({ uncertain = false }: { uncertain?: boolean }) {
+  const { t } = useLanguage();
   return (
     <View style={[styles.confidence, uncertain && styles.confidenceUncertain]}>
       <Ionicons
@@ -184,30 +185,31 @@ export function ConfidenceBadge({ uncertain = false }: { uncertain?: boolean }) 
         size={14}
       />
       <Text style={[styles.confidenceText, uncertain && styles.confidenceTextUncertain]}>
-        {uncertain ? 'Portion unsicher' : 'Hohe Sicherheit'}
+        {uncertain ? t.confirm.uncertainPortion : t.confirm.highConfidence}
       </Text>
     </View>
   );
 }
 
 export function MealPhoto({ uri, height = 250, placeholder = 'demo', style }: { uri?: string | null; height?: number; placeholder?: 'demo' | 'description' | 'barcode'; style?: StyleProp<ViewStyle> }) {
+  const { t } = useLanguage();
   const source: ImageSourcePropType = uri ? { uri } : require('../../assets/meal-bowl.jpg');
   if (!uri && placeholder !== 'demo') {
     const barcode = placeholder === 'barcode';
     return (
-      <View accessibilityLabel={barcode ? 'Mahlzeit über Barcode erfasst' : 'Mahlzeit per Beschreibung erfasst'} accessible style={[styles.photoFrame, styles.photoPlaceholder, { height }, style]}>
+      <View accessibilityLabel={barcode ? t.confirm.photoBarcodeAlt : t.confirm.photoDescribeAlt} accessible style={[styles.photoFrame, styles.photoPlaceholder, { height }, style]}>
         <View style={styles.photoPlaceholderIcon}>
           <Ionicons color={colors.text} name={barcode ? 'barcode-outline' : 'create-outline'} size={36} />
         </View>
-        <Text style={styles.photoPlaceholderTitle}>{barcode ? 'Barcode erkannt' : 'Mahlzeit beschrieben'}</Text>
-        <Text style={styles.photoPlaceholderText}>{barcode ? 'Die Portion bestätigst du im nächsten Schritt.' : 'Deine Angaben werden mit Nährwertdaten abgeglichen.'}</Text>
+        <Text style={styles.photoPlaceholderTitle}>{barcode ? t.confirm.photoBarcodeTitle : t.confirm.photoDescribeTitle}</Text>
+        <Text style={styles.photoPlaceholderText}>{barcode ? t.confirm.photoBarcodeText : t.confirm.photoDescribeText}</Text>
       </View>
     );
   }
   return (
     <View style={[styles.photoFrame, { height }, style]}>
       <Image
-        accessibilityLabel={uri ? 'Foto der aufgenommenen Mahlzeit' : 'Demo-Mahlzeit: Hähnchen-Reis-Bowl'}
+        accessibilityLabel={uri ? t.confirm.photoRealAlt : t.confirm.photoDemoAlt}
         accessible
         resizeMode="cover"
         source={source}
@@ -215,7 +217,7 @@ export function MealPhoto({ uri, height = 250, placeholder = 'demo', style }: { 
       />
       {!uri ? (
         <View style={styles.demoBadge}>
-          <Text style={styles.demoBadgeText}>DEMO-MAHLZEIT</Text>
+          <Text style={styles.demoBadgeText}>{t.confirm.demoBadge}</Text>
         </View>
       ) : null}
     </View>

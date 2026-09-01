@@ -8,35 +8,10 @@ import { MealPhoto, PrimaryButton } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { AnalysisErrorKind } from '@/services/contracts';
 
-const stages = ['Eingabe vorbereitet', 'Lebensmittel erkannt', 'Nährwerte abgeglichen', 'Bereit zur Bestätigung'];
 
-const errorCopy: Record<AnalysisErrorKind, { title: string; detail: string }> = {
-  // Never name servers, environment variables or queues here. This copy is the
-  // first thing a user sees when something breaks, and it is also what App
-  // Review reads.
-  'not-configured': {
-    title: 'Gleich geht es los',
-    detail: 'Die Analyse wird für dich vorbereitet. Schau dir so lange eine Beispiel-Mahlzeit an – du siehst sofort, wie Kandro deinen Tag aufstellt.',
-  },
-  offline: {
-    title: 'Gerade keine Verbindung',
-    detail: 'Dein Foto ist sicher gespeichert. Sobald du wieder online bist, machen wir genau hier weiter.',
-  },
-  'unclear-image': {
-    title: 'Das Bild war etwas unklar',
-    detail: 'Mit dem ganzen Teller im Bild und etwas mehr Licht wird die Schätzung deutlich genauer.',
-  },
-  'multiple-dishes': {
-    title: 'Da waren mehrere Teller',
-    detail: 'Fotografiere einen Teller nach dem anderen – dann stimmen die Portionen.',
-  },
-  'provider-error': {
-    title: 'Das hat gerade nicht geklappt',
-    detail: 'Versuch es noch einmal oder beschreibe die Mahlzeit kurz in eigenen Worten.',
-  },
-};
 
 export default function AnalyzingScreen() {
   const router = useRouter();
@@ -54,6 +29,15 @@ export default function AnalyzingScreen() {
   const [visible, setVisible] = useState(0);
   const started = useRef(false);
   const reduceMotion = useReducedMotion();
+  const { t } = useLanguage();
+  const stages = [t.analyzing.stage1, t.analyzing.stage2, t.analyzing.stage3, t.analyzing.stage4];
+  const errorCopy: Record<AnalysisErrorKind, { title: string; detail: string }> = {
+    'not-configured': { title: t.analyzing.errNotConfiguredTitle, detail: t.analyzing.errNotConfiguredBody },
+    offline: { title: t.analyzing.errOfflineTitle, detail: t.analyzing.errOfflineBody },
+    'unclear-image': { title: t.analyzing.errUnclearTitle, detail: t.analyzing.errUnclearBody },
+    'multiple-dishes': { title: t.analyzing.errMultipleTitle, detail: t.analyzing.errMultipleBody },
+    'provider-error': { title: t.analyzing.errProviderTitle, detail: t.analyzing.errProviderBody },
+  };
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   // A fixed 330pt photo pushed the retry buttons off small screens. Scale it to
@@ -109,10 +93,10 @@ export default function AnalyzingScreen() {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Analyse schließen" accessibilityRole="button" onPress={() => router.replace('/(tabs)/scan')} style={styles.closeButton}>
+        <Pressable accessibilityLabel={t.analyzing.close} accessibilityRole="button" onPress={() => router.replace('/(tabs)/scan')} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={23} />
         </Pressable>
-        <Text style={styles.topTitle}>Mahlzeitenanalyse</Text>
+        <Text style={styles.topTitle}>{t.analyzing.title}</Text>
         <View style={styles.closeButtonSpacer} />
       </View>
 
@@ -126,7 +110,7 @@ export default function AnalyzingScreen() {
           {!failed ? <View style={styles.scanLine} /> : null}
           <View style={styles.analyzingPill}>
             <View style={[styles.liveDot, failed && styles.warningDot]} />
-            <Text style={styles.analyzingPillText}>{failed ? 'PRÜFEN' : 'ANALYSE'}</Text>
+            <Text style={styles.analyzingPillText}>{failed ? t.analyzing.badgeCheck : t.analyzing.badgeAnalysing}</Text>
           </View>
         </View>
 
@@ -134,16 +118,16 @@ export default function AnalyzingScreen() {
           <View style={[styles.sparkleCircle, failed && styles.warningCircle]}>
             <Ionicons color={colors.text} name={failed ? 'alert-outline' : 'sparkles'} size={25} />
           </View>
-          <Text accessibilityLiveRegion="polite" style={styles.title}>{failed ? error?.title : 'Wir analysieren deine Mahlzeit …'}</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.title}>{failed ? error?.title : t.analyzing.working}</Text>
           <Text style={styles.subtitle}>
-            {failed ? analysisMessage ?? error?.detail : 'Kandro erkennt Lebensmittel und schätzt Portionen. Im nächsten Schritt bestätigst du alles.'}
+            {failed ? analysisMessage ?? error?.detail : t.analyzing.workingText}
           </Text>
 
           {failed ? (
             <View style={styles.actions}>
-              {analysisError !== 'not-configured' ? <PrimaryButton icon="refresh" label="Erneut versuchen" onPress={retry} /> : null}
-              <PrimaryButton label="Beispiel-Mahlzeit ansehen" onPress={runDemo} variant={analysisError === 'not-configured' ? 'primary' : 'secondary'} />
-              <PrimaryButton label="Eingabe ändern" onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+              {analysisError !== 'not-configured' ? <PrimaryButton icon="refresh" label={t.analyzing.retry} onPress={retry} /> : null}
+              <PrimaryButton label={t.analyzing.openDemo} onPress={runDemo} variant={analysisError === 'not-configured' ? 'primary' : 'secondary'} />
+              <PrimaryButton label={t.analyzing.changeInput} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
             </View>
           ) : (
             <View style={styles.chips}>

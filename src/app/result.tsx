@@ -14,6 +14,7 @@ import {
   remindersSupported,
   setEveningReminderEnabled,
 } from '@/services/reminders';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { trackEvent } from '@/services/telemetry';
 import { formatNumber } from '@/utils/format';
 
@@ -44,6 +45,7 @@ export default function ResultScreen() {
   const savedOnArrival = useRef(false);
   const [offerReminder, setOfferReminder] = useState(false);
   const [reminderBusy, setReminderBusy] = useState(false);
+  const { locale, t } = useLanguage();
   const [displayedCalories, setDisplayedCalories] = useState(0);
   const [displayedRemaining, setDisplayedRemaining] = useState(startingRemaining);
 
@@ -152,19 +154,19 @@ export default function ResultScreen() {
 
   const shareResult = async () => {
     await Share.share({
-      message: `${scannedMeal.title}: ca. ${scannedMeal.calories} kcal, ${scannedMeal.protein} g Protein, ${scannedMeal.carbs} g Kohlenhydrate und ${scannedMeal.fat} g Fett. Nährwerte sind Schätzungen von Kandro.`,
-      title: 'Kandro Mahlzeitenschätzung',
+      message: `${scannedMeal.title}: ~${scannedMeal.calories} kcal · ${scannedMeal.protein} g ${t.common.protein} · ${scannedMeal.carbs} g ${t.common.carbs} · ${scannedMeal.fat} g ${t.common.fat}. Kandro.`,
+      title: t.result.shareTitle,
     });
   };
 
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Zurück" accessibilityRole="button" onPress={() => router.back()} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t.common.back} accessibilityRole="button" onPress={() => router.back()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
-        <Text style={styles.topTitle}>Ergebnis</Text>
-        <Pressable accessibilityLabel="Ergebnis teilen" accessibilityRole="button" onPress={() => void shareResult()} style={styles.iconButton}>
+        <Text style={styles.topTitle}>{t.result.title}</Text>
+        <Pressable accessibilityLabel={t.result.share} accessibilityRole="button" onPress={() => void shareResult()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="share-outline" size={21} />
         </Pressable>
       </View>
@@ -180,22 +182,22 @@ export default function ResultScreen() {
           <View style={styles.calorieBlock}>
             <ImpactRing total={scannedMeal.calories} value={displayedCalories} />
             <View style={styles.calorieCenter}>
-              <Text style={styles.calories}>~{formatNumber(displayedCalories)}</Text>
-              <Text style={styles.calorieLabel}>kcal geschätzt</Text>
+              <Text style={styles.calories}>~{formatNumber(displayedCalories, locale)}</Text>
+              <Text style={styles.calorieLabel}>{t.result.estimated}</Text>
             </View>
           </View>
         </View>
       </View>
 
       <View style={styles.macros}>
-        <MacroResult label="Protein" value={scannedMeal.protein} unit="g" />
-        <MacroResult label="Kohlenh." value={scannedMeal.carbs} unit="g" />
-        <MacroResult label="Fett" value={scannedMeal.fat} unit="g" />
-        <MacroResult label="Ballastst." value={scannedMeal.fiber ?? 0} unit="g" />
+        <MacroResult label={t.common.protein} value={scannedMeal.protein} unit="g" />
+        <MacroResult label={t.common.carbs} value={scannedMeal.carbs} unit="g" />
+        <MacroResult label={t.common.fat} value={scannedMeal.fat} unit="g" />
+        <MacroResult label={t.common.fiber} value={scannedMeal.fiber ?? 0} unit="g" />
       </View>
 
       <View style={styles.section}>
-        <SectionTitle action={<Pressable accessibilityRole="button" onPress={() => router.replace('/confirm')}><Text style={styles.edit}>Bearbeiten</Text></Pressable>}>Erkannte Zutaten</SectionTitle>
+        <SectionTitle action={<Pressable accessibilityRole="button" onPress={() => router.replace('/confirm')}><Text style={styles.edit}>{t.result.edit}</Text></Pressable>}>{t.result.ingredients}</SectionTitle>
         <Card style={styles.ingredientsCard}>
           {scannedMeal.items.filter((item) => item.included).map((item, index, list) => (
             <View key={item.id}>
@@ -217,8 +219,8 @@ export default function ResultScreen() {
         <View style={styles.dayHeader}>
           <View style={styles.dayIcon}><Ionicons color={colors.text} name="sunny-outline" size={23} /></View>
           <View style={styles.dayHeading}>
-            <Eyebrow>Dein Tag danach</Eyebrow>
-            <Text style={styles.onTrack}>{overBudget ? 'Heute etwas drüber' : 'Du bist weiter im Plan'}</Text>
+            <Eyebrow>{t.result.dayAfter}</Eyebrow>
+            <Text style={styles.onTrack}>{overBudget ? t.result.overToday : t.result.stillOnTrack}</Text>
           </View>
           <Ionicons
             color={overBudget ? colors.attention : colors.success}
@@ -228,13 +230,13 @@ export default function ResultScreen() {
         </View>
         <View style={styles.remainingRow}>
           <View>
-            <Text style={styles.remainingValue}>{formatNumber(overBudget ? overBy : displayedRemaining)}</Text>
-            <Text style={styles.remainingLabel}>{overBudget ? 'kcal drüber' : 'kcal übrig'}</Text>
+            <Text style={styles.remainingValue}>{formatNumber(overBudget ? overBy : displayedRemaining, locale)}</Text>
+            <Text style={styles.remainingLabel}>{overBudget ? t.ring.over : t.ring.left}</Text>
           </View>
           <View style={styles.remainingDivider} />
           <View>
             <Text style={styles.remainingValue}>{projected.protein} g</Text>
-            <Text style={styles.remainingLabel}>Protein übrig</Text>
+            <Text style={styles.remainingLabel}>{t.result.proteinLeft}</Text>
           </View>
         </View>
       </Card>
@@ -249,25 +251,25 @@ export default function ResultScreen() {
         <View style={styles.nextTop}>
           <View style={styles.nextBadge}><Ionicons color={colors.text} name="navigate" size={20} /></View>
           <View style={styles.nextCopy}>
-            <Eyebrow>Deine nächste Mahlzeit</Eyebrow>
-            <Text style={styles.nextTitle}>Leichter und proteinreich</Text>
+            <Eyebrow>{t.result.nextMeal}</Eyebrow>
+            <Text style={styles.nextTitle}>{t.result.nextMealTitle}</Text>
           </View>
         </View>
         <View style={styles.aimRow}>
           <View style={styles.aimBlock}>
             <Text style={styles.aimValue}>{Math.max(300, calorieCenter - 50)}–{calorieCenter + 50}</Text>
-            <Text style={styles.aimLabel}>Kilokalorien</Text>
+            <Text style={styles.aimLabel}>{t.onboarding.kilocalories}</Text>
           </View>
           <View style={styles.aimBlock}>
             <Text style={styles.aimValue}>{Math.max(20, proteinCenter - 5)}–{proteinCenter + 5} g</Text>
-            <Text style={styles.aimLabel}>Protein</Text>
+            <Text style={styles.aimLabel}>{t.common.protein}</Text>
           </View>
           <View style={styles.aimBlock}>
-            <Text style={styles.aimValue}>Leicht</Text>
-            <Text style={styles.aimLabel}>bei Fett</Text>
+            <Text style={styles.aimValue}>{t.result.light}</Text>
+            <Text style={styles.aimLabel}>{t.result.lightOnFat}</Text>
           </View>
         </View>
-        <PrimaryButton icon="arrow-forward" label="3 Optionen zeigen" onPress={showOptions} />
+        <PrimaryButton icon="arrow-forward" label={t.result.showOptions} onPress={showOptions} />
       </Card>
       </Animated.View>
 
@@ -276,25 +278,25 @@ export default function ResultScreen() {
           <View style={styles.reminderTop}>
             <View style={styles.reminderIcon}><Ionicons color={colors.text} name="notifications-outline" size={19} /></View>
             <View style={styles.reminderCopy}>
-              <Eyebrow>Soll Kandro sich melden?</Eyebrow>
-              <Text style={styles.reminderTitle}>Morgens dein Ziel, abends dein Tag</Text>
+              <Eyebrow>{t.result.reminderEyebrow}</Eyebrow>
+              <Text style={styles.reminderTitle}>{t.result.reminderTitle}</Text>
             </View>
           </View>
           <Text style={styles.reminderText}>
-            Zwei ruhige Nachrichten am Tag. Keine Serien, keine Mahnungen, in den Einstellungen jederzeit aus.
+            {t.result.reminderText}
           </Text>
           <PrimaryButton
             disabled={reminderBusy}
             icon="checkmark"
-            label={reminderBusy ? 'Einen Moment …' : 'Ja, erinnere mich'}
+            label={reminderBusy ? t.common.moment : t.result.reminderAccept}
             onPress={() => void acceptOffer()}
           />
-          <PrimaryButton disabled={reminderBusy} label="Nicht nötig" onPress={() => void dismissOffer()} variant="ghost" />
+          <PrimaryButton disabled={reminderBusy} label={t.result.reminderDismiss} onPress={() => void dismissOffer()} variant="ghost" />
         </Card>
       ) : null}
 
-      <PrimaryButton icon="checkmark" label="Zum Tagesstand" onPress={saveForLater} variant="secondary" />
-      <Text style={styles.estimateNote}>Nährwerte sind Schätzungen. Du behältst die Kontrolle über jede Zutat und Portion.</Text>
+      <PrimaryButton icon="checkmark" label={t.result.toToday} onPress={saveForLater} variant="secondary" />
+      <Text style={styles.estimateNote}>{t.common.estimateNote}</Text>
     </Screen>
   );
 }
