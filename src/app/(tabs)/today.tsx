@@ -16,6 +16,7 @@ export default function TodayScreen() {
   // at 22:00.
   const hour = new Date().getHours();
   const daypart = hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Guten Tag' : 'Guten Abend';
+  const eveningReady = hour >= 18;
   const greeting = userName === 'Du' ? daypart : `${daypart}, ${userName}`;
   const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
   const calorieRange = `${Math.max(300, calorieCenter - 50)}–${calorieCenter + 50}`;
@@ -130,6 +131,17 @@ export default function TodayScreen() {
           </Pressable>
         </Card>
       </View>
+
+      {eveningReady ? (
+        <Pressable accessibilityRole="button" onPress={() => router.push('/evening')} style={styles.eveningRow}>
+          <View style={styles.eveningIcon}><Ionicons color={colors.text} name="moon-outline" size={19} /></View>
+          <View style={styles.eveningCopy}>
+            <Text style={styles.eveningTitle}>Tagesabschluss</Text>
+            <Text style={styles.eveningText}>Dein Tag auf einen Blick</Text>
+          </View>
+          <Ionicons color={colors.muted} name="chevron-forward" size={18} />
+        </Pressable>
+      ) : null}
     </Screen>
   );
 }
@@ -174,4 +186,9 @@ const styles = StyleSheet.create({
   addMealRow: { minHeight: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 12 },
   addIcon: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   addMealText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
+  eveningRow: { minHeight: 66, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  eveningIcon: { width: 40, height: 40, borderRadius: 15, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  eveningCopy: { flex: 1, minWidth: 0, gap: 2 },
+  eveningTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  eveningText: { color: colors.muted, fontSize: 11 },
 });

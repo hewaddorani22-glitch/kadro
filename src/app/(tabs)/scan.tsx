@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
@@ -13,7 +14,7 @@ import { useSubscription } from '@/context/SubscriptionContext';
 export default function ScanScreen() {
   const router = useRouter();
   const pathname = usePathname();
-  const { hasEverLoggedScan, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan } = useApp();
+  const { freeScansLeft, hasEverLoggedScan, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
@@ -57,8 +58,13 @@ export default function ScanScreen() {
 
   const close = () => router.replace('/(tabs)/today');
 
+  const subscribed = subscriptionStatus === 'active';
+  // hasEverLoggedScan is kept so the copy can distinguish a first-time user from
+  // someone who has simply used up the allowance.
+  const showAllowance = !subscribed && freeScansLeft > 0 && hasEverLoggedScan;
+
   const hasScanAccess = () => {
-    if (!hasEverLoggedScan || subscriptionStatus === 'active') return true;
+    if (subscribed || freeScansLeft > 0) return true;
     router.push('/paywall');
     return false;
   };
@@ -180,6 +186,14 @@ export default function ScanScreen() {
         )}
 
         <View style={styles.controls}>
+          {showAllowance ? (
+            <View style={styles.allowancePill}>
+              <Ionicons color={colors.accent} name="sparkles" size={13} />
+              <Text style={styles.allowanceText}>
+                Noch {freeScansLeft} von {FREE_SCAN_ALLOWANCE} Mahlzeiten gratis
+              </Text>
+            </View>
+          ) : null}
           <View accessibilityRole="radiogroup" style={styles.modeLabel}>
             <ModeButton active={mode === 'photo'} label="Foto" onPress={() => chooseMode('photo')} />
             <ModeButton active={mode === 'description'} label="Beschreiben" onPress={() => chooseMode('description')} />
@@ -276,6 +290,8 @@ const styles = StyleSheet.create({
   tipDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent },
   tipText: { color: colors.white, fontSize: 11, fontWeight: '600' },
   controls: { paddingHorizontal: 24, paddingBottom: 7, alignItems: 'center', gap: 16 },
+  allowancePill: { height: 30, borderRadius: 15, backgroundColor: 'rgba(17,19,15,0.62)', paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  allowanceText: { color: colors.white, fontSize: 11, fontWeight: '700' },
   modeLabel: { flexDirection: 'row', borderRadius: radii.pill, backgroundColor: 'rgba(17,19,15,0.58)', padding: 3 },
   modeButton: { minHeight: 34, borderRadius: 17, paddingHorizontal: 11, alignItems: 'center', justifyContent: 'center' },
   modeButtonActive: { backgroundColor: colors.accent },

@@ -6,11 +6,13 @@ import { analyzeBarcode, analyzeDescription, analyzePreparedPhoto, deleteTempora
 import {
   loadAllStoredScans,
   loadAnalysisQueue,
+  loadLifetimeScanCount,
   loadMeals,
   loadProfile,
   loadWeightEntries,
   queueAnalysis,
   removeQueuedAnalysis,
+  saveLifetimeScanCount,
   saveProfile,
   saveWeightEntry,
 } from '@/services/localRepository';
@@ -22,6 +24,7 @@ import {
   nutritionFromItems,
   sumMeals,
 } from '@/services/mockNutrition';
+import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { calculateDailyTargets, DEFAULT_PROFILE } from '@/services/personalization';
 import { hydrateCloudState, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
 import { isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/supabaseClient';
@@ -56,6 +59,8 @@ type AppContextValue = {
   scanMode: ScanMode;
   hasLoggedScan: boolean;
   hasEverLoggedScan: boolean;
+  lifetimeScanCount: number;
+  freeScansLeft: number;
   isCurrentScanLogged: boolean;
   mealPortion: PortionFactor | null;
   analysisStatus: AnalysisStatus;
@@ -81,6 +86,10 @@ type AppContextValue = {
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
+
+function countScans(meals: Meal[]) {
+  return meals.filter((meal) => meal.origin === 'scan').length;
+}
 
 function makeScanId() {
   return `scan-${Date.now()}`;
@@ -108,7 +117,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [targets, setTargets] = useState(DEFAULT_TARGETS);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [mealHistory, setMealHistory] = useState<Meal[]>([]);
-  const [freeScanUsed, setFreeScanUsed] = useState(false);
+  const [lifetimeScanCount, setLifetimeScanCount] = useState(0);
   const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([]);
   const [detectedItems, setDetectedItems] = useState<MealItem[]>(DETECTED_ITEMS);
   const [mealTitle, setMealTitle] = useState('Hähnchen-Reis-Bowl');
@@ -128,6 +137,13 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [syncMode, setSyncMode] = useState<SyncMode>(isSupabaseConfigured ? 'syncing' : 'local');
   const loadedDayRef = useRef(localDateKey());
 
+  /** Raises the persisted lifetime counter to whatever we just observed. */
+  const adoptScanCount = useCallback(async (observedScans: number) => {
+    const stored = await loadLifetimeScanCount();
+    const next = Math.max(stored, observedScans);
+    setLifetimeScanCount(next > stored ? await saveLifetimeScanCount(next) : stored);
+  }, []);
+
   const refreshCloudState = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setSyncMode('local');
@@ -142,7 +158,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       }
       setMeals(cloudState.meals);
       setMealHistory(cloudState.mealHistory);
-      setFreeScanUsed(cloudState.hasEverLoggedScan);
+      await adoptScanCount(Math.max(countScans(cloudState.mealHistory), cloudState.hasEverLoggedScan ? 1 : 0));
       setTargets(cloudState.targets);
       setProfile(cloudState.profile);
       await saveProfile(cloudState.profile);
@@ -152,23 +168,25 @@ export function AppProvider({ children }: PropsWithChildren) {
       captureOperationalError(error, { area: 'cloud_sync', operation: 'refresh_cloud_state' });
       throw error;
     }
-  }, []);
+  }, [adoptScanCount]);
 
   useEffect(() => {
     let active = true;
     const stopAuthLifecycle = startSupabaseAuthLifecycle();
     void (async () => {
-      const [storedMeals, storedHistory, queue, storedProfile, storedWeights] = await Promise.all([
+      const [storedMeals, storedHistory, queue, storedProfile, storedWeights, storedScanCount] = await Promise.all([
         loadMeals(),
         loadAllStoredScans(),
         loadAnalysisQueue(),
         loadProfile(),
         loadWeightEntries(),
+        loadLifetimeScanCount(),
       ]);
       if (!active) return;
       setMeals(storedMeals);
       setMealHistory(storedHistory);
-      setFreeScanUsed(storedHistory.length > 0);
+      setLifetimeScanCount(Math.max(storedScanCount, countScans(storedHistory)));
+      if (countScans(storedHistory) > storedScanCount) await saveLifetimeScanCount(countScans(storedHistory));
       setPendingAnalysisCount(queue.length);
       setProfile(storedProfile);
       setWeightEntries(storedWeights);
@@ -187,7 +205,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         }
         setMeals(cloudState.meals);
         setMealHistory(cloudState.mealHistory);
-        setFreeScanUsed(cloudState.hasEverLoggedScan);
+        await adoptScanCount(Math.max(countScans(cloudState.mealHistory), cloudState.hasEverLoggedScan ? 1 : 0));
         setTargets(cloudState.targets);
         setProfile(cloudState.profile);
         await saveProfile(cloudState.profile);
@@ -228,7 +246,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     [detectedItems, mealTitle, scanId],
   );
   const hasLoggedScan = meals.some((meal) => meal.origin === 'scan');
-  const hasEverLoggedScan = freeScanUsed || mealHistory.some((meal) => meal.origin === 'scan');
+  const hasEverLoggedScan = lifetimeScanCount > 0 || mealHistory.some((meal) => meal.origin === 'scan');
+  const freeScansLeft = Math.max(0, FREE_SCAN_ALLOWANCE - lifetimeScanCount);
   const isCurrentScanLogged = mealHistory.some((meal) => meal.id === scanId);
   const userName = profile.displayName;
 
@@ -480,7 +499,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setTargets(DEFAULT_TARGETS);
     setMeals([]);
     setMealHistory([]);
-    setFreeScanUsed(false);
+    setLifetimeScanCount(0);
     setWeightEntries([]);
     setDetectedItems(DETECTED_ITEMS);
     setMealTitle('Hähnchen-Reis-Bowl');
@@ -499,6 +518,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   const logScannedMeal = useCallback(async () => {
+    const alreadyLogged = mealHistory.some((meal) => meal.id === scannedMeal.id);
     const now = new Date();
     const persistedMeal: Meal = {
       ...scannedMeal,
@@ -509,8 +529,12 @@ export function AppProvider({ children }: PropsWithChildren) {
     await saveSyncedMeal(persistedMeal);
     setMeals((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
     setMealHistory((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
-    setFreeScanUsed(true);
-  }, [detectedItems, scannedMeal]);
+    // Corrections re-save the same scan id; only a genuinely new meal spends
+    // part of the free allowance.
+    if (!alreadyLogged) {
+      setLifetimeScanCount(await saveLifetimeScanCount((await loadLifetimeScanCount()) + 1));
+    }
+  }, [detectedItems, mealHistory, scannedMeal]);
 
   const value = useMemo<AppContextValue>(
     () => ({
@@ -529,6 +553,8 @@ export function AppProvider({ children }: PropsWithChildren) {
       scanMode,
       hasLoggedScan,
       hasEverLoggedScan,
+      lifetimeScanCount,
+      freeScansLeft,
       isCurrentScanLogged,
       mealPortion,
       analysisStatus,
@@ -552,7 +578,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       resetAfterAccountDeletion,
       logScannedMeal,
     }),
-    [addWeightEntry, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, detectedItems, hasEverLoggedScan, hasLoggedScan, hydrationReady, isCurrentScanLogged, logScannedMeal, mealHistory, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
+    [addWeightEntry, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logScannedMeal, mealHistory, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

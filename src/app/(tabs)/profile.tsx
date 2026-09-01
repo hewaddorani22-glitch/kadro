@@ -9,6 +9,13 @@ import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import {
+  isEveningReminderEnabled,
+  REMINDER_HOUR,
+  REMINDER_MINUTE,
+  remindersSupported,
+  setEveningReminderEnabled,
+} from '@/services/reminders';
+import {
   getAnalyticsCollectionEnabled,
   isTelemetryConfigured,
   setAnalyticsCollectionEnabled,
@@ -21,11 +28,16 @@ export default function ProfileScreen() {
   const { profile, syncMode, targets, userName } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
+  const [reminderEnabled, setReminderEnabled] = useState(false);
+  const reminderTime = `${String(REMINDER_HOUR).padStart(2, '0')}:${String(REMINDER_MINUTE).padStart(2, '0')}`;
 
   useEffect(() => {
     let active = true;
     void getAnalyticsCollectionEnabled().then((enabled) => {
       if (active) setAnalyticsEnabled(enabled);
+    });
+    void isEveningReminderEnabled().then((enabled) => {
+      if (active) setReminderEnabled(enabled);
     });
     return () => {
       active = false;
@@ -34,6 +46,12 @@ export default function ProfileScreen() {
 
   const updateAnalytics = async (enabled: boolean) => {
     setAnalyticsEnabled(await setAnalyticsCollectionEnabled(enabled));
+  };
+
+  // setEveningReminderEnabled returns what actually applies, so a denied
+  // permission flips the switch back instead of lying to the user.
+  const updateReminder = async (enabled: boolean) => {
+    setReminderEnabled(await setEveningReminderEnabled(enabled));
   };
 
   return (
@@ -80,6 +98,24 @@ export default function ProfileScreen() {
             <PlanStat label="Ziel" value={goalLabel(profile.goal)} />
             <PlanStat label="Aktivität" value={activityLabel(profile.activityLevel)} />
           </View>
+        </Card>
+      </View>
+
+      <View style={styles.section}>
+        <SectionTitle>Tagesabschluss</SectionTitle>
+        <Card style={styles.listCard}>
+          <ToggleRow
+            detail={remindersSupported
+              ? `Eine ruhige Erinnerung um ${reminderTime} Uhr mit deinem Tag auf einen Blick. Keine Serien, kein Druck.`
+              : 'Erinnerungen stehen in dieser Vorschau nicht zur Verfügung.'}
+            disabled={!remindersSupported}
+            icon="moon-outline"
+            label="Abendliche Zusammenfassung"
+            onValueChange={(enabled) => void updateReminder(enabled)}
+            value={reminderEnabled}
+          />
+          <View style={styles.divider} />
+          <MenuRow icon="sparkles-outline" label="Tagesabschluss jetzt ansehen" onPress={() => router.push('/evening')} />
         </Card>
       </View>
 

@@ -32,9 +32,19 @@ if (!service.includes('ExecutionEnvironment.StoreClient')) failures.push('Expo G
 if (!context.includes("'active' | 'cancelled' | 'failed'")) failures.push('purchase flow must distinguish cancellation from failure');
 if (!paywall.includes('Wiederherstellen')) failures.push('paywall has no user-triggered restore action');
 if (!paywall.includes('snapshot?.plans')) failures.push('paywall does not display RevenueCat offering prices');
-if (!scan.includes("hasEverLoggedScan") || !scan.includes("subscriptionStatus === 'active'")) failures.push('scanner does not enforce the one-free-scan entitlement boundary');
+if (!scan.includes('freeScansLeft > 0') || !scan.includes("subscriptionStatus === 'active'")) {
+  failures.push('scanner does not enforce the free-scan entitlement boundary');
+}
+// A wall the user saw coming reads as a price; a wall that appears without
+// warning reads as a bait and switch.
+if (!scan.includes('FREE_SCAN_ALLOWANCE') || !scan.includes('Mahlzeiten gratis')) {
+  failures.push('scanner does not show the remaining free allowance before the paywall');
+}
+if (!appContext.includes('saveLifetimeScanCount') || !appContext.includes('alreadyLogged')) {
+  failures.push('the free allowance must be spent once per meal, not once per save');
+}
 if (!result.includes('savedOnArrival') || !result.includes('logScannedMeal()')) failures.push('the first complete result is not persisted before the paywall boundary');
-if (!appContext.includes('setFreeScanUsed(true)')) failures.push('a completed scan does not update the free-scan boundary');
+if (!appContext.includes('setLifetimeScanCount')) failures.push('a completed scan does not update the free-scan boundary');
 if (!localRepository.includes('loadAllStoredScans')) failures.push('the free-scan boundary does not survive a new day locally');
 if (!envExample.includes('EXPO_PUBLIC_REVENUECAT_TEST_API_KEY=')) failures.push('Test Store public key is undocumented');
 if (!envExample.includes('EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=')) failures.push('iOS public SDK key is undocumented');
@@ -46,4 +56,4 @@ if (failures.length) {
   throw new Error(`RevenueCat validation failed:\n- ${failures.join('\n- ')}`);
 }
 
-console.log('Validated the one-free-scan gate plus RevenueCat offering, entitlement, purchase, cancellation, and restore boundaries.');
+console.log('Validated the announced free-scan allowance plus RevenueCat offering, entitlement, purchase, cancellation, and restore boundaries.');

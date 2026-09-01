@@ -43,7 +43,13 @@
         }
       ],
       "expo-font",
-      "expo-localization"
+      "expo-localization",
+      [
+        "expo-notifications",
+        {
+          "color": "#3F5233"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

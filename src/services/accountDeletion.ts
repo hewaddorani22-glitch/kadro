@@ -6,11 +6,12 @@ import {
   rememberSupabaseUser,
   supabase,
 } from '@/services/supabaseClient';
+import { clearRemindersAfterAccountDeletion } from '@/services/reminders';
 import { clearTelemetryAfterAccountDeletion } from '@/services/telemetry';
 
 export async function deleteKandroAccount() {
   if (!supabase || !isSupabaseConfigured) {
-    await Promise.all([clearLocalKandroData(), clearLocalWellnessConsent(), clearTelemetryAfterAccountDeletion()]);
+    await Promise.all([clearLocalKandroData(), clearLocalWellnessConsent(), clearTelemetryAfterAccountDeletion(), clearRemindersAfterAccountDeletion()]);
     return;
   }
 
@@ -28,6 +29,7 @@ export async function deleteKandroAccount() {
     clearLocalKandroData(),
     clearLocalWellnessConsent(),
     clearTelemetryAfterAccountDeletion(),
+    clearRemindersAfterAccountDeletion(),
   ]);
 }
 

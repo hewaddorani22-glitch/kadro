@@ -9,6 +9,7 @@ const MEALS_KEY = '@kandro/meals:v1';
 const QUEUE_KEY = '@kandro/analysis-queue:v1';
 const PROFILE_KEY = '@kandro/profile:v1';
 const WEIGHTS_KEY = '@kandro/weight-entries:v1';
+const LIFETIME_SCANS_KEY = '@kandro/lifetime-scans:v1';
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -61,6 +62,23 @@ export async function removeQueuedAnalysis(id: string): Promise<number> {
   return next.length;
 }
 
+/**
+ * Monotonic count of meals this device has ever logged. Meal history is pruned
+ * (locally by day, in the cloud after 90 days), so the free allowance cannot be
+ * derived from it alone without silently handing out more free scans.
+ */
+export async function loadLifetimeScanCount(): Promise<number> {
+  const stored = await readJson<unknown>(LIFETIME_SCANS_KEY, 0);
+  const value = Number(stored);
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
+
+export async function saveLifetimeScanCount(count: number): Promise<number> {
+  const next = Math.max(0, Math.floor(count));
+  await AsyncStorage.setItem(LIFETIME_SCANS_KEY, JSON.stringify(next));
+  return next;
+}
+
 export async function loadProfile(): Promise<UserProfile> {
   const stored = await readJson<Partial<UserProfile> | null>(PROFILE_KEY, null);
   if (!stored) return DEFAULT_PROFILE;
@@ -91,5 +109,5 @@ export async function saveWeightEntry(entry: WeightEntry): Promise<WeightEntry[]
 }
 
 export async function clearLocalKandroData() {
-  await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY]);
+  await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY, LIFETIME_SCANS_KEY]);
 }
