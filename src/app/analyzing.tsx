@@ -13,25 +13,28 @@ import { AnalysisErrorKind } from '@/services/contracts';
 const stages = ['Eingabe vorbereitet', 'Lebensmittel erkannt', 'Nährwerte abgeglichen', 'Bereit zur Bestätigung'];
 
 const errorCopy: Record<AnalysisErrorKind, { title: string; detail: string }> = {
+  // Never name servers, environment variables or queues here. This copy is the
+  // first thing a user sees when something breaks, and it is also what App
+  // Review reads.
   'not-configured': {
-    title: 'Echte Analyse noch nicht verbunden',
-    detail: 'Starte den lokalen Kandro-Server und setze EXPO_PUBLIC_ANALYSIS_API_URL. Die Demo funktioniert sofort.',
+    title: 'Gleich geht es los',
+    detail: 'Die Analyse wird für dich vorbereitet. Schau dir so lange eine Beispiel-Mahlzeit an – du siehst sofort, wie Kandro deinen Tag aufstellt.',
   },
   offline: {
-    title: 'Keine Verbindung',
-    detail: 'Fotos werden lokal vorgemerkt. Beschreibungen und Barcodes kannst du mit Verbindung erneut starten.',
+    title: 'Gerade keine Verbindung',
+    detail: 'Dein Foto ist sicher gespeichert. Sobald du wieder online bist, machen wir genau hier weiter.',
   },
   'unclear-image': {
-    title: 'Foto nicht eindeutig',
-    detail: 'Bitte fotografiere den ganzen Teller bei gutem Licht und ohne starke Unschärfe.',
+    title: 'Das Bild war etwas unklar',
+    detail: 'Mit dem ganzen Teller im Bild und etwas mehr Licht wird die Schätzung deutlich genauer.',
   },
   'multiple-dishes': {
-    title: 'Mehrere Mahlzeiten erkannt',
-    detail: 'Für eine verlässliche Schätzung sollte nur ein Teller vollständig im Bild sein.',
+    title: 'Da waren mehrere Teller',
+    detail: 'Fotografiere einen Teller nach dem anderen – dann stimmen die Portionen.',
   },
   'provider-error': {
-    title: 'Analyse gerade nicht möglich',
-    detail: 'Versuche es gleich noch einmal oder ändere deine Eingabe.',
+    title: 'Das hat gerade nicht geklappt',
+    detail: 'Versuch es noch einmal oder beschreibe die Mahlzeit kurz in eigenen Worten.',
   },
 };
 
@@ -129,7 +132,7 @@ export default function AnalyzingScreen() {
           {failed ? (
             <View style={styles.actions}>
               {analysisError !== 'not-configured' ? <PrimaryButton icon="refresh" label="Erneut versuchen" onPress={retry} /> : null}
-              <PrimaryButton label="Demo-Mahlzeit öffnen" onPress={runDemo} variant={analysisError === 'not-configured' ? 'primary' : 'secondary'} />
+              <PrimaryButton label="Beispiel-Mahlzeit ansehen" onPress={runDemo} variant={analysisError === 'not-configured' ? 'primary' : 'secondary'} />
               <PrimaryButton label="Eingabe ändern" onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
             </View>
           ) : (

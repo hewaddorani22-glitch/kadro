@@ -56,7 +56,7 @@ export function activityLabel(activity: ActivityLevel) {
 }
 
 export function estimatedPace(goal: NutritionGoal) {
-  if (goal === 'lose') return 'ca. 0,3 kg/Wo.';
+  if (goal === 'lose') return 'ca. 0,3 kg/Woche';
   if (goal === 'gain') return 'ruhiger Aufbau';
   return 'Gewicht halten';
 }

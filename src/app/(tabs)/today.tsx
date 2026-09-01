@@ -47,8 +47,10 @@ export default function TodayScreen() {
         <Pressable onPress={resumePending} style={styles.pendingBanner}>
           <View style={styles.pendingIcon}><Ionicons color={colors.text} name="cloud-offline-outline" size={19} /></View>
           <View style={styles.pendingCopy}>
-            <Text style={styles.pendingTitle}>{pendingAnalysisCount} Scan{pendingAnalysisCount === 1 ? '' : 's'} wartet lokal</Text>
-            <Text style={styles.pendingText}>Tippen und mit Verbindung erneut analysieren</Text>
+            <Text style={styles.pendingTitle}>
+              {pendingAnalysisCount === 1 ? 'Eine Mahlzeit ist noch offen' : `${pendingAnalysisCount} Mahlzeiten sind noch offen`}
+            </Text>
+            <Text style={styles.pendingText}>Tippen und in ein paar Sekunden fertig machen</Text>
           </View>
           <Ionicons color={colors.text} name="refresh" size={19} />
         </Pressable>
