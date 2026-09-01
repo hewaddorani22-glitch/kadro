@@ -1,0 +1,14 @@
+id,dish,weighed_g,true_kcal,true_protein,true_fat,app_g,app_kcal,app_protein,app_fat,matched,hidden_fat,notes
+# Eine Zeile pro fotografierter Mahlzeit. Zeilen mit # werden ignoriert.
+#
+# weighed_g   Gesamtgewicht der Mahlzeit auf der Waage, in Gramm
+# true_*      Sollwerte: BLS-Eintrag, Herstellerangabe oder aus Zutaten berechnet
+# app_g       Gramm, die die App geschätzt hat (Summe der Zutaten)
+# app_*       Werte, die die App nach dem Scan angezeigt hat, VOR jeder Korrektur
+# matched     hit  = richtiges Gericht/Zutat erkannt
+#             wrong= etwas anderes erkannt
+#             miss = keine Referenz gefunden
+# hidden_fat  yes, wenn Öl, Butter, Sauce oder Dressing beteiligt war
+#
+# Ziel: mindestens 30 Zeilen, davon ca. 10 mit hidden_fat=yes und
+# ca. 10 desselben Gerichts in unterschiedlichen Portionsgrößen.

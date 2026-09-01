@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/ui';
+import { legalVersion } from '@/constants/legal';
 import { colors, radii } from '@/constants/theme';
 
 export type LegalSection = {
@@ -23,7 +24,7 @@ export function LegalDocument({ title, intro, sections }: { title: string; intro
       </View>
       <View style={styles.heading}>
         <Text accessibilityRole="header" style={styles.title}>{title}</Text>
-        <Text style={styles.version}>Entwurf für den MVP · Stand 31. August 2026</Text>
+        <Text style={styles.version}>Version {legalVersion}</Text>
         <Text style={styles.intro}>{intro}</Text>
       </View>
       {sections.map((section) => (

@@ -108,6 +108,13 @@ export default function PaywallScreen() {
         ? `${selectedPlan.billing}${testStore ? ' Test Store: keine echte Abbuchung.' : ''}`
         : 'Lege im aktuellen RevenueCat Offering ein Jahres- und/oder Monatspaket an.';
 
+  // App Store Review guideline 3.1.2 requires length, price and the renewal
+  // terms to be visible before the purchase, not only in the store listing.
+  // A missing renewal notice is one of the most common rejection reasons.
+  const renewalCopy = selected === 'yearly'
+    ? 'Jahresabo. Verlängert sich automatisch um 12 Monate, bis du kündigst.'
+    : 'Monatsabo. Verlängert sich automatisch um 1 Monat, bis du kündigst.';
+
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
       <View style={styles.topBar}>
@@ -167,6 +174,11 @@ export default function PaywallScreen() {
           onPress={() => void subscribe()}
         />
         <Text style={styles.billing}>{billingCopy}</Text>
+        {status !== 'active' ? (
+          <Text style={styles.renewal}>
+            {renewalCopy} Die Abbuchung erfolgt über deine Apple-ID. Kündigen kannst du jederzeit bis 24 Stunden vor Ablauf in den Einstellungen deiner Apple-ID.
+          </Text>
+        ) : null}
         <View style={styles.legalRow}>
           <Pressable accessibilityRole="link" onPress={() => router.push('/terms')}><Text style={styles.legal}>Bedingungen</Text></Pressable>
           <View style={styles.legalDot} />
@@ -239,6 +251,7 @@ const styles = StyleSheet.create({
   error: { color: colors.attention, fontSize: 11, lineHeight: 16, marginTop: 12, textAlign: 'center' },
   disabledText: { opacity: 0.45 },
   billing: { color: colors.muted, fontSize: 10, textAlign: 'center' },
+  renewal: { color: colors.muted, fontSize: 9, lineHeight: 13, textAlign: 'center', paddingHorizontal: 4 },
   legalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
   legal: { color: colors.muted, fontSize: 9, textDecorationLine: 'underline' },
   legalDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.muted },

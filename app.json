@@ -17,7 +17,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.hewaddorani.kandro",
       "infoPlist": {
-        "NSCameraUsageDescription": "Kandro verwendet deine Kamera, um Mahlzeiten zu analysieren. Fotos werden in dieser Demo nicht dauerhaft gespeichert."
+        "NSCameraUsageDescription": "Kandro nutzt die Kamera, um deine Mahlzeit zu fotografieren und daraus Nährwerte zu schätzen. Das Originalfoto wird nach der Analyse verworfen und nicht gespeichert.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

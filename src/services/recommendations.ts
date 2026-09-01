@@ -49,6 +49,8 @@ export function recommendMeals(
       ...entry,
       contexts: [entry.context],
       preferences: entry.tags,
-      source: { provider: 'kandro-catalog', label: 'Kandro-Katalog · geprüfte Schätzung' },
+      // These are hand-built typical values, not sourced measurements. Calling
+      // them "geprüft" claimed a provenance the catalog does not have.
+      source: { provider: 'kandro-catalog', label: 'Kandro-Katalog · typischer Richtwert' },
     }));
 }

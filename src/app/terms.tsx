@@ -1,4 +1,5 @@
 import { LegalDocument, LegalSection } from '@/components/LegalDocument';
+import { contactSentence, providerSentence } from '@/constants/legal';
 
 const sections: LegalSection[] = [
   {
@@ -25,7 +26,7 @@ const sections: LegalSection[] = [
   {
     title: '4. Abonnements',
     paragraphs: [
-      'Preise, Laufzeit, Testzeitraum und Verlängerung werden vor einem Kauf angezeigt. Native Abonnements werden über den jeweiligen App Store verwaltet und müssen dort gekündigt werden.',
+      'Preise, Laufzeit, Testzeitraum und Verlängerung werden vor dem Kauf angezeigt. Abonnements verlängern sich automatisch um die gewählte Laufzeit, bis du sie kündigst. Die Abbuchung erfolgt über deine Apple-ID; kündigen kannst du jederzeit bis 24 Stunden vor Ablauf in den Einstellungen deiner Apple-ID.',
       'Die Löschung des Kandro-Accounts beendet ein Apple-Abonnement nicht automatisch. Käufe können über die Paywall wiederhergestellt werden.',
     ],
   },
@@ -37,9 +38,10 @@ const sections: LegalSection[] = [
     ],
   },
   {
-    title: '6. MVP-Status',
+    title: '6. Anbieter und anwendbares Recht',
     paragraphs: [
-      'Diese Bedingungen sind ein Produktentwurf. Anbieterangaben, anwendbares Recht, Haftungsrahmen und Verbraucherschutzinformationen müssen vor einer öffentlichen TestFlight- oder App-Store-Veröffentlichung rechtlich finalisiert werden.',
+      `${providerSentence()} ${contactSentence()}`,
+      'Es gilt deutsches Recht unter Wahrung der zwingenden Verbraucherschutzvorschriften deines Wohnsitzlandes. Für Abonnements, die über den App Store abgeschlossen werden, gelten zusätzlich die Bedingungen von Apple.',
     ],
   },
 ];
@@ -47,7 +49,7 @@ const sections: LegalSection[] = [
 export default function TermsScreen() {
   return (
     <LegalDocument
-      intro="Diese Bedingungen beschreiben den vorgesehenen Rahmen des Kandro-MVP. Die App bleibt bewusst bei allgemeiner Wellness-Unterstützung und transparenten Schätzungen."
+      intro="Diese Bedingungen beschreiben, was Kandro leistet und was nicht. Die App bleibt bewusst bei allgemeiner Wellness-Unterstützung und transparenten Schätzungen."
       sections={sections}
       title="Nutzungsbedingungen"
     />

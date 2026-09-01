@@ -63,7 +63,9 @@
     "doctor": "npx expo-doctor",
     "check": "npm run typecheck && npx expo export --platform web",
     "verify": "npm run typecheck && npm run validate:meals && npm run validate:german && npm run validate:catalog && npm run validate:cache && npm run validate:product && npm run validate:supabase && npm run validate:subscription && node --check server/index.mjs && npm run doctor && npx expo export --platform web",
-    "validate:cache": "node scripts/validate-usda-cache.mjs"
+    "validate:cache": "node scripts/validate-usda-cache.mjs",
+    "validate:release": "node scripts/validate-release.mjs",
+    "accuracy": "node scripts/analyze-accuracy.mjs"
   },
   "private": true
 }

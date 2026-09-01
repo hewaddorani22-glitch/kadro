@@ -91,8 +91,10 @@ export default function ScanScreen() {
     }
   };
 
+  // The demo meal never reaches the analysis gateway, so it costs nothing and
+  // must not spend one of the three free meals. A user trying it first should
+  // not lose a third of their trial on a meal they did not eat.
   const runDemo = () => {
-    if (!hasScanAccess()) return;
     startDemoScan();
     router.push('/analyzing');
   };

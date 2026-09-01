@@ -136,9 +136,9 @@ export default function PlanScreen() {
                   <Text numberOfLines={2} style={styles.time}>{suggestion.time}</Text>
                 </View>
                 <View style={styles.nutritionRow}>
-                  <NutritionStat label="kcal" value={suggestion.calories} />
-                  <NutritionStat label="protein" value={`${suggestion.protein} g`} />
-                  <NutritionStat label="carbs" value={`${suggestion.carbs} g`} />
+                  <NutritionStat label="kcal" value={`~${suggestion.calories}`} />
+                  <NutritionStat label="protein" value={`~${suggestion.protein} g`} />
+                  <NutritionStat label="carbs" value={`~${suggestion.carbs} g`} />
                 </View>
                 <PrimaryButton
                   icon={isChosen ? 'checkmark' : 'arrow-forward'}
@@ -149,6 +149,10 @@ export default function PlanScreen() {
               </Card>
             );
           })}
+
+          <Text style={styles.catalogNote}>
+            Richtwerte für eine typische Zubereitung. Was du tatsächlich isst, erfasst du danach wie gewohnt per Scan.
+          </Text>
 
           {hasLoggedScan && params.fromScan !== '1' && subscriptionStatus !== 'active' ? (
             <Pressable accessibilityRole="button" onPress={() => router.push('/paywall')} style={styles.proBanner}>
@@ -215,6 +219,7 @@ const styles = StyleSheet.create({
   nutritionStat: { flex: 1, alignItems: 'center', gap: 2 },
   nutritionValue: { color: colors.text, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },
   nutritionLabel: { color: colors.muted, fontSize: 10 },
+  catalogNote: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', paddingHorizontal: 12 },
   hint: { alignItems: 'center', gap: 8, paddingVertical: 14 },
   hintText: { color: colors.muted, fontSize: 13 },
   proBanner: { minHeight: 78, borderRadius: radii.card, backgroundColor: colors.accent, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 12 },
