@@ -10,8 +10,9 @@ const emailTemplatePath = resolve(projectRoot, 'supabase/templates/email_change.
 const accountDeletionPath = resolve(projectRoot, 'supabase/functions/delete-account/index.ts');
 const gatewayPath = resolve(projectRoot, 'supabase/functions/nutrition/index.ts');
 const quotaMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901120000_add_analysis_quota.sql');
+const cacheMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901140000_add_usda_food_cache.sql');
 const mealAnalysisPath = resolve(projectRoot, 'src/services/mealAnalysis.ts');
-const [migration, config, accountLinking, emailTemplate, accountDeletion, gateway, quotaMigration, mealAnalysis] = await Promise.all([
+const [migration, config, accountLinking, emailTemplate, accountDeletion, gateway, quotaMigration, cacheMigration, mealAnalysis] = await Promise.all([
   readFile(migrationPath, 'utf8'),
   readFile(configPath, 'utf8'),
   readFile(accountLinkingPath, 'utf8'),
@@ -19,6 +20,7 @@ const [migration, config, accountLinking, emailTemplate, accountDeletion, gatewa
   readFile(accountDeletionPath, 'utf8'),
   readFile(gatewayPath, 'utf8'),
   readFile(quotaMigrationPath, 'utf8'),
+  readFile(cacheMigrationPath, 'utf8'),
   readFile(mealAnalysisPath, 'utf8'),
 ]);
 
@@ -101,6 +103,24 @@ if (!quotaMigration.includes('security definer')) failures.push('quota counter m
 if (/create function public\.consume_analysis_quota\([^)]+\)/.test(quotaMigration)) {
   failures.push('the daily limit must not be a client-supplied argument');
 }
+// The USDA cache is shared across all users, so it must stay unreachable from
+// any client: a poisoned entry would hand everyone wrong nutrition values.
+if (!cacheMigration.includes('alter table public.usda_food_cache enable row level security')) {
+  failures.push('usda_food_cache must enable row level security');
+}
+if (!cacheMigration.includes('revoke all on table public.usda_food_cache from anon, authenticated')) {
+  failures.push('usda_food_cache must stay unwritable for client roles');
+}
+if (/create policy .*usda_food_cache/.test(cacheMigration)) {
+  failures.push('usda_food_cache must not expose a client policy');
+}
+if (!gateway.includes('context.supabaseAdmin') || !gateway.includes('usda_food_cache')) {
+  failures.push('the gateway must reach the USDA cache through the service role only');
+}
+if (!gateway.includes('normalizeSearchTerm')) {
+  failures.push('USDA cache keys must be normalized or the cache will miss constantly');
+}
+
 if (!mealAnalysis.includes('functionsBaseUrl') || !mealAnalysis.includes('Authorization: `Bearer ${accessToken}`')) {
   failures.push('the app must reach the gateway through an authenticated edge function call');
 }
@@ -109,4 +129,4 @@ if (failures.length) {
   throw new Error(`Supabase schema validation failed:\n- ${failures.join('\n- ')}`);
 }
 
-console.log(`Validated ${tables.length} RLS-protected Kandro tables, ID-preserving account linking, and the metered analysis gateway.`);
+console.log(`Validated ${tables.length} RLS-protected Kandro tables, ID-preserving account linking, and the metered, cached analysis gateway.`);

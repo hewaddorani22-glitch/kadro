@@ -82,6 +82,35 @@ Jeder Foto- und Beschreiben-Aufruf kostet echtes Geld beim Vision-Provider. Ein
 - Ungültige Payloads werden vor dem Zählen abgewiesen.
 - Fotos werden bei > 3 MB Base64 abgewiesen.
 
+## USDA-Cache
+
+Pro Zutat geht eine USDA-Anfrage, bis zu zwölf pro Scan. api.data.gov begrenzt
+das **pro API-Key**, nicht pro Nutzer — die Lebensmitteldatenbank ist damit der
+erste Engpass unter Last, nicht das Vision-Modell.
+
+`usda_food_cache` speichert die Nährwerte je normalisiertem Suchbegriff.
+Nährwerte sind praktisch statisch, also wird derselbe Begriff nie zweimal
+angefragt.
+
+- Treffer laufen nach 90 Tagen ab, Fehlschläge nach 7.
+- Zusätzlich hält jede warme Function-Instanz bis zu 500 Begriffe im Speicher.
+- Die Tabelle enthält **keine Nutzerdaten** — nur englische Gattungsbegriffe wie
+  `grilled chicken breast`, die das Modell erzeugt.
+- RLS ohne Policies, keine Grants: nur die Service-Rolle der Function kommt
+  heran. Wäre die Tabelle beschreibbar, könnte ein Nutzer falsche Nährwerte für
+  alle anderen hinterlegen.
+
+### Warum die Trefferauswahl zählt
+
+`chooseFood` sortierte früher nur nach USDA-Datentyp. Für „broccoli" gibt es
+keinen Foundation-Eintrag, also gewann der erste Survey-Treffer:
+**„Fried broccoli" mit 223 kcal/100 g**, während „Broccoli, raw" mit 39 zwei
+Zeilen darunter stand. Mit Cache wäre dieser Fehler 90 Tage lang an alle
+ausgeliefert worden.
+
+Jetzt entscheidet die Namensähnlichkeit, der Datentyp ist nur noch
+Gleichstandskriterium. `npm run validate:cache` pinnt diese Fälle fest.
+
 ## Fehler nachsehen
 
 Öffne **Supabase Dashboard → Edge Functions → nutrition → Logs**.

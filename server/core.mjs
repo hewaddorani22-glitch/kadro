@@ -4,9 +4,12 @@
  * This file only re-exports them for Node consumers.
  */
 export {
+  buildMealItem,
   chooseFood,
   classifyDetection,
   mapUsdaFood,
+  normalizeSearchTerm,
   nutrient,
+  toFoodFacts,
   validateAnalysisInput,
 } from '../supabase/functions/_shared/nutrition.mjs';

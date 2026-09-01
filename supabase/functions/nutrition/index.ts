@@ -1,9 +1,11 @@
 import { withSupabase } from 'npm:@supabase/server@1.5.1';
 
 import {
+  buildMealItem,
   chooseFood,
   classifyDetection,
-  mapUsdaFood,
+  normalizeSearchTerm,
+  toFoodFacts,
   validateAnalysisInput,
 } from '../_shared/nutrition.mjs';
 
@@ -29,6 +31,34 @@ const dailyLimit = Number.isSafeInteger(configuredDailyLimit) && configuredDaily
 
 /** Largest base64 payload we accept. The client sends a 1280px JPEG at q0.72. */
 const MAX_IMAGE_BASE64 = 3_000_000;
+
+/** USDA values do not change; a miss only needs re-checking now and then. */
+const CACHE_TTL_HIT_DAYS = 90;
+const CACHE_TTL_MISS_DAYS = 7;
+
+type FoodFacts = {
+  fdcId: string | null;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+};
+
+/**
+ * Per-instance cache in front of the shared table. A warm function handling a
+ * burst of scans skips the database entirely for repeat ingredients.
+ */
+const memoryCache = new Map<string, FoodFacts | null>();
+const MEMORY_CACHE_LIMIT = 500;
+
+function rememberInMemory(term: string, facts: FoodFacts | null) {
+  if (memoryCache.size >= MEMORY_CACHE_LIMIT) {
+    const oldest = memoryCache.keys().next().value;
+    if (oldest !== undefined) memoryCache.delete(oldest);
+  }
+  memoryCache.set(term, facts);
+}
 
 type Result = { status: number; body: Record<string, unknown> };
 
@@ -113,24 +143,95 @@ async function requestDetection(content: unknown[]): Promise<any> {
   return JSON.parse(extractResponseText(await response.json()));
 }
 
-// deno-lint-ignore no-explicit-any
-async function resolveUsdaItem(item: any, index: number) {
+async function searchUsda(term: string): Promise<FoodFacts | null> {
   const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: item.searchTermEn, pageSize: 8 }),
+    body: JSON.stringify({ query: term, pageSize: 8 }),
   });
   if (!response.ok) throw new Error(`usda_${response.status}`);
   const result = await response.json();
-  return mapUsdaFood(item, chooseFood(result.foods || []), index);
+  return toFoodFacts(chooseFood(result.foods || [], term));
+}
+
+/**
+ * Resolves every ingredient of one scan to nutrient facts, asking USDA only for
+ * terms that are neither in this instance's memory nor in the shared table.
+ */
+// deno-lint-ignore no-explicit-any
+async function resolveFacts(terms: string[], admin: any): Promise<Map<string, FoodFacts | null>> {
+  const resolved = new Map<string, FoodFacts | null>();
+  const unknown: string[] = [];
+
+  for (const term of terms) {
+    if (memoryCache.has(term)) resolved.set(term, memoryCache.get(term) ?? null);
+    else if (!resolved.has(term)) unknown.push(term);
+  }
+
+  if (unknown.length) {
+    const { data } = await admin
+      .from('usda_food_cache')
+      .select('search_term, fdc_id, calories, protein, carbs, fat, fiber, fetched_at')
+      .in('search_term', unknown);
+
+    for (const row of data ?? []) {
+      const ageDays = (Date.now() - new Date(row.fetched_at).getTime()) / 86_400_000;
+      const ttl = row.fdc_id ? CACHE_TTL_HIT_DAYS : CACHE_TTL_MISS_DAYS;
+      if (ageDays > ttl) continue;
+      const facts: FoodFacts | null = row.fdc_id
+        ? {
+          fdcId: row.fdc_id,
+          calories: Number(row.calories),
+          protein: Number(row.protein),
+          carbs: Number(row.carbs),
+          fat: Number(row.fat),
+          fiber: Number(row.fiber),
+        }
+        : null;
+      resolved.set(row.search_term, facts);
+      rememberInMemory(row.search_term, facts);
+    }
+  }
+
+  const missing = [...new Set(unknown.filter((term) => !resolved.has(term)))];
+  const fetched = await Promise.all(missing.map(async (term) => ({ term, facts: await searchUsda(term) })));
+
+  for (const { term, facts } of fetched) {
+    resolved.set(term, facts);
+    rememberInMemory(term, facts);
+  }
+
+  if (fetched.length) {
+    // Writing the cache must never fail a scan the user already paid for.
+    await admin.from('usda_food_cache').upsert(
+      fetched.map(({ term, facts }) => ({
+        search_term: term,
+        fdc_id: facts?.fdcId ?? null,
+        calories: facts?.calories ?? 0,
+        protein: facts?.protein ?? 0,
+        carbs: facts?.carbs ?? 0,
+        fat: facts?.fat ?? 0,
+        fiber: facts?.fiber ?? 0,
+        fetched_at: new Date().toISOString(),
+      })),
+      { onConflict: 'search_term' },
+    ).then(() => undefined, () => undefined);
+  }
+
+  return resolved;
 }
 
 // deno-lint-ignore no-explicit-any
-async function resolveDetection(detection: any): Promise<Result> {
-  const classificationError = classifyDetection(detection);
+async function resolveDetection(detection: any, admin: any, source: 'photo' | 'text' = 'photo'): Promise<Result> {
+  const classificationError = classifyDetection(detection, source);
   if (classificationError) return classificationError;
 
-  const items = await Promise.all(detection.items.map(resolveUsdaItem));
+  // deno-lint-ignore no-explicit-any
+  const terms = detection.items.map((item: any) => normalizeSearchTerm(item.searchTermEn));
+  const facts = await resolveFacts(terms, admin);
+  // deno-lint-ignore no-explicit-any
+  const items = detection.items.map((item: any, index: number) =>
+    buildMealItem(item, facts.get(normalizeSearchTerm(item.searchTermEn)) ?? null, index));
   // deno-lint-ignore no-explicit-any
   const warnings = items.some((item: any) => item.calories === 0)
     ? ['Mindestens eine Zutat konnte in USDA nicht eindeutig zugeordnet werden und muss geprüft werden.']
@@ -139,7 +240,7 @@ async function resolveDetection(detection: any): Promise<Result> {
 }
 
 // deno-lint-ignore no-explicit-any
-async function analyzePhoto(input: any): Promise<Result> {
+async function analyzePhoto(input: any, admin: any): Promise<Result> {
   if (!validateAnalysisInput(input)) {
     return { status: 400, body: { code: 'invalid_input', message: 'Ungültiges Fotoformat.' } };
   }
@@ -152,11 +253,11 @@ async function analyzePhoto(input: any): Promise<Result> {
       text: 'Analysiere genau eine sichtbare Mahlzeit. Erkenne nur sichtbare Lebensmittel, schätze Gramm-Portionen, markiere unsichere Saucen als optional und gib deutsche Namen plus kurze englische USDA-Suchbegriffe aus. Gib keine Kalorien oder Makros aus. Bei Unschärfe clarity=unclear; bei mehreren getrennten Tellern dishCount>1.',
     },
     { type: 'input_image', image_url: `data:${input.mimeType};base64,${input.imageBase64}`, detail: 'low' },
-  ]));
+  ]), admin);
 }
 
 // deno-lint-ignore no-explicit-any
-async function analyzeDescription(input: any): Promise<Result> {
+async function analyzeDescription(input: any, admin: any): Promise<Result> {
   const description = typeof input?.description === 'string' ? input.description.trim() : '';
   if (description.length < 3 || description.length > 500) {
     return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
@@ -164,7 +265,7 @@ async function analyzeDescription(input: any): Promise<Result> {
   return resolveDetection(await requestDetection([{
     type: 'input_text',
     text: `Strukturiere genau die beschriebene Mahlzeit in Zutaten und realistische Gramm-Portionen. Erfinde keine nicht genannten Lebensmittel. Markiere unklare Mengen oder Saucen als optional bzw. medium confidence. Gib deutsche Namen und kurze englische USDA-Suchbegriffe aus, aber keine Kalorien oder Makros. Beschreibung: ${description}`,
-  }]));
+  }]), admin, 'text');
 }
 
 async function lookupBarcode(barcode: string): Promise<Result> {
@@ -255,7 +356,9 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     });
   }
 
-  const result = route === '/v1/analyze' ? await analyzePhoto(payload) : await analyzeDescription(payload);
+  const result = route === '/v1/analyze'
+    ? await analyzePhoto(payload, context.supabaseAdmin)
+    : await analyzeDescription(payload, context.supabaseAdmin);
   return reply(result);
 });
 

@@ -2,9 +2,11 @@ import 'dotenv/config';
 import { createServer } from 'node:http';
 
 import {
+  buildMealItem,
   chooseFood,
   classifyDetection,
-  mapUsdaFood,
+  normalizeSearchTerm,
+  toFoodFacts,
   validateAnalysisInput,
 } from './core.mjs';
 
@@ -139,16 +141,24 @@ async function detectDescription(description) {
   }]);
 }
 
+// The hosted gateway caches USDA lookups in a shared table. Development has no
+// such table, so it keeps the same behaviour in memory for the process
+// lifetime — enough to stop a debugging session burning the hourly USDA quota.
+const usdaCache = new Map();
+
 async function resolveUsdaItem(item, index) {
-  const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: item.searchTermEn, pageSize: 8 }),
-  });
-  if (!response.ok) throw new Error(`usda_${response.status}`);
-  const result = await response.json();
-  const food = chooseFood(result.foods || []);
-  return mapUsdaFood(item, food, index);
+  const term = normalizeSearchTerm(item.searchTermEn);
+  if (!usdaCache.has(term)) {
+    const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: term, pageSize: 8 }),
+    });
+    if (!response.ok) throw new Error(`usda_${response.status}`);
+    const result = await response.json();
+    usdaCache.set(term, toFoodFacts(chooseFood(result.foods || [], term)));
+  }
+  return buildMealItem(item, usdaCache.get(term), index);
 }
 
 async function analyzeMeal(input) {
@@ -160,8 +170,8 @@ async function analyzeMeal(input) {
   return resolveDetection(detection);
 }
 
-async function resolveDetection(detection) {
-  const classificationError = classifyDetection(detection);
+async function resolveDetection(detection, source = 'photo') {
+  const classificationError = classifyDetection(detection, source);
   if (classificationError) return classificationError;
 
   const items = await Promise.all(detection.items.map(resolveUsdaItem));
@@ -176,7 +186,7 @@ async function analyzeDescription(input) {
   if (description.length < 3 || description.length > 500) {
     return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
   }
-  return resolveDetection(await detectDescription(description));
+  return resolveDetection(await detectDescription(description), 'text');
 }
 
 async function lookupBarcode(barcode) {
