@@ -28,7 +28,7 @@ function roundTo(value: number, step: number) {
 }
 
 export function calculateDailyTargets(profile: UserProfile): DailyTargets {
-  // Gender-neutral midpoint of Mifflin-St Jeor. Kadro deliberately presents this
+  // Gender-neutral midpoint of Mifflin-St Jeor. Kandro deliberately presents this
   // as a wellness estimate because onboarding does not collect sex or body fat.
   const restingEstimate = 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age - 78;
   const calories = Math.min(
@@ -56,7 +56,7 @@ export function activityLabel(activity: ActivityLevel) {
 }
 
 export function estimatedPace(goal: NutritionGoal) {
-  if (goal === 'lose') return 'ca. 0,3 kg / Woche';
+  if (goal === 'lose') return 'ca. 0,3 kg/Wo.';
   if (goal === 'gain') return 'ruhiger Aufbau';
   return 'Gewicht halten';
 }

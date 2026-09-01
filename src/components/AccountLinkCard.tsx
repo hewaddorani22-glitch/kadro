@@ -102,7 +102,7 @@ export function AccountLinkCard() {
     return (
       <Card style={styles.card}>
         <AccountHeader icon="cloud-offline-outline" title="Cloud nach Löschung deaktiviert" />
-        <Text style={styles.body}>Kadro legt nicht automatisch wieder einen Gast-Account an. Du kannst die Cloud später bewusst neu aktivieren.</Text>
+        <Text style={styles.body}>Kandro legt nicht automatisch wieder einen Gast-Account an. Du kannst die Cloud später bewusst neu aktivieren.</Text>
         <PrimaryButton
           disabled={busy}
           icon="cloud-upload-outline"
@@ -119,7 +119,7 @@ export function AccountLinkCard() {
     return (
       <Card style={[styles.card, styles.linkedCard]}>
         <AccountHeader icon="shield-checkmark" title="Konto gesichert" />
-        <Text style={styles.body}>Dein Verlauf bleibt mit derselben Kadro-ID verknüpft.</Text>
+        <Text style={styles.body}>Dein Verlauf bleibt mit derselben Kandro-ID verknüpft.</Text>
         <View style={styles.emailPill}>
           <Ionicons color={colors.accentDeep} name="mail-outline" size={16} />
           <Text style={styles.emailText}>{account.email}</Text>
@@ -205,7 +205,7 @@ export function AccountLinkCard() {
   return (
     <Card style={styles.card}>
       <AccountHeader icon="shield-outline" title="Verlauf dauerhaft sichern" />
-      <Text style={styles.body}>Verknüpfe deine aktuelle Kadro-ID mit einer E-Mail. Mahlzeiten und Ziele bleiben dabei erhalten.</Text>
+      <Text style={styles.body}>Verknüpfe deine aktuelle Kandro-ID mit einer E-Mail. Mahlzeiten und Ziele bleiben dabei erhalten.</Text>
       <View style={styles.form}>
         <AccountInput autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder="E-Mail-Adresse" value={email} />
         <PrimaryButton

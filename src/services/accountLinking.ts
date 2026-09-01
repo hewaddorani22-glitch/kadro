@@ -134,7 +134,7 @@ export async function signInToExistingAccount(email: string, password: string): 
 export function accountLinkErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   const normalized = message.toLocaleLowerCase('en-US');
-  if (normalized.includes('manual linking')) return 'Die sichere Kontoverknüpfung muss im Kadro-Projekt noch aktiviert werden.';
+  if (normalized.includes('manual linking')) return 'Die sichere Kontoverknüpfung muss im Kandro-Projekt noch aktiviert werden.';
   if (normalized.includes('already') || normalized.includes('registered')) return 'Diese E-Mail gehört bereits zu einem Konto. Nutze unten „Vorhandenes Konto laden“.';
   if (normalized.includes('rate') || normalized.includes('seconds')) return 'Bitte warte kurz, bevor du eine neue E-Mail anforderst.';
   if (normalized.includes('invalid login')) return 'E-Mail oder Passwort ist nicht korrekt.';

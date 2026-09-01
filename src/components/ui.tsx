@@ -1,8 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { useSegments } from 'expo-router';
 import { PropsWithChildren, ReactNode } from 'react';
 import {
   Image,
   ImageSourcePropType,
+  Platform,
   Pressable,
   ScrollView,
   StyleProp,
@@ -11,9 +13,10 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radii, spacing } from '@/constants/theme';
+import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
 
 type ButtonProps = {
   label: string;
@@ -73,6 +76,17 @@ export function Screen({
   scroll = true,
   style,
 }: PropsWithChildren<{ scroll?: boolean; style?: StyleProp<ViewStyle> }>) {
+  const insets = useSafeAreaInsets();
+  const segments = useSegments();
+  // Tab screens scroll underneath the floating tab bar, every other screen only
+  // has to clear the home indicator. Both used to share one hard-coded 126pt
+  // padding, which cut content off on tall-inset phones and wasted space on the
+  // rest.
+  const underTabBar = segments[0] === '(tabs)';
+  const paddingBottom = underTabBar
+    ? TAB_BAR_CONTENT_HEIGHT + insets.bottom + spacing.xl
+    : insets.bottom + spacing.xxl;
+
   if (!scroll) {
     return (
       <SafeAreaView edges={['top']} style={[styles.safe, style]}>
@@ -84,8 +98,11 @@ export function Screen({
   return (
     <SafeAreaView edges={['top']} style={[styles.safe, style]}>
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        contentInsetAdjustmentBehavior="automatic"
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom }]}
+        contentInsetAdjustmentBehavior="never"
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
         {children}
@@ -231,7 +248,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 126,
     gap: spacing.lg,
   },
   card: {
@@ -323,7 +339,7 @@ const styles = StyleSheet.create({
   },
   macroCard: {
     flex: 1,
-    minWidth: 102,
+    minWidth: 0,
     padding: 14,
     borderRadius: 20,
     gap: 4,

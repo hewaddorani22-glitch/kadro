@@ -60,11 +60,11 @@ export default function ProfileScreen() {
         <AccountLinkCard />
       </View>
 
-      <Pressable accessibilityLabel="Kadro Pro ansehen" accessibilityRole="button" onPress={() => router.push('/paywall')}>
+      <Pressable accessibilityLabel="Kandro Pro ansehen" accessibilityRole="button" onPress={() => router.push('/paywall')}>
         <Card style={styles.proCard}>
           <View style={styles.proIcon}><Ionicons color={colors.text} name="infinite" size={26} /></View>
           <View style={styles.proCopy}>
-            <Text style={styles.proTitle}>{subscriptionStatus === 'active' ? 'Kadro Pro ist aktiv' : 'Kadro Pro'}</Text>
+            <Text style={styles.proTitle}>{subscriptionStatus === 'active' ? 'Kandro Pro ist aktiv' : 'Kandro Pro'}</Text>
             <Text style={styles.proText}>{subscriptionStatus === 'active' ? 'Dein Zugang ist auf diesem Konto freigeschaltet.' : 'Unbegrenzte Scans. Ein Plan, der sich weiter anpasst.'}</Text>
           </View>
           <View style={styles.tryPill}><Text style={styles.tryText}>{subscriptionStatus === 'active' ? 'AKTIV' : 'ANSEHEN'}</Text></View>
@@ -118,10 +118,10 @@ export default function ProfileScreen() {
 
       <View style={styles.wellnessNote}>
         <Ionicons color={colors.muted} name="information-circle-outline" size={18} />
-        <Text style={styles.wellnessText}>Kadro liefert allgemeine Wellness-Schätzungen und ist kein medizinischer Dienst.</Text>
+        <Text style={styles.wellnessText}>Kandro liefert allgemeine Wellness-Schätzungen und ist kein medizinischer Dienst.</Text>
       </View>
 
-      <Text style={styles.version}>Kadro · MVP 0.1.0</Text>
+      <Text style={styles.version}>Kandro · Version 1.0.0</Text>
     </Screen>
   );
 }

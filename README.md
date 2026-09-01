@@ -1,8 +1,8 @@
-# Kadro
+# Kandro
 
 An iOS-first, production-shaped nutrition MVP built with React Native, Expo Router and TypeScript.
 
-[![CI](https://github.com/hewaddorani22-glitch/kadro/actions/workflows/ci.yml/badge.svg)](https://github.com/hewaddorani22-glitch/kadro/actions/workflows/ci.yml)
+[![CI](https://github.com/hewaddorani22-glitch/kandro/actions/workflows/ci.yml/badge.svg)](https://github.com/hewaddorani22-glitch/kandro/actions/workflows/ci.yml)
 
 > Die Aufstellung deines Tages.
 
@@ -20,7 +20,7 @@ An iOS-first, production-shaped nutrition MVP built with React Native, Expo Rout
 
 The demo meal remains available as a deterministic fallback. Real scans use OpenRouter or direct OpenAI only for visible-food and portion detection, then resolve nutrition through USDA FoodData Central. Typed meal descriptions use the same structured detection and USDA boundary. The barcode adapter reads packaged-food data from Open Food Facts and starts at 100 g for explicit correction. RevenueCat-backed purchase and restore actions use a non-billing preview until its public SDK keys and offering are configured. Typed integration contracts keep raw provider payloads out of the UI.
 
-The first complete scan is free. A confirmed result is saved automatically so closing the screen cannot silently lose the meal; subsequent scans require an active `kadro_pro` RevenueCat entitlement. The paywall still appears only after the first result and recommendation Aha moment.
+The first complete scan is free. A confirmed result is saved automatically so closing the screen cannot silently lose the meal; subsequent scans require an active `kandro_pro` RevenueCat entitlement. The paywall still appears only after the first result and recommendation Aha moment.
 
 When configured, Supabase provides an anonymous authenticated session, RLS-isolated profiles, daily targets, confirmed meals, ingredients, recommendation impressions, and acceptance/rejection feedback. The profile screen can upgrade that same anonymous user ID to a verified email/password account without placing a login wall before the first scan. Without Supabase configuration the app remains fully local-first.
 
@@ -50,7 +50,7 @@ npm run web
 
 ## Enable real photo analysis
 
-The Expo app never receives an OpenRouter, OpenAI or USDA secret. A small local gateway holds those keys and returns normalized Kadro domain data.
+The Expo app never receives an OpenRouter, OpenAI or USDA secret. A small local gateway holds those keys and returns normalized Kandro domain data.
 
 1. Copy `.env.example` to `.env`.
 2. For OpenRouter, set `AI_PROVIDER=openrouter` plus `OPENROUTER_API_KEY`. Alternatively use `AI_PROVIDER=openai` plus `OPENAI_API_KEY`.
@@ -68,13 +68,13 @@ Check the local gateway with `curl http://127.0.0.1:8787/health`. The right-hand
 ## Enable Day 3 cloud sync
 
 1. Create a Supabase project in an EU region and enable **Anonymous Sign-Ins** under Authentication settings.
-2. Sign in with the repository's isolated CLI profile, link the project, and apply the checked-in schema. The ignored CLI home keeps Kadro credentials separate from any default Supabase CLI account:
+2. Sign in with the repository's isolated CLI profile, link the project, and apply the checked-in schema. The ignored CLI home keeps Kandro credentials separate from any default Supabase CLI account:
 
 ```bash
 export SUPABASE_HOME="$PWD/supabase/.cli-home"
-npx supabase login --profile "$PWD/supabase/kadro.profile.yml" --name kadro
-npx supabase link --profile "$PWD/supabase/kadro.profile.yml" --project-ref YOUR_PROJECT_REF
-npx supabase db push --linked --profile "$PWD/supabase/kadro.profile.yml"
+npx supabase login --profile "$PWD/supabase/kandro.profile.yml" --name kandro
+npx supabase link --profile "$PWD/supabase/kandro.profile.yml" --project-ref YOUR_PROJECT_REF
+npx supabase db push --linked --profile "$PWD/supabase/kandro.profile.yml"
 ```
 
 3. From the project's Connect dialog, put only these public client values in `.env`:
@@ -84,9 +84,9 @@ EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-4. Under **Authentication → Sign In / Providers**, keep **Anonymous Sign-Ins** and email confirmation enabled, enable **Allow manual linking**, then save. Kadro starts the upgrade with `updateUser`, verifies the email change, and only then allows a password to be set, so the existing user ID and its RLS-owned rows are retained.
+4. Under **Authentication → Sign In / Providers**, keep **Anonymous Sign-Ins** and email confirmation enabled, enable **Allow manual linking**, then save. Kandro starts the upgrade with `updateUser`, verifies the email change, and only then allows a password to be set, so the existing user ID and its RLS-owned rows are retained.
 
-The hosted default mailer sends a confirmation link. Kadro also accepts a 6- to 8-digit code when a custom SMTP provider and an email-change template containing `{{ .Token }}` are configured.
+The hosted default mailer sends a confirmation link. Kandro also accepts a 6- to 8-digit code when a custom SMTP provider and an email-change template containing `{{ .Token }}` are configured.
 
 Never put a Supabase secret key or legacy `service_role` key in an `EXPO_PUBLIC_` variable. The migration revokes anonymous table access, grants only the required authenticated operations, and applies owner-only RLS to every exposed table. Meal photos are not stored in Supabase.
 
@@ -109,19 +109,19 @@ OpenRouter requests require providers that support every requested parameter, de
 
 ## Enable RevenueCat subscriptions
 
-1. Create a RevenueCat project and an iOS app with bundle ID `com.hewaddorani.kadro`.
-2. Create the entitlement `kadro_pro`.
+1. Create a RevenueCat project and an iOS app with bundle ID `com.hewaddorani.kandro`.
+2. Create the entitlement `kandro_pro`.
 3. Add annual and monthly subscription products to that entitlement, then add them as the standard annual and monthly packages in the current Offering.
 4. Copy the public RevenueCat **Test Store** SDK key into `.env`:
 
 ```bash
 EXPO_PUBLIC_REVENUECAT_TEST_API_KEY=test_...
-EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=kadro_pro
+EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=kandro_pro
 ```
 
 Expo Go then displays the RevenueCat Test Store offering and safely simulates purchase and restore without a real charge. Real Apple or Google sandbox purchases require the corresponding public platform SDK key plus a development/TestFlight build; Expo Go cannot execute native StoreKit or Play Billing transactions.
 
-The app uses the current Supabase user ID as RevenueCat's App User ID, so an email-upgraded Kadro account keeps a stable purchase identity. Only public SDK keys belong in `EXPO_PUBLIC_` variables—never a RevenueCat secret API key.
+The app uses the current Supabase user ID as RevenueCat's App User ID, so an email-upgraded Kandro account keeps a stable purchase identity. Only public SDK keys belong in `EXPO_PUBLIC_` variables—never a RevenueCat secret API key.
 
 ## Enable privacy-minimal analytics
 
@@ -133,7 +133,7 @@ EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com
 EXPO_PUBLIC_POSTHOG_ENABLED=true
 ```
 
-Restart Expo after changing these values. Kadro sends only a typed allowlist of anonymous funnel events. Person profiles, GeoIP lookup, lifecycle autocapture, touch autocapture, feature flags, push capture, session replay, and health-value properties are disabled. Device name/model/manufacturer, locale, timezone, and screen dimensions are removed before every send. Users can opt out under **Du → Einstellungen → Anonyme Nutzungsanalyse**. No photo, email, food name, ingredient, calorie value, macro value, or Supabase user ID is sent.
+Restart Expo after changing these values. Kandro sends only a typed allowlist of anonymous funnel events. Person profiles, GeoIP lookup, lifecycle autocapture, touch autocapture, feature flags, push capture, session replay, and health-value properties are disabled. Device name/model/manufacturer, locale, timezone, and screen dimensions are removed before every send. Users can opt out under **Du → Einstellungen → Anonyme Nutzungsanalyse**. No photo, email, food name, ingredient, calorie value, macro value, or Supabase user ID is sent.
 
 Collection starts opted out even when the integration is available. The user must enable **Anonyme Nutzungsanalyse** deliberately in Profile; the choice is persisted by PostHog.
 
@@ -165,7 +165,7 @@ Contributions should follow [CONTRIBUTING.md](./CONTRIBUTING.md). Pull requests 
 
 - Expo SDK 54, compatible with the current App Store build of Expo Go
 - React Native + Expo Router + TypeScript
-- Kadro brand system and German product UI
+- Kandro brand system and German product UI
 - Real camera preview when permission is granted
 - Local development analysis gateway; optional Supabase Auth and data sync; no hosted production analysis gateway or live billing yet
 - Optional anonymous PostHog product analytics; native Sentry reporting begins with the development/TestFlight build

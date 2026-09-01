@@ -2,10 +2,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { KadroMark } from '@/components/KadroMark';
+import { KandroMark } from '@/components/KandroMark';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { colors, radii, spacing } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -40,6 +40,7 @@ const TOTAL_STEPS = 6;
 
 export default function OnboardingScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { completeOnboarding } = useApp();
   const [step, setStep] = useState(0);
   const [goal, setGoal] = useState('Gewicht reduzieren');
@@ -122,7 +123,7 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
       <View style={styles.topBar}>
         <Pressable
           accessibilityLabel="Zurück"
@@ -144,62 +145,70 @@ export default function OnboardingScreen() {
 
       <ProgressBar value={(step + 1) / TOTAL_STEPS} />
 
-      <View style={styles.content}>
-        <View style={styles.headingBlock}>
-          <View style={styles.brandMark}><KadroMark size={46} /></View>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.subtitle}>{getSubtitle(step)}</Text>
-        </View>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.scroll}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          style={styles.scroll}
+        >
+          <View style={styles.headingBlock}>
+            <View style={styles.brandMark}><KandroMark size={46} /></View>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>{getSubtitle(step)}</Text>
+          </View>
 
-        <View style={styles.body}>
-          {step === 0 ? (
-            <ChoiceList choices={goalChoices} selected={goal} onSelect={setGoal} />
-          ) : null}
-          {step === 1 ? (
-            <ProfileNumbers age={age} displayName={displayName} height={height} setAge={setAge} setDisplayName={setDisplayName} setHeight={setHeight} setWeight={setWeight} weight={weight} />
-          ) : null}
-          {step === 2 ? (
-            <ChoiceList choices={activityChoices} selected={activity} onSelect={setActivity} />
-          ) : null}
-          {step === 3 ? (
-            <View style={styles.chips}>
-              {[...preferenceChoices, { id: 'none', label: 'Keine Präferenz' }].map((item) => {
-                const selected = item.id === 'none' ? preferences.length === 0 : preferences.includes(item.id);
-                return (
-                  <Pressable
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: selected }}
-                    key={item.id}
-                    onPress={() => item.id === 'none' ? setPreferences([]) : togglePreference(item.id)}
-                    style={[styles.chip, selected && styles.chipSelected]}
-                  >
-                    {selected ? <Ionicons color={colors.text} name="checkmark" size={17} /> : null}
-                    <Text style={styles.chipText}>{item.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : null}
-          {step === 4 ? <PlanCalculation goal={goal} activity={activity} /> : null}
-          {step === 5 ? <StartingPlan goal={draftProfile.goal} targets={startingTargets} /> : null}
-        </View>
-      </View>
+          <View style={styles.body}>
+            {step === 0 ? (
+              <ChoiceList choices={goalChoices} selected={goal} onSelect={setGoal} />
+            ) : null}
+            {step === 1 ? (
+              <ProfileNumbers age={age} displayName={displayName} height={height} setAge={setAge} setDisplayName={setDisplayName} setHeight={setHeight} setWeight={setWeight} weight={weight} />
+            ) : null}
+            {step === 2 ? (
+              <ChoiceList choices={activityChoices} selected={activity} onSelect={setActivity} />
+            ) : null}
+            {step === 3 ? (
+              <View style={styles.chips}>
+                {[...preferenceChoices, { id: 'none', label: 'Keine Präferenz' }].map((item) => {
+                  const selected = item.id === 'none' ? preferences.length === 0 : preferences.includes(item.id);
+                  return (
+                    <Pressable
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: selected }}
+                      key={item.id}
+                      onPress={() => item.id === 'none' ? setPreferences([]) : togglePreference(item.id)}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                    >
+                      {selected ? <Ionicons color={colors.text} name="checkmark" size={17} /> : null}
+                      <Text style={styles.chipText}>{item.label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+            {step === 4 ? <PlanCalculation goal={goal} activity={activity} /> : null}
+            {step === 5 ? <StartingPlan goal={draftProfile.goal} targets={startingTargets} /> : null}
+          </View>
+        </ScrollView>
 
-      <View style={styles.footer}>
-        <Text style={styles.disclaimer}>Ziele sind Schätzwerte für allgemeines Wohlbefinden und kein medizinischer Rat.</Text>
-        <PrimaryButton
-          icon={step === TOTAL_STEPS - 1 ? 'camera' : 'arrow-forward'}
-          label={step === TOTAL_STEPS - 1 ? 'Erste Mahlzeit scannen' : 'Weiter'}
-          onPress={next}
-        />
-      </View>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+          <Text style={styles.disclaimer}>Ziele sind Schätzwerte für allgemeines Wohlbefinden und kein medizinischer Rat.</Text>
+          <PrimaryButton
+            icon={step === TOTAL_STEPS - 1 ? 'camera' : 'arrow-forward'}
+            label={step === TOTAL_STEPS - 1 ? 'Erste Mahlzeit scannen' : 'Weiter'}
+            onPress={next}
+          />
+        </View>
+      </KeyboardAvoidingView>
 
       <Modal animationType="fade" onRequestClose={() => setShowConsent(false)} transparent visible={showConsent}>
         <View style={styles.modalScrim}>
-          <View accessibilityViewIsModal style={styles.consentSheet}>
+          <View accessibilityViewIsModal style={[styles.consentSheet, { paddingBottom: insets.bottom + 18 }]}>
             <View style={styles.consentIcon}><Ionicons color={colors.text} name="shield-checkmark-outline" size={26} /></View>
             <Text accessibilityRole="header" style={styles.consentTitle}>Deine Daten, deine Entscheidung</Text>
-            <Text style={styles.consentText}>Ich willige ausdrücklich ein, dass Kadro meine Ernährungs-, Ziel- und Mahlzeitendaten verarbeitet, um Tagesstände und Empfehlungen bereitzustellen. Ich kann diese Einwilligung für die Zukunft widerrufen und meinen Account samt Daten löschen.</Text>
+            <Text style={styles.consentText}>Ich willige ausdrücklich ein, dass Kandro meine Ernährungs-, Ziel- und Mahlzeitendaten verarbeitet, um Tagesstände und Empfehlungen bereitzustellen. Ich kann diese Einwilligung für die Zukunft widerrufen und meinen Account samt Daten löschen.</Text>
             <View style={styles.consentLinks}>
               <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/privacy'); }}><Text style={styles.consentLink}>Datenschutz lesen</Text></Pressable>
               <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/terms'); }}><Text style={styles.consentLink}>Bedingungen lesen</Text></Pressable>
@@ -325,7 +334,7 @@ function StartingPlan({ goal, targets }: { goal: NutritionGoal; targets: ReturnT
           <Text style={styles.planStatLabel}>Protein</Text>
         </View>
         <View style={styles.planStat}>
-          <Text style={styles.planStatValue}>{estimatedPace(goal)}</Text>
+          <Text adjustsFontSizeToFit numberOfLines={1} style={styles.planStatValue}>{estimatedPace(goal)}</Text>
           <Text style={styles.planStatLabel}>geschätztes Tempo</Text>
         </View>
         <View style={styles.planStat}>
@@ -337,7 +346,7 @@ function StartingPlan({ goal, targets }: { goal: NutritionGoal; targets: ReturnT
         <Ionicons color={colors.accentDeep} name="sync" size={18} />
         <Text style={styles.adaptsText}>Dein Tag stellt sich nach jeder Mahlzeit neu auf</Text>
       </View>
-      <Text style={styles.safetyText}>Kadro vermeidet extreme Zielwerte. Wenn du gesundheitliche Beschwerden hast, besprich Veränderungen bitte ärztlich.</Text>
+      <Text style={styles.safetyText}>Kandro vermeidet extreme Zielwerte. Wenn du gesundheitliche Beschwerden hast, besprich Veränderungen bitte ärztlich.</Text>
     </View>
   );
 }
@@ -350,13 +359,14 @@ const styles = StyleSheet.create({
   stepLabel: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   skip: { minWidth: 92, color: colors.muted, fontSize: 13, fontWeight: '600', textAlign: 'right' },
   skipPlaceholder: { width: 92 },
-  content: { flex: 1, paddingTop: 26 },
+  scroll: { flex: 1 },
+  content: { flexGrow: 1, paddingTop: 26, paddingBottom: 8 },
   headingBlock: { gap: 10 },
   brandMark: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
   title: { color: colors.text, fontSize: 34, lineHeight: 40, fontWeight: '700', letterSpacing: -1.1 },
   subtitle: { color: colors.muted, fontSize: 16, lineHeight: 23, maxWidth: 360 },
-  body: { flex: 1, justifyContent: 'center', paddingVertical: 22 },
-  footer: { gap: 12, paddingBottom: 12 },
+  body: { flexGrow: 1, justifyContent: 'center', paddingVertical: 22 },
+  footer: { gap: 12, paddingTop: 8, backgroundColor: colors.background },
   disclaimer: { color: colors.muted, fontSize: 11, lineHeight: 16, textAlign: 'center' },
   choiceList: { gap: 12 },
   choice: { minHeight: 82, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 13 },
@@ -366,11 +376,6 @@ const styles = StyleSheet.create({
   choiceTextBlock: { flex: 1, gap: 3 },
   choiceTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   choiceDetail: { color: colors.muted, fontSize: 13 },
-  numberStep: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28 },
-  numberButton: { width: 58, height: 58, borderRadius: 29, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  numberCenter: { minWidth: 128, alignItems: 'center' },
-  number: { color: colors.text, fontSize: 68, lineHeight: 76, fontWeight: '700', letterSpacing: -2 },
-  numberUnit: { color: colors.muted, fontSize: 15, fontWeight: '600' },
   metrics: { gap: 12 },
   nameField: { gap: 7 },
   nameLabel: { color: colors.text, fontSize: 13, fontWeight: '600' },
@@ -398,14 +403,14 @@ const styles = StyleSheet.create({
   caloriesLabel: { color: colors.muted, fontSize: 14 },
   divider: { width: '100%', height: 1, backgroundColor: colors.border, marginVertical: 22 },
   planStats: { width: '100%', flexDirection: 'row' },
-  planStat: { flex: 1, alignItems: 'center', gap: 5 },
+  planStat: { flex: 1, minWidth: 0, paddingHorizontal: 4, alignItems: 'center', gap: 5 },
   planStatValue: { color: colors.text, fontSize: 15, fontWeight: '700' },
   planStatLabel: { color: colors.muted, fontSize: 11, textAlign: 'center' },
   adaptsRow: { marginTop: 22, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.neutralSoft, borderRadius: radii.pill, paddingHorizontal: 13, paddingVertical: 9 },
   adaptsText: { color: colors.accentDeep, fontSize: 12, fontWeight: '700' },
   safetyText: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 16 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'flex-end' },
-  consentSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 24, paddingBottom: 18, gap: 14 },
+  consentSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 24, gap: 14 },
   consentIcon: { width: 50, height: 50, borderRadius: 18, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   consentTitle: { color: colors.text, fontSize: 25, lineHeight: 30, fontWeight: '700' },
   consentText: { color: colors.muted, fontSize: 13, lineHeight: 20 },

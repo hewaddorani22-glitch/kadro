@@ -74,4 +74,4 @@ if (failures.length) {
   throw new Error(`Supabase schema validation failed:\n- ${failures.join('\n- ')}`);
 }
 
-console.log(`Validated ${tables.length} RLS-protected Kadro tables and ID-preserving account linking.`);
+console.log(`Validated ${tables.length} RLS-protected Kandro tables and ID-preserving account linking.`);

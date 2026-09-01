@@ -3,8 +3,8 @@ import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-ca
 import * as Haptics from 'expo-haptics';
 import { usePathname, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Linking, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -23,6 +23,7 @@ export default function ScanScreen() {
   const [showDescription, setShowDescription] = useState(false);
   const [barcodeBusy, setBarcodeBusy] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const insets = useSafeAreaInsets();
   const cameraActive = pathname.endsWith('/scan') && mode !== 'description' && permission?.granted === true;
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export default function ScanScreen() {
     if (permission && !permission.canAskAgain) {
       Alert.alert(
         'Kamera in den Einstellungen erlauben',
-        'Öffne die iPhone-Einstellungen, wähle Expo Go und aktiviere dort die Kamera.',
+        'Öffne die Einstellungen deines Geräts, wähle Kandro und aktiviere dort die Kamera.',
         [
           { text: 'Abbrechen', style: 'cancel' },
           { text: 'Einstellungen öffnen', onPress: () => void Linking.openSettings() },
@@ -48,8 +49,8 @@ export default function ScanScreen() {
       Alert.alert(
         'Kamerazugriff fehlt',
         nextPermission.canAskAgain
-          ? 'Bitte erlaube den Kamerazugriff, damit Kadro dein Essen fotografieren kann.'
-          : 'Aktiviere die Kamera bitte in den iPhone-Einstellungen unter Expo Go.',
+          ? 'Bitte erlaube den Kamerazugriff, damit Kandro dein Essen fotografieren kann.'
+          : 'Aktiviere die Kamera bitte in den Geräteeinstellungen unter Kandro.',
       );
     }
   };
@@ -163,16 +164,20 @@ export default function ScanScreen() {
           <View style={styles.circlePlaceholder} />
         </View>
 
-        <View style={styles.guideArea}>
-          <View style={styles.cornerTopLeft} />
-          <View style={styles.cornerTopRight} />
-          <View style={styles.cornerBottomLeft} />
-          <View style={styles.cornerBottomRight} />
-          <View style={styles.tipPill}>
-            <View style={styles.tipDot} />
-            <Text style={styles.tipText}>{mode === 'barcode' ? 'Barcode ruhig in den Rahmen halten' : 'Den ganzen Teller sichtbar halten'}</Text>
+        {cameraActive ? (
+          <View style={styles.guideArea}>
+            <View style={styles.cornerTopLeft} />
+            <View style={styles.cornerTopRight} />
+            <View style={styles.cornerBottomLeft} />
+            <View style={styles.cornerBottomRight} />
+            <View style={styles.tipPill}>
+              <View style={styles.tipDot} />
+              <Text style={styles.tipText}>{mode === 'barcode' ? 'Barcode ruhig in den Rahmen halten' : 'Den ganzen Teller sichtbar halten'}</Text>
+            </View>
           </View>
-        </View>
+        ) : (
+          <View style={styles.guideSpacer} />
+        )}
 
         <View style={styles.controls}>
           <View accessibilityRole="radiogroup" style={styles.modeLabel}>
@@ -207,8 +212,8 @@ export default function ScanScreen() {
       </SafeAreaView>
 
       <Modal animationType="fade" onRequestClose={() => { setShowDescription(false); setMode('photo'); }} transparent visible={showDescription}>
-        <View style={styles.modalScrim}>
-          <View accessibilityViewIsModal style={styles.describeSheet}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
+          <View accessibilityViewIsModal style={[styles.describeSheet, { paddingBottom: insets.bottom + 22 }]}>
             <Text accessibilityRole="header" style={styles.describeTitle}>Was hast du gegessen?</Text>
             <Text style={styles.describeText}>Lebensmittel und ungefähre Mengen helfen. Du kannst alles danach korrigieren.</Text>
             <TextInput
@@ -230,7 +235,7 @@ export default function ScanScreen() {
               <Text style={styles.describeCancelText}>Abbrechen</Text>
             </Pressable>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -262,6 +267,7 @@ const styles = StyleSheet.create({
   titlePill: { height: 38, borderRadius: 19, backgroundColor: 'rgba(17,19,15,0.58)', paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 7 },
   screenTitle: { color: colors.white, fontSize: 15, fontWeight: '700' },
   guideArea: { pointerEvents: 'none', flex: 1, marginHorizontal: 28, marginVertical: 42 },
+  guideSpacer: { pointerEvents: 'none', flex: 1 },
   cornerTopLeft: { position: 'absolute', top: 0, left: 0, width: 50, height: 50, borderTopWidth: 2, borderLeftWidth: 2, borderColor: 'rgba(255,255,255,0.74)', borderTopLeftRadius: 18 },
   cornerTopRight: { position: 'absolute', top: 0, right: 0, width: 50, height: 50, borderTopWidth: 2, borderRightWidth: 2, borderColor: 'rgba(255,255,255,0.74)', borderTopRightRadius: 18 },
   cornerBottomLeft: { position: 'absolute', bottom: 0, left: 0, width: 50, height: 50, borderBottomWidth: 2, borderLeftWidth: 2, borderColor: 'rgba(255,255,255,0.74)', borderBottomLeftRadius: 18 },
@@ -288,7 +294,7 @@ const styles = StyleSheet.create({
   describeButtonText: { color: colors.text, fontSize: 13, fontWeight: '800' },
   privacy: { color: 'rgba(255,255,255,0.48)', fontSize: 10 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.58)', justifyContent: 'flex-end' },
-  describeSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, padding: 22, gap: 13 },
+  describeSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 22, gap: 13 },
   describeTitle: { color: colors.text, fontSize: 26, fontWeight: '700' },
   describeText: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   describeInput: { minHeight: 128, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, color: colors.text, fontSize: 16, lineHeight: 23, padding: 14, textAlignVertical: 'top' },

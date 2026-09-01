@@ -1,8 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { KadroMark } from '@/components/KadroMark';
+import { KandroMark } from '@/components/KandroMark';
+import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
 import { colors, shadows } from '@/constants/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -13,7 +15,14 @@ function TabIcon({ focused, active, inactive }: { focused: boolean; active: Icon
 
 export default function TabLayout() {
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
   const hideBar = pathname === '/scan';
+  // A fixed 86pt bar pushed the labels straight onto the home indicator on every
+  // notched iPhone. The bar now grows with the real bottom inset instead.
+  const barStyle = {
+    height: TAB_BAR_CONTENT_HEIGHT + insets.bottom,
+    paddingBottom: insets.bottom + 6,
+  };
 
   return (
     <Tabs
@@ -23,7 +32,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.text,
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: styles.label,
-        tabBarStyle: [styles.tabBar, hideBar && styles.hiddenBar],
+        tabBarStyle: [styles.tabBar, barStyle, hideBar && styles.hiddenBar],
       }}
     >
       <Tabs.Screen
@@ -55,7 +64,7 @@ export default function TabLayout() {
                 onPress={onPress}
                 style={({ pressed }) => [styles.scanButton, pressed && styles.scanPressed]}
               >
-                <KadroMark dotColor={colors.white} size={38} />
+                <KandroMark dotColor={colors.white} size={38} />
               </Pressable>
             </View>
           ),
@@ -82,9 +91,7 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
-    height: 86,
-    paddingTop: 10,
-    paddingBottom: 14,
+    paddingTop: 8,
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,

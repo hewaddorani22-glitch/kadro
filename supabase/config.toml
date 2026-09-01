@@ -2,7 +2,7 @@
 # https://supabase.com/docs/guides/local-development/cli/config
 # A string used to distinguish different Supabase projects on the same host. Defaults to the
 # working directory name when running `supabase init`.
-project_id = "kadro"
+project_id = "kandro"
 
 [api]
 enabled = true
@@ -97,7 +97,7 @@ port = 54323
 # External URL of the API server that frontend connects to.
 api_url = "http://127.0.0.1"
 # OpenAI API Key for Supabase Studio AI is intentionally not configured.
-# Kadro's provider credentials stay in the local analysis gateway only.
+# Kandro's provider credentials stay in the local analysis gateway only.
 # openai_api_key = "env(OPENAI_API_KEY)"
 
 # Email testing server. Emails sent with the local dev setup are not actually sent - rather, they
@@ -234,7 +234,7 @@ otp_length = 6
 otp_expiry = 3600
 
 [auth.email.template.email_change]
-subject = "Bestätige deine Kadro E-Mail-Adresse"
+subject = "Bestätige deine Kandro E-Mail-Adresse"
 content_path = "./supabase/templates/email_change.html"
 
 [functions.delete-account]

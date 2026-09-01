@@ -12,7 +12,11 @@ export default function TodayScreen() {
   const router = useRouter();
   const { consumed, hasLoggedScan, meals, pendingAnalysisCount, remaining, resetScan, resumeLatestAnalysis, targets, userName } = useApp();
   const dateLabel = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date());
-  const greeting = userName === 'Du' ? 'Guten Morgen' : `Guten Morgen, ${userName}`;
+  // The greeting was hard-coded to "Guten Morgen", so the app said good morning
+  // at 22:00.
+  const hour = new Date().getHours();
+  const daypart = hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Guten Tag' : 'Guten Abend';
+  const greeting = userName === 'Du' ? daypart : `${daypart}, ${userName}`;
   const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
   const calorieRange = `${Math.max(300, calorieCenter - 50)}–${calorieCenter + 50}`;
   const proteinCenter = Math.round(Math.min(45, Math.max(28, remaining.protein * 0.48)) / 5) * 5;
@@ -54,10 +58,14 @@ export default function TodayScreen() {
         <View style={styles.heroTop}>
           <View>
             <Eyebrow>Dein Tagesstand</Eyebrow>
-            <Text style={styles.onTrack}>{hasLoggedScan ? 'Weiter im Plan' : 'Dein nächster Zug steht'}</Text>
+            <Text style={styles.onTrack}>
+              {consumed.calories > targets.calories
+                ? 'Heute etwas drüber'
+                : hasLoggedScan ? 'Weiter im Plan' : 'Dein nächster Zug steht'}
+            </Text>
           </View>
         </View>
-        <CalorieRing remaining={remaining.calories} total={targets.calories} />
+        <CalorieRing consumed={consumed.calories} total={targets.calories} />
         <Text style={styles.consumed}>{formatNumber(consumed.calories)} gegessen · {formatNumber(targets.calories)} Ziel</Text>
       </Card>
 
@@ -96,8 +104,8 @@ export default function TodayScreen() {
           {meals.map((meal, index) => (
             <View key={meal.id}>
               <View style={styles.mealRow}>
-                <View style={[styles.mealIcon, meal.type === 'Lunch' && styles.mealIconLunch]}>
-                  <Ionicons color={colors.text} name={meal.type === 'Breakfast' ? 'cafe-outline' : 'restaurant-outline'} size={20} />
+                <View style={[styles.mealIcon, meal.type !== 'Breakfast' && styles.mealIconLunch]}>
+                  <Ionicons color={colors.text} name={meal.type === 'Breakfast' ? 'cafe-outline' : meal.type === 'Snack' ? 'nutrition-outline' : 'restaurant-outline'} size={20} />
                 </View>
                 <View style={styles.mealInfo}>
                   <Text style={styles.mealType}>{mealTypeLabel(meal.type)}</Text>

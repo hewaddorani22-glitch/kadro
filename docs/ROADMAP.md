@@ -2,7 +2,7 @@
 
 ## Current status: Day 4 app work complete; native TestFlight and legal gates remain
 
-- [x] Kadro name, mark, app icon, and exact brand tokens
+- [x] Kandro name, mark, app icon, and exact brand tokens
 - [x] German product UI
 - [x] Six-step personalized onboarding with visible wellness guardrails
 - [x] Persist onboarding completion, calculate real targets from the entered profile, and apply saved preferences to recommendations
@@ -59,14 +59,14 @@ Acceptance criteria:
 - [x] Sync the actual onboarding profile, target, and preferences instead of display-only defaults
 - [x] Exactly three deterministic catalog recommendations from the persisted daily state
 - [x] Structured recommendation impressions plus acceptance/rejection feedback adapter
-- [x] Create the dedicated Kadro Supabase project, enable anonymous auth, apply the migration, and run live RLS tests
+- [x] Create the dedicated Kandro Supabase project, enable anonymous auth, apply the migration, and run live RLS tests
 - [x] Link an authorized Supabase CLI profile and reconcile the dashboard-applied migration with CLI migration history
 - [x] Run the cloud-hydration smoke test in Expo Go and verify the persisted anonymous session after an app restart
 - [x] Add permanent account linking with verified email and password recovery; Apple remains optional after MVP validation
 - [x] Expand the verified German catalog from 45 to 200 meals after live schema and ranking validation
 - [ ] RevenueCat subscription and restore flow
   - [x] Expo Go-safe Test Store adapter, Supabase identity, live Offering prices, entitlement check, purchase, cancellation, and restore UI
-  - [x] Create RevenueCat project, `kadro_pro` entitlement, current annual/monthly Offering, and run a Test Store purchase/restore smoke test
+  - [x] Create RevenueCat project, `kandro_pro` entitlement, current annual/monthly Offering, and run a Test Store purchase/restore smoke test
   - [ ] Configure App Store Connect products and run a native StoreKit sandbox purchase in a development/TestFlight build
 - [ ] PostHog product events and Sentry error reporting
   - [x] Add an Expo Go-compatible PostHog adapter with typed event allowlist, anonymous-only profiles, GeoIP/session replay/autocapture disabled, persisted opt-out, and scrubbed JavaScript error reporting
@@ -85,7 +85,7 @@ Acceptance criteria:
 - [ ] App Store Connect products plus native StoreKit sandbox purchase/restore in the TestFlight build
 - [x] Explicit wellness-data consent, privacy/terms drafts, non-medical guardrails, and live Supabase account-deletion test
 - [ ] Add legal controller/contact details and complete legal/provider/retention review
-- [x] Responsive Kadro landing page with private deployment plus privacy and terms routes
+- [x] Responsive Kandro landing page with private deployment plus privacy and terms routes
 - [ ] Publish the landing page after legal contact details are complete
 - [x] EAS production/preview configuration and App Store metadata/screenshot handoff
 - [ ] Build and submit TestFlight after Expo and Apple Developer authentication; capture final native screenshots from that build

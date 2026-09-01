@@ -1,6 +1,6 @@
 # Analytics and error reporting
 
-Kadro measures only whether the core product loop works. `src/services/telemetry.ts` is the single analytics boundary. Without `EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN`, every analytics and error call is a no-op.
+Kandro measures only whether the core product loop works. `src/services/telemetry.ts` is the single analytics boundary. Without `EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN`, every analytics and error call is a no-op.
 
 ## Product-event allowlist
 

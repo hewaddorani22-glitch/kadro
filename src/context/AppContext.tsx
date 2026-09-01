@@ -1,4 +1,5 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 
 import { AnalysisErrorKind, MealAnalysisInput } from '@/services/contracts';
 import { analyzeBarcode, analyzeDescription, analyzePreparedPhoto, deleteTemporaryPhoto, MealAnalysisError, prepareMealPhoto } from '@/services/mealAnalysis';
@@ -86,7 +87,9 @@ function makeScanId() {
 }
 
 function scaleItem(item: MealItem, nextAmount: number): MealItem {
-  const ratio = nextAmount / item.amountG;
+  // A provider that reports a zero amount would otherwise turn every macro into
+  // Infinity or NaN on the first correction tap.
+  const ratio = item.amountG > 0 ? nextAmount / item.amountG : 0;
   return {
     ...item,
     amountG: nextAmount,
@@ -123,6 +126,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
   const [pendingAnalysisCount, setPendingAnalysisCount] = useState(0);
   const [syncMode, setSyncMode] = useState<SyncMode>(isSupabaseConfigured ? 'syncing' : 'local');
+  const loadedDayRef = useRef(localDateKey());
 
   const refreshCloudState = useCallback(async () => {
     if (!isSupabaseConfigured) {
@@ -200,6 +204,21 @@ export function AppProvider({ children }: PropsWithChildren) {
       active = false;
       stopAuthLifecycle();
     };
+  }, []);
+
+  useEffect(() => {
+    // "Heute" is a filtered snapshot taken at load time. Without this the list
+    // still showed yesterday's meals after the app sat backgrounded overnight.
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      const today = localDateKey();
+      if (today === loadedDayRef.current) return;
+      loadedDayRef.current = today;
+      void loadMeals()
+        .then(setMeals)
+        .catch((error) => captureOperationalError(error, { area: 'ui', operation: 'day_rollover' }));
+    });
+    return () => subscription.remove();
   }, []);
 
   const consumed = useMemo(() => sumMeals(meals), [meals]);
@@ -362,7 +381,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         scan_source: telemetryScanSource(activeScanMode),
         warning_present: result.warnings.length > 0,
       });
-      if (scanMode === 'queued') {
+      if (activeScanMode === 'queued') {
         setPendingAnalysisCount(await removeQueuedAnalysis(scanId));
       }
     } catch (error) {
@@ -392,7 +411,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         code: failure.kind,
       });
     }
-  }, [barcodeInput, descriptionInput, photoUri, queuedInput, scanId, scanMode]);
+  }, [barcodeInput, descriptionInput, photoUri, queuedInput, scanId]);
 
   const resumeLatestAnalysis = useCallback(async () => {
     const queue = await loadAnalysisQueue();

@@ -118,7 +118,7 @@ export function captureOperationalError(error: unknown, context: ErrorContext) {
   if (!posthog) return;
   const original = error instanceof Error ? error : null;
   const safeError = new Error(`${context.area}:${context.operation}:${context.code ?? original?.name ?? 'unknown'}`);
-  safeError.name = original?.name || 'KadroOperationalError';
+  safeError.name = original?.name || 'KandroOperationalError';
   if (original?.stack) {
     const [, ...frames] = original.stack.split('\n');
     safeError.stack = `${safeError.name}: ${safeError.message}\n${frames.join('\n')}`;

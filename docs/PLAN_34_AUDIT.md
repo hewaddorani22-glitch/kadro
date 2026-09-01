@@ -1,4 +1,4 @@
-# Kadro: Abgleich mit dem 34-Punkte-MVP-Plan
+# Kandro: Abgleich mit dem 34-Punkte-MVP-Plan
 
 Stand: 31. August 2026
 
@@ -29,10 +29,10 @@ Der Anhang enthält einen unnummerierten Produktkern und 33 nummerierte Abschnit
 | 10 | Plan Screen ohne Chat | Fertig | Genau drei Kontexte und genau drei deterministische, katalogbasierte Vorschläge. |
 | 11 | „Save My Day“ später | Später | Die wertfreie Sprache ist schon umgesetzt; die benannte eigenständige spätere Funktion gehört laut Plan nicht in v0.1. |
 | 12 | Warm Utility | Fertig | Ruhige, freundliche Oberfläche mit großen Zahlen und wenig Text. |
-| 13 | Design-Grundlage | Fertig, bewusst angepasst | Die später freigegebene Kadro-Brand-Sheet-Palette (`#F5F3EE`, `#14150F`, `#BBDC8E`, `#3F5233`) hat Vorrang vor den leicht abweichenden Farben des ersten Textplans. |
+| 13 | Design-Grundlage | Fertig, bewusst angepasst | Die später freigegebene Kandro-Brand-Sheet-Palette (`#F5F3EE`, `#14150F`, `#BBDC8E`, `#3F5233`) hat Vorrang vor den leicht abweichenden Farben des ersten Textplans. |
 | 14 | Systemtypografie | Fertig | Keine fremde Display-Schrift; klare systemnahe Hierarchie. |
 | 15 | Einheitliche Komponenten | Fertig, bewusst angepasst | Wiederverwendbare Karten/Buttons/Inputs, keine Gradients oder Glassmorphism. Radien folgen dem später freigegebenen Brand Sheet. |
-| 16 | Bottom Navigation | Fertig | Dominanter mittlerer Scan-Button mit dem Kadro-Zeichen. |
+| 16 | Bottom Navigation | Fertig | Dominanter mittlerer Scan-Button mit dem Kandro-Zeichen. |
 | 17 | Microinteractions | Fertig | Haptik, gestufte Analyse, Kalorien-Count-up, Remaining-Count-down, Reveal sowie Reduce Motion. |
 | 18 | Onboarding | Fertig | Sechs kurze gebündelte Schritte statt künstlich gestreckter neun; Name, Ziel, Alter, Größe, Gewicht, Aktivität und Vorlieben erzeugen jetzt echte persönliche Ziele und werden gespeichert. Beim Neustart wird es nicht wiederholt. |
 | 19 | Wellness, nicht Medizin | Fertig für Beta | Nicht-medizinische Sprache, Sicherheitsgrenzen, explizite Wellness-Einwilligung, Datenschutz- und Bedingungsentwürfe. Rechtliche Endprüfung bleibt Release-Gate. |
@@ -42,7 +42,7 @@ Der Anhang enthält einen unnummerierten Produktkern und 33 nummerierte Abschnit
 | 23 | Minimales Datenmodell | Fertig | Profile, Tagesziele, Mahlzeiten, Zutaten, Empfehlungen und Feedback sind mit Constraints, Indizes, Least Privilege und Owner-RLS vorhanden. |
 | 24 | Nicht in Version 1 | Fertig | Keine der ausgeschlossenen Scope-Erweiterungen wurde eingebaut. |
 | 25 | MVP exakt | Fertig bis auf nativen Store-Nachweis | Personalisierung, Foto/Text/Barcode, Korrektur, Makros, Tagesstatus, Autopilot, drei Kontexte, echter lokaler Gewichtsverlauf und Free/Pro-Grenze sind vorhanden. |
-| 26 | Monetarisierung | Teilweise | Ein vollständiger Scan ist kostenlos; weitere Scans brauchen ein aktives `kadro_pro`-Entitlement. Jahres-/Monatsangebot und Restore funktionieren im RevenueCat Test Store. €39,99/7 Tage und €9,99 müssen noch als echte App-Store-Produkte angelegt und nativ getestet werden. |
+| 26 | Monetarisierung | Teilweise | Ein vollständiger Scan ist kostenlos; weitere Scans brauchen ein aktives `kandro_pro`-Entitlement. Jahres-/Monatsangebot und Restore funktionieren im RevenueCat Test Store. €39,99/7 Tage und €9,99 müssen noch als echte App-Store-Produkte angelegt und nativ getestet werden. |
 | 27 | Paywall erst nach Aha-Moment | Fertig | Erste Mahlzeit wird nach Bestätigung automatisch gespeichert; Result und drei Optionen erscheinen vor der Paywall. |
 | 28 | Ehrliches Paywall Design | Fertig für die konfigurierte Umgebung | Kein Countdown, klare Preise/Verlängerung, Restore und echte Offering-Daten. Trial-Text erscheint nur, wenn das Store-Produkt tatsächlich einen Gratiszeitraum liefert. |
 | 29 | TikTok-Hook im Produkt | Fertig als Screenfolge | Pizza/anderes Essen → Schätzung → Rest → nächster Zug → drei Optionen ist im Produkt aufnehmbar. Kampagnenproduktion ist kein App-Code. |
@@ -92,7 +92,7 @@ Vor einer externen Beta zwingend offen:
 
 ## Bekannte Toolchain-Hinweise
 
-`npm audit --omit=dev` meldet aktuell 18 transitive Hinweise (9 hoch, 9 mittel) in Expo-/Metro-Buildabhängigkeiten, insbesondere `image-size`, `postcss` und `uuid`. Der von npm vorgeschlagene vollständige Fix würde Expo 57 installieren. Das ist für diesen Branch kein sicherer Patch, weil Kadro absichtlich auf Expo SDK 54 und die aktuelle Expo-Go-Kompatibilität festgelegt ist. Deshalb wurde **kein** `npm audit fix --force` ausgeführt. Die Hinweise müssen beim nächsten isolierten Expo-SDK-Upgrade erneut geprüft werden; bis dahin dürfen nur vertrauenswürdige lokale Build-Assets verarbeitet werden.
+`npm audit --omit=dev` meldet aktuell 18 transitive Hinweise (9 hoch, 9 mittel) in Expo-/Metro-Buildabhängigkeiten, insbesondere `image-size`, `postcss` und `uuid`. Der von npm vorgeschlagene vollständige Fix würde Expo 57 installieren. Das ist für diesen Branch kein sicherer Patch, weil Kandro absichtlich auf Expo SDK 54 und die aktuelle Expo-Go-Kompatibilität festgelegt ist. Deshalb wurde **kein** `npm audit fix --force` ausgeführt. Die Hinweise müssen beim nächsten isolierten Expo-SDK-Upgrade erneut geprüft werden; bis dahin dürfen nur vertrauenswürdige lokale Build-Assets verarbeitet werden.
 
 ## Verifikation dieses Abgleichs
 

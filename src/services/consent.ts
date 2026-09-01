@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ensureSupabaseUser, isSupabaseConfigured, supabase } from '@/services/supabaseClient';
 
 export const PRIVACY_VERSION = '2026-08-31-mvp';
-const CONSENT_KEY = '@kadro/wellness-consent:v1';
+const CONSENT_KEY = '@kandro/wellness-consent:v1';
 
 type StoredConsent = {
   version: string;

@@ -3,7 +3,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { colors } from '@/constants/theme';
 
-export function KadroMark({
+export function KandroMark({
   dotColor = colors.accent,
   size = 48,
   strokeColor = colors.accentDeep,
@@ -15,7 +15,7 @@ export function KadroMark({
   style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <Svg accessibilityLabel="Kadro" height={size} style={style} viewBox="0 0 64 64" width={size}>
+    <Svg accessibilityLabel="Kandro" height={size} style={style} viewBox="0 0 64 64" width={size}>
       <Path
         d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44"
         fill="none"

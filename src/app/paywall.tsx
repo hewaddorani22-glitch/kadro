@@ -2,11 +2,11 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui';
-import { KadroMark } from '@/components/KadroMark';
+import { KandroMark } from '@/components/KandroMark';
 import { colors, radii } from '@/constants/theme';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { toBillingMode, trackEvent } from '@/services/telemetry';
@@ -15,6 +15,7 @@ type Plan = 'yearly' | 'monthly';
 
 export default function PaywallScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [selected, setSelected] = useState<Plan>('yearly');
   const { busy, error, purchase, refresh, restore, snapshot, status } = useSubscription();
   const yearly = snapshot?.plans.yearly ?? null;
@@ -62,8 +63,8 @@ export default function PaywallScreen() {
     trackEvent('subscription purchase completed', { billing_mode: billingMode, plan: selected });
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert(
-      testStore ? 'Test-Abo aktiviert' : 'Kadro Pro aktiviert',
-      testStore ? 'Der RevenueCat Test Store hat den Kauf ohne echte Abbuchung simuliert.' : 'Dein Kadro-Pro-Zugang ist jetzt aktiv.',
+      testStore ? 'Test-Abo aktiviert' : 'Kandro Pro aktiviert',
+      testStore ? 'Der RevenueCat Test Store hat den Kauf ohne echte Abbuchung simuliert.' : 'Dein Kandro-Pro-Zugang ist jetzt aktiv.',
       [{ text: 'Weiter', onPress: () => router.replace('/(tabs)/today') }],
     );
   };
@@ -79,7 +80,7 @@ export default function PaywallScreen() {
     trackEvent('subscription restore completed', { active, billing_mode: billingMode });
     Alert.alert(
       active ? 'Käufe wiederhergestellt' : 'Kein aktives Abo gefunden',
-      active ? 'Kadro Pro ist wieder aktiv.' : 'Für dieses Store-Konto wurde kein aktiver Kadro-Pro-Kauf gefunden.',
+      active ? 'Kandro Pro ist wieder aktiv.' : 'Für dieses Store-Konto wurde kein aktiver Kandro-Pro-Kauf gefunden.',
     );
   };
 
@@ -88,7 +89,7 @@ export default function PaywallScreen() {
     : status === 'loading'
       ? 'Angebot wird geladen …'
       : status === 'active'
-        ? 'Mit Kadro Pro weiter'
+        ? 'Mit Kandro Pro weiter'
         : status === 'unconfigured'
           ? 'Demo fortsetzen'
           : status === 'error'
@@ -97,10 +98,10 @@ export default function PaywallScreen() {
               ? 'Test-Abo starten'
               : selectedPlan?.hasFreeTrial
                 ? 'Kostenlos testen'
-                : 'Kadro Pro starten';
+                : 'Kandro Pro starten';
 
   const billingCopy = status === 'active'
-    ? 'Dein Kadro-Pro-Zugang ist aktiv.'
+    ? 'Dein Kandro-Pro-Zugang ist aktiv.'
     : status === 'unconfigured'
       ? 'Vorschaupreise – es wird nichts abgebucht.'
       : selectedPlan
@@ -108,7 +109,7 @@ export default function PaywallScreen() {
         : 'Lege im aktuellen RevenueCat Offering ein Jahres- und/oder Monatspaket an.';
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
       <View style={styles.topBar}>
         <Pressable accessibilityLabel="Paywall schließen" accessibilityRole="button" onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={22} />
@@ -118,8 +119,13 @@ export default function PaywallScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.content}>
-        <View style={styles.heroMark}><KadroMark size={76} /></View>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        style={styles.scroll}
+      >
+        <View style={styles.heroMark}><KandroMark size={76} /></View>
         {testStore ? <View style={styles.testBadge}><Text style={styles.testBadgeText}>REVENUECAT TEST STORE</Text></View> : null}
         <Text style={styles.title}>Iss mit einem Plan.{`\n`}Nicht nach Gefühl.</Text>
         <Text style={styles.subtitle}>Behalte die ruhige, adaptive Unterstützung, die du gerade erlebt hast – nach jeder Mahlzeit.</Text>
@@ -151,9 +157,9 @@ export default function PaywallScreen() {
         </View>
         {status === 'loading' ? <ActivityIndicator color={colors.accentDeep} style={styles.loader} /> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
-      </View>
+      </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 10 }]}>
         <PrimaryButton
           disabled={busy || status === 'loading' || (snapshot?.configured === true && status !== 'active' && !selectedPlan && status !== 'error')}
           icon={status === 'active' ? 'checkmark-circle-outline' : 'arrow-forward'}
@@ -203,7 +209,8 @@ const styles = StyleSheet.create({
   topBar: { height: 55, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   closeButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   restore: { color: colors.muted, fontSize: 13, fontWeight: '600' },
-  content: { flex: 1, alignItems: 'center', paddingTop: 15 },
+  scroll: { flex: 1 },
+  content: { flexGrow: 1, alignItems: 'center', paddingTop: 15, paddingBottom: 16 },
   heroMark: { width: 104, height: 104, borderRadius: 52, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   testBadge: { backgroundColor: colors.accent, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 5, marginTop: 10 },
   testBadgeText: { color: colors.text, fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
@@ -220,14 +227,14 @@ const styles = StyleSheet.create({
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   radioSelected: { borderColor: colors.accentDeep },
   radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.accentDeep },
-  planCopy: { flex: 1, gap: 4 },
-  planLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  planCopy: { flex: 1, minWidth: 0, gap: 4 },
+  planLabelRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 7 },
   planLabel: { color: colors.text, fontSize: 15, fontWeight: '700' },
   planDetail: { color: colors.muted, fontSize: 10 },
-  badge: { backgroundColor: colors.text, borderRadius: radii.pill, paddingHorizontal: 7, paddingVertical: 4 },
+  badge: { flexShrink: 0, backgroundColor: colors.text, borderRadius: radii.pill, paddingHorizontal: 7, paddingVertical: 4 },
   badgeText: { color: colors.white, fontSize: 7, fontWeight: '800', letterSpacing: 0.7 },
-  planPrice: { color: colors.text, fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  footer: { gap: 9, paddingBottom: 10 },
+  planPrice: { flexShrink: 0, color: colors.text, fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  footer: { gap: 9, paddingTop: 10, backgroundColor: colors.background },
   loader: { marginTop: 12 },
   error: { color: colors.attention, fontSize: 11, lineHeight: 16, marginTop: 12, textAlign: 'center' },
   disabledText: { opacity: 0.45 },

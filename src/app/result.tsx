@@ -27,6 +27,11 @@ export default function ResultScreen() {
     : remaining.calories;
   const calorieCenter = Math.round(Math.min(550, Math.max(380, projected.calories * 0.38)) / 10) * 10;
   const proteinCenter = Math.round(Math.min(45, Math.max(28, projected.protein * 0.48)) / 5) * 5;
+  // getRemaining() clamps at zero, so the projected values alone can never tell
+  // us whether the day went over budget.
+  const projectedCalories = isCurrentScanLogged ? consumed.calories : consumed.calories + scannedMeal.calories;
+  const overBudget = projectedCalories > targets.calories;
+  const overBy = Math.max(0, projectedCalories - targets.calories);
   const mealProgress = useRef(new Animated.Value(0)).current;
   const remainingProgress = useRef(new Animated.Value(0)).current;
   const recommendationReveal = useRef(new Animated.Value(0)).current;
@@ -107,8 +112,8 @@ export default function ResultScreen() {
 
   const shareResult = async () => {
     await Share.share({
-      message: `${scannedMeal.title}: ca. ${scannedMeal.calories} kcal, ${scannedMeal.protein} g Protein, ${scannedMeal.carbs} g Kohlenhydrate und ${scannedMeal.fat} g Fett. Nährwerte sind Schätzungen von Kadro.`,
-      title: 'Kadro Mahlzeitenschätzung',
+      message: `${scannedMeal.title}: ca. ${scannedMeal.calories} kcal, ${scannedMeal.protein} g Protein, ${scannedMeal.carbs} g Kohlenhydrate und ${scannedMeal.fat} g Fett. Nährwerte sind Schätzungen von Kandro.`,
+      title: 'Kandro Mahlzeitenschätzung',
     });
   };
 
@@ -173,14 +178,18 @@ export default function ResultScreen() {
           <View style={styles.dayIcon}><Ionicons color={colors.text} name="sunny-outline" size={23} /></View>
           <View style={styles.dayHeading}>
             <Eyebrow>Dein Tag danach</Eyebrow>
-            <Text style={styles.onTrack}>Du bist weiter im Plan</Text>
+            <Text style={styles.onTrack}>{overBudget ? 'Heute etwas drüber' : 'Du bist weiter im Plan'}</Text>
           </View>
-          <Ionicons color={colors.success} name="checkmark-circle" size={25} />
+          <Ionicons
+            color={overBudget ? colors.attention : colors.success}
+            name={overBudget ? 'alert-circle' : 'checkmark-circle'}
+            size={25}
+          />
         </View>
         <View style={styles.remainingRow}>
           <View>
-            <Text style={styles.remainingValue}>{formatNumber(displayedRemaining)}</Text>
-            <Text style={styles.remainingLabel}>kcal übrig</Text>
+            <Text style={styles.remainingValue}>{formatNumber(overBudget ? overBy : displayedRemaining)}</Text>
+            <Text style={styles.remainingLabel}>{overBudget ? 'kcal drüber' : 'kcal übrig'}</Text>
           </View>
           <View style={styles.remainingDivider} />
           <View>
@@ -271,7 +280,7 @@ const styles = StyleSheet.create({
   resultHeading: { gap: 12 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   mealCopy: { flex: 1, gap: 10 },
-  mealTitle: { color: colors.text, fontSize: 29, lineHeight: 34, fontWeight: '700', letterSpacing: -0.8, textTransform: 'capitalize' },
+  mealTitle: { color: colors.text, fontSize: 29, lineHeight: 34, fontWeight: '700', letterSpacing: -0.8 },
   calorieBlock: { width: 122, height: 122, alignItems: 'center', justifyContent: 'center' },
   impactRing: { position: 'absolute', top: 0, left: 0 },
   calorieCenter: { alignItems: 'center' },

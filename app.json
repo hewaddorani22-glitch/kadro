@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "Kadro",
-    "slug": "kadro",
+    "name": "Kandro",
+    "slug": "kandro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "kadro",
+    "scheme": "kandro",
     "icon": "./assets/icon.png",
     "backgroundColor": "#F5F3EE",
     "splash": {
@@ -15,13 +15,13 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.hewaddorani.kadro",
+      "bundleIdentifier": "com.hewaddorani.kandro",
       "infoPlist": {
-        "NSCameraUsageDescription": "Kadro verwendet deine Kamera, um Mahlzeiten zu analysieren. Fotos werden in dieser Demo nicht dauerhaft gespeichert."
+        "NSCameraUsageDescription": "Kandro verwendet deine Kamera, um Mahlzeiten zu analysieren. Fotos werden in dieser Demo nicht dauerhaft gespeichert."
       }
     },
     "android": {
-      "package": "com.hewaddorani.kadro",
+      "package": "com.hewaddorani.kandro",
       "adaptiveIcon": {
         "backgroundColor": "#BBDC8E",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -38,7 +38,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Erlaube Kadro, Mahlzeiten für die Analyse zu fotografieren."
+          "cameraPermission": "Erlaube Kandro, Mahlzeiten für die Analyse zu fotografieren."
         }
       ],
       "expo-font",

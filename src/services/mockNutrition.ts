@@ -38,7 +38,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     fiber: 0,
     confidence: 'high',
     included: true,
-    source: { provider: 'demo', label: 'Kadro Demo' },
+    source: { provider: 'demo', label: 'Kandro Demo' },
   },
   {
     id: 'rice',
@@ -53,7 +53,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     fiber: 1,
     confidence: 'high',
     included: true,
-    source: { provider: 'demo', label: 'Kadro Demo' },
+    source: { provider: 'demo', label: 'Kandro Demo' },
   },
   {
     id: 'avocado',
@@ -68,7 +68,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     fiber: 5,
     confidence: 'high',
     included: true,
-    source: { provider: 'demo', label: 'Kadro Demo' },
+    source: { provider: 'demo', label: 'Kandro Demo' },
   },
   {
     id: 'sauce',
@@ -84,7 +84,7 @@ export const DETECTED_ITEMS: MealItem[] = [
     confidence: 'medium',
     optional: true,
     included: true,
-    source: { provider: 'demo', label: 'Kadro Demo' },
+    source: { provider: 'demo', label: 'Kandro Demo' },
   },
 ];
 

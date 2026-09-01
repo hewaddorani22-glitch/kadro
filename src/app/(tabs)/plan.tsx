@@ -76,9 +76,9 @@ export default function PlanScreen() {
     <Screen>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Eyebrow>Kadro</Eyebrow>
+          <Eyebrow>Kandro</Eyebrow>
           <PageTitle>Was passt jetzt?</PageTitle>
-          <Text style={styles.subtitle}>Wähle deine Situation. Kadro richtet die Vorschläge an deinem tatsächlichen Tag aus.</Text>
+          <Text style={styles.subtitle}>Wähle deine Situation. Kandro richtet die Vorschläge an deinem tatsächlichen Tag aus.</Text>
         </View>
         <IconCircle name="sparkles" size={48} />
       </View>
@@ -133,7 +133,7 @@ export default function PlanScreen() {
                     <Text style={styles.suggestionDetail}>{suggestion.detail}</Text>
                     <Text style={styles.source}>{suggestion.source?.label}</Text>
                   </View>
-                  <Text style={styles.time}>{suggestion.time}</Text>
+                  <Text numberOfLines={2} style={styles.time}>{suggestion.time}</Text>
                 </View>
                 <View style={styles.nutritionRow}>
                   <NutritionStat label="kcal" value={suggestion.calories} />
@@ -154,7 +154,7 @@ export default function PlanScreen() {
             <Pressable accessibilityRole="button" onPress={() => router.push('/paywall')} style={styles.proBanner}>
               <View style={styles.proIcon}><Ionicons color={colors.white} name="infinite" size={20} /></View>
               <View style={styles.proCopy}>
-                <Text style={styles.proTitle}>Kadro weiterlaufen lassen</Text>
+                <Text style={styles.proTitle}>Kandro weiterlaufen lassen</Text>
                 <Text style={styles.proText}>Unbegrenzte Scans und neue Aufstellungen freischalten.</Text>
               </View>
               <Ionicons color={colors.text} name="chevron-forward" size={20} />
@@ -206,11 +206,11 @@ const styles = StyleSheet.create({
   suggestionTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   rank: { width: 34, height: 34, borderRadius: 12, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   rankText: { color: colors.muted, fontSize: 11, fontWeight: '800' },
-  suggestionCopy: { flex: 1, gap: 4 },
+  suggestionCopy: { flex: 1, minWidth: 0, gap: 4 },
   suggestionTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   suggestionDetail: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   source: { color: colors.muted, fontSize: 9, marginTop: 2 },
-  time: { color: colors.accentDeep, fontSize: 11, fontWeight: '700' },
+  time: { flexShrink: 0, maxWidth: 92, color: colors.accentDeep, fontSize: 11, fontWeight: '700', textAlign: 'right' },
   nutritionRow: { flexDirection: 'row', backgroundColor: colors.background, borderRadius: 16, paddingVertical: 10 },
   nutritionStat: { flex: 1, alignItems: 'center', gap: 2 },
   nutritionValue: { color: colors.text, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },

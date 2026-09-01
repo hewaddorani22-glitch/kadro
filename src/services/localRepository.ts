@@ -5,10 +5,10 @@ import { DEFAULT_PROFILE } from '@/services/personalization';
 import { Meal, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 
-const MEALS_KEY = '@kadro/meals:v1';
-const QUEUE_KEY = '@kadro/analysis-queue:v1';
-const PROFILE_KEY = '@kadro/profile:v1';
-const WEIGHTS_KEY = '@kadro/weight-entries:v1';
+const MEALS_KEY = '@kandro/meals:v1';
+const QUEUE_KEY = '@kandro/analysis-queue:v1';
+const PROFILE_KEY = '@kandro/profile:v1';
+const WEIGHTS_KEY = '@kandro/weight-entries:v1';
 
 async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -90,6 +90,6 @@ export async function saveWeightEntry(entry: WeightEntry): Promise<WeightEntry[]
   return next;
 }
 
-export async function clearLocalKadroData() {
+export async function clearLocalKandroData() {
   await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY]);
 }

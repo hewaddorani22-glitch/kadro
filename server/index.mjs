@@ -87,7 +87,7 @@ async function requestDetection(content) {
     headers: {
       Authorization: `Bearer ${aiApiKey}`,
       'Content-Type': 'application/json',
-      ...(isOpenRouter ? { 'X-Title': 'Kadro' } : {}),
+      ...(isOpenRouter ? { 'X-Title': 'Kandro' } : {}),
     },
     body: JSON.stringify({
       model: visionModel,
@@ -107,7 +107,7 @@ async function requestDetection(content) {
       text: {
         format: {
           type: 'json_schema',
-          name: 'kadro_meal_detection',
+          name: 'kandro_meal_detection',
           strict: true,
           schema: detectionSchema,
         },
@@ -183,7 +183,7 @@ async function lookupBarcode(barcode) {
   if (!/^\d{7,14}$/.test(barcode)) return { status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } };
   const fields = 'code,product_name_de,product_name,nutriments';
   const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`, {
-    headers: { 'User-Agent': 'Kadro-MVP/1.0' },
+    headers: { 'User-Agent': 'Kandro-MVP/1.0' },
   });
   if (!response.ok) return { status: response.status === 404 ? 404 : 502, body: { code: 'product_not_found', message: 'Produkt nicht gefunden.' } };
   const result = await response.json();
@@ -245,5 +245,5 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(port, '0.0.0.0', () => {
-  console.log(`Kadro analysis gateway listening on http://0.0.0.0:${port}`);
+  console.log(`Kandro analysis gateway listening on http://0.0.0.0:${port}`);
 });

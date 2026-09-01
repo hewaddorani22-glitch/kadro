@@ -6,7 +6,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, PrimaryButton, Screen } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { accountDeletionErrorMessage, deleteKadroAccount } from '@/services/accountDeletion';
+import { accountDeletionErrorMessage, deleteKandroAccount } from '@/services/accountDeletion';
 
 const appleSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
 
@@ -22,7 +22,7 @@ export default function AccountDeletionScreen() {
     setBusy(true);
     setError(null);
     try {
-      await deleteKadroAccount();
+      await deleteKandroAccount();
       resetAfterAccountDeletion();
       setDeleted(true);
     } catch (failure) {
@@ -40,7 +40,7 @@ export default function AccountDeletionScreen() {
           <Text accessibilityRole="header" style={styles.title}>Account und Daten gelöscht</Text>
           <Text style={styles.copy}>Cloud-Synchronisierung bleibt aus, bis du später bewusst einen neuen leeren Account anlegst.</Text>
         </View>
-        <PrimaryButton icon="arrow-forward" label="Zurück zu Kadro" onPress={() => router.replace('/(tabs)/today')} />
+        <PrimaryButton icon="arrow-forward" label="Zurück zu Kandro" onPress={() => router.replace('/(tabs)/today')} />
       </Screen>
     );
   }

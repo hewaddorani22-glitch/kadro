@@ -1,4 +1,4 @@
-import { clearLocalKadroData } from '@/services/localRepository';
+import { clearLocalKandroData } from '@/services/localRepository';
 import { clearLocalWellnessConsent } from '@/services/consent';
 import {
   disableCloudSyncAfterDeletion,
@@ -8,9 +8,9 @@ import {
 } from '@/services/supabaseClient';
 import { clearTelemetryAfterAccountDeletion } from '@/services/telemetry';
 
-export async function deleteKadroAccount() {
+export async function deleteKandroAccount() {
   if (!supabase || !isSupabaseConfigured) {
-    await Promise.all([clearLocalKadroData(), clearLocalWellnessConsent(), clearTelemetryAfterAccountDeletion()]);
+    await Promise.all([clearLocalKandroData(), clearLocalWellnessConsent(), clearTelemetryAfterAccountDeletion()]);
     return;
   }
 
@@ -25,7 +25,7 @@ export async function deleteKadroAccount() {
   rememberSupabaseUser(null);
   await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
   await Promise.all([
-    clearLocalKadroData(),
+    clearLocalKandroData(),
     clearLocalWellnessConsent(),
     clearTelemetryAfterAccountDeletion(),
   ]);
@@ -35,7 +35,7 @@ export function accountDeletionErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   const normalized = message.toLocaleLowerCase('en-US');
   if (normalized.includes('session') || normalized.includes('jwt') || normalized.includes('unauthorized')) {
-    return 'Deine Sitzung ist abgelaufen. Öffne Kadro erneut und versuche die Löschung noch einmal.';
+    return 'Deine Sitzung ist abgelaufen. Öffne Kandro erneut und versuche die Löschung noch einmal.';
   }
   if (normalized.includes('function') || normalized.includes('fetch') || normalized.includes('network')) {
     return 'Die sichere Löschfunktion ist gerade nicht erreichbar. Bitte prüfe deine Verbindung und versuche es erneut.';

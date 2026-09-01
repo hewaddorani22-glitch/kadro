@@ -7,14 +7,14 @@ const sections: LegalSection[] = [
     title: '1. Verantwortlicher und Kontakt',
     paragraphs: [
       contact
-        ? `Verantwortlich für Kadro ist der Anbieter der App. Datenschutzanfragen erreichst du unter ${contact}.`
+        ? `Verantwortlich für Kandro ist der Anbieter der App. Datenschutzanfragen erreichst du unter ${contact}.`
         : 'Der verantwortliche Anbieter und eine öffentliche Datenschutz-Kontaktadresse müssen vor der externen TestFlight- oder App-Store-Veröffentlichung ergänzt werden.',
     ],
   },
   {
     title: '2. Welche Daten verarbeitet werden',
     paragraphs: [
-      'Auf deinem Gerät verarbeitet Kadro dein Profil, Zielwerte, Gewichtseinträge, bestätigte Mahlzeiten und höchstens drei fehlgeschlagene, komprimierte Fotoscans für einen von dir ausgelösten Wiederholungsversuch.',
+      'Auf deinem Gerät verarbeitet Kandro dein Profil, Zielwerte, Gewichtseinträge, bestätigte Mahlzeiten und höchstens drei fehlgeschlagene, komprimierte Fotoscans für einen von dir ausgelösten Wiederholungsversuch.',
       'Wenn die Cloud aktiv ist, speichert Supabase in der EU eine zufällige Account-ID, dein Profil, deine aktuellen Zielwerte, bestätigte Mahlzeiten, Zutaten, Empfehlungen und Feedback. Gewichtseinträge bleiben im MVP lokal; eine E-Mail-Adresse wird nur gespeichert, wenn du den Gast-Account bewusst sicherst.',
       'PostHog erhält nur freiwillig aktivierte, anonyme Funktionsereignisse und bereinigte Fehler. Fotos, E-Mail-Adressen, Lebensmittel, Kalorien, Makros und Supabase-IDs werden nicht an PostHog gesendet.',
     ],
@@ -22,7 +22,7 @@ const sections: LegalSection[] = [
   {
     title: '3. Fotoanalyse und Empfänger',
     paragraphs: [
-      'Ein Foto wird auf dem Gerät verkleinert. Das Original wird danach verworfen. Die Arbeitskopie oder deine bewusst eingegebene Mahlzeitenbeschreibung geht nur an den konfigurierten Kadro-Analysezugang und von dort zur Lebensmittel- und Portionserkennung an OpenRouter oder OpenAI. USDA FoodData Central wird anschließend nur mit Textsuchbegriffen abgefragt. Bei einem Barcode wird die Nummer über den Kadro-Analysezugang bei Open Food Facts nachgeschlagen.',
+      'Ein Foto wird auf dem Gerät verkleinert. Das Original wird danach verworfen. Die Arbeitskopie oder deine bewusst eingegebene Mahlzeitenbeschreibung geht nur an den konfigurierten Kandro-Analysezugang und von dort zur Lebensmittel- und Portionserkennung an OpenRouter oder OpenAI. USDA FoodData Central wird anschließend nur mit Textsuchbegriffen abgefragt. Bei einem Barcode wird die Nummer über den Kandro-Analysezugang bei Open Food Facts nachgeschlagen.',
       'Bestätigte Mahlzeiten enthalten kein Foto. Die lokale Fehlerwarteschlange wird auf drei Scans begrenzt und nach erfolgreicher Analyse entfernt.',
     ],
   },
@@ -51,7 +51,7 @@ const sections: LegalSection[] = [
 export default function PrivacyScreen() {
   return (
     <LegalDocument
-      intro="Diese Hinweise erklären in klarer Sprache, welche Daten Kadro im aktuellen MVP verarbeitet und welche Punkte vor einer öffentlichen Veröffentlichung noch abgeschlossen werden müssen."
+      intro="Diese Hinweise erklären in klarer Sprache, welche Daten Kandro im aktuellen MVP verarbeitet und welche Punkte vor einer öffentlichen Veröffentlichung noch abgeschlossen werden müssen."
       sections={sections}
       title="Datenschutzhinweise"
     />

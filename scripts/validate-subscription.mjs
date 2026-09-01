@@ -38,7 +38,7 @@ if (!appContext.includes('setFreeScanUsed(true)')) failures.push('a completed sc
 if (!localRepository.includes('loadAllStoredScans')) failures.push('the free-scan boundary does not survive a new day locally');
 if (!envExample.includes('EXPO_PUBLIC_REVENUECAT_TEST_API_KEY=')) failures.push('Test Store public key is undocumented');
 if (!envExample.includes('EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=')) failures.push('iOS public SDK key is undocumented');
-if (!envExample.includes('EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=kadro_pro')) failures.push('Kadro entitlement ID is undocumented');
+if (!envExample.includes('EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=kandro_pro')) failures.push('Kandro entitlement ID is undocumented');
 if (!packageJson.includes('"react-native-purchases"')) failures.push('RevenueCat SDK dependency is missing');
 if (/REVENUECAT_(SECRET|PRIVATE|V2)_API_KEY/.test(envExample)) failures.push('secret RevenueCat key must not be exposed to Expo');
 

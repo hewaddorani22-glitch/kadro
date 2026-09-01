@@ -113,5 +113,5 @@ for (const remaining of budgets) {
 
 if (selectedIds.size < 80) throw new Error(`Ranking coverage is too narrow: only ${selectedIds.size} meals reached the top three`);
 
-console.log(`Validated ${catalog.length} Kadro catalog meals across ${contexts.length} contexts.`);
+console.log(`Validated ${catalog.length} Kandro catalog meals across ${contexts.length} contexts.`);
 console.log(`Validated ${recommendationSets} deterministic recommendation sets; ${selectedIds.size} meals reached the top three.`);

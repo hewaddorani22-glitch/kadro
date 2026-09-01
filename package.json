@@ -1,5 +1,5 @@
 {
-  "name": "kadro",
+  "name": "kandro",
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
@@ -43,8 +43,8 @@
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:lint": "supabase db lint --local",
-    "db:remote:list": "SUPABASE_HOME=./supabase/.cli-home supabase migration list --linked --profile ./supabase/kadro.profile.yml",
-    "db:remote:check": "SUPABASE_HOME=./supabase/.cli-home supabase db push --linked --dry-run --profile ./supabase/kadro.profile.yml",
+    "db:remote:list": "SUPABASE_HOME=./supabase/.cli-home supabase migration list --linked --profile ./supabase/kandro.profile.yml",
+    "db:remote:check": "SUPABASE_HOME=./supabase/.cli-home supabase db push --linked --dry-run --profile ./supabase/kandro.profile.yml",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",

@@ -27,7 +27,7 @@ export type SubscriptionSnapshot = {
   plans: Record<SubscriptionPlanId, SubscriptionPlan | null>;
 };
 
-const ENTITLEMENT_ID = process.env.EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID?.trim() || 'kadro_pro';
+const ENTITLEMENT_ID = process.env.EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID?.trim() || 'kandro_pro';
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 let configurationPromise: Promise<boolean> | null = null;
 

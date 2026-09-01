@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMemo, useState } from 'react';
-import { Modal, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
@@ -11,6 +12,7 @@ const germanDay = new Intl.DateTimeFormat('de-DE', { weekday: 'narrow' });
 const germanDate = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short' });
 
 export default function ProgressScreen() {
+  const insets = useSafeAreaInsets();
   const { addWeightEntry, mealHistory, profile, weightEntries } = useApp();
   const [showWeightEntry, setShowWeightEntry] = useState(false);
   const [weightInput, setWeightInput] = useState(String(profile.weightKg).replace('.', ','));
@@ -133,7 +135,7 @@ export default function ProgressScreen() {
             <Text style={styles.insightText}>
               {visibleMeals.length >= 3
                 ? `${visibleMeals.length} erfasste Mahlzeiten ergeben bisher durchschnittlich ${averageProtein} g Protein an protokollierten Tagen.`
-                : 'Nach drei erfassten Mahlzeiten zeigt Kadro hier erste Muster – ohne erfundene Bewertungen oder perfekte Serien.'}
+                : 'Nach drei erfassten Mahlzeiten zeigt Kandro hier erste Muster – ohne erfundene Bewertungen oder perfekte Serien.'}
             </Text>
           </View>
         </Card>
@@ -157,8 +159,8 @@ export default function ProgressScreen() {
       </View>
 
       <Modal animationType="fade" onRequestClose={() => setShowWeightEntry(false)} transparent visible={showWeightEntry}>
-        <View style={styles.modalScrim}>
-          <View accessibilityViewIsModal style={styles.modalCard}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
+          <View accessibilityViewIsModal style={[styles.modalCard, { paddingBottom: insets.bottom + 22 }]}>
             <Text accessibilityRole="header" style={styles.modalTitle}>Heutiges Gewicht</Text>
             <Text style={styles.modalText}>Ein Eintrag pro Tag. Ein neuer Wert ersetzt den heutigen.</Text>
             <View style={styles.weightInputRow}>
@@ -177,7 +179,7 @@ export default function ProgressScreen() {
             <PrimaryButton disabled={saving} label={saving ? 'Wird gespeichert …' : 'Speichern'} onPress={() => void saveWeight()} />
             <PrimaryButton disabled={saving} label="Abbrechen" onPress={() => setShowWeightEntry(false)} variant="ghost" />
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </Screen>
   );
@@ -261,11 +263,11 @@ const styles = StyleSheet.create({
   dayLabel: { color: colors.muted, fontSize: 10, fontWeight: '700' },
   consistencyText: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'flex-end' },
-  modalCard: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, padding: 22, gap: 13 },
+  modalCard: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 22, gap: 13 },
   modalTitle: { color: colors.text, fontSize: 25, fontWeight: '700' },
   modalText: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   weightInputRow: { minHeight: 64, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' },
-  weightInput: { flex: 1, color: colors.text, fontSize: 28, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  weightInput: { flex: 1, minWidth: 0, color: colors.text, fontSize: 28, fontWeight: '700', fontVariant: ['tabular-nums'] },
   weightUnit: { color: colors.muted, fontSize: 16, fontWeight: '600' },
   error: { color: colors.attention, fontSize: 12 },
 });

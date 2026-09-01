@@ -49,6 +49,6 @@ export function recommendMeals(
       ...entry,
       contexts: [entry.context],
       preferences: entry.tags,
-      source: { provider: 'kadro-catalog', label: 'Kadro-Katalog · geprüfte Schätzung' },
+      source: { provider: 'kandro-catalog', label: 'Kandro-Katalog · geprüfte Schätzung' },
     }));
 }

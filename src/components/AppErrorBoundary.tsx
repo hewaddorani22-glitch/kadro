@@ -29,7 +29,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     return (
       <View style={styles.screen}>
         <View style={styles.card}>
-          <Text style={styles.eyebrow}>KADRO</Text>
+          <Text style={styles.eyebrow}>KANDRO</Text>
           <Text style={styles.title}>Etwas ist schiefgelaufen.</Text>
           <Text style={styles.copy}>Deine gespeicherten Mahlzeiten bleiben erhalten. Versuche die Ansicht noch einmal zu laden.</Text>
           <Pressable onPress={() => this.setState({ failed: false })} style={styles.button}>

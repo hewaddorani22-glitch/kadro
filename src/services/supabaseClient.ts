@@ -5,7 +5,7 @@ import 'react-native-url-polyfill/auto';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
-const CLOUD_DISABLED_KEY = '@kadro/cloud-disabled-after-deletion:v1';
+const CLOUD_DISABLED_KEY = '@kandro/cloud-disabled-after-deletion:v1';
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 

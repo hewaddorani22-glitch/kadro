@@ -1,6 +1,6 @@
 # Agent guide
 
-This repository contains the Kadro mobile MVP: photograph a meal, confirm the estimate, see the remaining daily nutrition budget, and get three practical next-meal suggestions. The product line is “Die Aufstellung deines Tages.”
+This repository contains the Kandro mobile MVP: photograph a meal, confirm the estimate, see the remaining daily nutrition budget, and get three practical next-meal suggestions. The product line is “Die Aufstellung deines Tages.”
 
 ## Start here
 
@@ -19,7 +19,7 @@ Do not upgrade Expo, React, React Native, Expo Router, or other native packages 
 
 - `src/app/`: Expo Router route files only. Root stack screens live here; the five primary tabs live in `src/app/(tabs)/`.
 - `src/components/`: reusable visual components. Extend these before duplicating card, button, progress, badge, or photo patterns.
-- `src/components/KadroMark.tsx`: reusable vector brand mark used in the application UI.
+- `src/components/KandroMark.tsx`: reusable vector brand mark used in the application UI.
 - `src/constants/theme.ts`: the design tokens and source of truth for color, spacing, radii, and shadows.
 - `src/context/AppContext.tsx`: hydrated local/cloud application state, personalization, progress data, scan state, and derived daily nutrition values.
 - `src/services/mockNutrition.ts`: the current mock service boundary. Real data sources should replace or sit behind this layer, not leak into UI components.
@@ -38,7 +38,7 @@ Do not upgrade Expo, React, React Native, Expo Router, or other native packages 
 - The recommendation screen returns exactly three contextual options for Zuhause, Supermarkt, or Unterwegs.
 - Meal photos are temporary by default. Do not persist or upload originals without an explicit privacy decision and deletion policy.
 - Keep the central Scan action visually dominant and available from the primary navigation.
-- Preserve the Kadro visual system: `#F5F3EE` canvas, white surfaces, `#14150F` ink, `#6E7066` muted text, `#E4E2D9` hairlines, `#BBDC8E` pistachio, `#3F5233` moss, 18px cards, system typography, no gradients, and no glassmorphism.
+- Preserve the Kandro visual system: `#F5F3EE` canvas, white surfaces, `#14150F` ink, `#6E7066` muted text, `#E4E2D9` hairlines, `#BBDC8E` pistachio, `#3F5233` moss, 18px cards, system typography, no gradients, and no glassmorphism.
 - `#EFF6E3` accent tint is reserved for recommendation surfaces. Pistachio fill may be used for the central scan action, progress, and selected controls.
 - The only shadow belongs to the central Scan button.
 

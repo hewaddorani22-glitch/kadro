@@ -1,19 +1,37 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { colors } from '@/constants/theme';
 import { formatNumber } from '@/utils/format';
 
-export function CalorieRing({ remaining, total }: { remaining: number; total: number }) {
-  const size = 220;
-  const stroke = 17;
+// Screen padding (2 x 20) plus hero card padding (2 x 20).
+const HORIZONTAL_CHROME = 80;
+const MAX_SIZE = 220;
+const MIN_SIZE = 168;
+
+export function CalorieRing({ consumed, total }: { consumed: number; total: number }) {
+  const { width } = useWindowDimensions();
+  // The ring used to be a hard 220pt, which overflowed the hero card on the
+  // narrowest phones. It now shrinks with the viewport instead.
+  const size = Math.round(Math.min(MAX_SIZE, Math.max(MIN_SIZE, width - HORIZONTAL_CHROME)));
+  const stroke = Math.round(size * 0.077);
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
-  const consumedRatio = Math.min(1, Math.max(0, (total - remaining) / total));
+  const safeTotal = total > 0 ? total : 1;
+  const remaining = Math.max(0, total - consumed);
+  const over = Math.max(0, consumed - total);
+  const consumedRatio = Math.min(1, Math.max(0, consumed / safeTotal));
+  const ringColor = over > 0 ? colors.attention : colors.accentDeep;
+  const statusColor = over > 0 ? colors.attention : colors.success;
 
   return (
-    <View accessibilityLabel={`${remaining} Kilokalorien übrig`} style={styles.outer}>
-      <View style={styles.track}>
+    <View
+      accessibilityLabel={over > 0
+        ? `${over} Kilokalorien über dem Tagesziel`
+        : `${remaining} Kilokalorien übrig`}
+      style={styles.outer}
+    >
+      <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
         <Svg height={size} style={styles.svg} width={size}>
           <Circle
             cx={size / 2}
@@ -28,7 +46,7 @@ export function CalorieRing({ remaining, total }: { remaining: number; total: nu
             cy={size / 2}
             fill="none"
             r={radius}
-            stroke={colors.accentDeep}
+            stroke={ringColor}
             strokeDasharray={`${circumference} ${circumference}`}
             strokeDashoffset={circumference * (1 - consumedRatio)}
             strokeLinecap="round"
@@ -37,11 +55,17 @@ export function CalorieRing({ remaining, total }: { remaining: number; total: nu
           />
         </Svg>
         <View style={styles.inner}>
-          <Text style={styles.value}>{formatNumber(remaining)}</Text>
-          <Text style={styles.label}>kcal übrig</Text>
+          <Text
+            adjustsFontSizeToFit
+            numberOfLines={1}
+            style={[styles.value, { fontSize: Math.round(size * 0.223), lineHeight: Math.round(size * 0.245) }]}
+          >
+            {formatNumber(over > 0 ? over : remaining)}
+          </Text>
+          <Text style={styles.label}>{over > 0 ? 'kcal drüber' : 'kcal übrig'}</Text>
           <View style={styles.statusRow}>
-            <View style={styles.statusDot} />
-            <Text style={styles.status}>Im Plan</Text>
+            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+            <Text style={[styles.status, { color: statusColor }]}>{over > 0 ? 'Leicht drüber' : 'Im Plan'}</Text>
           </View>
         </View>
       </View>
@@ -54,13 +78,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  track: {
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   svg: {
     position: 'absolute',
     top: 0,
@@ -69,11 +86,10 @@ const styles = StyleSheet.create({
   inner: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 12,
   },
   value: {
     color: colors.text,
-    fontSize: 49,
-    lineHeight: 54,
     fontWeight: '700',
     letterSpacing: -1.7,
     fontVariant: ['tabular-nums'],
@@ -93,10 +109,8 @@ const styles = StyleSheet.create({
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: colors.success,
   },
   status: {
-    color: colors.success,
     fontSize: 12,
     fontWeight: '700',
   },

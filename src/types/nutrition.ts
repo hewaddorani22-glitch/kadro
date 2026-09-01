@@ -9,7 +9,7 @@ export type Nutrition = {
 };
 
 export type NutritionSource = {
-  provider: 'usda' | 'open-food-facts' | 'kadro-catalog' | 'demo';
+  provider: 'usda' | 'open-food-facts' | 'kandro-catalog' | 'demo';
   referenceId?: string;
   label: string;
 };
