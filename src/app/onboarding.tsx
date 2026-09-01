@@ -12,45 +12,57 @@ import { useApp } from '@/context/AppContext';
 import { recordWellnessConsent } from '@/services/consent';
 import { calculateDailyTargets, estimatedPace, isRateLimited, weeklyRateLabel } from '@/services/personalization';
 import { trackEvent } from '@/services/telemetry';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
 
 type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap };
 
-const goalChoices: Choice[] = [
-  { label: 'Gewicht reduzieren', detail: 'In einem ruhigen, nachhaltigen Tempo', icon: 'trending-down' },
-  { label: 'Gewicht halten', detail: 'Deinen aktuellen Kurs beibehalten', icon: 'remove' },
-  { label: 'Stärker werden', detail: 'Muskeln und Leistung unterstützen', icon: 'trending-up' },
-];
-
-const activityChoices: Choice[] = [
-  { label: 'Meist sitzend', detail: 'Wenig gezielte Bewegung', icon: 'desktop-outline' },
-  { label: 'Leicht aktiv', detail: '1–3 Trainingseinheiten pro Woche', icon: 'walk-outline' },
-  { label: 'Sehr aktiv', detail: '4 oder mehr Einheiten pro Woche', icon: 'barbell-outline' },
-];
-
-const preferenceChoices = [
-  { id: 'high-protein', label: 'Proteinreich' },
-  { id: 'vegetarian', label: 'Vegetarisch' },
-  { id: 'pork-free', label: 'Ohne Schwein' },
-  { id: 'lactose-free', label: 'Laktosefrei' },
-  { id: 'quick', label: 'Schnelle Mahlzeiten' },
-] as const;
 
 const STEPS = ['goal', 'rate', 'name', 'age', 'height', 'weight', 'activity', 'preferences', 'building', 'plan'] as const;
 type StepId = (typeof STEPS)[number];
 
-const copy: Record<StepId, { title: string; subtitle: string }> = {
-  goal: { title: 'Was möchtest du erreichen?', subtitle: 'Danach richtet sich dein täglicher Energiebedarf.' },
-  rate: { title: 'Wie schnell?', subtitle: 'Langsamer heißt mehr Muskeln behalten und weniger Verzicht im Alltag.' },
-  name: { title: 'Wie dürfen wir dich nennen?', subtitle: 'Nur für die Begrüßung. Du kannst das überspringen.' },
-  age: { title: 'Wie alt bist du?', subtitle: 'Das Alter beeinflusst deinen Grundumsatz.' },
-  height: { title: 'Wie groß bist du?', subtitle: 'Ungefähre Angaben reichen völlig.' },
-  weight: { title: 'Was wiegst du aktuell?', subtitle: 'Kein Urteil. Nur ein Startpunkt, der sich mitbewegt.' },
-  activity: { title: 'Wie aktiv bist du?', subtitle: 'Denk an eine durchschnittliche Woche, nicht an deine beste.' },
-  preferences: { title: 'Wie möchtest du essen?', subtitle: 'Wähle alles, was zu dir passt – oder nichts davon.' },
-  building: { title: 'Wir stellen deinen Tag auf', subtitle: 'Einen Moment.' },
-  plan: { title: 'Dein Startplan', subtitle: 'Flexibel ab dem ersten Bissen. Jede Mahlzeit stellt den Tag neu auf.' },
-};
+type Dict = ReturnType<typeof useLanguage>['t'];
+
+function goalChoicesFor(t: Dict): Choice[] {
+  return [
+    { label: t.onboarding.goalLose, detail: t.onboarding.goalLoseDetail, icon: 'trending-down' },
+    { label: t.onboarding.goalMaintain, detail: t.onboarding.goalMaintainDetail, icon: 'remove' },
+    { label: t.onboarding.goalGain, detail: t.onboarding.goalGainDetail, icon: 'trending-up' },
+  ];
+}
+
+function activityChoicesFor(t: Dict): Choice[] {
+  return [
+    { label: t.onboarding.activityLow, detail: t.onboarding.activityLowDetail, icon: 'desktop-outline' },
+    { label: t.onboarding.activityLight, detail: t.onboarding.activityLightDetail, icon: 'walk-outline' },
+    { label: t.onboarding.activityHigh, detail: t.onboarding.activityHighDetail, icon: 'barbell-outline' },
+  ];
+}
+
+function preferenceChoicesFor(t: Dict) {
+  return [
+    { id: 'high-protein', label: t.onboarding.prefHighProtein },
+    { id: 'vegetarian', label: t.onboarding.prefVegetarian },
+    { id: 'pork-free', label: t.onboarding.prefPorkFree },
+    { id: 'lactose-free', label: t.onboarding.prefLactoseFree },
+    { id: 'quick', label: t.onboarding.prefQuick },
+  ];
+}
+
+function copyFor(t: Dict): Record<StepId, { title: string; subtitle: string }> {
+  return {
+    goal: { title: t.onboarding.goalTitle, subtitle: t.onboarding.goalSubtitle },
+    rate: { title: t.onboarding.rateTitle, subtitle: t.onboarding.rateSubtitle },
+    name: { title: t.onboarding.nameTitle, subtitle: t.onboarding.nameSubtitle },
+    age: { title: t.onboarding.ageTitle, subtitle: t.onboarding.ageSubtitle },
+    height: { title: t.onboarding.heightTitle, subtitle: t.onboarding.heightSubtitle },
+    weight: { title: t.onboarding.weightTitle, subtitle: t.onboarding.weightSubtitle },
+    activity: { title: t.onboarding.activityTitle, subtitle: t.onboarding.activitySubtitle },
+    preferences: { title: t.onboarding.preferencesTitle, subtitle: t.onboarding.preferencesSubtitle },
+    building: { title: t.onboarding.buildingTitle, subtitle: t.onboarding.buildingSubtitle },
+    plan: { title: t.onboarding.planTitle, subtitle: t.onboarding.planSubtitle },
+  };
+}
 
 /** Steps the user may leave without answering. Everything else has a safe default. */
 const skippableSteps = new Set<StepId>(['name', 'preferences']);
@@ -59,13 +71,18 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeOnboarding } = useApp();
+  const { locale, t } = useLanguage();
+  const copy = copyFor(t);
+  const goalChoices = goalChoicesFor(t);
+  const activityChoices = activityChoicesFor(t);
+  const preferenceChoices = preferenceChoicesFor(t);
   const [stepIndex, setStepIndex] = useState(0);
-  const [goal, setGoal] = useState('Gewicht reduzieren');
+  const [goal, setGoal] = useState<NutritionGoal>('lose');
   const [displayName, setDisplayName] = useState('');
   const [age, setAge] = useState(29);
   const [height, setHeight] = useState(178);
   const [weight, setWeight] = useState(78);
-  const [activity, setActivity] = useState('Leicht aktiv');
+  const [activity, setActivity] = useState<UserProfile['activityLevel']>('light');
   const [weeklyRate, setWeeklyRate] = useState<WeeklyRateKg>(0.5);
   const [preferences, setPreferences] = useState<string[]>(['high-protein']);
   const [showConsent, setShowConsent] = useState(false);
@@ -90,7 +107,7 @@ export default function OnboardingScreen() {
     setStepIndex((current) => {
       let next = Math.min(STEPS.length - 1, current + 1);
       // Holding weight has no rate to choose.
-      if (STEPS[next] === 'rate' && goalRef.current === 'Gewicht halten') next += 1;
+      if (STEPS[next] === 'rate' && goalRef.current === 'maintain') next += 1;
       return Math.min(STEPS.length - 1, next);
     });
   }, [clearAdvance]);
@@ -100,7 +117,7 @@ export default function OnboardingScreen() {
     clearAdvance();
     setStepIndex((current) => {
       let previous = Math.max(0, current - 1);
-      if (STEPS[previous] === 'rate' && goalRef.current === 'Gewicht halten') previous -= 1;
+      if (STEPS[previous] === 'rate' && goalRef.current === 'maintain') previous -= 1;
       return Math.max(0, previous);
     });
   };
@@ -131,11 +148,11 @@ export default function OnboardingScreen() {
 
   const draftProfile = useMemo<UserProfile>(() => ({
     displayName: displayName.trim() || 'Du',
-    goal: goal === 'Gewicht halten' ? 'maintain' : goal === 'Stärker werden' ? 'gain' : 'lose',
+    goal,
     age,
     heightCm: height,
     weightKg: weight,
-    activityLevel: activity === 'Meist sitzend' ? 'low' : activity === 'Sehr aktiv' ? 'high' : 'light',
+    activityLevel: activity,
     weeklyRateKg: weeklyRate,
     preferences,
     completedAt: null,
@@ -152,7 +169,7 @@ export default function OnboardingScreen() {
       setShowConsent(false);
       router.replace('/(tabs)/scan');
     } catch {
-      setConsentError('Das hat gerade nicht geklappt. Prüfe kurz deine Verbindung und tippe noch einmal.');
+      setConsentError(t.onboarding.consentError);
     } finally {
       setConsentBusy(false);
     }
@@ -168,13 +185,13 @@ export default function OnboardingScreen() {
   };
 
   const showFooterButton = step !== 'building' && !isChoiceStep(step);
-  const footerLabel = step === 'plan' ? 'Erste Mahlzeit scannen' : 'Weiter';
+  const footerLabel = step === 'plan' ? t.onboarding.scanFirstMeal : t.common.next;
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
       <View style={styles.topBar}>
         <Pressable
-          accessibilityLabel="Zurück"
+          accessibilityLabel={t.common.back}
           accessibilityRole="button"
           accessibilityState={{ disabled: stepIndex === 0 }}
           disabled={stepIndex === 0}
@@ -184,10 +201,10 @@ export default function OnboardingScreen() {
         >
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
-        <Text style={styles.stepLabel}>Schritt {stepIndex + 1} von {STEPS.length}</Text>
+        <Text style={styles.stepLabel}>{t.onboarding.step(stepIndex + 1, STEPS.length)}</Text>
         {skippableSteps.has(step) ? (
           <Pressable accessibilityRole="button" hitSlop={10} onPress={skipStep}>
-            <Text style={styles.skip}>Überspringen</Text>
+            <Text style={styles.skip}>{t.common.skip}</Text>
           </Pressable>
         ) : <View style={styles.skipPlaceholder} />}
       </View>
@@ -212,7 +229,7 @@ export default function OnboardingScreen() {
 
           <View style={styles.body}>
             {step === 'goal' ? (
-              <ChoiceList choices={goalChoices} onSelect={(value) => selectAndAdvance(() => setGoal(value))} selected={goal} />
+              <ChoiceList choices={goalChoices} onSelect={(value) => selectAndAdvance(() => setGoal(value))} selected={goal} values={['lose', 'maintain', 'gain'] as NutritionGoal[]} />
             ) : null}
 
             {step === 'rate' ? (
@@ -235,7 +252,7 @@ export default function OnboardingScreen() {
                       <View style={styles.choiceTextBlock}>
                         <Text style={styles.choiceTitle}>{weeklyRateLabel(draftProfile.goal, rate)}</Text>
                         <Text style={styles.choiceDetail}>
-                          {rate === 0.25 ? 'Ruhig und gut durchzuhalten' : 'Zügig, verlangt mehr Disziplin'} · {draftProfile.goal === 'lose' ? '−' : '+'}{applied} kcal pro Tag
+                          {rate === 0.25 ? t.onboarding.rateCalm : t.onboarding.rateBrisk} · {draftProfile.goal === 'lose' ? '−' : '+'}{applied} {t.onboarding.perDay}
                         </Text>
                       </View>
                       <Ionicons color={active ? colors.accentDeep : colors.border} name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
@@ -248,13 +265,13 @@ export default function OnboardingScreen() {
             {step === 'name' ? (
               <View style={styles.nameField}>
                 <TextInput
-                  accessibilityLabel="Vorname"
+                  accessibilityLabel={t.onboarding.nameTitle}
                   autoCapitalize="words"
                   autoFocus
                   maxLength={40}
                   onChangeText={setDisplayName}
                   onSubmitEditing={goNext}
-                  placeholder="Dein Vorname"
+                  placeholder={t.onboarding.namePlaceholder}
                   placeholderTextColor={colors.muted}
                   returnKeyType="done"
                   style={styles.nameInput}
@@ -264,7 +281,7 @@ export default function OnboardingScreen() {
             ) : null}
 
             {step === 'age' ? (
-              <NumberStep max={80} min={18} onChange={setAge} step={1} unit="Jahre" value={age} />
+              <NumberStep max={80} min={18} onChange={setAge} step={1} unit={t.onboarding.years} value={age} />
             ) : null}
             {step === 'height' ? (
               <NumberStep max={220} min={130} onChange={setHeight} step={1} unit="cm" value={height} />
@@ -274,12 +291,12 @@ export default function OnboardingScreen() {
             ) : null}
 
             {step === 'activity' ? (
-              <ChoiceList choices={activityChoices} onSelect={(value) => selectAndAdvance(() => setActivity(value))} selected={activity} />
+              <ChoiceList choices={activityChoices} onSelect={(value) => selectAndAdvance(() => setActivity(value))} selected={activity} values={['low', 'light', 'high'] as UserProfile['activityLevel'][]} />
             ) : null}
 
             {step === 'preferences' ? (
               <View style={styles.chips}>
-                {[...preferenceChoices, { id: 'none', label: 'Keine Präferenz' }].map((item) => {
+                {[...preferenceChoices, { id: 'none', label: t.onboarding.prefNone }].map((item) => {
                   const selected = item.id === 'none' ? preferences.length === 0 : preferences.includes(item.id);
                   return (
                     <Pressable
@@ -303,7 +320,7 @@ export default function OnboardingScreen() {
               </View>
             ) : null}
 
-            {step === 'building' ? <BuildingState goal={goal} /> : null}
+            {step === 'building' ? <BuildingState goal={goalChoices[['lose', 'maintain', 'gain'].indexOf(goal)].label} /> : null}
             {step === 'plan' ? <StartingPlan limited={isRateLimited(draftProfile)} profile={draftProfile} targets={startingTargets} /> : null}
           </View>
         </ScrollView>
@@ -323,15 +340,15 @@ export default function OnboardingScreen() {
         <View style={styles.modalScrim}>
           <View accessibilityViewIsModal style={[styles.consentSheet, { paddingBottom: insets.bottom + 18 }]}>
             <View style={styles.consentIcon}><Ionicons color={colors.text} name="shield-checkmark-outline" size={26} /></View>
-            <Text accessibilityRole="header" style={styles.consentTitle}>Deine Daten bleiben deine</Text>
+            <Text accessibilityRole="header" style={styles.consentTitle}>{t.onboarding.consentTitle}</Text>
             <Text style={styles.consentText}>Ich willige ausdrücklich ein, dass Kandro meine Ernährungs-, Ziel- und Mahlzeitendaten verarbeitet, um Tagesstände und Empfehlungen bereitzustellen. Ich kann das jederzeit widerrufen und meinen Account samt Daten löschen.</Text>
             <View style={styles.consentLinks}>
-              <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/privacy'); }}><Text style={styles.consentLink}>Datenschutz lesen</Text></Pressable>
-              <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/terms'); }}><Text style={styles.consentLink}>Bedingungen lesen</Text></Pressable>
+              <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/privacy'); }}><Text style={styles.consentLink}>{t.onboarding.consentPrivacy}</Text></Pressable>
+              <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/terms'); }}><Text style={styles.consentLink}>{t.onboarding.consentTerms}</Text></Pressable>
             </View>
             {consentError ? <Text accessibilityLiveRegion="assertive" style={styles.consentError}>{consentError}</Text> : null}
             <PrimaryButton disabled={consentBusy} icon="checkmark" label={consentBusy ? 'Einen Moment …' : 'Einverstanden, los geht’s'} onPress={() => void acceptConsent()} />
-            <PrimaryButton disabled={consentBusy} label="Zurück" onPress={() => setShowConsent(false)} variant="ghost" />
+            <PrimaryButton disabled={consentBusy} label={t.common.back} onPress={() => setShowConsent(false)} variant="ghost" />
           </View>
         </View>
       </Modal>
@@ -343,17 +360,18 @@ function isChoiceStep(step: StepId) {
   return step === 'goal' || step === 'rate' || step === 'activity';
 }
 
-function ChoiceList({ choices, onSelect, selected }: { choices: Choice[]; onSelect: (choice: string) => void; selected: string }) {
+function ChoiceList<T extends string>({ choices, onSelect, selected, values }: { choices: Choice[]; onSelect: (choice: T) => void; selected: T; values: T[] }) {
   return (
     <View style={styles.choiceList}>
-      {choices.map((choice) => {
-        const active = choice.label === selected;
+      {choices.map((choice, index) => {
+        const value = values[index];
+        const active = value === selected;
         return (
           <Pressable
             accessibilityRole="radio"
             accessibilityState={{ selected: active }}
-            key={choice.label}
-            onPress={() => onSelect(choice.label)}
+            key={value}
+            onPress={() => onSelect(value)}
             style={({ pressed }) => [styles.choice, active && styles.choiceActive, pressed && styles.choicePressed]}
           >
             <View style={[styles.choiceIcon, active && styles.choiceIconActive]}>
@@ -433,6 +451,7 @@ function StepperButton({ icon, label, onPressIn, onPressOut }: { icon: 'add' | '
 }
 
 function BuildingState({ goal }: { goal: string }) {
+  const { t } = useLanguage();
   return (
     <View style={styles.buildingCard}>
       <View style={styles.orbit}>
@@ -440,46 +459,47 @@ function BuildingState({ goal }: { goal: string }) {
           <Ionicons color={colors.text} name="sparkles" size={28} />
         </View>
       </View>
-      <Text style={styles.buildingTitle}>Ein flexibler Plan statt eines starren Menüs</Text>
-      <Text style={styles.buildingText}>Für „{goal}“ bleibt Protein im Fokus, während sich der Rest nach jeder Mahlzeit anpasst.</Text>
+      <Text style={styles.buildingTitle}>{t.onboarding.buildingHeadline}</Text>
+      <Text style={styles.buildingText}>{t.onboarding.buildingBody(goal)}</Text>
     </View>
   );
 }
 
 function StartingPlan({ limited, profile, targets }: { limited: boolean; profile: UserProfile; targets: ReturnType<typeof calculateDailyTargets> }) {
+  const { locale, t } = useLanguage();
   return (
     <View style={styles.startingCard}>
-      <Text style={styles.cardEyebrow}>TAGESZIEL</Text>
-      <Text style={styles.calories}>{new Intl.NumberFormat('de-DE').format(targets.calories)}</Text>
-      <Text style={styles.caloriesLabel}>Kilokalorien</Text>
+      <Text style={styles.cardEyebrow}>{t.onboarding.dailyGoal}</Text>
+      <Text style={styles.calories}>{new Intl.NumberFormat(locale).format(targets.calories)}</Text>
+      <Text style={styles.caloriesLabel}>{t.onboarding.kilocalories}</Text>
       <View style={styles.divider} />
       <View style={styles.planStats}>
         <View style={styles.planStat}>
           <Text numberOfLines={2} style={styles.planStatValue}>{targets.protein} g</Text>
-          <Text style={styles.planStatLabel}>Protein</Text>
+          <Text style={styles.planStatLabel}>{t.common.protein}</Text>
         </View>
         <View style={styles.planStat}>
           <Text numberOfLines={2} style={styles.planStatValue}>{estimatedPace(profile.goal, profile.weeklyRateKg)}</Text>
-          <Text style={styles.planStatLabel}>geschätztes Tempo</Text>
+          <Text style={styles.planStatLabel}>{t.onboarding.estimatedPace}</Text>
         </View>
         <View style={styles.planStat}>
           <Text numberOfLines={2} style={styles.planStatValue}>Flexibel</Text>
-          <Text style={styles.planStatLabel}>Essenszeiten</Text>
+          <Text style={styles.planStatLabel}>{t.onboarding.mealTimes}</Text>
         </View>
       </View>
       <View style={styles.adaptsRow}>
         <Ionicons color={colors.accentDeep} name="sync" size={18} />
-        <Text style={styles.adaptsText}>Dein Tag stellt sich nach jeder Mahlzeit neu auf</Text>
+        <Text style={styles.adaptsText}>{t.onboarding.adapts}</Text>
       </View>
       {limited ? (
         <View style={styles.limitRow}>
           <Ionicons color={colors.attention} name="information-circle-outline" size={16} />
           <Text style={styles.limitText}>
-            Dein gewähltes Tempo würde unter eine sichere Untergrenze führen. Kandro hat dein Ziel entsprechend angehoben.
+            {t.onboarding.rateLimited}
           </Text>
         </View>
       ) : null}
-      <Text style={styles.safetyText}>Diese Ziele sind Schätzwerte für allgemeines Wohlbefinden und kein medizinischer Rat. Kandro vermeidet extreme Zielwerte. Bei gesundheitlichen Beschwerden besprich Veränderungen bitte ärztlich.</Text>
+      <Text style={styles.safetyText}>{t.onboarding.safety}</Text>
     </View>
   );
 }
