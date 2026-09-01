@@ -90,6 +90,7 @@ type AppContextValue = {
   logRepeatMeal: (candidate: RepeatCandidate) => Promise<Meal>;
   deleteLoggedMeal: (id: string) => Promise<void>;
   adjustLoggedMealPortion: (id: string, factor: PortionFactor) => Promise<void>;
+  setLoggedMealType: (id: string, type: Meal['type']) => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -609,6 +610,21 @@ export function AppProvider({ children }: PropsWithChildren) {
     setMealHistory(replace);
   }, [mealHistory, meals]);
 
+  /**
+   * The meal moment is derived from the clock at logging time, so anyone who
+   * catches up on three meals in the evening ends up with three "Abendessen".
+   * Correcting it must not require deleting and redoing the meal.
+   */
+  const setLoggedMealType = useCallback(async (id: string, type: Meal['type']) => {
+    const target = mealHistory.find((meal) => meal.id === id) ?? meals.find((meal) => meal.id === id);
+    if (!target || target.type === type) return;
+    const updated: Meal = { ...target, type };
+    await saveSyncedMeal(updated);
+    const replace = (list: Meal[]) => list.map((meal) => (meal.id === id ? updated : meal));
+    setMeals(replace);
+    setMealHistory(replace);
+  }, [mealHistory, meals]);
+
   const value = useMemo<AppContextValue>(
     () => ({
       userName,
@@ -655,8 +671,9 @@ export function AppProvider({ children }: PropsWithChildren) {
       logRepeatMeal,
       deleteLoggedMeal,
       adjustLoggedMealPortion,
+      setLoggedMealType,
     }),
-    [addWeightEntry, adjustLoggedMealPortion, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
+    [addWeightEntry, adjustLoggedMealPortion, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, setLoggedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

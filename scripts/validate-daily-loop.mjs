@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(resolve(projectRoot, p), 'utf8');
 
-const [plan, appContext, today, repeatSource, personalization, mealsMigration, detailSheet, localRepo, cloudRepo, syncRepo] = await Promise.all([
+const [plan, appContext, today, repeatSource, personalization, mealsMigration, detailSheet, localRepo, cloudRepo, syncRepo, progress, consistency] = await Promise.all([
   read('src/app/(tabs)/plan.tsx'),
   read('src/context/AppContext.tsx'),
   read('src/app/(tabs)/today.tsx'),
@@ -27,6 +27,8 @@ const [plan, appContext, today, repeatSource, personalization, mealsMigration, d
   read('src/services/localRepository.ts'),
   read('src/services/cloudRepository.ts'),
   read('src/services/syncRepository.ts'),
+  read('src/app/(tabs)/progress.tsx'),
+  read('src/services/consistency.ts'),
 ]);
 
 const failures = [];
@@ -108,7 +110,28 @@ if (!appContext.includes('item.baseAmountG * factor')) {
   failures.push('portion correction must scale from the original estimate, not from the current value');
 }
 
-// 6. Repeat grouping, run against the real module rather than its source text.
+// 6. The timeline has to read as a chronology. The meal moment is guessed from
+//    the clock at logging time, so three meals caught up in one evening all
+//    became "Abendessen" with the same icon and no time shown.
+if (!today.includes('meal.time')) failures.push('the meal row must show when the meal was eaten');
+if (!today.includes('mealTypeIcon')) failures.push('every meal moment needs its own glyph');
+if (!detailSheet.includes('setLoggedMealType')) failures.push('a wrongly guessed meal moment must be correctable');
+
+// 7. Verlauf leads with what this audience controls. Weight swings on water and
+//    inverts while building, so it cannot be the hero metric.
+if (!progress.includes('proteinConsistency')) failures.push('Verlauf must lead with protein consistency');
+if (progress.includes('Leiser Fortschritt summiert sich')) {
+  failures.push('the poetic headline ate the fold on the screen people open for numbers');
+}
+if (!consistency.includes('reached: protein >= safeTarget * 0.9')) {
+  failures.push('the protein target must have tolerance, or a good day reads as a failure');
+}
+if (!consistency.includes('logged.length')) failures.push('the average must ignore untracked days');
+if (!progress.includes('trackedDays >= 3')) {
+  failures.push('a hit rate needs enough days to mean anything; one tracked day must not be scored');
+}
+
+// 8. Repeat grouping, run against the real module rather than its source text.
 //    Transpiled with the project's own TypeScript so the test cannot drift from
 //    what the app actually ships.
 const outDir = mkdtempSync(join(tmpdir(), 'kandro-loop-'));
@@ -171,4 +194,4 @@ if (failures.length) {
   throw new Error(`Daily loop validation failed:\n- ${failures.join('\n- ')}`);
 }
 
-console.log('Validated the daily loop: recommendations and repeats log real meals, logged meals can be corrected or removed, repeat grouping behaves, and targets scale with the person.');
+console.log('Validated the daily loop: meals log and correct properly, the timeline reads as a chronology, Verlauf leads with protein consistency, and targets scale with the person.');

@@ -9,7 +9,7 @@ import { Card, Eyebrow, IconCircle, MacroCard, PrimaryButton, Screen, SectionTit
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { Meal } from '@/types/nutrition';
-import { formatNumber, mealTypeLabel } from '@/utils/format';
+import { formatNumber, mealTypeIcon, mealTypeLabel } from '@/utils/format';
 
 export default function TodayScreen() {
   const router = useRouter();
@@ -162,11 +162,16 @@ export default function TodayScreen() {
                 onPress={() => setOpenMeal(meal)}
                 style={({ pressed }) => [styles.mealRow, pressed && styles.mealRowPressed]}
               >
-                <View style={[styles.mealIcon, meal.type !== 'Breakfast' && styles.mealIconLunch]}>
-                  <Ionicons color={colors.text} name={meal.type === 'Breakfast' ? 'cafe-outline' : meal.type === 'Snack' ? 'nutrition-outline' : 'restaurant-outline'} size={20} />
+                <View style={styles.mealIcon}>
+                  <Ionicons color={colors.text} name={mealTypeIcon(meal.type)} size={20} />
                 </View>
                 <View style={styles.mealInfo}>
-                  <Text style={styles.mealType}>{mealTypeLabel(meal.type)}</Text>
+                  <View style={styles.mealMetaRow}>
+                    <Text style={styles.mealType}>{mealTypeLabel(meal.type)}</Text>
+                    {/* The time lived in the data all along and was never shown, so
+                        three meals logged in one evening looked identical. */}
+                    <Text style={styles.mealTime}>{meal.time}</Text>
+                  </View>
                   <Text numberOfLines={1} style={styles.mealName}>{meal.title}</Text>
                 </View>
                 <View style={styles.mealNumbers}>
@@ -236,7 +241,9 @@ const styles = StyleSheet.create({
   mealIcon: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.attentionSoft, alignItems: 'center', justifyContent: 'center' },
   mealIconLunch: { backgroundColor: colors.neutralSoft },
   mealInfo: { flex: 1, gap: 3 },
+  mealMetaRow: { flexDirection: 'row', alignItems: 'baseline', gap: 7 },
   mealType: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  mealTime: { color: colors.muted, fontSize: 11, fontVariant: ['tabular-nums'] },
   mealName: { color: colors.muted, fontSize: 12 },
   mealNumbers: { alignItems: 'flex-end' },
   mealCalories: { color: colors.text, fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },

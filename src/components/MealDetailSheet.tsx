@@ -8,7 +8,7 @@ import { PrimaryButton } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { Meal, PortionFactor } from '@/types/nutrition';
-import { mealTypeLabel } from '@/utils/format';
+import { MEAL_TYPES, mealTypeIcon, mealTypeLabel } from '@/utils/format';
 
 /**
  * Everything a user can do to a meal after it is saved.
@@ -18,7 +18,7 @@ import { mealTypeLabel } from '@/utils/format';
  */
 export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
-  const { adjustLoggedMealPortion, deleteLoggedMeal } = useApp();
+  const { adjustLoggedMealPortion, deleteLoggedMeal, setLoggedMealType } = useApp();
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -39,6 +39,18 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
     void Haptics.selectionAsync();
     try {
       await adjustLoggedMealPortion(meal.id, factor);
+      close();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const changeType = async (type: Meal['type']) => {
+    if (busy || type === meal.type) return;
+    setBusy(true);
+    void Haptics.selectionAsync();
+    try {
+      await setLoggedMealType(meal.id, type);
       close();
     } finally {
       setBusy(false);
@@ -95,6 +107,29 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
               <Text style={styles.sourceNote}>{included[0].source.label}</Text>
             </View>
           ) : null}
+
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>MAHLZEIT</Text>
+            <Text style={styles.sectionHint}>Wird aus der Uhrzeit beim Eintragen geraten. Trägst du später nach, korrigiere es hier.</Text>
+            <View style={styles.typeRow}>
+              {MEAL_TYPES.map((type) => {
+                const active = meal.type === type;
+                return (
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ disabled: busy, selected: active }}
+                    disabled={busy}
+                    key={type}
+                    onPress={() => void changeType(type)}
+                    style={[styles.typeChip, active && styles.typeChipActive]}
+                  >
+                    <Ionicons color={colors.text} name={mealTypeIcon(type)} size={15} />
+                    <Text style={styles.typeChipText}>{mealTypeLabel(type)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>PORTION KORRIGIEREN</Text>
@@ -188,6 +223,10 @@ const styles = StyleSheet.create({
   itemName: { flex: 1, minWidth: 0, color: colors.text, fontSize: 13, fontWeight: '600' },
   itemAmount: { color: colors.muted, fontSize: 11, fontVariant: ['tabular-nums'] },
   sourceNote: { color: colors.muted, fontSize: 10, marginTop: 2 },
+  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  typeChip: { minHeight: 40, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  typeChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  typeChipText: { color: colors.text, fontSize: 12, fontWeight: '600' },
   portionSelector: { flexDirection: 'row', borderRadius: radii.input, backgroundColor: colors.background, padding: 4, gap: 4 },
   portionChoice: { flex: 1, minWidth: 0, minHeight: 52, borderRadius: 11, alignItems: 'center', justifyContent: 'center', gap: 2 },
   portionActive: { backgroundColor: colors.accent },

@@ -6,14 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { proteinConsistency } from '@/services/consistency';
 import { localDateKey } from '@/utils/date';
 
-const germanDay = new Intl.DateTimeFormat('de-DE', { weekday: 'narrow' });
 const germanDate = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short' });
 
 export default function ProgressScreen() {
   const insets = useSafeAreaInsets();
-  const { addWeightEntry, mealHistory, profile, weightEntries } = useApp();
+  const { addWeightEntry, mealHistory, profile, targets, weightEntries } = useApp();
   const [showWeightEntry, setShowWeightEntry] = useState(false);
   const [weightInput, setWeightInput] = useState(String(profile.weightKg).replace('.', ','));
   const [weightError, setWeightError] = useState<string | null>(null);
@@ -29,27 +29,12 @@ export default function ProgressScreen() {
   const currentWeight = visibleWeights.at(-1)?.weightKg ?? profile.weightKg;
   const weightChange = visibleWeights.length > 1 ? currentWeight - visibleWeights[0].weightKg : 0;
 
-  const lastSevenDays = useMemo(() => Array.from({ length: 7 }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - index));
-    const key = localDateKey(date);
-    return {
-      key,
-      label: germanDay.format(date),
-      complete: mealHistory.some((meal) => meal.date === key),
-      today: index === 6,
-    };
-  }), [mealHistory]);
-  const trackedDays = lastSevenDays.filter((day) => day.complete).length;
-  const mealsByDay = visibleMeals.reduce<Record<string, number>>((days, meal) => {
-    const date = meal.date ?? 'unknown';
-    days[date] = (days[date] ?? 0) + meal.protein;
-    return days;
-  }, {});
-  const proteinDays = Object.values(mealsByDay);
-  const averageProtein = proteinDays.length
-    ? Math.round(proteinDays.reduce((sum, value) => sum + value, 0) / proteinDays.length)
-    : 0;
+  const consistency = useMemo(
+    () => proteinConsistency(mealHistory, targets.protein),
+    [mealHistory, targets.protein],
+  );
+  const { averageProtein, loggedCount: trackedDays, reachedCount } = consistency;
+  const showsScore = trackedDays >= 3;
 
   const openWeightEntry = () => {
     setWeightInput(String(currentWeight).replace('.', ','));
@@ -76,12 +61,57 @@ export default function ProgressScreen() {
     <Screen>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Eyebrow>Letzte 30 Tage</Eyebrow>
-          <PageTitle>Leiser Fortschritt summiert sich.</PageTitle>
-          <Text style={styles.subtitle}>Der Trend zählt mehr als eine einzelne Mahlzeit oder Messung.</Text>
+          <Eyebrow>Letzte 7 Tage</Eyebrow>
+          <PageTitle>Dein Verlauf</PageTitle>
         </View>
         <IconCircle name="trending-up" size={48} />
       </View>
+
+      {/* Protein is the thing this audience controls day to day; weight swings on
+          water and inverts when someone is building. It leads for a reason. */}
+      <Card style={styles.consistencyHero}>
+        {/* A ratio needs enough days to mean anything. Scoring someone "0 von 1"
+            on their first day is a verdict on a single data point, and this app
+            does not do verdicts. Below three tracked days the average leads. */}
+        <Text style={styles.heroLabel}>{showsScore ? 'PROTEINZIEL ERREICHT' : 'PROTEIN IM SCHNITT'}</Text>
+        <View style={styles.heroValueRow}>
+          {showsScore ? (
+            <>
+              <Text style={styles.heroValue}>{reachedCount}</Text>
+              <Text style={styles.heroOf}>von {trackedDays} erfassten Tagen</Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.heroValue}>{trackedDays > 0 ? averageProtein : targets.protein}</Text>
+              <Text style={styles.heroOf}>{trackedDays > 0 ? `g · Ziel ${targets.protein} g` : 'g Tagesziel'}</Text>
+            </>
+          )}
+        </View>
+        <View style={styles.strip}>
+          {consistency.days.map((day) => (
+            <View key={day.key} style={styles.stripDay}>
+              <View style={styles.stripTrack}>
+                <View
+                  style={[
+                    styles.stripFill,
+                    { height: `${Math.max(6, Math.round((day.ratio / 1.2) * 100))}%` },
+                    day.logged && styles.stripFillLogged,
+                    day.reached && styles.stripFillReached,
+                  ]}
+                />
+              </View>
+              <Text style={[styles.stripLabel, day.today && styles.stripLabelToday]}>{day.label}</Text>
+            </View>
+          ))}
+        </View>
+        <Text style={styles.heroFoot}>
+          {showsScore
+            ? `Ø ${averageProtein} g pro erfasstem Tag · Ziel ${targets.protein} g`
+            : trackedDays > 0
+              ? `${trackedDays} von 3 Tagen erfasst. Ab dem dritten siehst du hier, wie oft du dein Ziel triffst.`
+              : 'Sobald du Mahlzeiten erfasst, siehst du hier, wie oft du dein Ziel triffst.'}
+        </Text>
+      </Card>
 
       <Card style={styles.weightCard}>
         <View style={styles.weightTop}>
@@ -99,10 +129,12 @@ export default function ProgressScreen() {
           )}
         </View>
         <WeightChart entries={visibleWeights} />
-        <View style={styles.chartLabels}>
-          <Text style={styles.chartLabel}>{visibleWeights.length ? germanDate.format(new Date(`${visibleWeights[0].date}T12:00:00`)) : 'Heute'}</Text>
-          <Text style={styles.chartLabel}>{visibleWeights.length ? germanDate.format(new Date(`${visibleWeights.at(-1)?.date}T12:00:00`)) : 'Heute'}</Text>
-        </View>
+        {visibleWeights.length > 1 ? (
+          <View style={styles.chartLabels}>
+            <Text style={styles.chartLabel}>{germanDate.format(new Date(`${visibleWeights[0].date}T12:00:00`))}</Text>
+            <Text style={styles.chartLabel}>{germanDate.format(new Date(`${visibleWeights.at(-1)?.date}T12:00:00`))}</Text>
+          </View>
+        ) : null}
         <PrimaryButton icon="add" label="Heutiges Gewicht eintragen" onPress={openWeightEntry} variant="secondary" />
       </Card>
 
@@ -138,23 +170,6 @@ export default function ProgressScreen() {
                 : 'Nach drei erfassten Mahlzeiten zeigt Kandro hier erste Muster – ohne erfundene Bewertungen oder perfekte Serien.'}
             </Text>
           </View>
-        </Card>
-      </View>
-
-      <View style={styles.section}>
-        <SectionTitle>Letzte sieben Tage</SectionTitle>
-        <Card style={styles.consistencyCard}>
-          <View style={styles.days}>
-            {lastSevenDays.map((day) => (
-              <View key={day.key} style={styles.dayBlock}>
-                <View style={[styles.dayCircle, day.complete && styles.dayComplete, day.today && styles.dayToday]}>
-                  {day.complete ? <Ionicons color={colors.text} name="checkmark" size={16} /> : <Text style={styles.dayDot}>•</Text>}
-                </View>
-                <Text style={styles.dayLabel}>{day.label}</Text>
-              </View>
-            ))}
-          </View>
-          <Text style={styles.consistencyText}>Jeder erfasste Tag ist ein Signal, kein Urteil.</Text>
         </Card>
       </View>
 
@@ -221,6 +236,21 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   headerCopy: { flex: 1, gap: 8 },
   subtitle: { color: colors.muted, fontSize: 15, lineHeight: 22 },
+  consistencyHero: { padding: 20, gap: 14 },
+  heroLabel: { color: colors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  heroValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  heroValue: { color: colors.text, fontSize: 46, lineHeight: 50, fontWeight: '700', letterSpacing: -1.6, fontVariant: ['tabular-nums'] },
+  heroOf: { color: colors.muted, fontSize: 15 },
+  strip: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
+  stripDay: { flex: 1, minWidth: 0, alignItems: 'center', gap: 6 },
+  stripTrack: { width: '100%', height: 64, borderRadius: 8, backgroundColor: colors.neutralSoft, justifyContent: 'flex-end', overflow: 'hidden' },
+  // Three readable states: untouched, tracked, target reached.
+  stripFill: { width: '100%', borderRadius: 8, backgroundColor: colors.border },
+  stripFillLogged: { backgroundColor: colors.accent },
+  stripFillReached: { backgroundColor: colors.accentDeep },
+  stripLabel: { color: colors.muted, fontSize: 10, fontWeight: '600' },
+  stripLabelToday: { color: colors.text, fontWeight: '800' },
+  heroFoot: { color: colors.muted, fontSize: 11, lineHeight: 16, fontVariant: ['tabular-nums'] },
   weightCard: { padding: 22, gap: 16 },
   weightTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   cardLabel: { color: colors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
@@ -253,15 +283,6 @@ const styles = StyleSheet.create({
   insightCopy: { flex: 1, gap: 7 },
   insightTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   insightText: { color: colors.muted, fontSize: 13, lineHeight: 20 },
-  consistencyCard: { gap: 18 },
-  days: { flexDirection: 'row', justifyContent: 'space-between' },
-  dayBlock: { alignItems: 'center', gap: 7 },
-  dayCircle: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
-  dayComplete: { backgroundColor: colors.accent },
-  dayToday: { borderWidth: 1.5, borderColor: colors.accentDeep },
-  dayDot: { color: colors.muted, fontSize: 18, marginTop: -4 },
-  dayLabel: { color: colors.muted, fontSize: 10, fontWeight: '700' },
-  consistencyText: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'flex-end' },
   modalCard: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 22, gap: 13 },
   modalTitle: { color: colors.text, fontSize: 25, fontWeight: '700' },
