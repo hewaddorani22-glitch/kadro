@@ -56,6 +56,7 @@ export default function RootLayout() {
               <Stack.Screen name="terms" />
               <Stack.Screen name="account-deletion" />
               <Stack.Screen name="evening" />
+              <Stack.Screen name="sources" />
               </Stack>
             </AppRouteGuard>
           </SubscriptionProvider>

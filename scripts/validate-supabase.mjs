@@ -13,7 +13,8 @@ const quotaMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901120
 const cacheMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901140000_add_usda_food_cache.sql');
 const accuracyMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901150000_harden_nutrition_accuracy.sql');
 const mealAnalysisPath = resolve(projectRoot, 'src/services/mealAnalysis.ts');
-const [migration, config, accountLinking, emailTemplate, accountDeletion, gateway, quotaMigration, cacheMigration, accuracyMigration, mealAnalysis] = await Promise.all([
+const sourcesScreenPath = resolve(projectRoot, 'src/app/sources.tsx');
+const [migration, config, accountLinking, emailTemplate, accountDeletion, gateway, quotaMigration, cacheMigration, accuracyMigration, mealAnalysis, sourcesScreen] = await Promise.all([
   readFile(migrationPath, 'utf8'),
   readFile(configPath, 'utf8'),
   readFile(accountLinkingPath, 'utf8'),
@@ -24,6 +25,7 @@ const [migration, config, accountLinking, emailTemplate, accountDeletion, gatewa
   readFile(cacheMigrationPath, 'utf8'),
   readFile(accuracyMigrationPath, 'utf8'),
   readFile(mealAnalysisPath, 'utf8'),
+  readFile(sourcesScreenPath, 'utf8'),
 ]);
 
 const tables = [
@@ -134,6 +136,12 @@ if (!gateway.includes("'openai/gpt-4.1-mini'") || !gateway.includes("'gpt-4.1-mi
 
 if (!mealAnalysis.includes('functionsBaseUrl') || !mealAnalysis.includes('Authorization: `Bearer ${accessToken}`')) {
   failures.push('the app must reach the gateway through an authenticated edge function call');
+}
+
+// BLS 4.0 is CC BY 4.0 and Open Food Facts is ODbL: both require the credit to
+// be visible in the shipped product, not just in a repository file.
+for (const credit of ['Max Rubner-Institut', 'CC BY 4.0', 'Open Food Facts', 'USDA FoodData Central', '10.25826/Data20251217-134202-0']) {
+  if (!sourcesScreen.includes(credit)) failures.push(`user-visible attribution missing: ${credit}`);
 }
 
 if (failures.length) {

@@ -148,13 +148,15 @@ export default function ProfileScreen() {
           <View style={styles.divider} />
           <MenuRow icon="document-text-outline" label="Nutzungsbedingungen" onPress={() => router.push('/terms')} />
           <View style={styles.divider} />
+          <MenuRow icon="library-outline" label="Datenquellen" onPress={() => router.push('/sources')} />
+          <View style={styles.divider} />
           <MenuRow icon="trash-outline" label="Account und Daten löschen" onPress={() => router.push('/account-deletion')} />
         </Card>
       </View>
 
       <View style={styles.wellnessNote}>
         <Ionicons color={colors.muted} name="information-circle-outline" size={18} />
-        <Text style={styles.wellnessText}>Kandro liefert allgemeine Wellness-Schätzungen und ist kein medizinischer Dienst.</Text>
+        <Text style={styles.wellnessText}>Kandro liefert allgemeine Wellness-Schätzungen und ist kein medizinischer Dienst. Nährwerte: Bundeslebensmittelschlüssel 4.0 (Max Rubner-Institut, CC BY 4.0), USDA FoodData Central und Open Food Facts.</Text>
       </View>
 
       <Text style={styles.version}>Kandro · Version 1.0.0</Text>
