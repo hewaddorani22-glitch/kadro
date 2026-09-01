@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(resolve(projectRoot, p), 'utf8');
 
-const [plan, appContext, today, repeatSource, personalization, mealsMigration, detailSheet, localRepo, cloudRepo, syncRepo, progress, consistency, ring, uiKit] = await Promise.all([
+const [plan, appContext, today, repeatSource, personalization, mealsMigration, detailSheet, localRepo, cloudRepo, syncRepo, progress, consistency, ring, uiKit, result, analyzing, reminders] = await Promise.all([
   read('src/app/(tabs)/plan.tsx'),
   read('src/context/AppContext.tsx'),
   read('src/app/(tabs)/today.tsx'),
@@ -31,6 +31,9 @@ const [plan, appContext, today, repeatSource, personalization, mealsMigration, d
   read('src/services/consistency.ts'),
   read('src/components/CalorieRing.tsx'),
   read('src/components/ui.tsx'),
+  read('src/app/result.tsx'),
+  read('src/app/analyzing.tsx'),
+  read('src/services/reminders.ts'),
 ]);
 
 const failures = [];
@@ -146,7 +149,35 @@ if (/Streak|Serie am Leben|verloren|nicht verlieren/i.test(progress + ring)) {
   failures.push('no streak mechanics: a broken streak is the most common reason people delete a tracker');
 }
 
-// 9. Repeat grouping, run against the real module rather than its source text.
+// 9. Leaving the result screen must persist a correction. The exit handlers
+//    used to skip the write once the meal had been saved on arrival, so
+//    editing the portion afterwards was silently discarded.
+if (/if \(!isCurrentScanLogged\) await logScannedMeal\(\)/.test(result)) {
+  failures.push('leaving the result screen after an edit discards the correction');
+}
+if (!result.includes('variant="secondary"')) {
+  failures.push('the way out of the logging loop must not be the quietest element on the screen');
+}
+
+// 10. The confirmation step is worth a screen only when something is uncertain.
+if (!analyzing.includes('needsReview')) {
+  failures.push('a confident scan must not cost an extra screen and tap');
+}
+if (!analyzing.includes("scannedMeal.confidence === 'medium'") || !analyzing.includes('item.optional')) {
+  failures.push('the review gate must trigger on hedged estimates and flagged ingredients');
+}
+
+// 11. The reminder is the only thing that brings anyone back. It has to be
+//     offered where people actually are, and asked exactly once.
+if (!result.includes('hasSeenReminderOffer') || !result.includes('markReminderOfferSeen')) {
+  failures.push('the reminder must be offered after the first meal, and only once');
+}
+if (!reminders.includes('MORNING_IDENTIFIER')) failures.push('there is no morning trigger');
+if (!reminders.includes('scheduleMorningReminder(targets.calories')) {
+  failures.push('the morning message must be rescheduled when targets change, or it announces stale numbers');
+}
+
+// 12. Repeat grouping, run against the real module rather than its source text.
 //    Transpiled with the project's own TypeScript so the test cannot drift from
 //    what the app actually ships.
 const outDir = mkdtempSync(join(tmpdir(), 'kandro-loop-'));

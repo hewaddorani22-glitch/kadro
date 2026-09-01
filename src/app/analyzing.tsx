@@ -45,8 +45,10 @@ export default function AnalyzingScreen() {
     analysisMessage,
     analysisStatus,
     analyzeCurrentPhoto,
+    detectedItems,
     photoUri,
     scanMode,
+    scannedMeal,
     startDemoScan,
   } = useApp();
   const [visible, setVisible] = useState(0);
@@ -78,9 +80,17 @@ export default function AnalyzingScreen() {
   useEffect(() => {
     if (analysisStatus !== 'ready') return;
     setVisible(stages.length);
-    const timer = setTimeout(() => router.replace('/confirm'), reduceMotion ? 0 : 260);
+    // The confirmation step cost a full screen and a tap on every single meal,
+    // including the ones the model was sure about. It now appears only when
+    // there is genuinely something to check: a hedged estimate, a warning from
+    // the gateway, or an ingredient flagged as uncertain.
+    const needsReview = scannedMeal.confidence === 'medium'
+      || Boolean(analysisMessage)
+      || detectedItems.some((item) => item.optional);
+    const destination = needsReview ? '/confirm' : '/result';
+    const timer = setTimeout(() => router.replace(destination), reduceMotion ? 0 : 260);
     return () => clearTimeout(timer);
-  }, [analysisStatus, reduceMotion, router]);
+  }, [analysisMessage, analysisStatus, detectedItems, reduceMotion, router, scannedMeal.confidence]);
 
   const runDemo = () => {
     startDemoScan();

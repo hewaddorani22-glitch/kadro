@@ -3,10 +3,14 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
 const REMINDER_KEY = '@kandro/evening-reminder:v1';
+const OFFER_SEEN_KEY = '@kandro/reminder-offer-seen:v1';
 const IDENTIFIER = 'kandro-evening-summary';
+const MORNING_IDENTIFIER = 'kandro-morning-plan';
 
 export const REMINDER_HOUR = 20;
 export const REMINDER_MINUTE = 30;
+export const MORNING_HOUR = 8;
+export const MORNING_MINUTE = 0;
 
 /** Local notifications only. Kandro never registers for remote push. */
 export const remindersSupported = Platform.OS !== 'web';
@@ -42,6 +46,23 @@ export async function isEveningReminderEnabled() {
   return (await AsyncStorage.getItem(REMINDER_KEY)) === 'true';
 }
 
+/**
+ * Whether the one-time offer has already been shown.
+ *
+ * The reminder is the only mechanism that brings anyone back, and it used to be
+ * reachable only from a screen that appears after 18:00. Offering it once, right
+ * after the first meal lands, is the difference between a feature that exists
+ * and one that gets used. Asked once, never again.
+ */
+export async function hasSeenReminderOffer() {
+  if (!remindersSupported) return true;
+  return (await AsyncStorage.getItem(OFFER_SEEN_KEY)) === 'true';
+}
+
+export async function markReminderOfferSeen() {
+  await AsyncStorage.setItem(OFFER_SEEN_KEY, 'true');
+}
+
 async function scheduleEveningReminder() {
   await Notifications.cancelScheduledNotificationAsync(IDENTIFIER).catch(() => undefined);
   await Notifications.scheduleNotificationAsync({
@@ -62,16 +83,48 @@ async function scheduleEveningReminder() {
 }
 
 /**
+ * Morning message carrying the day's actual targets.
+ *
+ * A repeating notification has fixed content, so it is rescheduled whenever the
+ * targets change. That keeps "Heute: ~2.320 kcal" true instead of drifting away
+ * from the plan it describes.
+ */
+async function scheduleMorningReminder(calories: number, protein: number) {
+  await Notifications.cancelScheduledNotificationAsync(MORNING_IDENTIFIER).catch(() => undefined);
+  await Notifications.scheduleNotificationAsync({
+    identifier: MORNING_IDENTIFIER,
+    content: {
+      title: 'Dein Tag ist aufgestellt',
+      body: `Heute rund ${new Intl.NumberFormat('de-DE').format(calories)} kcal und ${protein} g Protein. Fürs Frühstück reichen ${Math.round((protein * 0.22) / 5) * 5} g+.`,
+      data: { route: '/(tabs)/today' },
+      ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}),
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: MORNING_HOUR,
+      minute: MORNING_MINUTE,
+    },
+  });
+}
+
+/**
  * Turns the daily summary reminder on or off and returns the state that
  * actually applies. Asking for it without permission returns false rather than
  * pretending it worked.
  */
-export async function setEveningReminderEnabled(enabled: boolean): Promise<boolean> {
+export async function setEveningReminderEnabled(
+  enabled: boolean,
+  targets?: { calories: number; protein: number },
+): Promise<boolean> {
   if (!remindersSupported) return false;
   configureNotifications();
+  await markReminderOfferSeen();
 
   if (!enabled) {
-    await Notifications.cancelScheduledNotificationAsync(IDENTIFIER).catch(() => undefined);
+    await Promise.all([
+      Notifications.cancelScheduledNotificationAsync(IDENTIFIER).catch(() => undefined),
+      Notifications.cancelScheduledNotificationAsync(MORNING_IDENTIFIER).catch(() => undefined),
+    ]);
     await AsyncStorage.setItem(REMINDER_KEY, 'false');
     return false;
   }
@@ -87,6 +140,7 @@ export async function setEveningReminderEnabled(enabled: boolean): Promise<boole
   }
 
   await scheduleEveningReminder();
+  if (targets) await scheduleMorningReminder(targets.calories, targets.protein).catch(() => undefined);
   await AsyncStorage.setItem(REMINDER_KEY, 'true');
   return true;
 }
@@ -96,7 +150,7 @@ export async function setEveningReminderEnabled(enabled: boolean): Promise<boole
  * not a reinstall or a revoked permission, so the stored preference is the
  * source of truth.
  */
-export async function syncEveningReminder() {
+export async function syncEveningReminder(targets?: { calories: number; protein: number }) {
   if (!remindersSupported) return;
   configureNotifications();
   if (!(await isEveningReminderEnabled())) return;
@@ -107,10 +161,14 @@ export async function syncEveningReminder() {
     return;
   }
   await scheduleEveningReminder().catch(() => undefined);
+  if (targets) await scheduleMorningReminder(targets.calories, targets.protein).catch(() => undefined);
 }
 
 export async function clearRemindersAfterAccountDeletion() {
   if (!remindersSupported) return;
-  await Notifications.cancelScheduledNotificationAsync(IDENTIFIER).catch(() => undefined);
-  await AsyncStorage.removeItem(REMINDER_KEY);
+  await Promise.all([
+    Notifications.cancelScheduledNotificationAsync(IDENTIFIER).catch(() => undefined),
+    Notifications.cancelScheduledNotificationAsync(MORNING_IDENTIFIER).catch(() => undefined),
+  ]);
+  await AsyncStorage.multiRemove([REMINDER_KEY, OFFER_SEEN_KEY]);
 }

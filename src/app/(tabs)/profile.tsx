@@ -51,7 +51,7 @@ export default function ProfileScreen() {
   // setEveningReminderEnabled returns what actually applies, so a denied
   // permission flips the switch back instead of lying to the user.
   const updateReminder = async (enabled: boolean) => {
-    setReminderEnabled(await setEveningReminderEnabled(enabled));
+    setReminderEnabled(await setEveningReminderEnabled(enabled, { calories: targets.calories, protein: targets.protein }));
   };
 
   return (
@@ -103,15 +103,15 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <SectionTitle>Tagesabschluss</SectionTitle>
+        <SectionTitle>Erinnerungen</SectionTitle>
         <Card style={styles.listCard}>
           <ToggleRow
             detail={remindersSupported
-              ? `Eine ruhige Erinnerung um ${reminderTime} Uhr mit deinem Tag auf einen Blick. Keine Serien, kein Druck.`
+              ? `Morgens dein Tagesziel, abends dein Tag auf einen Blick. Zwei Nachrichten, keine Serien, kein Druck.`
               : 'Erinnerungen stehen in dieser Vorschau nicht zur Verfügung.'}
             disabled={!remindersSupported}
             icon="moon-outline"
-            label="Abendliche Zusammenfassung"
+            label="Täglicher Rhythmus"
             onValueChange={(enabled) => void updateReminder(enabled)}
             value={reminderEnabled}
           />

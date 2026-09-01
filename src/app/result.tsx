@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -8,12 +8,18 @@ import { Card, ConfidenceBadge, Eyebrow, MealPhoto, PrimaryButton, Screen, Secti
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getRemaining } from '@/services/mockNutrition';
+import {
+  hasSeenReminderOffer,
+  markReminderOfferSeen,
+  remindersSupported,
+  setEveningReminderEnabled,
+} from '@/services/reminders';
 import { trackEvent } from '@/services/telemetry';
 import { formatNumber } from '@/utils/format';
 
 export default function ResultScreen() {
   const router = useRouter();
-  const { consumed, isCurrentScanLogged, logScannedMeal, photoUri, remaining, scanMode, scannedMeal, targets } = useApp();
+  const { consumed, isCurrentScanLogged, lifetimeScanCount, logScannedMeal, photoUri, remaining, scanMode, scannedMeal, targets } = useApp();
   const projected = isCurrentScanLogged
     ? remaining
     : getRemaining(targets, {
@@ -36,6 +42,8 @@ export default function ResultScreen() {
   const remainingProgress = useRef(new Animated.Value(0)).current;
   const recommendationReveal = useRef(new Animated.Value(0)).current;
   const savedOnArrival = useRef(false);
+  const [offerReminder, setOfferReminder] = useState(false);
+  const [reminderBusy, setReminderBusy] = useState(false);
   const [displayedCalories, setDisplayedCalories] = useState(0);
   const [displayedRemaining, setDisplayedRemaining] = useState(startingRemaining);
 
@@ -98,14 +106,46 @@ export default function ResultScreen() {
     };
   }, [mealProgress, projected.calories, recommendationReveal, remainingProgress, scannedMeal.calories, startingRemaining]);
 
+  // The single best moment to ask: a meal just landed, the day visibly moved,
+  // and nothing has gone wrong yet. Asked once ever, never repeated.
+  useEffect(() => {
+    if (!remindersSupported || lifetimeScanCount < 1) return;
+    let active = true;
+    void hasSeenReminderOffer().then((seen) => {
+      if (active && !seen) setOfferReminder(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [lifetimeScanCount]);
+
+  const dismissOffer = useCallback(async () => {
+    setOfferReminder(false);
+    await markReminderOfferSeen();
+  }, []);
+
+  const acceptOffer = async () => {
+    if (reminderBusy) return;
+    setReminderBusy(true);
+    try {
+      await setEveningReminderEnabled(true, { calories: targets.calories, protein: targets.protein });
+      setOfferReminder(false);
+    } finally {
+      setReminderBusy(false);
+    }
+  };
+
   const showOptions = async () => {
-    if (!isCurrentScanLogged) await logScannedMeal();
+    // Always write: logScannedMeal upserts by scan id, so leaving after an edit
+    // persists the correction instead of discarding it. The free-scan counter
+    // is guarded separately and does not double-count.
+    await logScannedMeal();
     trackEvent('meal saved', { next_destination: 'recommendations' });
     router.replace({ pathname: '/(tabs)/plan', params: { context: 'home', fromScan: '1' } });
   };
 
   const saveForLater = async () => {
-    if (!isCurrentScanLogged) await logScannedMeal();
+    await logScannedMeal();
     trackEvent('meal saved', { next_destination: 'today' });
     router.replace('/(tabs)/today');
   };
@@ -231,7 +271,29 @@ export default function ResultScreen() {
       </Card>
       </Animated.View>
 
-      <PrimaryButton label="Zum Tagesstand" onPress={saveForLater} variant="ghost" />
+      {offerReminder ? (
+        <Card style={styles.reminderCard}>
+          <View style={styles.reminderTop}>
+            <View style={styles.reminderIcon}><Ionicons color={colors.text} name="notifications-outline" size={19} /></View>
+            <View style={styles.reminderCopy}>
+              <Eyebrow>Soll Kandro sich melden?</Eyebrow>
+              <Text style={styles.reminderTitle}>Morgens dein Ziel, abends dein Tag</Text>
+            </View>
+          </View>
+          <Text style={styles.reminderText}>
+            Zwei ruhige Nachrichten am Tag. Keine Serien, keine Mahnungen, in den Einstellungen jederzeit aus.
+          </Text>
+          <PrimaryButton
+            disabled={reminderBusy}
+            icon="checkmark"
+            label={reminderBusy ? 'Einen Moment …' : 'Ja, erinnere mich'}
+            onPress={() => void acceptOffer()}
+          />
+          <PrimaryButton disabled={reminderBusy} label="Nicht nötig" onPress={() => void dismissOffer()} variant="ghost" />
+        </Card>
+      ) : null}
+
+      <PrimaryButton icon="checkmark" label="Zum Tagesstand" onPress={saveForLater} variant="secondary" />
       <Text style={styles.estimateNote}>Nährwerte sind Schätzungen. Du behältst die Kontrolle über jede Zutat und Portion.</Text>
     </Screen>
   );
@@ -319,5 +381,11 @@ const styles = StyleSheet.create({
   aimBlock: { flex: 1, gap: 4 },
   aimValue: { color: colors.text, fontSize: 15, fontWeight: '700' },
   aimLabel: { color: colors.muted, fontSize: 10 },
+  reminderCard: { gap: 12 },
+  reminderTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  reminderIcon: { width: 42, height: 42, borderRadius: 16, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  reminderCopy: { flex: 1, minWidth: 0, gap: 3 },
+  reminderTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  reminderText: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   estimateNote: { color: colors.muted, fontSize: 10, lineHeight: 16, textAlign: 'center', paddingHorizontal: 18 },
 });

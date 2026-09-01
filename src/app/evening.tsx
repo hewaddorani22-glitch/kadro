@@ -138,12 +138,12 @@ export default function EveningScreen() {
         <Card style={styles.offerCard}>
           <Text style={styles.offerTitle}>Soll ich dich abends erinnern?</Text>
           <Text style={styles.offerText}>
-            Eine Nachricht um {String(REMINDER_HOUR).padStart(2, '0')}:{String(REMINDER_MINUTE).padStart(2, '0')} Uhr mit genau dieser Karte. Keine Serien, keine Mahnungen, jederzeit abschaltbar.
+            Morgens dein Ziel, abends genau diese Karte. Zwei Nachrichten am Tag, keine Serien, keine Mahnungen, jederzeit abschaltbar.
           </Text>
           <PrimaryButton
             icon="notifications-outline"
             label="Ja, abends erinnern"
-            onPress={() => void setEveningReminderEnabled(true).then(setReminderEnabled)}
+            onPress={() => void setEveningReminderEnabled(true, { calories: targets.calories, protein: targets.protein }).then(setReminderEnabled)}
           />
           <PrimaryButton label="Nicht jetzt" onPress={() => setReminderDismissed(true)} variant="ghost" />
         </Card>
