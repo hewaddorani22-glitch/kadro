@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(resolve(projectRoot, p), 'utf8');
 
-const [plan, appContext, today, repeatSource, personalization, mealsMigration, detailSheet, localRepo, cloudRepo, syncRepo, progress, consistency] = await Promise.all([
+const [plan, appContext, today, repeatSource, personalization, mealsMigration, detailSheet, localRepo, cloudRepo, syncRepo, progress, consistency, ring, uiKit] = await Promise.all([
   read('src/app/(tabs)/plan.tsx'),
   read('src/context/AppContext.tsx'),
   read('src/app/(tabs)/today.tsx'),
@@ -29,6 +29,8 @@ const [plan, appContext, today, repeatSource, personalization, mealsMigration, d
   read('src/services/syncRepository.ts'),
   read('src/app/(tabs)/progress.tsx'),
   read('src/services/consistency.ts'),
+  read('src/components/CalorieRing.tsx'),
+  read('src/components/ui.tsx'),
 ]);
 
 const failures = [];
@@ -131,7 +133,20 @@ if (!progress.includes('trackedDays >= 3')) {
   failures.push('a hit rate needs enough days to mean anything; one tracked day must not be scored');
 }
 
-// 8. Repeat grouping, run against the real module rather than its source text.
+// 8. The one moment where something is finished. No streaks, no badges — but
+//    without any acknowledgement the app never feels rewarding either.
+if (!ring.includes('Protein geschafft')) failures.push('reaching the protein target must be acknowledged somewhere visible');
+if (!ring.includes('proteinReached && over === 0')) {
+  failures.push('a day over budget must not be celebrated');
+}
+if (!uiKit.includes('current >= target * 0.9')) {
+  failures.push('the macro card must use the same 10% tolerance as the weekly strip');
+}
+if (/Streak|Serie am Leben|verloren|nicht verlieren/i.test(progress + ring)) {
+  failures.push('no streak mechanics: a broken streak is the most common reason people delete a tracker');
+}
+
+// 9. Repeat grouping, run against the real module rather than its source text.
 //    Transpiled with the project's own TypeScript so the test cannot drift from
 //    what the app actually ships.
 const outDir = mkdtempSync(join(tmpdir(), 'kandro-loop-'));

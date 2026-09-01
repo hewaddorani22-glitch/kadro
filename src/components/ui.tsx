@@ -157,10 +157,13 @@ export function MacroCard({
   unit?: string;
   icon: keyof typeof Ionicons.glyphMap;
 }) {
+  // 10% tolerance, same as the weekly strip: 175 of 180 g is a day that went
+  // fine, and calling it a miss is the kind of nagging this app avoids.
+  const reached = target > 0 && current >= target * 0.9;
   return (
     <Card style={styles.macroCard}>
-      <View style={styles.macroIcon}>
-        <Ionicons color={colors.text} name={icon} size={16} />
+      <View style={[styles.macroIcon, reached && styles.macroIconReached]}>
+        <Ionicons color={colors.text} name={reached ? 'checkmark' : icon} size={16} />
       </View>
       <Text numberOfLines={1} style={styles.macroLabel}>{label}</Text>
       <Text style={styles.macroValue}>{current}</Text>
@@ -343,6 +346,9 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 20,
     gap: 4,
+  },
+  macroIconReached: {
+    backgroundColor: colors.accent,
   },
   macroIcon: {
     width: 30,

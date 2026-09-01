@@ -86,7 +86,7 @@ export default function TodayScreen() {
             </Text>
           </View>
         </View>
-        <CalorieRing consumed={consumed.calories} total={targets.calories} />
+        <CalorieRing consumed={consumed.calories} proteinReached={targets.protein > 0 && consumed.protein >= targets.protein * 0.9} total={targets.calories} />
         <Text style={styles.consumed}>{formatNumber(consumed.calories)} gegessen · {formatNumber(targets.calories)} Ziel</Text>
       </Card>
 
@@ -116,7 +116,7 @@ export default function TodayScreen() {
             <Text style={styles.targetValue}>{proteinRange} g</Text>
           </View>
         </View>
-        <PrimaryButton icon="arrow-forward" label="3 Ideen zeigen" onPress={() => router.push('/(tabs)/plan')} />
+        <PrimaryButton icon="arrow-forward" label="3 Ideen zeigen" onPress={() => router.push('/(tabs)/plan')} variant="secondary" />
       </Card>
 
       {repeatMeals.length ? (
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   pendingBanner: { minHeight: 66, borderRadius: radii.card, backgroundColor: colors.attentionSoft, borderWidth: 1, borderColor: colors.attention, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 11 },
   pendingIcon: { width: 38, height: 38, borderRadius: 14, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   pendingCopy: { flex: 1, gap: 2 },
-  pendingTitle: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  pendingTitle: { color: colors.text, fontSize: 13, fontWeight: '700' },
   pendingText: { color: colors.muted, fontSize: 10 },
   heroCard: { gap: 18, paddingVertical: 22 },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   rowDivider: { height: 1, backgroundColor: colors.border, marginLeft: 64 },
   addMealRow: { minHeight: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 12 },
   addIcon: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
-  addMealText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
+  addMealText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
   repeatScroll: { marginHorizontal: -20 },
   repeatRow: { paddingHorizontal: 20, gap: 10 },
   repeatCard: { width: 148, minHeight: 104, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 13, justifyContent: 'space-between' },
@@ -259,11 +259,11 @@ const styles = StyleSheet.create({
   repeatBusy: { opacity: 0.5 },
   repeatTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   repeatCount: { color: colors.muted, fontSize: 10, fontWeight: '800' },
-  repeatTitle: { color: colors.text, fontSize: 13, fontWeight: '700', lineHeight: 17, marginTop: 6 },
+  repeatTitle: { color: colors.text, fontSize: 13, fontWeight: '600', lineHeight: 17, marginTop: 6 },
   repeatMacros: { color: colors.muted, fontSize: 10, marginTop: 4, fontVariant: ['tabular-nums'] },
   eveningRow: { minHeight: 66, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   eveningIcon: { width: 40, height: 40, borderRadius: 15, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   eveningCopy: { flex: 1, minWidth: 0, gap: 2 },
-  eveningTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  eveningTitle: { color: colors.text, fontSize: 14, fontWeight: '600' },
   eveningText: { color: colors.muted, fontSize: 11 },
 });

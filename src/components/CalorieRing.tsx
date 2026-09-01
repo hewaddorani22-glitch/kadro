@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -9,7 +10,16 @@ const HORIZONTAL_CHROME = 80;
 const MAX_SIZE = 220;
 const MIN_SIZE = 168;
 
-export function CalorieRing({ consumed, total }: { consumed: number; total: number }) {
+export function CalorieRing({
+  consumed,
+  total,
+  proteinReached = false,
+}: {
+  consumed: number;
+  total: number;
+  /** Quietly acknowledges the one goal the user actually controls. */
+  proteinReached?: boolean;
+}) {
   const { width } = useWindowDimensions();
   // The ring used to be a hard 220pt, which overflowed the hero card on the
   // narrowest phones. It now shrinks with the viewport instead.
@@ -23,6 +33,7 @@ export function CalorieRing({ consumed, total }: { consumed: number; total: numb
   const consumedRatio = Math.min(1, Math.max(0, consumed / safeTotal));
   const ringColor = over > 0 ? colors.attention : colors.accentDeep;
   const statusColor = over > 0 ? colors.attention : colors.success;
+  const celebrating = proteinReached && over === 0;
 
   return (
     <View
@@ -64,8 +75,12 @@ export function CalorieRing({ consumed, total }: { consumed: number; total: numb
           </Text>
           <Text style={styles.label}>{over > 0 ? 'kcal drüber' : 'kcal übrig'}</Text>
           <View style={styles.statusRow}>
-            <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-            <Text style={[styles.status, { color: statusColor }]}>{over > 0 ? 'Leicht drüber' : 'Im Plan'}</Text>
+            {celebrating
+              ? <Ionicons color={statusColor} name="checkmark-circle" size={13} />
+              : <View style={[styles.statusDot, { backgroundColor: statusColor }]} />}
+            <Text style={[styles.status, { color: statusColor }]}>
+              {over > 0 ? 'Leicht drüber' : celebrating ? 'Protein geschafft' : 'Im Plan'}
+            </Text>
           </View>
         </View>
       </View>
