@@ -42,7 +42,10 @@ const failures = [];
 
 // 1. A chosen recommendation must actually be logged.
 if (!plan.includes('logPlannedMeal')) failures.push('choosing a recommendation does not log a meal');
-if (!plan.includes('Gegessen, Tag aktualisieren')) failures.push('the plan screen has no action that commits the meal');
+// Wording lives in the dictionaries; check the wiring instead.
+if (!plan.includes('t.plan.logIt') || !plan.includes('logMeal(suggestion)')) {
+  failures.push('the plan screen has no action that commits the meal');
+}
 if (!plan.includes('setPortion')) failures.push('a chosen recommendation must let the user pick a portion');
 if (!appContext.includes('createPlannedMeal')) failures.push('AppContext cannot build a planned meal');
 if (!mealsMigration.includes("origin in ('scan', 'plan')")) failures.push('the database still rejects planned meals');

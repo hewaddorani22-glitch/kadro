@@ -250,7 +250,7 @@ export default function OnboardingScreen() {
                         <Ionicons color={colors.text} name={rate === 0.25 ? 'leaf-outline' : 'flash-outline'} size={22} />
                       </View>
                       <View style={styles.choiceTextBlock}>
-                        <Text style={styles.choiceTitle}>{weeklyRateLabel(draftProfile.goal, rate)}</Text>
+                        <Text style={styles.choiceTitle}>{weeklyRateLabel(draftProfile.goal, rate, t.common)}</Text>
                         <Text style={styles.choiceDetail}>
                           {rate === 0.25 ? t.onboarding.rateCalm : t.onboarding.rateBrisk} · {draftProfile.goal === 'lose' ? '−' : '+'}{applied} {t.onboarding.perDay}
                         </Text>
@@ -341,7 +341,7 @@ export default function OnboardingScreen() {
           <View accessibilityViewIsModal style={[styles.consentSheet, { paddingBottom: insets.bottom + 18 }]}>
             <View style={styles.consentIcon}><Ionicons color={colors.text} name="shield-checkmark-outline" size={26} /></View>
             <Text accessibilityRole="header" style={styles.consentTitle}>{t.onboarding.consentTitle}</Text>
-            <Text style={styles.consentText}>Ich willige ausdrücklich ein, dass Kandro meine Ernährungs-, Ziel- und Mahlzeitendaten verarbeitet, um Tagesstände und Empfehlungen bereitzustellen. Ich kann das jederzeit widerrufen und meinen Account samt Daten löschen.</Text>
+            <Text style={styles.consentText}>{t.onboarding.consentBody}</Text>
             <View style={styles.consentLinks}>
               <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/privacy'); }}><Text style={styles.consentLink}>{t.onboarding.consentPrivacy}</Text></Pressable>
               <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/terms'); }}><Text style={styles.consentLink}>{t.onboarding.consentTerms}</Text></Pressable>
@@ -394,6 +394,7 @@ function ChoiceList<T extends string>({ choices, onSelect, selected, values }: {
  * from the default to a real value would cost dozens of taps.
  */
 function NumberStep({ max, min, onChange, step, unit, value }: { max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
+  const { t } = useLanguage();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(value);
   latest.current = value;
@@ -426,12 +427,12 @@ function NumberStep({ max, min, onChange, step, unit, value }: { max: number; mi
 
   return (
     <View style={styles.numberStep}>
-      <StepperButton icon="remove" label={`${unit} verringern`} onPressIn={() => start(-1)} onPressOut={stop} />
+      <StepperButton icon="remove" label={t.common.decreaseUnit(unit)} onPressIn={() => start(-1)} onPressOut={stop} />
       <View style={styles.numberCenter}>
         <Text adjustsFontSizeToFit numberOfLines={1} style={styles.number}>{value}</Text>
         <Text style={styles.numberUnit}>{unit}</Text>
       </View>
-      <StepperButton icon="add" label={`${unit} erhöhen`} onPressIn={() => start(1)} onPressOut={stop} />
+      <StepperButton icon="add" label={t.common.increaseUnit(unit)} onPressIn={() => start(1)} onPressOut={stop} />
     </View>
   );
 }
@@ -479,7 +480,7 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
           <Text style={styles.planStatLabel}>{t.common.protein}</Text>
         </View>
         <View style={styles.planStat}>
-          <Text numberOfLines={2} style={styles.planStatValue}>{estimatedPace(profile.goal, profile.weeklyRateKg)}</Text>
+          <Text numberOfLines={2} style={styles.planStatValue}>{estimatedPace(profile.goal, profile.weeklyRateKg, t.common)}</Text>
           <Text style={styles.planStatLabel}>{t.onboarding.estimatedPace}</Text>
         </View>
         <View style={styles.planStat}>

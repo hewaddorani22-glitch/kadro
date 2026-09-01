@@ -8,6 +8,7 @@ import { PrimaryButton } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { Meal, PortionFactor } from '@/types/nutrition';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { MEAL_TYPES, mealTypeIcon, mealTypeLabel } from '@/utils/format';
 
 /**
@@ -19,6 +20,7 @@ import { MEAL_TYPES, mealTypeIcon, mealTypeLabel } from '@/utils/format';
 export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { adjustLoggedMealPortion, deleteLoggedMeal, setLoggedMealType } = useApp();
+  const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -73,31 +75,31 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
 
   return (
     <Modal animationType="slide" onRequestClose={close} transparent visible>
-      <Pressable accessibilityLabel="Schließen" onPress={close} style={styles.scrim} />
+      <Pressable accessibilityLabel={t.common.close} onPress={close} style={styles.scrim} />
       <View accessibilityViewIsModal style={[styles.sheet, { paddingBottom: insets.bottom + 20 }]}>
         <View style={styles.grabber} />
 
         <View style={styles.header}>
           <View style={styles.headerCopy}>
-            <Text style={styles.type}>{mealTypeLabel(meal.type)} · {meal.time}</Text>
+            <Text style={styles.type}>{mealTypeLabel(meal.type, t.common)} · {meal.time}</Text>
             <Text style={styles.title}>{meal.title}</Text>
           </View>
-          <Pressable accessibilityLabel="Schließen" accessibilityRole="button" hitSlop={8} onPress={close} style={styles.closeButton}>
+          <Pressable accessibilityLabel={t.common.close} accessibilityRole="button" hitSlop={8} onPress={close} style={styles.closeButton}>
             <Ionicons color={colors.text} name="close" size={20} />
           </Pressable>
         </View>
 
         <View style={styles.macroRow}>
           <Macro label="kcal" value={`~${meal.calories}`} />
-          <Macro label="Protein" value={`${meal.protein} g`} />
-          <Macro label="Kohlenh." value={`${meal.carbs} g`} />
-          <Macro label="Fett" value={`${meal.fat} g`} />
+          <Macro label={t.common.protein} value={`${meal.protein} g`} />
+          <Macro label={t.common.carbs} value={`${meal.carbs} g`} />
+          <Macro label={t.common.fat} value={`${meal.fat} g`} />
         </View>
 
         <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
           {included.length ? (
             <View style={styles.section}>
-              <Text style={styles.sectionLabel}>ENTHALTEN</Text>
+              <Text style={styles.sectionLabel}>{t.mealSheet.contains}</Text>
               {included.map((item) => (
                 <View key={item.id} style={styles.itemRow}>
                   <Text numberOfLines={1} style={styles.itemName}>{item.name}</Text>
@@ -109,8 +111,8 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
           ) : null}
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>MAHLZEIT</Text>
-            <Text style={styles.sectionHint}>Wird aus der Uhrzeit beim Eintragen geraten. Trägst du später nach, korrigiere es hier.</Text>
+            <Text style={styles.sectionLabel}>{t.mealSheet.mealMoment}</Text>
+            <Text style={styles.sectionHint}>{t.mealSheet.mealMomentHint}</Text>
             <View style={styles.typeRow}>
               {MEAL_TYPES.map((type) => {
                 const active = meal.type === type;
@@ -124,7 +126,7 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
                     style={[styles.typeChip, active && styles.typeChipActive]}
                   >
                     <Ionicons color={colors.text} name={mealTypeIcon(type)} size={15} />
-                    <Text style={styles.typeChipText}>{mealTypeLabel(type)}</Text>
+                    <Text style={styles.typeChipText}>{mealTypeLabel(type, t.common)}</Text>
                   </Pressable>
                 );
               })}
@@ -132,13 +134,13 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>PORTION KORRIGIEREN</Text>
-            <Text style={styles.sectionHint}>Bezieht sich immer auf die ursprüngliche Schätzung, nicht auf die zuletzt gewählte.</Text>
+            <Text style={styles.sectionLabel}>{t.mealSheet.correctPortion}</Text>
+            <Text style={styles.sectionHint}>{t.mealSheet.correctPortionHint}</Text>
             <View style={styles.portionSelector}>
               {([
-                { factor: 0.7 as PortionFactor, label: 'Weniger', multiplier: '0,7×' },
-                { factor: 1 as PortionFactor, label: 'Original', multiplier: '1×' },
-                { factor: 1.4 as PortionFactor, label: 'Mehr', multiplier: '1,4×' },
+                { factor: 0.7 as PortionFactor, label: t.confirm.less, multiplier: '0,7×' },
+                { factor: 1 as PortionFactor, label: t.mealSheet.original, multiplier: '1×' },
+                { factor: 1.4 as PortionFactor, label: t.confirm.more, multiplier: '1,4×' },
               ]).map((choice) => {
                 const active = Math.abs(currentFactor - choice.factor) < 0.05;
                 return (
@@ -161,21 +163,21 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
 
         {confirmingDelete ? (
           <View style={styles.confirmBlock}>
-            <Text style={styles.confirmText}>Diese Mahlzeit aus deinem Tag entfernen?</Text>
+            <Text style={styles.confirmText}>{t.mealSheet.confirmRemove}</Text>
             <PrimaryButton
               disabled={busy}
               icon="trash-outline"
-              label={busy ? 'Wird entfernt …' : 'Ja, entfernen'}
+              label={busy ? t.mealSheet.removing : t.mealSheet.confirmYes}
               onPress={() => void remove()}
               variant="dark"
             />
-            <PrimaryButton disabled={busy} label="Behalten" onPress={() => setConfirmingDelete(false)} variant="ghost" />
+            <PrimaryButton disabled={busy} label={t.common.keep} onPress={() => setConfirmingDelete(false)} variant="ghost" />
           </View>
         ) : (
           <PrimaryButton
             disabled={busy}
             icon="trash-outline"
-            label="Mahlzeit entfernen"
+            label={t.mealSheet.remove}
             onPress={() => setConfirmingDelete(true)}
             variant="secondary"
           />

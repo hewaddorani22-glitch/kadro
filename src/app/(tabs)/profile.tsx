@@ -21,12 +21,14 @@ import {
   setAnalyticsCollectionEnabled,
 } from '@/services/telemetry';
 import { activityLabel, goalLabel, weeklyRateLabel } from '@/services/personalization';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber } from '@/utils/format';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { profile, syncMode, targets, userName } = useApp();
   const { status: subscriptionStatus } = useSubscription();
+  const { locale, t } = useLanguage();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const reminderTime = `${String(REMINDER_HOUR).padStart(2, '0')}:${String(REMINDER_MINUTE).padStart(2, '0')}`;
@@ -59,83 +61,83 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <View style={styles.avatar}><Text style={styles.avatarText}>{userName.trim().charAt(0).toUpperCase() || 'K'}</Text></View>
         <View style={styles.headerCopy}>
-          <Eyebrow>Dein Profil</Eyebrow>
+          <Eyebrow>{t.profile.eyebrow}</Eyebrow>
           <PageTitle>{userName}</PageTitle>
           <Text style={styles.subtitle}>
             {syncMode === 'cloud'
-              ? 'Cloud-Synchronisierung aktiv'
+              ? t.profile.syncCloud
               : syncMode === 'syncing'
-                ? 'Konto wird verbunden …'
+                ? t.profile.syncing
                 : syncMode === 'error'
-                  ? 'Offline · wird später synchronisiert'
-                  : 'Lokal auf diesem Gerät'}
+                  ? t.profile.syncError
+                  : t.profile.syncLocal}
           </Text>
         </View>
       </View>
 
       <View style={styles.section}>
-        <SectionTitle>Dein Konto</SectionTitle>
+        <SectionTitle>{t.profile.account}</SectionTitle>
         <AccountLinkCard />
       </View>
 
-      <Pressable accessibilityLabel="Kandro Pro ansehen" accessibilityRole="button" onPress={() => router.push('/paywall')}>
+      <Pressable accessibilityLabel={t.profile.proView} accessibilityRole="button" onPress={() => router.push('/paywall')}>
         <Card style={styles.proCard}>
           <View style={styles.proIcon}><Ionicons color={colors.text} name="infinite" size={26} /></View>
           <View style={styles.proCopy}>
-            <Text style={styles.proTitle}>{subscriptionStatus === 'active' ? 'Kandro Pro ist aktiv' : 'Kandro Pro'}</Text>
-            <Text style={styles.proText}>{subscriptionStatus === 'active' ? 'Dein Zugang ist auf diesem Konto freigeschaltet.' : 'Unbegrenzte Scans. Ein Plan, der sich weiter anpasst.'}</Text>
+            <Text style={styles.proTitle}>{subscriptionStatus === 'active' ? t.profile.proActive : t.profile.proTitle}</Text>
+            <Text style={styles.proText}>{subscriptionStatus === 'active' ? t.profile.proActiveText : t.profile.proText}</Text>
           </View>
-          <View style={styles.tryPill}><Text style={styles.tryText}>{subscriptionStatus === 'active' ? 'AKTIV' : 'ANSEHEN'}</Text></View>
+          <View style={styles.tryPill}><Text style={styles.tryText}>{subscriptionStatus === 'active' ? t.profile.badgeActive : t.profile.badgeView}</Text></View>
         </Card>
       </Pressable>
 
       <View style={styles.section}>
-        <SectionTitle>Dein Plan</SectionTitle>
+        <SectionTitle>{t.profile.plan}</SectionTitle>
         <Card style={styles.planCard}>
           <View style={styles.planGrid}>
-            <PlanStat label="Kalorien" value={formatNumber(targets.calories)} />
-            <PlanStat label="Protein" value={`${targets.protein} g`} />
-            <PlanStat label="Ziel" value={goalLabel(profile.goal)} />
-            <PlanStat label="Tempo" value={weeklyRateLabel(profile.goal, profile.weeklyRateKg)} />
-            <PlanStat label="Aktivität" value={activityLabel(profile.activityLevel)} />
+            <PlanStat label={t.profile.calories} value={formatNumber(targets.calories, locale)} />
+            <PlanStat label={t.common.protein} value={`${targets.protein} g`} />
+            <PlanStat label={t.profile.goal} value={goalLabel(profile.goal, t.common)} />
+            <PlanStat label={t.profile.pace} value={weeklyRateLabel(profile.goal, profile.weeklyRateKg, t.common)} />
+            <PlanStat label={t.profile.activity} value={activityLabel(profile.activityLevel, t.common)} />
           </View>
         </Card>
       </View>
 
       <View style={styles.section}>
-        <SectionTitle>Erinnerungen</SectionTitle>
+        <SectionTitle>{t.profile.reminders}</SectionTitle>
         <Card style={styles.listCard}>
           <ToggleRow
             detail={remindersSupported
-              ? `Morgens dein Tagesziel, abends dein Tag auf einen Blick. Zwei Nachrichten, keine Serien, kein Druck.`
-              : 'Erinnerungen stehen in dieser Vorschau nicht zur Verfügung.'}
+              ? t.profile.reminderDetail
+              : t.profile.reminderUnavailable}
             disabled={!remindersSupported}
             icon="moon-outline"
-            label="Täglicher Rhythmus"
+            label={t.profile.reminderLabel}
             onValueChange={(enabled) => void updateReminder(enabled)}
             value={reminderEnabled}
           />
           <View style={styles.divider} />
-          <MenuRow icon="sparkles-outline" label="Tagesabschluss jetzt ansehen" onPress={() => router.push('/evening')} />
+          <MenuRow icon="sparkles-outline" label={t.profile.openEvening} onPress={() => router.push('/evening')} />
         </Card>
       </View>
 
       <View style={styles.section}>
-        <SectionTitle>Datenschutz-Einstellungen</SectionTitle>
+        <SectionTitle>{t.profile.privacySettings}</SectionTitle>
         <Card style={styles.listCard}>
           <InfoRow
-            detail="Originalfotos werden nach der Analyse verworfen."
+            detail={t.profile.photoHandlingDetail}
             icon="image-outline"
-            label="Umgang mit Fotos"
+            label={t.profile.photoHandling}
           />
           <View style={styles.divider} />
           <ToggleRow
             detail={isTelemetryConfigured
-              ? 'Nur anonyme Funktionsereignisse und bereinigte Fehler – keine Fotos, E-Mail, Lebensmittel oder Nährwerte.'
-              : 'Wird verfügbar, sobald PostHog für den Test verbunden ist.'}
+              ? t.profile.analyticsOn
+              : t.profile.analyticsOff}
             disabled={!isTelemetryConfigured}
             icon="analytics-outline"
-            label="Anonyme Nutzungsanalyse"
+            label={t.profile.analytics}
             onValueChange={(enabled) => void updateAnalytics(enabled)}
             value={analyticsEnabled}
           />
@@ -143,24 +145,24 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
-        <SectionTitle>Support und Datenschutz</SectionTitle>
+        <SectionTitle>{t.profile.support}</SectionTitle>
         <Card style={styles.listCard}>
-          <MenuRow icon="shield-checkmark-outline" label="Datenschutz" onPress={() => router.push('/privacy')} />
+          <MenuRow icon="shield-checkmark-outline" label={t.profile.privacy} onPress={() => router.push('/privacy')} />
           <View style={styles.divider} />
-          <MenuRow icon="document-text-outline" label="Nutzungsbedingungen" onPress={() => router.push('/terms')} />
+          <MenuRow icon="document-text-outline" label={t.profile.terms} onPress={() => router.push('/terms')} />
           <View style={styles.divider} />
-          <MenuRow icon="library-outline" label="Datenquellen" onPress={() => router.push('/sources')} />
+          <MenuRow icon="library-outline" label={t.profile.sources} onPress={() => router.push('/sources')} />
           <View style={styles.divider} />
-          <MenuRow icon="trash-outline" label="Account und Daten löschen" onPress={() => router.push('/account-deletion')} />
+          <MenuRow icon="trash-outline" label={t.profile.deleteAccount} onPress={() => router.push('/account-deletion')} />
         </Card>
       </View>
 
       <View style={styles.wellnessNote}>
         <Ionicons color={colors.muted} name="information-circle-outline" size={18} />
-        <Text style={styles.wellnessText}>Kandro liefert allgemeine Wellness-Schätzungen und ist kein medizinischer Dienst. Nährwerte: Bundeslebensmittelschlüssel 4.0 (Max Rubner-Institut, CC BY 4.0), USDA FoodData Central und Open Food Facts.</Text>
+        <Text style={styles.wellnessText}>{t.profile.wellness}</Text>
       </View>
 
-      <Text style={styles.version}>Kandro · Version 1.0.0</Text>
+      <Text style={styles.version}>{t.profile.version}</Text>
     </Screen>
   );
 }

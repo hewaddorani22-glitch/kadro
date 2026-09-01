@@ -6,12 +6,18 @@ export function formatNumber(value: number, locale = 'de-DE') {
   return value.toLocaleString(locale);
 }
 
-export function mealTypeLabel(type: Meal['type']) {
+type MealLabels = { mealBreakfast: string; mealLunch: string; mealDinner: string; mealSnack: string };
+
+export function mealTypeLabel(type: Meal['type'], labels?: MealLabels) {
+  const fallback: MealLabels = {
+    mealBreakfast: 'Frühstück', mealLunch: 'Mittagessen', mealDinner: 'Abendessen', mealSnack: 'Snack',
+  };
+  const source = labels ?? fallback;
   return {
-    Breakfast: 'Frühstück',
-    Lunch: 'Mittagessen',
-    Dinner: 'Abendessen',
-    Snack: 'Snack',
+    Breakfast: source.mealBreakfast,
+    Lunch: source.mealLunch,
+    Dinner: source.mealDinner,
+    Snack: source.mealSnack,
   }[type];
 }
 

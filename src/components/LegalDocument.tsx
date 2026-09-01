@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/ui';
 import { legalVersion } from '@/constants/legal';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { colors, radii } from '@/constants/theme';
 
 export type LegalSection = {
@@ -13,18 +14,19 @@ export type LegalSection = {
 
 export function LegalDocument({ title, intro, sections }: { title: string; intro: string; sections: LegalSection[] }) {
   const router = useRouter();
+  const { t } = useLanguage();
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Zurück" accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}>
+        <Pressable accessibilityLabel={t.common.back} accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
-        <Text style={styles.topTitle}>Rechtliches</Text>
+        <Text style={styles.topTitle}>{t.common.legalHeading}</Text>
         <View style={styles.backButton} />
       </View>
       <View style={styles.heading}>
         <Text accessibilityRole="header" style={styles.title}>{title}</Text>
-        <Text style={styles.version}>Version {legalVersion}</Text>
+        <Text style={styles.version}>{t.common.versionPrefix} {legalVersion}</Text>
         <Text style={styles.intro}>{intro}</Text>
       </View>
       {sections.map((section) => (

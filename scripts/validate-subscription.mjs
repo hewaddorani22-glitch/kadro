@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const [service, context, paywall, scan, result, appContext, localRepository, envExample, packageJson] = await Promise.all([
+const [service, context, paywall, scan, result, appContext, localRepository, envExample, packageJson, dictDe, dictEn] = await Promise.all([
   readFile(resolve(projectRoot, 'src/services/subscription.ts'), 'utf8'),
   readFile(resolve(projectRoot, 'src/context/SubscriptionContext.tsx'), 'utf8'),
   readFile(resolve(projectRoot, 'src/app/paywall.tsx'), 'utf8'),
@@ -13,6 +13,8 @@ const [service, context, paywall, scan, result, appContext, localRepository, env
   readFile(resolve(projectRoot, 'src/services/localRepository.ts'), 'utf8'),
   readFile(resolve(projectRoot, '.env.example'), 'utf8'),
   readFile(resolve(projectRoot, 'package.json'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/i18n/de.ts'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/i18n/en.ts'), 'utf8'),
 ]);
 
 const failures = [];
@@ -30,7 +32,9 @@ for (const invariant of [
 
 if (!service.includes('ExecutionEnvironment.StoreClient')) failures.push('Expo Go must select the RevenueCat Test Store');
 if (!context.includes("'active' | 'cancelled' | 'failed'")) failures.push('purchase flow must distinguish cancellation from failure');
-if (!paywall.includes('Wiederherstellen')) failures.push('paywall has no user-triggered restore action');
+// The copy moved into the dictionaries, so assert on the wiring and on both
+// languages actually carrying the string.
+if (!paywall.includes('t.paywall.restore')) failures.push('paywall has no user-triggered restore action');
 if (!paywall.includes('snapshot?.plans')) failures.push('paywall does not display RevenueCat offering prices');
 
 // The paywall must persuade with facts, not with pressure. These pin the
@@ -39,10 +43,15 @@ if (!paywall.includes('savingPercent')) {
   failures.push('the yearly saving must be computed from the real prices, not asserted');
 }
 if (!paywall.includes('trialLabel')) failures.push('a free trial must state its actual length before the purchase');
-if (!paywall.includes('Verlauf bleibt dir in jedem Fall erhalten')) {
+if (!paywall.includes('t.paywall.keeps')) {
   failures.push('the paywall must state that existing history stays accessible without Pro');
 }
-if (/Nur noch|läuft ab in|Angebot endet|verpasst|letzte Chance/i.test(paywall)) {
+for (const [label, dict] of [['German', dictDe], ['English', dictEn]]) {
+  for (const key of ['restore', 'keeps', 'renewalYear', 'renewalMonth', 'renewalTail']) {
+    if (!dict.includes(`${key}:`)) failures.push(`${label} paywall is missing ${key}`);
+  }
+}
+if (/Nur noch|läuft ab in|Angebot endet|letzte Chance|only .* left|offer ends|last chance/i.test(paywall + dictDe + dictEn)) {
   failures.push('the paywall must not use countdowns, scarcity or loss framing');
 }
 if (!service.includes('trialLabelFrom') || !service.includes('monthlyEquivalent')) {

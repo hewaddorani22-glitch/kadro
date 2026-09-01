@@ -6,6 +6,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, PrimaryButton, Screen } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { accountDeletionErrorMessage, deleteKandroAccount } from '@/services/accountDeletion';
 
 const appleSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
@@ -17,6 +18,7 @@ export default function AccountDeletionScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleted, setDeleted] = useState(false);
+  const { t } = useLanguage();
 
   const removeAccount = async () => {
     setBusy(true);
@@ -37,10 +39,10 @@ export default function AccountDeletionScreen() {
       <Screen>
         <View style={styles.success} accessibilityLiveRegion="polite">
           <View style={styles.successIcon}><Ionicons color={colors.text} name="checkmark" size={28} /></View>
-          <Text accessibilityRole="header" style={styles.title}>Account und Daten gelöscht</Text>
-          <Text style={styles.copy}>Cloud-Synchronisierung bleibt aus, bis du später bewusst einen neuen leeren Account anlegst.</Text>
+          <Text accessibilityRole="header" style={styles.title}>{t.deletion.doneTitle}</Text>
+          <Text style={styles.copy}>{t.deletion.doneText}</Text>
         </View>
-        <PrimaryButton icon="arrow-forward" label="Zurück zu Kandro" onPress={() => router.replace('/(tabs)/today')} />
+        <PrimaryButton icon="arrow-forward" label={t.deletion.backToApp} onPress={() => router.replace('/(tabs)/today')} />
       </Screen>
     );
   }
@@ -48,28 +50,28 @@ export default function AccountDeletionScreen() {
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Zurück" accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}>
+        <Pressable accessibilityLabel={t.common.back} accessibilityRole="button" onPress={() => router.back()} style={styles.backButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
       </View>
       <View style={styles.heading}>
-        <Text accessibilityRole="header" style={styles.title}>Account und Daten löschen</Text>
-        <Text style={styles.copy}>Dieser Schritt löscht den Supabase-Account, alle damit verknüpften Cloud-Daten, lokale Mahlzeiten, wartende Scans und die lokale Analysekennung.</Text>
+        <Text accessibilityRole="header" style={styles.title}>{t.deletion.title}</Text>
+        <Text style={styles.copy}>{t.deletion.body}</Text>
       </View>
 
       <Card style={styles.warningCard}>
         <Ionicons color={colors.attention} name="information-circle-outline" size={22} />
         <View style={styles.warningCopy}>
-          <Text style={styles.warningTitle}>Ein Store-Abo läuft separat weiter</Text>
-          <Text style={styles.warningText}>Die Accountlöschung kündigt ein Apple-Abonnement nicht. Verwalte oder kündige es vor der Löschung in deinen Apple-Einstellungen.</Text>
+          <Text style={styles.warningTitle}>{t.deletion.warningTitle}</Text>
+          <Text style={styles.warningText}>{t.deletion.warningText}</Text>
           <Pressable accessibilityRole="link" onPress={() => void Linking.openURL(appleSubscriptionsUrl)}>
-            <Text style={styles.link}>Apple-Abonnements öffnen</Text>
+            <Text style={styles.link}>{t.deletion.openSubscriptions}</Text>
           </Pressable>
         </View>
       </Card>
 
       <Pressable
-        accessibilityLabel="Ich verstehe, dass die Löschung nicht rückgängig gemacht werden kann"
+        accessibilityLabel={t.deletion.confirmLabel}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: confirmed }}
         onPress={() => setConfirmed((current) => !current)}
@@ -78,14 +80,14 @@ export default function AccountDeletionScreen() {
         <View style={[styles.checkbox, confirmed && styles.checkboxSelected]}>
           {confirmed ? <Ionicons color={colors.white} name="checkmark" size={16} /> : null}
         </View>
-        <Text style={styles.confirmText}>Ich verstehe, dass die Löschung endgültig ist und mein Verlauf nicht wiederhergestellt werden kann.</Text>
+        <Text style={styles.confirmText}>{t.deletion.confirmText}</Text>
       </Pressable>
 
       {error ? <Text accessibilityLiveRegion="assertive" style={styles.error}>{error}</Text> : null}
       <PrimaryButton
         disabled={!confirmed || busy}
         icon="trash-outline"
-        label={busy ? 'Account wird gelöscht …' : 'Account endgültig löschen'}
+        label={busy ? t.deletion.deleting : t.deletion.deleteNow}
         onPress={() => void removeAccount()}
         variant="dark"
       />

@@ -13,6 +13,7 @@ import {
   remindersSupported,
   setEveningReminderEnabled,
 } from '@/services/reminders';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber, mealTypeLabel } from '@/utils/format';
 
 export default function EveningScreen() {
@@ -20,6 +21,7 @@ export default function EveningScreen() {
   const { consumed, meals, targets, userName } = useApp();
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderDismissed, setReminderDismissed] = useState(false);
+  const { locale, t } = useLanguage();
 
   useEffect(() => {
     let active = true;
@@ -31,7 +33,7 @@ export default function EveningScreen() {
     };
   }, []);
 
-  const dateLabel = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+  const dateLabel = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   const over = Math.max(0, consumed.calories - targets.calories);
   const under = Math.max(0, targets.calories - consumed.calories);
   const logged = meals.length > 0;
@@ -40,37 +42,37 @@ export default function EveningScreen() {
   // The verdict never scolds. A day over budget is information, not a failure,
   // and tomorrow is always framed as already available.
   const verdict = !logged
-    ? 'Heute nichts erfasst. Das ist völlig in Ordnung.'
+    ? t.evening.verdictNothing
     : over > 0
-      ? `${formatNumber(over)} kcal über deinem Rahmen. Morgen stellt sich der Tag neu auf.`
+      ? t.evening.verdictOver(formatNumber(over, locale))
       : under < 200
-        ? 'Du hast deinen Rahmen ziemlich genau getroffen.'
-        : `${formatNumber(under)} kcal unter deinem Rahmen.`;
+        ? t.evening.verdictClose
+        : t.evening.verdictUnder(formatNumber(under, locale));
 
   const headline = !logged
-    ? 'Morgen ist auch ein Tag'
+    ? t.evening.headlineNothing
     : over > 0
-      ? 'Heute etwas drüber'
-      : 'Heute im Plan';
+      ? t.evening.headlineOver
+      : t.evening.headlineOk;
 
   const shareDay = async () => {
     const name = userName === 'Du' ? '' : `${userName}: `;
     await Share.share({
       message: logged
-        ? `${name}${formatNumber(consumed.calories)} von ${formatNumber(targets.calories)} kcal und ${consumed.protein} g Protein an ${dateLabel}. Aufgestellt mit Kandro.`
-        : `${name}Heute ohne Erfassung. Morgen stellt Kandro den Tag neu auf.`,
-      title: 'Mein Tag mit Kandro',
+        ? `${name}${formatNumber(consumed.calories, locale)} / ${formatNumber(targets.calories, locale)} kcal · ${consumed.protein} g ${t.common.protein} · ${dateLabel}. Kandro.`
+        : `${name}${t.evening.verdictNothing}`,
+      title: t.evening.shareTitle,
     });
   };
 
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Schließen" accessibilityRole="button" onPress={() => router.replace('/(tabs)/today')} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t.evening.close} accessibilityRole="button" onPress={() => router.replace('/(tabs)/today')} style={styles.iconButton}>
           <Ionicons color={colors.text} name="close" size={22} />
         </Pressable>
-        <Text style={styles.topTitle}>Tagesabschluss</Text>
-        <Pressable accessibilityLabel="Tag teilen" accessibilityRole="button" onPress={() => void shareDay()} style={styles.iconButton}>
+        <Text style={styles.topTitle}>{t.evening.title}</Text>
+        <Pressable accessibilityLabel={t.evening.share} accessibilityRole="button" onPress={() => void shareDay()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="share-outline" size={21} />
         </Pressable>
       </View>
@@ -92,13 +94,13 @@ export default function EveningScreen() {
 
         <View style={styles.numbersRow}>
           <View style={styles.numberBlock}>
-            <Text style={styles.number}>{formatNumber(consumed.calories)}</Text>
-            <Text style={styles.numberLabel}>kcal gegessen</Text>
+            <Text style={styles.number}>{formatNumber(consumed.calories, locale)}</Text>
+            <Text style={styles.numberLabel}>{t.evening.eatenLabel}</Text>
           </View>
           <View style={styles.numberDivider} />
           <View style={styles.numberBlock}>
             <Text style={styles.number}>{consumed.protein} g</Text>
-            <Text style={styles.numberLabel}>Protein · {proteinShare} % vom Ziel</Text>
+            <Text style={styles.numberLabel}>{t.evening.proteinShare(proteinShare)}</Text>
           </View>
         </View>
 
@@ -107,11 +109,11 @@ export default function EveningScreen() {
 
       {logged ? (
         <Card style={styles.mealsCard}>
-          <Text style={styles.sectionLabel}>DEINE MAHLZEITEN</Text>
+          <Text style={styles.sectionLabel}>{t.evening.meals}</Text>
           {meals.map((meal, index) => (
             <View key={meal.id}>
               <View style={styles.mealRow}>
-                <Text style={styles.mealType}>{mealTypeLabel(meal.type)}</Text>
+                <Text style={styles.mealType}>{mealTypeLabel(meal.type, t.common)}</Text>
                 <Text numberOfLines={1} style={styles.mealName}>{meal.title}</Text>
                 <Text style={styles.mealCalories}>~{meal.calories}</Text>
               </View>
@@ -125,31 +127,31 @@ export default function EveningScreen() {
         <View style={styles.tomorrowTop}>
           <View style={styles.tomorrowIcon}><Ionicons color={colors.text} name="sunny-outline" size={20} /></View>
           <View style={styles.tomorrowCopy}>
-            <Eyebrow>Morgen früh</Eyebrow>
-            <Text style={styles.tomorrowTitle}>Dein erster Zug steht schon</Text>
+            <Eyebrow>{t.evening.tomorrow}</Eyebrow>
+            <Text style={styles.tomorrowTitle}>{t.evening.tomorrowTitle}</Text>
           </View>
         </View>
         <Text style={styles.tomorrowText}>
-          Frühstück mit {Math.round(targets.protein * 0.22 / 5) * 5} g+ Protein hält den Rest des Tages beweglich.
+          {t.evening.tomorrowText(Math.round(targets.protein * 0.22 / 5) * 5)}
         </Text>
       </Card>
 
       {remindersSupported && !reminderEnabled && !reminderDismissed ? (
         <Card style={styles.offerCard}>
-          <Text style={styles.offerTitle}>Soll ich dich abends erinnern?</Text>
+          <Text style={styles.offerTitle}>{t.result.reminderEyebrow}</Text>
           <Text style={styles.offerText}>
-            Morgens dein Ziel, abends genau diese Karte. Zwei Nachrichten am Tag, keine Serien, keine Mahnungen, jederzeit abschaltbar.
+            {t.result.reminderText}
           </Text>
           <PrimaryButton
             icon="notifications-outline"
-            label="Ja, abends erinnern"
+            label={t.result.reminderAccept}
             onPress={() => void setEveningReminderEnabled(true, { calories: targets.calories, protein: targets.protein }).then(setReminderEnabled)}
           />
-          <PrimaryButton label="Nicht jetzt" onPress={() => setReminderDismissed(true)} variant="ghost" />
+          <PrimaryButton label={t.common.notNow} onPress={() => setReminderDismissed(true)} variant="ghost" />
         </Card>
       ) : null}
 
-      <PrimaryButton icon="arrow-forward" label="Zum Tagesstand" onPress={() => router.replace('/(tabs)/today')} />
+      <PrimaryButton icon="arrow-forward" label={t.evening.toToday} onPress={() => router.replace('/(tabs)/today')} />
     </Screen>
   );
 }

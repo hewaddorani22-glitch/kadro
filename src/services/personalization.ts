@@ -35,10 +35,17 @@ function dailyGoalOffset(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
   return goal === 'lose' ? -daily : Math.min(350, daily);
 }
 
-export function weeklyRateLabel(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
-  if (goal === 'maintain') return 'Gewicht halten';
+type PaceLabels = { paceHold: string; paceLose: (rate: string) => string; paceGain: (rate: string) => string };
+
+export function weeklyRateLabel(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg, labels?: PaceLabels) {
+  const source = labels ?? {
+    paceHold: 'Gewicht halten',
+    paceLose: (rate: string) => `${rate} kg pro Woche`,
+    paceGain: (rate: string) => `${rate} kg Aufbau pro Woche`,
+  };
+  if (goal === 'maintain') return source.paceHold;
   const value = String(weeklyRateKg).replace('.', ',');
-  return goal === 'lose' ? `${value} kg pro Woche` : `${value} kg Aufbau pro Woche`;
+  return goal === 'lose' ? source.paceLose(value) : source.paceGain(value);
 }
 
 function roundTo(value: number, step: number) {
@@ -64,20 +71,25 @@ export function calculateDailyTargets(profile: UserProfile): DailyTargets {
   return { calories, protein, carbs, fat };
 }
 
-export function goalLabel(goal: NutritionGoal) {
-  if (goal === 'maintain') return 'Halten';
-  if (goal === 'gain') return 'Stärker werden';
-  return 'Reduzieren';
+type GoalLabels = { goalLose: string; goalMaintain: string; goalGain: string };
+type ActivityLabels = { activityLow: string; activityLight: string; activityHigh: string };
+
+export function goalLabel(goal: NutritionGoal, labels?: GoalLabels) {
+  const source = labels ?? { goalLose: 'Reduzieren', goalMaintain: 'Halten', goalGain: 'Stärker werden' };
+  if (goal === 'maintain') return source.goalMaintain;
+  if (goal === 'gain') return source.goalGain;
+  return source.goalLose;
 }
 
-export function activityLabel(activity: ActivityLevel) {
-  if (activity === 'low') return 'Meist sitzend';
-  if (activity === 'high') return 'Sehr aktiv';
-  return 'Leicht aktiv';
+export function activityLabel(activity: ActivityLevel, labels?: ActivityLabels) {
+  const source = labels ?? { activityLow: 'Meist sitzend', activityLight: 'Leicht aktiv', activityHigh: 'Sehr aktiv' };
+  if (activity === 'low') return source.activityLow;
+  if (activity === 'high') return source.activityHigh;
+  return source.activityLight;
 }
 
-export function estimatedPace(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg = 0.5) {
-  return weeklyRateLabel(goal, weeklyRateKg);
+export function estimatedPace(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg = 0.5, labels?: PaceLabels) {
+  return weeklyRateLabel(goal, weeklyRateKg, labels);
 }
 
 /** True when the safety floor overrode the requested rate. */

@@ -11,19 +11,21 @@ import { useSubscription } from '@/context/SubscriptionContext';
 import { recordRecommendationFeedback, recordRecommendationSet } from '@/services/cloudRepository';
 import { recommendMeals } from '@/services/recommendations';
 import { trackEvent } from '@/services/telemetry';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { MealContext, MealSuggestion, PortionFactor } from '@/types/nutrition';
 import { formatNumber } from '@/utils/format';
 
-const contexts: { id: MealContext; title: string; detail: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { id: 'home', title: 'Zuhause', detail: 'Mit dem, was da ist', icon: 'home-outline' },
-  { id: 'supermarket', title: 'Supermarkt', detail: 'Rewe, Lidl, Aldi', icon: 'basket-outline' },
-  { id: 'eating-out', title: 'Unterwegs', detail: 'Imbiss, Bäcker, Kantine', icon: 'restaurant-outline' },
-];
 
 export default function PlanScreen() {
   const params = useLocalSearchParams<{ context?: string; fromScan?: string }>();
   const router = useRouter();
   const { hasLoggedScan, logPlannedMeal, profile, remaining } = useApp();
+  const { locale, t } = useLanguage();
+  const contexts: { id: MealContext; title: string; detail: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { id: 'home', title: t.plan.ctxHome, detail: t.plan.ctxHomeDetail, icon: 'home-outline' },
+    { id: 'supermarket', title: t.plan.ctxMarket, detail: t.plan.ctxMarketDetail, icon: 'basket-outline' },
+    { id: 'eating-out', title: t.plan.ctxOut, detail: t.plan.ctxOutDetail, icon: 'restaurant-outline' },
+  ];
   const { status: subscriptionStatus } = useSubscription();
   const [selected, setSelected] = useState<MealContext | null>(null);
   const [chosen, setChosen] = useState<string | null>(null);
@@ -100,21 +102,21 @@ export default function PlanScreen() {
     <Screen>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Eyebrow>Kandro</Eyebrow>
-          <PageTitle>Was passt jetzt?</PageTitle>
-          <Text style={styles.subtitle}>Wähle deine Situation. Kandro richtet die Vorschläge an deinem tatsächlichen Tag aus.</Text>
+          <Eyebrow>{t.plan.eyebrow}</Eyebrow>
+          <PageTitle>{t.plan.title}</PageTitle>
+          <Text style={styles.subtitle}>{t.plan.subtitle}</Text>
         </View>
         <IconCircle name="sparkles" size={48} />
       </View>
 
       <Card style={styles.balanceCard}>
         <View>
-          <Text style={styles.balanceLabel}>NACH DEN HEUTIGEN MAHLZEITEN</Text>
-          <Text style={styles.balanceValue}>{formatNumber(remaining.calories)} kcal übrig</Text>
+          <Text style={styles.balanceLabel}>{t.plan.afterMeals}</Text>
+          <Text style={styles.balanceValue}>{t.plan.kcalLeft(formatNumber(remaining.calories, locale))}</Text>
         </View>
         <View style={styles.proteinPill}>
           <Ionicons color={colors.success} name="barbell-outline" size={16} />
-          <Text style={styles.proteinText}>{remaining.protein} g Protein übrig</Text>
+          <Text style={styles.proteinText}>{t.plan.proteinLeft(remaining.protein)}</Text>
         </View>
       </Card>
 
@@ -146,9 +148,9 @@ export default function PlanScreen() {
             >
               <View style={styles.loggedIcon}><Ionicons color={colors.text} name="checkmark" size={18} /></View>
               <View style={styles.loggedCopy}>
-                <Text style={styles.loggedTitle}>{loggedTitle} eingetragen</Text>
+                <Text style={styles.loggedTitle}>{t.plan.loggedTitle(loggedTitle)}</Text>
                 <Text style={styles.loggedText}>
-                  Noch {formatNumber(remaining.calories)} kcal und {remaining.protein} g Protein übrig · Tagesstand ansehen
+                  {t.plan.loggedText(formatNumber(remaining.calories, locale), remaining.protein)}
                 </Text>
               </View>
               <Ionicons color={colors.text} name="chevron-forward" size={18} />
@@ -157,8 +159,8 @@ export default function PlanScreen() {
 
           <View style={styles.resultsHeading}>
             <View>
-              <Text style={styles.resultsTitle}>3 Optionen für heute</Text>
-              <Text style={styles.resultsMeta}>Ziel · {Math.max(300, calorieCenter - 50)}–{calorieCenter + 50} kcal · {Math.max(20, proteinCenter - 5)}–{proteinCenter + 5} g Protein</Text>
+              <Text style={styles.resultsTitle}>{t.plan.optionsTitle}</Text>
+              <Text style={styles.resultsMeta}>{t.plan.optionsMeta(`${Math.max(300, calorieCenter - 50)}–${calorieCenter + 50}`, `${Math.max(20, proteinCenter - 5)}–${proteinCenter + 5}`)}</Text>
             </View>
             <Ionicons color={colors.accentDeep} name="checkmark-done" size={24} />
           </View>
@@ -178,23 +180,23 @@ export default function PlanScreen() {
                 </View>
                 <View style={styles.nutritionRow}>
                   <NutritionStat label="kcal" value={`~${suggestion.calories}`} />
-                  <NutritionStat label="protein" value={`~${suggestion.protein} g`} />
-                  <NutritionStat label="carbs" value={`~${suggestion.carbs} g`} />
+                  <NutritionStat label={t.common.protein} value={`~${suggestion.protein} g`} />
+                  <NutritionStat label={t.common.carbs} value={`~${suggestion.carbs} g`} />
                 </View>
                 <PrimaryButton
                   icon={isChosen ? 'chevron-up' : 'arrow-forward'}
-                  label={isChosen ? 'Doch nicht' : 'Das nehme ich'}
+                  label={isChosen ? t.plan.dropIt : t.plan.take}
                   onPress={() => chooseMeal(suggestion.id)}
                   variant={isChosen ? 'ghost' : 'secondary'}
                 />
                 {isChosen ? (
                   <View style={styles.portionBlock}>
-                    <Text style={styles.portionLabel}>Wie viel davon?</Text>
+                    <Text style={styles.portionLabel}>{t.plan.howMuch}</Text>
                     <View style={styles.portionSelector}>
                       {([
-                        { factor: 0.7 as PortionFactor, label: 'Weniger', multiplier: '0,7×' },
-                        { factor: 1 as PortionFactor, label: 'Normal', multiplier: '1×' },
-                        { factor: 1.4 as PortionFactor, label: 'Mehr', multiplier: '1,4×' },
+                        { factor: 0.7 as PortionFactor, label: t.confirm.less, multiplier: '0,7×' },
+                        { factor: 1 as PortionFactor, label: t.plan.normal, multiplier: '1×' },
+                        { factor: 1.4 as PortionFactor, label: t.confirm.more, multiplier: '1,4×' },
                       ]).map((choice) => {
                         const active = portion === choice.factor;
                         return (
@@ -212,12 +214,12 @@ export default function PlanScreen() {
                       })}
                     </View>
                     <Text style={styles.portionResult}>
-                      ~{Math.round(suggestion.calories * portion)} kcal · ~{Math.round(suggestion.protein * portion)} g Protein
+                      ~{Math.round(suggestion.calories * portion)} kcal · ~{Math.round(suggestion.protein * portion)} g {t.common.protein}
                     </Text>
                     <PrimaryButton
                       disabled={logging}
                       icon="checkmark"
-                      label={logging ? 'Wird eingetragen …' : 'Gegessen, Tag aktualisieren'}
+                      label={logging ? t.plan.logging : t.plan.logIt}
                       onPress={() => void logMeal(suggestion)}
                     />
                   </View>
@@ -227,15 +229,15 @@ export default function PlanScreen() {
           })}
 
           <Text style={styles.catalogNote}>
-            Richtwerte für eine typische Zubereitung. Was du tatsächlich isst, erfasst du danach wie gewohnt per Scan.
+            {t.plan.catalogNote}
           </Text>
 
           {hasLoggedScan && params.fromScan !== '1' && subscriptionStatus !== 'active' ? (
             <Pressable accessibilityRole="button" onPress={() => router.push('/paywall')} style={styles.proBanner}>
               <View style={styles.proIcon}><Ionicons color={colors.white} name="infinite" size={20} /></View>
               <View style={styles.proCopy}>
-                <Text style={styles.proTitle}>Kandro weiterlaufen lassen</Text>
-                <Text style={styles.proText}>Unbegrenzte Scans und neue Aufstellungen freischalten.</Text>
+                <Text style={styles.proTitle}>{t.plan.proTitle}</Text>
+                <Text style={styles.proText}>{t.plan.proText}</Text>
               </View>
               <Ionicons color={colors.text} name="chevron-forward" size={20} />
             </Pressable>
@@ -244,7 +246,7 @@ export default function PlanScreen() {
       ) : (
         <View style={styles.hint}>
           <Ionicons color={colors.muted} name="arrow-up" size={20} />
-          <Text style={styles.hintText}>Wähle eine Situation für drei praktische Ideen.</Text>
+          <Text style={styles.hintText}>{t.plan.hint}</Text>
         </View>
       )}
     </Screen>
@@ -255,7 +257,7 @@ function NutritionStat({ label, value }: { label: string; value: number | string
   return (
     <View style={styles.nutritionStat}>
       <Text style={styles.nutritionValue}>{value}</Text>
-      <Text style={styles.nutritionLabel}>{label === 'protein' ? 'Protein' : label === 'carbs' ? 'Kohlenh.' : label}</Text>
+      <Text style={styles.nutritionLabel}>{label}</Text>
     </View>
   );
 }

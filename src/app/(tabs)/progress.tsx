@@ -6,13 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { proteinConsistency } from '@/services/consistency';
 import { localDateKey } from '@/utils/date';
 
-const germanDate = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short' });
+
 
 export default function ProgressScreen() {
   const insets = useSafeAreaInsets();
+  const { locale, t } = useLanguage();
   const { addWeightEntry, mealHistory, profile, targets, weightEntries } = useApp();
   const [showWeightEntry, setShowWeightEntry] = useState(false);
   const [weightInput, setWeightInput] = useState(String(profile.weightKg).replace('.', ','));
@@ -45,7 +47,7 @@ export default function ProgressScreen() {
   const saveWeight = async () => {
     const value = Number(weightInput.replace(',', '.'));
     if (!Number.isFinite(value) || value < 35 || value > 350) {
-      setWeightError('Bitte gib ein Gewicht zwischen 35 und 350 kg ein.');
+      setWeightError(t.progress.weightError);
       return;
     }
     setSaving(true);
@@ -61,8 +63,8 @@ export default function ProgressScreen() {
     <Screen>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Eyebrow>Letzte 7 Tage</Eyebrow>
-          <PageTitle>Dein Verlauf</PageTitle>
+          <Eyebrow>{t.progress.eyebrow}</Eyebrow>
+          <PageTitle>{t.progress.title}</PageTitle>
         </View>
         <IconCircle name="trending-up" size={48} />
       </View>
@@ -73,17 +75,17 @@ export default function ProgressScreen() {
         {/* A ratio needs enough days to mean anything. Scoring someone "0 von 1"
             on their first day is a verdict on a single data point, and this app
             does not do verdicts. Below three tracked days the average leads. */}
-        <Text style={styles.heroLabel}>{showsScore ? 'PROTEINZIEL ERREICHT' : 'PROTEIN IM SCHNITT'}</Text>
+        <Text style={styles.heroLabel}>{showsScore ? t.progress.proteinReached : t.progress.proteinAverage}</Text>
         <View style={styles.heroValueRow}>
           {showsScore ? (
             <>
               <Text style={styles.heroValue}>{reachedCount}</Text>
-              <Text style={styles.heroOf}>von {trackedDays} erfassten Tagen</Text>
+              <Text style={styles.heroOf}>{t.progress.outOfTracked(trackedDays)}</Text>
             </>
           ) : (
             <>
               <Text style={styles.heroValue}>{trackedDays > 0 ? averageProtein : targets.protein}</Text>
-              <Text style={styles.heroOf}>{trackedDays > 0 ? `g · Ziel ${targets.protein} g` : 'g Tagesziel'}</Text>
+              <Text style={styles.heroOf}>{trackedDays > 0 ? t.progress.goalSuffix(targets.protein) : t.progress.perDayGoal}</Text>
             </>
           )}
         </View>
@@ -106,17 +108,17 @@ export default function ProgressScreen() {
         </View>
         <Text style={styles.heroFoot}>
           {showsScore
-            ? `Ø ${averageProtein} g pro erfasstem Tag · Ziel ${targets.protein} g`
+            ? t.progress.footScored(averageProtein, targets.protein)
             : trackedDays > 0
-              ? `${trackedDays} von 3 Tagen erfasst. Ab dem dritten siehst du hier, wie oft du dein Ziel triffst.`
-              : 'Sobald du Mahlzeiten erfasst, siehst du hier, wie oft du dein Ziel triffst.'}
+              ? t.progress.footBuilding(trackedDays)
+              : t.progress.footEmpty}
         </Text>
       </Card>
 
       <Card style={styles.weightCard}>
         <View style={styles.weightTop}>
           <View>
-            <Text style={styles.cardLabel}>AKTUELLES GEWICHT</Text>
+            <Text style={styles.cardLabel}>{t.progress.currentWeight}</Text>
             <Text style={styles.currentWeight}>{currentWeight.toFixed(1).replace('.', ',')}<Text style={styles.kg}> kg</Text></Text>
           </View>
           {visibleWeights.length > 1 ? (
@@ -125,49 +127,49 @@ export default function ProgressScreen() {
               <Text style={[styles.changeText, weightChange > 0 && styles.changeTextAttention]}>{Math.abs(weightChange).toFixed(1).replace('.', ',')} kg</Text>
             </View>
           ) : (
-            <View style={styles.firstPill}><Text style={styles.firstPillText}>ERSTER WERT</Text></View>
+            <View style={styles.firstPill}><Text style={styles.firstPillText}>{t.progress.firstValue}</Text></View>
           )}
         </View>
         <WeightChart entries={visibleWeights} />
         {visibleWeights.length > 1 ? (
           <View style={styles.chartLabels}>
-            <Text style={styles.chartLabel}>{germanDate.format(new Date(`${visibleWeights[0].date}T12:00:00`))}</Text>
-            <Text style={styles.chartLabel}>{germanDate.format(new Date(`${visibleWeights.at(-1)?.date}T12:00:00`))}</Text>
+            <Text style={styles.chartLabel}>{new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(`${visibleWeights[0].date}T12:00:00`))}</Text>
+            <Text style={styles.chartLabel}>{new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(`${visibleWeights.at(-1)?.date}T12:00:00`))}</Text>
           </View>
         ) : null}
-        <PrimaryButton icon="add" label="Heutiges Gewicht eintragen" onPress={openWeightEntry} variant="secondary" />
+        <PrimaryButton icon="add" label={t.progress.logWeight} onPress={openWeightEntry} variant="secondary" />
       </Card>
 
       <View style={styles.statsRow}>
         <Card style={styles.statCard}>
           <IconCircle name="flame-outline" size={38} tone="neutral" />
           <Text style={styles.statValue}>{trackedDays} / 7</Text>
-          <Text style={styles.statLabel}>Tage erfasst</Text>
+          <Text style={styles.statLabel}>{t.progress.daysTracked}</Text>
         </Card>
         <Card style={styles.statCard}>
           <IconCircle name="barbell-outline" size={38} tone="neutral" />
           <Text style={styles.statValue}>{averageProtein} g</Text>
-          <Text style={styles.statLabel}>Ø Protein</Text>
+          <Text style={styles.statLabel}>{t.progress.avgProtein}</Text>
         </Card>
         <Card style={styles.statCard}>
           <IconCircle name="camera-outline" size={38} tone="neutral" />
           <Text style={styles.statValue}>{visibleMeals.length}</Text>
-          <Text style={styles.statLabel}>Mahlzeiten</Text>
+          <Text style={styles.statLabel}>{t.progress.meals}</Text>
         </Card>
       </View>
 
       <View style={styles.section}>
-        <SectionTitle>Einblick</SectionTitle>
+        <SectionTitle>{t.progress.insight}</SectionTitle>
         <Card style={styles.insightCard}>
           <View style={styles.insightIcon}>
             <Ionicons color={colors.text} name={visibleMeals.length >= 3 ? 'sparkles' : 'leaf-outline'} size={24} />
           </View>
           <View style={styles.insightCopy}>
-            <Text style={styles.insightTitle}>{visibleMeals.length >= 3 ? 'Dein echter Verlauf entsteht' : 'Ohne Druck anfangen'}</Text>
+            <Text style={styles.insightTitle}>{visibleMeals.length >= 3 ? t.progress.insightBuilding : t.progress.insightStart}</Text>
             <Text style={styles.insightText}>
               {visibleMeals.length >= 3
-                ? `${visibleMeals.length} erfasste Mahlzeiten ergeben bisher durchschnittlich ${averageProtein} g Protein an protokollierten Tagen.`
-                : 'Nach drei erfassten Mahlzeiten zeigt Kandro hier erste Muster – ohne erfundene Bewertungen oder perfekte Serien.'}
+                ? t.progress.insightBuildingText(visibleMeals.length, averageProtein)
+                : t.progress.insightStartText}
             </Text>
           </View>
         </Card>
@@ -176,11 +178,11 @@ export default function ProgressScreen() {
       <Modal animationType="fade" onRequestClose={() => setShowWeightEntry(false)} transparent visible={showWeightEntry}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
           <View accessibilityViewIsModal style={[styles.modalCard, { paddingBottom: insets.bottom + 22 }]}>
-            <Text accessibilityRole="header" style={styles.modalTitle}>Heutiges Gewicht</Text>
-            <Text style={styles.modalText}>Ein Eintrag pro Tag. Ein neuer Wert ersetzt den heutigen.</Text>
+            <Text accessibilityRole="header" style={styles.modalTitle}>{t.progress.weightModalTitle}</Text>
+            <Text style={styles.modalText}>{t.progress.weightModalText}</Text>
             <View style={styles.weightInputRow}>
               <TextInput
-                accessibilityLabel="Gewicht in Kilogramm"
+                accessibilityLabel={t.progress.weightLabel}
                 autoFocus
                 keyboardType="decimal-pad"
                 onChangeText={setWeightInput}
@@ -191,8 +193,8 @@ export default function ProgressScreen() {
               <Text style={styles.weightUnit}>kg</Text>
             </View>
             {weightError ? <Text accessibilityLiveRegion="assertive" style={styles.error}>{weightError}</Text> : null}
-            <PrimaryButton disabled={saving} label={saving ? 'Wird gespeichert …' : 'Speichern'} onPress={() => void saveWeight()} />
-            <PrimaryButton disabled={saving} label="Abbrechen" onPress={() => setShowWeightEntry(false)} variant="ghost" />
+            <PrimaryButton disabled={saving} label={saving ? t.common.saving : t.common.save} onPress={() => void saveWeight()} />
+            <PrimaryButton disabled={saving} label={t.common.cancel} onPress={() => setShowWeightEntry(false)} variant="ghost" />
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -201,11 +203,12 @@ export default function ProgressScreen() {
 }
 
 function WeightChart({ entries }: { entries: { date: string; weightKg: number }[] }) {
+  const { t } = useLanguage();
   if (entries.length < 2) {
     return (
       <View style={styles.emptyChart}>
         <Ionicons color={colors.muted} name="analytics-outline" size={24} />
-        <Text style={styles.emptyChartText}>Ab der zweiten Messung wird dein Trend sichtbar.</Text>
+        <Text style={styles.emptyChartText}>{t.progress.emptyChart}</Text>
       </View>
     );
   }

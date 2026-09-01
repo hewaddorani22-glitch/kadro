@@ -11,6 +11,7 @@ import { colors, radii } from '@/constants/theme';
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber } from '@/utils/format';
 import { toBillingMode, trackEvent } from '@/services/telemetry';
 
@@ -21,6 +22,7 @@ export default function PaywallScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ reason?: string }>();
   const { consumed, lifetimeScanCount, meals } = useApp();
+  const { locale, t } = useLanguage();
   const [selected, setSelected] = useState<Plan>('yearly');
   const { busy, error, purchase, refresh, restore, snapshot, status } = useSubscription();
   const yearly = snapshot?.plans.yearly ?? null;
@@ -36,15 +38,15 @@ export default function PaywallScreen() {
   const blocked = params.reason === 'blocked';
   const afterMeal = params.reason === 'after-meal';
   const headline = blocked
-    ? `Deine ${FREE_SCAN_ALLOWANCE} Mahlzeiten sind erfasst.`
+    ? t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE)
     : afterMeal
-      ? 'So läuft dein Tag ab jetzt.'
-      : 'Iss mit einem Plan.\nNicht nach Gefühl.';
+      ? t.paywall.afterMealHeadline
+      : t.paywall.browseHeadline;
   const subline = blocked
-    ? 'Du hast gesehen, wie sich der Tag nach jeder Mahlzeit neu aufstellt. Mit Pro hört das nicht auf.'
+    ? t.paywall.blockedSub
     : afterMeal
-      ? 'Jede weitere Mahlzeit rechnet den Rest des Tages neu und sagt dir, was als Nächstes passt.'
-      : 'Behalte die ruhige, adaptive Unterstützung, die du gerade erlebt hast – nach jeder Mahlzeit.';
+      ? t.paywall.afterMealSub
+      : t.paywall.browseSub;
 
   useEffect(() => {
     if (status === 'loading' || paywallViewed.current) return;
@@ -69,9 +71,9 @@ export default function PaywallScreen() {
     }
     if (status === 'unconfigured') {
       Alert.alert(
-        'RevenueCat noch nicht verbunden',
-        'Die Paywall läuft als sichere Vorschau. Nach dem Eintragen des öffentlichen Test-Store-Schlüssels werden Kauf und Wiederherstellung in Expo Go simuliert.',
-        [{ text: 'Abbrechen', style: 'cancel' }, { text: 'Demo fortsetzen', onPress: () => router.replace('/(tabs)/today') }],
+        t.paywall.unconfiguredTitle,
+        t.paywall.unconfiguredBody,
+        [{ text: t.common.cancel, style: 'cancel' }, { text: t.paywall.continueDemo, onPress: () => router.replace('/(tabs)/today') }],
       );
       return;
     }
@@ -84,15 +86,15 @@ export default function PaywallScreen() {
     trackEvent('subscription purchase completed', { billing_mode: billingMode, plan: selected });
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert(
-      testStore ? 'Test-Abo aktiviert' : 'Kandro Pro aktiviert',
-      testStore ? 'Der RevenueCat Test Store hat den Kauf ohne echte Abbuchung simuliert.' : 'Dein Kandro-Pro-Zugang ist jetzt aktiv.',
-      [{ text: 'Weiter', onPress: () => router.replace('/(tabs)/today') }],
+      testStore ? t.paywall.activatedTest : t.paywall.activated,
+      testStore ? t.paywall.activatedTestBody : t.paywall.activatedBody,
+      [{ text: t.paywall.continueLabel, onPress: () => router.replace('/(tabs)/today') }],
     );
   };
 
   const restorePurchase = async () => {
     if (status === 'unconfigured') {
-      Alert.alert('Noch nicht verbunden', 'Füge zuerst den öffentlichen RevenueCat-Schlüssel in der .env-Datei ein.');
+      Alert.alert(t.paywall.notLinkedTitle, t.paywall.notLinkedBody);
       return;
     }
     const result = await restore();
@@ -100,34 +102,34 @@ export default function PaywallScreen() {
     const active = result === 'active';
     trackEvent('subscription restore completed', { active, billing_mode: billingMode });
     Alert.alert(
-      active ? 'Käufe wiederhergestellt' : 'Kein aktives Abo gefunden',
-      active ? 'Kandro Pro ist wieder aktiv.' : 'Für dieses Store-Konto wurde kein aktiver Kandro-Pro-Kauf gefunden.',
+      active ? t.paywall.restoredTitle : t.paywall.noPurchaseTitle,
+      active ? t.paywall.restoredBody : t.paywall.noPurchaseBody,
     );
   };
 
   const buttonLabel = busy
-    ? 'Wird verarbeitet …'
+    ? t.paywall.ctaProcessing
     : status === 'loading'
-      ? 'Angebot wird geladen …'
+      ? t.paywall.ctaLoading
       : status === 'active'
-        ? 'Mit Kandro Pro weiter'
+        ? t.paywall.ctaActive
         : status === 'unconfigured'
-          ? 'Demo fortsetzen'
+          ? t.paywall.ctaDemo
           : status === 'error'
-            ? 'Erneut laden'
+            ? t.paywall.ctaReload
             : testStore
-              ? 'Test-Abo starten'
+              ? t.paywall.ctaTest
               : selectedPlan?.hasFreeTrial
-                ? 'Kostenlos testen'
-                : 'Kandro Pro starten';
+                ? t.paywall.ctaTrial
+                : t.paywall.ctaStart;
 
   const billingCopy = status === 'active'
-    ? 'Dein Kandro-Pro-Zugang ist aktiv.'
+    ? t.paywall.billingActive
     : status === 'unconfigured'
-      ? 'Vorschaupreise – es wird nichts abgebucht.'
+      ? t.paywall.billingPreview
       : selectedPlan
-        ? `${selectedPlan.billing}${testStore ? ' Test Store: keine echte Abbuchung.' : ''}`
-        : 'Lege im aktuellen RevenueCat Offering ein Jahres- und/oder Monatspaket an.';
+        ? `${selectedPlan.billing}${testStore ? t.paywall.testStoreNote : ''}`
+        : t.paywall.billingMissing;
 
   // App Store Review guideline 3.1.2 requires length, price and the renewal
   // terms to be visible before the purchase, not only in the store listing.
@@ -135,20 +137,20 @@ export default function PaywallScreen() {
   const savingPercent = yearly?.monthlyEquivalent && monthly?.priceAmount
     ? Math.round((1 - yearly.monthlyEquivalent / monthly.priceAmount) * 100)
     : null;
-  const yearlyBadge = savingPercent && savingPercent >= 5 ? `${savingPercent} % GÜNSTIGER` : 'BESTER PREIS';
+  const yearlyBadge = savingPercent && savingPercent >= 5 ? t.paywall.cheaper(savingPercent) : t.paywall.bestPrice;
 
   const renewalCopy = selected === 'yearly'
-    ? 'Jahresabo. Verlängert sich automatisch um 12 Monate, bis du kündigst.'
-    : 'Monatsabo. Verlängert sich automatisch um 1 Monat, bis du kündigst.';
+    ? t.paywall.renewalYear
+    : t.paywall.renewalMonth;
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel="Paywall schließen" accessibilityRole="button" onPress={() => router.back()} style={styles.closeButton}>
+        <Pressable accessibilityLabel={t.paywall.close} accessibilityRole="button" onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={22} />
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || status === 'loading' }} disabled={busy || status === 'loading'} onPress={() => void restorePurchase()}>
-          <Text style={[styles.restore, (busy || status === 'loading') && styles.disabledText]}>Wiederherstellen</Text>
+          <Text style={[styles.restore, (busy || status === 'loading') && styles.disabledText]}>{t.paywall.restore}</Text>
         </Pressable>
       </View>
 
@@ -159,50 +161,50 @@ export default function PaywallScreen() {
         style={styles.scroll}
       >
         <View style={styles.heroMark}><KandroMark size={76} /></View>
-        {testStore ? <View style={styles.testBadge}><Text style={styles.testBadgeText}>REVENUECAT TEST STORE</Text></View> : null}
+        {testStore ? <View style={styles.testBadge}><Text style={styles.testBadgeText}>{t.paywall.testStoreBadge}</Text></View> : null}
         <Text style={styles.title}>{headline}</Text>
         <Text style={styles.subtitle}>{subline}</Text>
 
         {lifetimeScanCount > 0 ? (
           <View style={styles.progressCard}>
-            <Text style={styles.progressLabel}>BISHER MIT KANDRO</Text>
+            <Text style={styles.progressLabel}>{t.paywall.progressLabel}</Text>
             <Text style={styles.progressValue}>
-              {lifetimeScanCount} {lifetimeScanCount === 1 ? 'Mahlzeit' : 'Mahlzeiten'} erfasst
-              {meals.length ? ` · heute ${formatNumber(consumed.calories)} kcal eingeordnet` : ''}
+              {t.paywall.progressValue(lifetimeScanCount, lifetimeScanCount === 1 ? t.paywall.meal : t.paywall.meals)}
+              {meals.length ? t.paywall.progressToday(formatNumber(consumed.calories, locale)) : ''}
             </Text>
           </View>
         ) : null}
 
         <View style={styles.benefits}>
-          <Benefit label="Jede Mahlzeit erfassen – Foto, Beschreibung oder Barcode" />
-          <Benefit label="Der Tag rechnet sich nach jeder Mahlzeit neu" />
-          <Benefit label="Drei konkrete Vorschläge für den nächsten Teller" />
-          <Benefit label="Abendabschluss und Verlauf über alle Tage" />
+          <Benefit label={t.paywall.benefit1} />
+          <Benefit label={t.paywall.benefit2} />
+          <Benefit label={t.paywall.benefit3} />
+          <Benefit label={t.paywall.benefit4} />
         </View>
 
         <View style={styles.keepsCard}>
           <Ionicons color={colors.accentDeep} name="lock-open-outline" size={17} />
           <Text style={styles.keepsText}>
-            Dein bisheriger Verlauf bleibt dir in jedem Fall erhalten – auch ohne Pro. Ohne Abo kommen nur keine neuen Analysen dazu.
+            {t.paywall.keeps}
           </Text>
         </View>
 
         <View style={styles.plans}>
           <PlanCard
             badge={yearlyBadge}
-            detail={yearly?.trialLabel ? `${yearly.trialLabel} gratis, dann ${yearly.detail}` : (yearly?.detail ?? '€3,33 pro Monat')}
+            detail={yearly?.trialLabel ? t.paywall.trialThen(yearly.trialLabel, yearly.detail) : (yearly?.detail ?? t.paywall.yearlyFallback)}
             disabled={Boolean(snapshot?.configured && !yearly)}
-            label="Jährlich"
+            label={t.paywall.yearly}
             onPress={() => setSelected('yearly')}
-            price={yearly?.price ?? (snapshot?.configured ? 'Nicht verfügbar' : '€39,99 / Jahr')}
+            price={yearly?.price ?? (snapshot?.configured ? t.paywall.unavailable : '€39,99 / Jahr')}
             selected={selected === 'yearly'}
           />
           <PlanCard
-            detail={monthly?.trialLabel ? `${monthly.trialLabel} gratis, dann ${monthly.detail}` : (monthly?.detail ?? 'Flexibel, jederzeit kündbar')}
+            detail={monthly?.trialLabel ? t.paywall.trialThen(monthly.trialLabel, monthly.detail) : (monthly?.detail ?? t.paywall.monthlyFallback)}
             disabled={Boolean(snapshot?.configured && !monthly)}
-            label="Monatlich"
+            label={t.paywall.monthly}
             onPress={() => setSelected('monthly')}
-            price={monthly?.price ?? (snapshot?.configured ? 'Nicht verfügbar' : '€9,99 / Monat')}
+            price={monthly?.price ?? (snapshot?.configured ? t.paywall.unavailable : '€9,99 / Monat')}
             selected={selected === 'monthly'}
           />
         </View>
@@ -220,13 +222,13 @@ export default function PaywallScreen() {
         <Text style={styles.billing}>{billingCopy}</Text>
         {status !== 'active' ? (
           <Text style={styles.renewal}>
-            {renewalCopy} Die Abbuchung erfolgt über deine Apple-ID. Kündigen kannst du jederzeit bis 24 Stunden vor Ablauf in den Einstellungen deiner Apple-ID.
+            {renewalCopy} {t.paywall.renewalTail}
           </Text>
         ) : null}
         <View style={styles.legalRow}>
-          <Pressable accessibilityRole="link" onPress={() => router.push('/terms')}><Text style={styles.legal}>Bedingungen</Text></Pressable>
+          <Pressable accessibilityRole="link" onPress={() => router.push('/terms')}><Text style={styles.legal}>{t.paywall.terms}</Text></Pressable>
           <View style={styles.legalDot} />
-          <Pressable accessibilityRole="link" onPress={() => router.push('/privacy')}><Text style={styles.legal}>Datenschutz</Text></Pressable>
+          <Pressable accessibilityRole="link" onPress={() => router.push('/privacy')}><Text style={styles.legal}>{t.paywall.privacy}</Text></Pressable>
         </View>
       </View>
     </SafeAreaView>

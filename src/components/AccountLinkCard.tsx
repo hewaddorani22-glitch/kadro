@@ -17,6 +17,7 @@ import {
   signInToExistingAccount,
   verifyEmailLink,
 } from '@/services/accountLinking';
+import { useLanguage } from '@/i18n/LanguageProvider';
 
 type ViewMode = 'upgrade' | 'sign-in';
 
@@ -31,6 +32,7 @@ export function AccountLinkCard() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     let active = true;
@@ -72,7 +74,7 @@ export function AccountLinkCard() {
     setMessage(null);
     try {
       await resendEmailLink(email);
-      setMessage('Die Bestätigungs-E-Mail wurde erneut gesendet.');
+      setMessage(t.account.resent);
     } catch (failure) {
       setError(accountLinkErrorMessage(failure));
     } finally {
@@ -84,7 +86,7 @@ export function AccountLinkCard() {
     return (
       <Card style={styles.card}>
         <ActivityIndicator color={colors.accentDeep} />
-        <Text style={styles.loadingText}>Kontostatus wird geladen …</Text>
+        <Text style={styles.loadingText}>{t.account.loading}</Text>
       </Card>
     );
   }
@@ -92,8 +94,8 @@ export function AccountLinkCard() {
   if (account.status === 'unavailable') {
     return (
       <Card style={styles.card}>
-        <AccountHeader icon="cloud-offline-outline" title="Nur auf diesem Gerät" />
-        <Text style={styles.body}>Cloud-Synchronisierung ist für diesen Build nicht eingerichtet.</Text>
+        <AccountHeader icon="cloud-offline-outline" title={t.account.unavailableTitle} />
+        <Text style={styles.body}>{t.account.unavailableText}</Text>
       </Card>
     );
   }
@@ -101,13 +103,13 @@ export function AccountLinkCard() {
   if (account.status === 'disabled') {
     return (
       <Card style={styles.card}>
-        <AccountHeader icon="cloud-offline-outline" title="Cloud nach Löschung deaktiviert" />
-        <Text style={styles.body}>Kandro legt nicht automatisch wieder einen Gast-Account an. Du kannst die Cloud später bewusst neu aktivieren.</Text>
+        <AccountHeader icon="cloud-offline-outline" title={t.account.disabledTitle} />
+        <Text style={styles.body}>{t.account.disabledText}</Text>
         <PrimaryButton
           disabled={busy}
           icon="cloud-upload-outline"
-          label={busy ? 'Cloud wird aktiviert …' : 'Neuen Cloud-Account anlegen'}
-          onPress={() => void run(enableNewCloudAccount, 'Ein neuer leerer Cloud-Account wurde angelegt.', true)}
+          label={busy ? t.account.enablingCloud : t.account.enableCloud}
+          onPress={() => void run(enableNewCloudAccount, t.account.enabledMessage, true)}
           variant="secondary"
         />
         <Feedback error={error} message={message} />
@@ -118,14 +120,14 @@ export function AccountLinkCard() {
   if (account.status === 'linked') {
     return (
       <Card style={[styles.card, styles.linkedCard]}>
-        <AccountHeader icon="shield-checkmark" title="Konto gesichert" />
-        <Text style={styles.body}>Dein Verlauf bleibt mit derselben Kandro-ID verknüpft.</Text>
+        <AccountHeader icon="shield-checkmark" title={t.account.linkedTitle} />
+        <Text style={styles.body}>{t.account.linkedText}</Text>
         <View style={styles.emailPill}>
           <Ionicons color={colors.accentDeep} name="mail-outline" size={16} />
           <Text style={styles.emailText}>{account.email}</Text>
         </View>
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: showPassword }} onPress={() => setShowPassword((current) => !current)} style={styles.textButton}>
-          <Text style={styles.textButtonLabel}>{showPassword ? 'Passwortfeld schließen' : 'Passwort setzen oder ändern'}</Text>
+          <Text style={styles.textButtonLabel}>{showPassword ? t.account.closePassword : t.account.setPassword}</Text>
           <Ionicons color={colors.accentDeep} name={showPassword ? 'chevron-up' : 'chevron-down'} size={17} />
         </Pressable>
         {showPassword ? (
@@ -133,15 +135,15 @@ export function AccountLinkCard() {
             <AccountInput
               autoComplete="new-password"
               onChangeText={setPassword}
-              placeholder="Mindestens 8 Zeichen"
+              placeholder={t.account.passwordPlaceholder}
               secureTextEntry
               value={password}
             />
             <PrimaryButton
               disabled={busy || password.length < 8}
               icon="key-outline"
-              label={busy ? 'Wird gespeichert …' : 'Passwort speichern'}
-              onPress={() => void run(() => setAccountPassword(password), 'Passwort gespeichert. Dein Konto kann jetzt wiederhergestellt werden.')}
+              label={busy ? t.common.saving : t.account.savePassword}
+              onPress={() => void run(() => setAccountPassword(password), t.account.passwordSaved)}
             />
           </View>
         ) : null}
@@ -153,20 +155,20 @@ export function AccountLinkCard() {
   if (mode === 'sign-in') {
     return (
       <Card style={styles.card}>
-        <AccountHeader icon="log-in-outline" title="Vorhandenes Konto laden" />
-        <Text style={styles.body}>Lokale Scans werden nach der Anmeldung sicher mit diesem Konto synchronisiert.</Text>
+        <AccountHeader icon="log-in-outline" title={t.account.signInTitle} />
+        <Text style={styles.body}>{t.account.signInText}</Text>
         <View style={styles.form}>
-          <AccountInput autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder="E-Mail-Adresse" value={email} />
-          <AccountInput autoComplete="current-password" onChangeText={setPassword} placeholder="Passwort" secureTextEntry value={password} />
+          <AccountInput autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder={t.account.email} value={email} />
+          <AccountInput autoComplete="current-password" onChangeText={setPassword} placeholder={t.account.password} secureTextEntry value={password} />
           <PrimaryButton
             disabled={busy || !email.trim() || password.length < 8}
             icon="log-in-outline"
-            label={busy ? 'Konto wird geladen …' : 'Konto laden'}
-            onPress={() => void run(() => signInToExistingAccount(email, password), 'Konto geladen und synchronisiert.', true)}
+            label={busy ? t.account.loadingAccount : t.account.loadAccount}
+            onPress={() => void run(() => signInToExistingAccount(email, password), t.account.loadedMessage, true)}
           />
         </View>
         <Pressable accessibilityRole="button" onPress={() => { setMode('upgrade'); setError(null); setMessage(null); }} style={styles.centerButton}>
-          <Text style={styles.textButtonLabel}>Zurück zur Kontosicherung</Text>
+          <Text style={styles.textButtonLabel}>{t.account.backToSecure}</Text>
         </Pressable>
         <Feedback error={error} message={message} />
       </Card>
@@ -176,26 +178,26 @@ export function AccountLinkCard() {
   if (account.status === 'pending') {
     return (
       <Card style={styles.card}>
-        <AccountHeader icon="mail-unread-outline" title="E-Mail bestätigen" />
-        <Text style={styles.body}>Öffne den Link in der E-Mail an {account.email}. Falls ein Code angezeigt wird, kannst du ihn direkt eingeben.</Text>
+        <AccountHeader icon="mail-unread-outline" title={t.account.pendingTitle} />
+        <Text style={styles.body}>{t.account.pendingText(account.email)}</Text>
         <View style={styles.form}>
-          <AccountInput keyboardType="number-pad" maxLength={8} onChangeText={setCode} placeholder="6- bis 8-stelliger Code" value={code} />
+          <AccountInput keyboardType="number-pad" maxLength={8} onChangeText={setCode} placeholder={t.account.codePlaceholder} value={code} />
           <PrimaryButton
             disabled={busy || !/^\d{6,8}$/.test(code)}
             icon="checkmark-circle-outline"
-            label={busy ? 'Code wird geprüft …' : 'Code bestätigen'}
-            onPress={() => void run(() => verifyEmailLink(account.email, code), 'E-Mail bestätigt. Lege jetzt dein Passwort fest.')}
+            label={busy ? t.account.checkingCode : t.account.confirmCode}
+            onPress={() => void run(() => verifyEmailLink(account.email, code), t.account.emailConfirmed)}
           />
           <PrimaryButton
             disabled={busy}
             icon="refresh-outline"
-            label="Ich habe den Link geöffnet"
-            onPress={() => void run(refreshEmailLink, 'E-Mail bestätigt. Lege jetzt dein Passwort fest.')}
+            label={t.account.openedLink}
+            onPress={() => void run(refreshEmailLink, t.account.emailConfirmed)}
             variant="secondary"
           />
         </View>
         <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} onPress={() => void resend()} style={styles.centerButton}>
-          <Text style={styles.textButtonLabel}>E-Mail erneut senden</Text>
+          <Text style={styles.textButtonLabel}>{t.account.resend}</Text>
         </Pressable>
         <Feedback error={error} message={message} />
       </Card>
@@ -204,19 +206,19 @@ export function AccountLinkCard() {
 
   return (
     <Card style={styles.card}>
-      <AccountHeader icon="shield-outline" title="Verlauf dauerhaft sichern" />
-      <Text style={styles.body}>Verknüpfe deine aktuelle Kandro-ID mit einer E-Mail. Mahlzeiten und Ziele bleiben dabei erhalten.</Text>
+      <AccountHeader icon="shield-outline" title={t.account.secureTitle} />
+      <Text style={styles.body}>{t.account.secureText}</Text>
       <View style={styles.form}>
-        <AccountInput autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder="E-Mail-Adresse" value={email} />
+        <AccountInput autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder={t.account.email} value={email} />
         <PrimaryButton
           disabled={busy || !email.trim()}
           icon="mail-outline"
-          label={busy ? 'E-Mail wird gesendet …' : 'Bestätigungs-E-Mail senden'}
-          onPress={() => void run(() => requestEmailLink(email), 'Prüfe jetzt dein E-Mail-Postfach.')}
+          label={busy ? t.account.sendingEmail : t.account.sendEmail}
+          onPress={() => void run(() => requestEmailLink(email), t.account.checkInbox)}
         />
       </View>
       <Pressable accessibilityRole="button" onPress={() => { setMode('sign-in'); setError(null); setMessage(null); }} style={styles.centerButton}>
-        <Text style={styles.textButtonLabel}>Vorhandenes Konto laden</Text>
+        <Text style={styles.textButtonLabel}>{t.account.signInTitle}</Text>
       </Pressable>
       <Feedback error={error} message={message} />
     </Card>

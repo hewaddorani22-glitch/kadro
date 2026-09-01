@@ -59,7 +59,7 @@ export default function TodayScreen() {
           <Text style={styles.date}>{dateLabel}</Text>
           <Text style={styles.greeting}>{greeting}</Text>
         </View>
-        <Pressable accessibilityLabel="Profil öffnen" onPress={() => router.push('/(tabs)/profile')} style={styles.avatar}>
+        <Pressable accessibilityLabel={t.common.openProfile} onPress={() => router.push('/(tabs)/profile')} style={styles.avatar}>
           <Text style={styles.avatarText}>{userName === 'Du' ? 'K' : userName.trim().charAt(0).toUpperCase()}</Text>
         </Pressable>
       </View>
@@ -132,7 +132,7 @@ export default function TodayScreen() {
           >
             {repeatMeals.map((candidate) => (
               <Pressable
-                accessibilityLabel={`${candidate.title} noch einmal eintragen`}
+                accessibilityLabel={t.common.repeatLabel(candidate.title)}
                 accessibilityRole="button"
                 accessibilityState={{ disabled: repeating !== null }}
                 disabled={repeating !== null}
@@ -158,8 +158,8 @@ export default function TodayScreen() {
           {meals.map((meal, index) => (
             <View key={meal.id}>
               <Pressable
-                accessibilityHint="Öffnet Details, Portionskorrektur und Entfernen"
-                accessibilityLabel={`${mealTypeLabel(meal.type)}: ${meal.title}, etwa ${meal.calories} Kilokalorien`}
+                accessibilityHint={t.common.mealHint}
+                accessibilityLabel={t.common.mealLabel(mealTypeLabel(meal.type, t.common), meal.title, meal.calories)}
                 accessibilityRole="button"
                 onPress={() => setOpenMeal(meal)}
                 style={({ pressed }) => [styles.mealRow, pressed && styles.mealRowPressed]}
@@ -169,7 +169,7 @@ export default function TodayScreen() {
                 </View>
                 <View style={styles.mealInfo}>
                   <View style={styles.mealMetaRow}>
-                    <Text style={styles.mealType}>{mealTypeLabel(meal.type)}</Text>
+                    <Text style={styles.mealType}>{mealTypeLabel(meal.type, t.common)}</Text>
                     {/* The time lived in the data all along and was never shown, so
                         three meals logged in one evening looked identical. */}
                     <Text style={styles.mealTime}>{meal.time}</Text>

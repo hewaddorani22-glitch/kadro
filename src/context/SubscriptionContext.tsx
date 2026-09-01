@@ -72,7 +72,7 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
         setStatus('active');
         return 'active';
       }
-      setError('Der Kauf wurde abgeschlossen, aber „kandro_pro“ ist noch nicht aktiv. Prüfe die Entitlement-Zuordnung.');
+      setError('The purchase completed but the entitlement is not active yet.');
       return 'failed';
     } catch (failure) {
       if (isSubscriptionPurchaseCancelled(failure)) return 'cancelled';
