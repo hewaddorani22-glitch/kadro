@@ -3,17 +3,77 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#F5F3EE">
 <title>Kandro — Die Aufstellung deines Tages</title>
 <meta name="description" content="Kandro fotografiert deine Mahlzeit, rechnet den Rest des Tages neu und sagt dir, wie die nächste Mahlzeit aussehen sollte.">
-<link rel="stylesheet" href="/styles.css">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kandro">
+<meta property="og:title" content="Kandro — Die Aufstellung deines Tages">
+<meta property="og:description" content="Kein Kalorienzähler, sondern ein Entscheidungssystem. Nach jeder Mahlzeit stellt sich dein Tag neu auf.">
+<meta property="og:url" content="https://getkandro.com/">
+<meta property="og:image" content="https://getkandro.com/social.png">
+<meta property="og:locale" content="de_DE">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://getkandro.com/">
 </head>
 <body>
-<header class="site"><div class="wrap"><a class="brand" href="/"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="/support">Support</a><a href="/privacy">Datenschutz</a><a href="/terms">Bedingungen</a><a href="/impressum">Impressum</a></nav></div></header>
-<main><div class="wrap">
-  <p class="status">Erscheint bald im App Store</p>
-  <h1>Die Aufstellung deines Tages.</h1>
-  <p class="lead">Kandro ist kein Kalorienzähler, sondern ein Entscheidungssystem. Nach jeder Mahlzeit rechnet die App den Rest des Tages neu und sagt dir direkt, wie der nächste Teller aussehen sollte.</p>
+<header class="site"><div class="wrap wide"><a class="brand" href="./"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="support/">Support</a><a href="privacy/">Datenschutz</a><a href="terms/">Bedingungen</a><a href="impressum/">Impressum</a></nav></div></header>
+<main><div class="wrap wide">
 
+  <section class="hero">
+    <div>
+      <p class="status">Erscheint bald im App Store</p>
+      <h1>Die Aufstellung deines Tages.</h1>
+      <p class="lead">Kandro ist kein Kalorienzähler, sondern ein Entscheidungssystem. Nach jeder Mahlzeit rechnet die App den Rest des Tages neu und sagt dir direkt, wie der nächste Teller aussehen sollte.</p>
+      <p class="small">Foto, Beschreibung oder Barcode. Drei Mahlzeiten kostenlos, danach entscheidest du.</p>
+    </div>
+
+    <div>
+      <div class="phone" role="img" aria-label="Der Heute-Bildschirm von Kandro: 1.240 Kilokalorien übrig von 1.950, mit Protein-, Kohlenhydrat- und Fettanzeige und einem Vorschlag für die nächste Mahlzeit.">
+        <div class="phone-screen">
+          <div class="phone-top"><span class="phone-date">Di., 1. September</span><span class="phone-avatar">H</span></div>
+          <p class="phone-greet">Guten Tag, Hewad</p>
+
+          <div class="ring-card">
+            <div class="label">Dein Tagesstand</div>
+            <div class="state">Weiter im Plan</div>
+            <div class="ring">
+              <svg width="150" height="150" viewBox="0 0 150 150" aria-hidden="true">
+                <circle cx="75" cy="75" r="66" fill="none" stroke="#F0EFE9" stroke-width="12"/>
+                <circle cx="75" cy="75" r="66" fill="none" stroke="#3F5233" stroke-width="12"
+                        stroke-linecap="round" stroke-dasharray="414.7"
+                        stroke-dashoffset="263.7" transform="rotate(-90 75 75)"/>
+              </svg>
+              <div class="ring-inner">
+                <div class="ring-value">1.240</div>
+                <div class="ring-unit">kcal übrig</div>
+                <div class="ring-pill">● Im Plan</div>
+              </div>
+            </div>
+            <div class="ring-foot">710 gegessen · 1.950 Ziel</div>
+          </div>
+
+          <div class="macros">
+            <div class="macro"><div class="k">Protein</div><div class="v">48</div><div class="t">von 140g</div><div class="bar"><i style="width:34%"></i></div></div>
+            <div class="macro"><div class="k">Kohlenh.</div><div class="v">76</div><div class="t">von 215g</div><div class="bar"><i style="width:35%"></i></div></div>
+            <div class="macro"><div class="k">Fett</div><div class="v">24</div><div class="t">von 60g</div><div class="bar"><i style="width:40%"></i></div></div>
+          </div>
+
+          <div class="next">
+            <div class="k">Dein nächster Zug</div>
+            <div class="v">Nächste Mahlzeit</div>
+            <div class="r">~420–520 kcal · ~40–50 g Protein</div>
+          </div>
+        </div>
+      </div>
+      <p class="caption">Der Tagesstand, nachdem eine Mahlzeit erfasst wurde.</p>
+    </div>
+  </section>
+
+  <h2>So funktioniert es</h2>
   <ol class="steps">
     <li class="step"><span class="n">1</span><div><h3>Mahlzeit erfassen</h3><p>Foto, kurze Beschreibung oder Barcode. Was dir gerade am schnellsten geht.</p></div></li>
     <li class="step"><span class="n">2</span><div><h3>Zutaten bestätigen</h3><p>Du siehst, was erkannt wurde, und korrigierst Portion und Zutaten mit einem Tap.</p></div></li>
@@ -25,13 +85,24 @@
   <div class="card tint">
     <p style="margin:0"><strong>Woher die Zahlen kommen:</strong> Für typische deutsche Gerichte nutzt Kandro geprüfte Referenzwerte aus dem Bundeslebensmittelschlüssel 4.0 des Max Rubner-Instituts. Einzelne Zutaten werden gegen USDA FoodData Central abgeglichen, verpackte Produkte über Open Food Facts.</p>
   </div>
+  <p class="small">Was ein Foto grundsätzlich nicht sieht, sind Öl, Butter und Sauce. Genau deshalb ist die Portionskorrektur ein Tap und keine versteckte Einstellung.</p>
+
+  <h2>Deine Daten bleiben deine</h2>
+  <ul class="plain">
+    <li>Das Originalfoto wird nach der Analyse verworfen und nicht gespeichert.</li>
+    <li>Kein Konto nötig, um zu starten. Eine E-Mail brauchst du erst, wenn du deinen Verlauf sichern willst.</li>
+    <li>Account und alle Daten löschst du direkt in der App, ohne Nachfrage per Mail.</li>
+    <li>Die anonyme Nutzungsanalyse ist standardmäßig aus.</li>
+  </ul>
+  <p class="small">Details im <a href="privacy/">Datenschutz</a>.</p>
 
   <h2>Was Kandro nicht ist</h2>
   <p>Kandro ist ein allgemeines Wellness- und Planungstool. Es stellt keine Diagnose, behandelt keine Erkrankung und ersetzt keine medizinische oder ernährungstherapeutische Beratung. Bei Beschwerden, Schwangerschaft, Essstörungen oder einem medizinisch angeordneten Ernährungsplan hole bitte qualifizierten Rat ein.</p>
 
   <h2>Fragen?</h2>
   <p>Schreib mir direkt: <a href="mailto:hewaddorani22@gmail.com">hewaddorani22@gmail.com</a></p>
+
 </div></main>
-<footer class="site"><div class="wrap"><span class="small">© 2026 Hewad Dorani</span><span><a href="/support">Support</a> · <a href="/privacy">Datenschutz</a> · <a href="/terms">Bedingungen</a> · <a href="/impressum">Impressum</a></span></div></footer>
+<footer class="site"><div class="wrap wide"><span class="small">© 2026 Hewad Dorani · Essen</span><span class="small"><a href="support/">Support</a> · <a href="privacy/">Datenschutz</a> · <a href="terms/">Bedingungen</a> · <a href="impressum/">Impressum</a></span></div></footer>
 </body>
 </html>
