@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(resolve(projectRoot, p), 'utf8');
 
-const [plan, appContext, today, repeatSource, personalization, mealsMigration, detailSheet, localRepo, cloudRepo, syncRepo, progress, consistency, ring, uiKit, result, analyzing, reminders] = await Promise.all([
+const [plan, appContext, today, repeatSource, personalization, mealsMigration, detailSheet, localRepo, cloudRepo, syncRepo, progress, consistency, ring, uiKit, dictDe, dictEn, result, analyzing, reminders] = await Promise.all([
   read('src/app/(tabs)/plan.tsx'),
   read('src/context/AppContext.tsx'),
   read('src/app/(tabs)/today.tsx'),
@@ -31,6 +31,8 @@ const [plan, appContext, today, repeatSource, personalization, mealsMigration, d
   read('src/services/consistency.ts'),
   read('src/components/CalorieRing.tsx'),
   read('src/components/ui.tsx'),
+  read('src/i18n/de.ts'),
+  read('src/i18n/en.ts'),
   read('src/app/result.tsx'),
   read('src/app/analyzing.tsx'),
   read('src/services/reminders.ts'),
@@ -138,7 +140,11 @@ if (!progress.includes('trackedDays >= 3')) {
 
 // 8. The one moment where something is finished. No streaks, no badges — but
 //    without any acknowledgement the app never feels rewarding either.
-if (!ring.includes('Protein geschafft')) failures.push('reaching the protein target must be acknowledged somewhere visible');
+// The wording lives in the dictionaries now, so check where it actually is.
+if (!ring.includes('t.ring.proteinDone')) failures.push('reaching the protein target must be acknowledged somewhere visible');
+for (const [label, dict] of [['German', dictDe], ['English', dictEn]]) {
+  if (!dict.includes('proteinDone')) failures.push(`${label} is missing the protein acknowledgement`);
+}
 if (!ring.includes('proteinReached && over === 0')) {
   failures.push('a day over budget must not be celebrated');
 }

@@ -3,6 +3,7 @@ import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { colors } from '@/constants/theme';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber } from '@/utils/format';
 
 // Screen padding (2 x 20) plus hero card padding (2 x 20).
@@ -21,6 +22,7 @@ export function CalorieRing({
   proteinReached?: boolean;
 }) {
   const { width } = useWindowDimensions();
+  const { locale, t } = useLanguage();
   // The ring used to be a hard 220pt, which overflowed the hero card on the
   // narrowest phones. It now shrinks with the viewport instead.
   const size = Math.round(Math.min(MAX_SIZE, Math.max(MIN_SIZE, width - HORIZONTAL_CHROME)));
@@ -38,8 +40,8 @@ export function CalorieRing({
   return (
     <View
       accessibilityLabel={over > 0
-        ? `${over} Kilokalorien über dem Tagesziel`
-        : `${remaining} Kilokalorien übrig`}
+        ? `${over} ${t.ring.over}`
+        : `${remaining} ${t.ring.left}`}
       style={styles.outer}
     >
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -71,15 +73,15 @@ export function CalorieRing({
             numberOfLines={1}
             style={[styles.value, { fontSize: Math.round(size * 0.223), lineHeight: Math.round(size * 0.245) }]}
           >
-            {formatNumber(over > 0 ? over : remaining)}
+            {formatNumber(over > 0 ? over : remaining, locale)}
           </Text>
-          <Text style={styles.label}>{over > 0 ? 'kcal drüber' : 'kcal übrig'}</Text>
+          <Text style={styles.label}>{over > 0 ? t.ring.over : t.ring.left}</Text>
           <View style={styles.statusRow}>
             {celebrating
               ? <Ionicons color={statusColor} name="checkmark-circle" size={13} />
               : <View style={[styles.statusDot, { backgroundColor: statusColor }]} />}
             <Text style={[styles.status, { color: statusColor }]}>
-              {over > 0 ? 'Leicht drüber' : celebrating ? 'Protein geschafft' : 'Im Plan'}
+              {over > 0 ? t.ring.slightlyOver : celebrating ? t.ring.proteinDone : t.ring.inPlan}
             </Text>
           </View>
         </View>

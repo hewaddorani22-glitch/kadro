@@ -16,6 +16,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, radii, spacing } from '@/constants/theme';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
 
 type ButtonProps = {
@@ -157,6 +158,7 @@ export function MacroCard({
   unit?: string;
   icon: keyof typeof Ionicons.glyphMap;
 }) {
+  const { t } = useLanguage();
   // 10% tolerance, same as the weekly strip: 175 of 180 g is a day that went
   // fine, and calling it a miss is the kind of nagging this app avoids.
   const reached = target > 0 && current >= target * 0.9;
@@ -167,7 +169,7 @@ export function MacroCard({
       </View>
       <Text numberOfLines={1} style={styles.macroLabel}>{label}</Text>
       <Text style={styles.macroValue}>{current}</Text>
-      <Text style={styles.macroTarget}>von {target}{unit}</Text>
+      <Text style={styles.macroTarget}>{t.common.outOf(current, target, unit)}</Text>
       <ProgressBar value={current / target} />
     </Card>
   );

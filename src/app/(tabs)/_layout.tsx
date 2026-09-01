@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KandroMark } from '@/components/KandroMark';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { colors, shadows } from '@/constants/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -16,6 +17,7 @@ function TabIcon({ focused, active, inactive }: { focused: boolean; active: Icon
 export default function TabLayout() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
   const hideBar = pathname === '/scan';
   // A fixed 86pt bar pushed the labels straight onto the home indicator on every
   // notched iPhone. The bar now grows with the real bottom inset instead.
@@ -38,14 +40,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="today"
         options={{
-          title: 'Heute',
+          title: t.tabs.today,
           tabBarIcon: ({ focused }) => <TabIcon active="today" focused={focused} inactive="today-outline" />,
         }}
       />
       <Tabs.Screen
         name="plan"
         options={{
-          title: 'Plan',
+          title: t.tabs.plan,
           tabBarIcon: ({ focused }) => <TabIcon active="sparkles" focused={focused} inactive="sparkles-outline" />,
         }}
       />
@@ -58,7 +60,7 @@ export default function TabLayout() {
           tabBarButton: ({ onPress, accessibilityState }) => (
             <View style={styles.scanSlot}>
               <Pressable
-                accessibilityLabel="Mahlzeit scannen"
+                accessibilityLabel={t.tabs.scan}
                 accessibilityRole="button"
                 accessibilityState={accessibilityState}
                 onPress={onPress}
@@ -73,14 +75,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="progress"
         options={{
-          title: 'Verlauf',
+          title: t.tabs.progress,
           tabBarIcon: ({ focused }) => <TabIcon active="stats-chart" focused={focused} inactive="stats-chart-outline" />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Du',
+          title: t.tabs.profile,
           tabBarIcon: ({ focused }) => <TabIcon active="person" focused={focused} inactive="person-outline" />,
         }}
       />

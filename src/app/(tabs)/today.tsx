@@ -9,6 +9,7 @@ import { Card, Eyebrow, IconCircle, MacroCard, PrimaryButton, Screen, SectionTit
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { Meal } from '@/types/nutrition';
+import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber, mealTypeIcon, mealTypeLabel } from '@/utils/format';
 
 export default function TodayScreen() {
@@ -16,11 +17,12 @@ export default function TodayScreen() {
   const { consumed, hasLoggedScan, logRepeatMeal, meals, pendingAnalysisCount, remaining, repeatMeals, resetScan, resumeLatestAnalysis, targets, userName } = useApp();
   const [repeating, setRepeating] = useState<string | null>(null);
   const [openMeal, setOpenMeal] = useState<Meal | null>(null);
-  const dateLabel = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date());
+  const { locale, t } = useLanguage();
+  const dateLabel = new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date());
   // The greeting was hard-coded to "Guten Morgen", so the app said good morning
   // at 22:00.
   const hour = new Date().getHours();
-  const daypart = hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Guten Tag' : 'Guten Abend';
+  const daypart = hour < 11 ? t.today.goodMorning : hour < 18 ? t.today.goodDay : t.today.goodEvening;
   const eveningReady = hour >= 18;
   const greeting = userName === 'Du' ? daypart : `${daypart}, ${userName}`;
   const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
@@ -67,9 +69,9 @@ export default function TodayScreen() {
           <View style={styles.pendingIcon}><Ionicons color={colors.text} name="cloud-offline-outline" size={19} /></View>
           <View style={styles.pendingCopy}>
             <Text style={styles.pendingTitle}>
-              {pendingAnalysisCount === 1 ? 'Eine Mahlzeit ist noch offen' : `${pendingAnalysisCount} Mahlzeiten sind noch offen`}
+              {pendingAnalysisCount === 1 ? t.today.pendingOne : t.today.pendingMany(pendingAnalysisCount)}
             </Text>
-            <Text style={styles.pendingText}>Tippen und in ein paar Sekunden fertig machen</Text>
+            <Text style={styles.pendingText}>{t.today.pendingHint}</Text>
           </View>
           <Ionicons color={colors.text} name="refresh" size={19} />
         </Pressable>
@@ -78,50 +80,50 @@ export default function TodayScreen() {
       <Card style={styles.heroCard}>
         <View style={styles.heroTop}>
           <View>
-            <Eyebrow>Dein Tagesstand</Eyebrow>
+            <Eyebrow>{t.today.status}</Eyebrow>
             <Text style={styles.onTrack}>
               {consumed.calories > targets.calories
-                ? 'Heute etwas drüber'
-                : hasLoggedScan ? 'Weiter im Plan' : 'Dein nächster Zug steht'}
+                ? t.today.overToday
+                : hasLoggedScan ? t.today.onTrack : t.today.firstMove}
             </Text>
           </View>
         </View>
         <CalorieRing consumed={consumed.calories} proteinReached={targets.protein > 0 && consumed.protein >= targets.protein * 0.9} total={targets.calories} />
-        <Text style={styles.consumed}>{formatNumber(consumed.calories)} gegessen · {formatNumber(targets.calories)} Ziel</Text>
+        <Text style={styles.consumed}>{formatNumber(consumed.calories, locale)} {t.today.eaten} · {formatNumber(targets.calories, locale)} {t.today.goal}</Text>
       </Card>
 
       <View style={styles.macroRow}>
-        <MacroCard current={consumed.protein} icon="barbell-outline" label="Protein" target={targets.protein} />
-        <MacroCard current={consumed.carbs} icon="flash-outline" label="Kohlenh." target={targets.carbs} />
-        <MacroCard current={consumed.fat} icon="water-outline" label="Fett" target={targets.fat} />
+        <MacroCard current={consumed.protein} icon="barbell-outline" label={t.common.protein} target={targets.protein} />
+        <MacroCard current={consumed.carbs} icon="flash-outline" label={t.common.carbs} target={targets.carbs} />
+        <MacroCard current={consumed.fat} icon="water-outline" label={t.common.fat} target={targets.fat} />
       </View>
 
       <Card style={styles.nextCard}>
         <View style={styles.nextHeader}>
           <IconCircle name="navigate" size={48} />
           <View style={styles.nextHeading}>
-            <Eyebrow>Dein nächster Zug</Eyebrow>
-            <Text style={styles.mealMoment}>{hasLoggedScan ? 'Nächste Mahlzeit' : 'Erste Mahlzeit'}</Text>
+            <Eyebrow>{t.today.nextMove}</Eyebrow>
+            <Text style={styles.mealMoment}>{hasLoggedScan ? t.today.nextMeal : t.today.firstMeal}</Text>
           </View>
           <Ionicons color={colors.text} name="arrow-forward" size={22} />
         </View>
         <View style={styles.targetRow}>
           <View style={styles.targetBlock}>
-            <Text style={styles.targetLabel}>ZIELBEREICH</Text>
+            <Text style={styles.targetLabel}>{t.today.targetRange}</Text>
             <Text style={styles.targetValue}>{calorieRange} kcal</Text>
           </View>
           <View style={styles.targetDivider} />
           <View style={styles.targetBlock}>
-            <Text style={styles.targetLabel}>PROTEIN</Text>
+            <Text style={styles.targetLabel}>{t.today.proteinLabel}</Text>
             <Text style={styles.targetValue}>{proteinRange} g</Text>
           </View>
         </View>
-        <PrimaryButton icon="arrow-forward" label="3 Ideen zeigen" onPress={() => router.push('/(tabs)/plan')} variant="secondary" />
+        <PrimaryButton icon="arrow-forward" label={t.today.showIdeas} onPress={() => router.push('/(tabs)/plan')} variant="secondary" />
       </Card>
 
       {repeatMeals.length ? (
         <View style={styles.sectionBlock}>
-          <SectionTitle>Nochmal essen</SectionTitle>
+          <SectionTitle>{t.today.eatAgain}</SectionTitle>
           <ScrollView
             contentContainerStyle={styles.repeatRow}
             horizontal
@@ -151,7 +153,7 @@ export default function TodayScreen() {
       ) : null}
 
       <View style={styles.sectionBlock}>
-        <SectionTitle>Heute</SectionTitle>
+        <SectionTitle>{t.today.heading}</SectionTitle>
         <Card style={styles.timelineCard}>
           {meals.map((meal, index) => (
             <View key={meal.id}>
@@ -187,7 +189,7 @@ export default function TodayScreen() {
             <View style={styles.addIcon}>
               <Ionicons color={colors.text} name="add" size={20} />
             </View>
-            <Text style={styles.addMealText}>{hasLoggedScan ? 'Weitere Mahlzeit scannen' : 'Erste Mahlzeit scannen'}</Text>
+            <Text style={styles.addMealText}>{hasLoggedScan ? t.today.scanAnother : t.today.scanFirst}</Text>
             <Ionicons color={colors.muted} name="chevron-forward" size={18} />
           </Pressable>
         </Card>
@@ -197,8 +199,8 @@ export default function TodayScreen() {
         <Pressable accessibilityRole="button" onPress={() => router.push('/evening')} style={styles.eveningRow}>
           <View style={styles.eveningIcon}><Ionicons color={colors.text} name="moon-outline" size={19} /></View>
           <View style={styles.eveningCopy}>
-            <Text style={styles.eveningTitle}>Tagesabschluss</Text>
-            <Text style={styles.eveningText}>Dein Tag auf einen Blick</Text>
+            <Text style={styles.eveningTitle}>{t.today.eveningTitle}</Text>
+            <Text style={styles.eveningText}>{t.today.eveningText}</Text>
           </View>
           <Ionicons color={colors.muted} name="chevron-forward" size={18} />
         </Pressable>

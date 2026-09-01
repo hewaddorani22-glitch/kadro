@@ -2,8 +2,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { Meal } from '@/types/nutrition';
 
-export function formatNumber(value: number) {
-  return value.toLocaleString('de-DE');
+export function formatNumber(value: number, locale = 'de-DE') {
+  return value.toLocaleString(locale);
 }
 
 export function mealTypeLabel(type: Meal['type']) {

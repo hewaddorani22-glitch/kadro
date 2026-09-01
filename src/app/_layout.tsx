@@ -10,6 +10,7 @@ import { AppRouteGuard } from '@/components/AppRouteGuard';
 import { ReminderScheduler } from '@/components/ReminderScheduler';
 import { colors } from '@/constants/theme';
 import { AppProvider } from '@/context/AppContext';
+import { LanguageProvider } from '@/i18n/LanguageProvider';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { configureNotifications, remindersSupported } from '@/services/reminders';
@@ -34,6 +35,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AppErrorBoundary>
+        <LanguageProvider>
         <AppProvider>
           <SubscriptionProvider>
             <AppRouteGuard>
@@ -62,6 +64,7 @@ export default function RootLayout() {
             </AppRouteGuard>
           </SubscriptionProvider>
         </AppProvider>
+        </LanguageProvider>
       </AppErrorBoundary>
     </SafeAreaProvider>
   );
