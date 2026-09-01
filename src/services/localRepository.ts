@@ -10,6 +10,7 @@ const QUEUE_KEY = '@kandro/analysis-queue:v1';
 const PROFILE_KEY = '@kandro/profile:v1';
 const WEIGHTS_KEY = '@kandro/weight-entries:v1';
 const LIFETIME_SCANS_KEY = '@kandro/lifetime-scans:v1';
+const DELETED_MEALS_KEY = '@kandro/deleted-meals:v1';
 
 /** Origins that count as "the user ate this". 'seed' is demo filler and never persists. */
 const LOGGED_ORIGINS = new Set(['scan', 'plan']);
@@ -49,6 +50,33 @@ export async function saveMeal(meal: Meal): Promise<Meal[]> {
   const next = [...current.filter((entry) => isLogged(entry) && entry.id !== meal.id), meal];
   await AsyncStorage.setItem(MEALS_KEY, JSON.stringify(next));
   return loadMeals();
+}
+
+export async function deleteMeal(id: string): Promise<Meal[]> {
+  const current = await readJson<Meal[]>(MEALS_KEY, []);
+  await AsyncStorage.setItem(MEALS_KEY, JSON.stringify(current.filter((meal) => meal.id !== id)));
+  return loadMeals();
+}
+
+/**
+ * Ids the user removed. The local delete is immediate, but the cloud call can
+ * fail offline — without a tombstone the next hydration would merge the meal
+ * straight back onto the user's day. Kept small and pruned on success.
+ */
+export async function loadDeletedMealIds(): Promise<string[]> {
+  const stored = await readJson<unknown>(DELETED_MEALS_KEY, []);
+  return Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string').slice(-200) : [];
+}
+
+export async function rememberDeletedMeal(id: string) {
+  const current = await loadDeletedMealIds();
+  if (current.includes(id)) return;
+  await AsyncStorage.setItem(DELETED_MEALS_KEY, JSON.stringify([...current, id].slice(-200)));
+}
+
+export async function forgetDeletedMeal(id: string) {
+  const current = await loadDeletedMealIds();
+  await AsyncStorage.setItem(DELETED_MEALS_KEY, JSON.stringify(current.filter((entry) => entry !== id)));
 }
 
 export async function loadAnalysisQueue(): Promise<PendingAnalysis[]> {
@@ -118,5 +146,5 @@ export async function saveWeightEntry(entry: WeightEntry): Promise<WeightEntry[]
 }
 
 export async function clearLocalKandroData() {
-  await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY, LIFETIME_SCANS_KEY]);
+  await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY, LIFETIME_SCANS_KEY, DELETED_MEALS_KEY]);
 }

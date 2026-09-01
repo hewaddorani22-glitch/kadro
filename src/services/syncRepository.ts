@@ -1,5 +1,13 @@
-import { hasCloudMeal, initializeCloudProfile, loadCloudMealHistory, saveCloudMeal, saveCloudProfile } from '@/services/cloudRepository';
-import { loadAllStoredScans, loadProfile, saveMeal as saveLocalMeal } from '@/services/localRepository';
+import { deleteCloudMeal, hasCloudMeal, initializeCloudProfile, loadCloudMealHistory, saveCloudMeal, saveCloudProfile } from '@/services/cloudRepository';
+import {
+  deleteMeal as deleteLocalMeal,
+  forgetDeletedMeal,
+  loadAllStoredScans,
+  loadDeletedMealIds,
+  loadProfile,
+  rememberDeletedMeal,
+  saveMeal as saveLocalMeal,
+} from '@/services/localRepository';
 import { DEFAULT_TARGETS } from '@/services/mockNutrition';
 import { calculateDailyTargets } from '@/services/personalization';
 import { DailyTargets, Meal, UserProfile } from '@/types/nutrition';
@@ -30,10 +38,20 @@ export async function hydrateCloudState(): Promise<HydratedCloudState | null> {
     cloud = { ...cloud, profile: localProfile, targets: initialTargets };
   }
 
-  const localScans = await loadAllStoredScans();
+  const [localScans, deletedIds] = await Promise.all([loadAllStoredScans(), loadDeletedMealIds()]);
+  const deleted = new Set(deletedIds);
+
+  // Retry deletions that never reached the cloud, and drop the tombstone once
+  // the server confirms. Until then the id stays filtered out below.
+  await Promise.all(deletedIds.map((id) => deleteCloudMeal(id).then(
+    (removed) => (removed ? forgetDeletedMeal(id) : undefined),
+    () => undefined,
+  )));
+
   await Promise.all(localScans.map((meal) => saveCloudMeal(meal)));
   const [cloudMeals, cloudHasMeal] = await Promise.all([loadCloudMealHistory(), hasCloudMeal()]);
   const merged = [...cloudMeals, ...localScans]
+    .filter((meal) => !deleted.has(meal.id))
     .filter((meal, index, meals) => meals.findIndex((candidate) => candidate.id === meal.id) === index)
     .sort((a, b) => (a.savedAt ?? '').localeCompare(b.savedAt ?? ''));
   const today = localDateKey();
@@ -49,6 +67,18 @@ export async function hydrateCloudState(): Promise<HydratedCloudState | null> {
 
 export async function syncUserSetup(profile: UserProfile, targets: DailyTargets) {
   return saveCloudProfile(profile, targets);
+}
+
+export async function deleteSyncedMeal(id: string): Promise<Meal[]> {
+  const localMeals = await deleteLocalMeal(id);
+  // Recorded before the network call, so an offline delete still sticks.
+  await rememberDeletedMeal(id);
+  void deleteCloudMeal(id)
+    .then((removed) => (removed ? forgetDeletedMeal(id) : undefined))
+    .catch(() => {
+      // Retried on the next hydration; the tombstone keeps it off screen meanwhile.
+    });
+  return localMeals;
 }
 
 export async function saveSyncedMeal(meal: Meal): Promise<Meal[]> {

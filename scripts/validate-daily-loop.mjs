@@ -16,13 +16,17 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFile(resolve(projectRoot, p), 'utf8');
 
-const [plan, appContext, today, repeatSource, personalization, mealsMigration] = await Promise.all([
+const [plan, appContext, today, repeatSource, personalization, mealsMigration, detailSheet, localRepo, cloudRepo, syncRepo] = await Promise.all([
   read('src/app/(tabs)/plan.tsx'),
   read('src/context/AppContext.tsx'),
   read('src/app/(tabs)/today.tsx'),
   read('src/services/repeatMeals.ts'),
   read('src/services/personalization.ts'),
   read('supabase/migrations/20260901160000_allow_planned_meals.sql'),
+  read('src/components/MealDetailSheet.tsx'),
+  read('src/services/localRepository.ts'),
+  read('src/services/cloudRepository.ts'),
+  read('src/services/syncRepository.ts'),
 ]);
 
 const failures = [];
@@ -82,7 +86,29 @@ try {
 if (!personalization.includes('KCAL_PER_KG')) failures.push('the rate maths must be derived, not a flat table');
 if (personalization.includes('lose: -350')) failures.push('the flat goal adjustment is still in place');
 
-// 5. Repeat grouping, run against the real module rather than its source text.
+// 5. A logged meal must be correctable. Without this a mis-scan, a wrong
+//    portion or a stray tap on a repeat stayed in the day forever, while the
+//    result screen promises control over every ingredient and portion.
+if (!localRepo.includes('export async function deleteMeal')) failures.push('a logged meal cannot be deleted locally');
+if (!cloudRepo.includes('export async function deleteCloudMeal')) failures.push('a deleted meal would come back on the next cloud sync');
+if (!appContext.includes('deleteLoggedMeal') || !appContext.includes('adjustLoggedMealPortion')) {
+  failures.push('the app exposes no way to remove or rescale a logged meal');
+}
+if (!today.includes('setOpenMeal') || !today.includes('MealDetailSheet')) {
+  failures.push('meals on Heute must be tappable, otherwise the correction is unreachable');
+}
+if (!detailSheet.includes('confirmingDelete')) failures.push('deleting a meal must ask once before it happens');
+// A delete made offline must not be undone by the next sync.
+if (!localRepo.includes('rememberDeletedMeal') || !syncRepo.includes('deleted.has(meal.id)')) {
+  failures.push('a deleted meal can be resurrected by cloud hydration');
+}
+if (!syncRepo.includes('forgetDeletedMeal')) failures.push('tombstones must be cleared once the server confirms the delete');
+// Correcting twice must not compound: scaling runs from baseAmountG.
+if (!appContext.includes('item.baseAmountG * factor')) {
+  failures.push('portion correction must scale from the original estimate, not from the current value');
+}
+
+// 6. Repeat grouping, run against the real module rather than its source text.
 //    Transpiled with the project's own TypeScript so the test cannot drift from
 //    what the app actually ships.
 const outDir = mkdtempSync(join(tmpdir(), 'kandro-loop-'));
@@ -145,4 +171,4 @@ if (failures.length) {
   throw new Error(`Daily loop validation failed:\n- ${failures.join('\n- ')}`);
 }
 
-console.log('Validated the daily loop: recommendations and repeats log real meals, repeat grouping behaves, neither spends the scan allowance, and targets scale with the person.');
+console.log('Validated the daily loop: recommendations and repeats log real meals, logged meals can be corrected or removed, repeat grouping behaves, and targets scale with the person.');

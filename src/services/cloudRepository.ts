@@ -242,6 +242,18 @@ export async function saveCloudMeal(meal: Meal): Promise<boolean> {
   return true;
 }
 
+export async function deleteCloudMeal(id: string): Promise<boolean> {
+  if (!supabase || !isSupabaseConfigured) return false;
+  const user = await ensureSupabaseUser();
+  if (!user) return false;
+
+  // meal_items cascades on the composite foreign key, so removing the meal is
+  // enough and cannot leave orphaned ingredients behind.
+  const result = await supabase.from('meals').delete().eq('user_id', user.id).eq('id', id);
+  if (result.error) throw result.error;
+  return true;
+}
+
 export async function loadCloudMeals(date = localDateKey()): Promise<Meal[]> {
   if (!supabase || !isSupabaseConfigured) return [];
   const user = await ensureSupabaseUser();

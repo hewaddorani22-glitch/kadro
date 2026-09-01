@@ -28,7 +28,7 @@ import {
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { calculateDailyTargets, DEFAULT_PROFILE } from '@/services/personalization';
 import { availableRepeats, RepeatCandidate } from '@/services/repeatMeals';
-import { hydrateCloudState, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
+import { deleteSyncedMeal, hydrateCloudState, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
 import { isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/supabaseClient';
 import { captureOperationalError, countBucket, trackEvent } from '@/services/telemetry';
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
@@ -88,6 +88,8 @@ type AppContextValue = {
   logPlannedMeal: (suggestion: MealSuggestion, portion: PortionFactor) => Promise<Meal>;
   repeatMeals: RepeatCandidate[];
   logRepeatMeal: (candidate: RepeatCandidate) => Promise<Meal>;
+  deleteLoggedMeal: (id: string) => Promise<void>;
+  adjustLoggedMealPortion: (id: string, factor: PortionFactor) => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -579,6 +581,34 @@ export function AppProvider({ children }: PropsWithChildren) {
     return repeated;
   }, []);
 
+  /**
+   * Removes a meal from the day. Until this existed a mis-scan, a wrong portion
+   * or a double tap on a repeat was stuck in the user's day forever, while the
+   * result screen promised control over every ingredient and portion.
+   */
+  const deleteLoggedMeal = useCallback(async (id: string) => {
+    await deleteSyncedMeal(id);
+    setMeals((current) => current.filter((meal) => meal.id !== id));
+    setMealHistory((current) => current.filter((meal) => meal.id !== id));
+  }, []);
+
+  /**
+   * Rescales an already logged meal. Scaling runs from each item's baseAmountG,
+   * so picking 1x always returns to the original estimate rather than drifting
+   * further with every correction.
+   */
+  const adjustLoggedMealPortion = useCallback(async (id: string, factor: PortionFactor) => {
+    const target = mealHistory.find((meal) => meal.id === id) ?? meals.find((meal) => meal.id === id);
+    if (!target) return;
+
+    const items = target.items.map((item) => scaleItem(item, Math.max(1, Math.round(item.baseAmountG * factor))));
+    const updated: Meal = { ...target, items, ...nutritionFromItems(items) };
+    await saveSyncedMeal(updated);
+    const replace = (list: Meal[]) => list.map((meal) => (meal.id === id ? updated : meal));
+    setMeals(replace);
+    setMealHistory(replace);
+  }, [mealHistory, meals]);
+
   const value = useMemo<AppContextValue>(
     () => ({
       userName,
@@ -623,8 +653,10 @@ export function AppProvider({ children }: PropsWithChildren) {
       logPlannedMeal,
       repeatMeals,
       logRepeatMeal,
+      deleteLoggedMeal,
+      adjustLoggedMealPortion,
     }),
-    [addWeightEntry, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
+    [addWeightEntry, adjustLoggedMealPortion, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

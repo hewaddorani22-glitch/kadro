@@ -131,7 +131,9 @@ export function createPlannedMeal(suggestion: MealSuggestion, portion: PortionFa
   const item: MealItem = {
     id: `${suggestion.id}-portion`,
     name: suggestion.title,
-    amountG: 100,
+    // baseAmountG stays at the unscaled reference so a later correction can
+    // return to exactly 1x instead of drifting from whatever was picked first.
+    amountG: Math.round(100 * portion),
     baseAmountG: 100,
     portionFactor: portion,
     calories: scale(suggestion.calories),

@@ -4,15 +4,18 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CalorieRing } from '@/components/CalorieRing';
+import { MealDetailSheet } from '@/components/MealDetailSheet';
 import { Card, Eyebrow, IconCircle, MacroCard, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { Meal } from '@/types/nutrition';
 import { formatNumber, mealTypeLabel } from '@/utils/format';
 
 export default function TodayScreen() {
   const router = useRouter();
   const { consumed, hasLoggedScan, logRepeatMeal, meals, pendingAnalysisCount, remaining, repeatMeals, resetScan, resumeLatestAnalysis, targets, userName } = useApp();
   const [repeating, setRepeating] = useState<string | null>(null);
+  const [openMeal, setOpenMeal] = useState<Meal | null>(null);
   const dateLabel = new Intl.DateTimeFormat('de-DE', { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date());
   // The greeting was hard-coded to "Guten Morgen", so the app said good morning
   // at 22:00.
@@ -152,7 +155,13 @@ export default function TodayScreen() {
         <Card style={styles.timelineCard}>
           {meals.map((meal, index) => (
             <View key={meal.id}>
-              <View style={styles.mealRow}>
+              <Pressable
+                accessibilityHint="Öffnet Details, Portionskorrektur und Entfernen"
+                accessibilityLabel={`${mealTypeLabel(meal.type)}: ${meal.title}, etwa ${meal.calories} Kilokalorien`}
+                accessibilityRole="button"
+                onPress={() => setOpenMeal(meal)}
+                style={({ pressed }) => [styles.mealRow, pressed && styles.mealRowPressed]}
+              >
                 <View style={[styles.mealIcon, meal.type !== 'Breakfast' && styles.mealIconLunch]}>
                   <Ionicons color={colors.text} name={meal.type === 'Breakfast' ? 'cafe-outline' : meal.type === 'Snack' ? 'nutrition-outline' : 'restaurant-outline'} size={20} />
                 </View>
@@ -164,7 +173,8 @@ export default function TodayScreen() {
                   <Text style={styles.mealCalories}>~{meal.calories}</Text>
                   <Text style={styles.mealUnit}>kcal</Text>
                 </View>
-              </View>
+                <Ionicons color={colors.muted} name="chevron-forward" size={16} />
+              </Pressable>
               {index < meals.length - 1 ? <View style={styles.rowDivider} /> : null}
             </View>
           ))}
@@ -188,6 +198,8 @@ export default function TodayScreen() {
           <Ionicons color={colors.muted} name="chevron-forward" size={18} />
         </Pressable>
       ) : null}
+
+      <MealDetailSheet meal={openMeal} onClose={() => setOpenMeal(null)} />
     </Screen>
   );
 }
@@ -219,7 +231,8 @@ const styles = StyleSheet.create({
   targetDivider: { width: 1, height: 42, backgroundColor: colors.accent, marginHorizontal: 14 },
   sectionBlock: { gap: 14 },
   timelineCard: { padding: 8 },
-  mealRow: { minHeight: 72, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 12 },
+  mealRow: { minHeight: 72, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 12 },
+  mealRowPressed: { backgroundColor: colors.background },
   mealIcon: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.attentionSoft, alignItems: 'center', justifyContent: 'center' },
   mealIconLunch: { backgroundColor: colors.neutralSoft },
   mealInfo: { flex: 1, gap: 3 },
