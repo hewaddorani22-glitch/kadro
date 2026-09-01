@@ -2,7 +2,7 @@
 
 An iOS-first, production-shaped nutrition MVP built with React Native, Expo Router and TypeScript.
 
-[![CI](https://github.com/hewaddorani22-glitch/kandro/actions/workflows/ci.yml/badge.svg)](https://github.com/hewaddorani22-glitch/kandro/actions/workflows/ci.yml)
+[![CI](https://github.com/hewaddorani22-glitch/kadro/actions/workflows/ci.yml/badge.svg)](https://github.com/hewaddorani22-glitch/kadro/actions/workflows/ci.yml)
 
 > Die Aufstellung deines Tages.
 
@@ -151,7 +151,7 @@ The complete plan audit, including the external TestFlight and legal gates, live
 
 ## Prepare TestFlight
 
-The repository includes `eas.json` with internal-preview and production profiles. The remaining authenticated steps are creating/linking the Expo EAS project, adding production environment values, creating App Store Connect subscriptions, and running the native StoreKit sandbox flow. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
+The repository is linked to the Expo EAS project `@hewad/kandro` and includes explicit preview and production profiles. Public Supabase, PostHog, and RevenueCat Test Store values are configured for the EAS preview environment. Apple Developer Program activation is currently pending Apple's identity approval; production analysis and billing values remain deliberately unset until the hosted gateway and real App Store products exist. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
 
 The in-app privacy policy and terms are deliberately marked as MVP drafts. They need the legal publisher/controller identity, a real contact channel, final retention periods, and legal/provider review before public distribution. The authenticated Supabase deletion function is live and its regression test confirms account deletion, profile cascade, and refresh-token revocation.
 

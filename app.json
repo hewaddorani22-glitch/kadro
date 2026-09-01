@@ -38,7 +38,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Erlaube Kandro, Mahlzeiten für die Analyse zu fotografieren."
+          "cameraPermission": "Erlaube Kandro, Mahlzeiten für die Analyse zu fotografieren.",
+          "recordAudioAndroid": false
         }
       ],
       "expo-font",
@@ -46,6 +47,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7e8a6217-bd12-45e9-bbef-e72f5e183632"
+      }
+    },
+    "owner": "hewad"
   }
 }

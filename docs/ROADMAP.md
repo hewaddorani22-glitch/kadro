@@ -88,7 +88,8 @@ Acceptance criteria:
 - [x] Responsive Kandro landing page with private deployment plus privacy and terms routes
 - [ ] Publish the landing page after legal contact details are complete
 - [x] EAS production/preview configuration and App Store metadata/screenshot handoff
-- [ ] Build and submit TestFlight after Expo and Apple Developer authentication; capture final native screenshots from that build
+- [x] Create and link the Expo EAS project `@hewad/kandro`, and configure public preview environment values
+- [ ] Wait for Apple's identity approval of the paid Developer Program enrollment, then build and submit TestFlight; capture final native screenshots from that build
 - [ ] Re-check the current transitive Expo/Metro npm advisories during an isolated SDK upgrade; do not force-upgrade this Expo Go branch to SDK 57
 
 The full core-plus-33-section audit is maintained in `docs/PLAN_34_AUDIT.md`. The source plan contains no fifth build day.

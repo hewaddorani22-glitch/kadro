@@ -53,7 +53,7 @@ Capture native screenshots from the production/TestFlight build, not the web pre
 
 ## Native TestFlight gate
 
-1. Sign in to an Expo account and link/create the EAS project.
+1. [x] Sign in to Expo and link the EAS project `@hewad/kandro`.
 2. Add production environment values in EAS. Only public client values use `EXPO_PUBLIC_`; AI/USDA secrets belong behind a hosted authenticated analysis gateway, never in the iOS bundle.
 3. Create the App Store Connect app record for bundle ID `com.hewaddorani.kandro`.
 4. Create annual and monthly auto-renewable subscriptions, connect them to RevenueCat's `kandro_pro` entitlement, and add the public iOS RevenueCat SDK key to the production EAS environment.
@@ -64,6 +64,7 @@ Capture native screenshots from the production/TestFlight build, not the web pre
 
 ## Release blockers
 
+- Apple Developer Program activation is pending Apple's identity review. The signed bundle ID, App Store record, subscriptions, and TestFlight upload remain unavailable until Apple approves the paid enrollment.
 - Legal publisher/controller name, address, contact channel, processor/transfer review, and final retention periods.
 - Public privacy and support URLs.
 - Hosted production analysis gateway with authentication, rate limiting, deletion/retention policy, and production secrets.

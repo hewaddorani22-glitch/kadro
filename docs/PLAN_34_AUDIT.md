@@ -83,8 +83,8 @@ Vor einer externen Beta zwingend offen:
 
 1. mindestens 30 echte iPhone-Mahlzeiten manuell gegen Zutaten und Portionen prüfen;
 2. VoiceOver, Dynamic Type, Kontrast, Kamera-Berechtigung und Offline-Retry auf einem physischen iPhone prüfen;
-3. Apple-Developer-/App-Store-Connect-Zugang, echte Abo-Produkte und nativer StoreKit-Test;
-4. Expo/EAS-Login, signierter Build, echte App-Store-Screenshots und TestFlight-Upload;
+3. Freigabe der bereits bezahlten Apple-Developer-Mitgliedschaft, App-Store-Connect-Zugang, echte Abo-Produkte und nativer StoreKit-Test;
+4. nach Apples Identitätsprüfung: signierter Build, echte App-Store-Screenshots und TestFlight-Upload; Expo/EAS ist bereits als `@hewad/kandro` verknüpft;
 5. rechtliche Anbieter-/Verantwortlichen-Daten, Kontaktkanal, Aufbewahrungsfristen und finale Prüfung;
 6. abgesicherten Produktions-Gateway mit Authentifizierung, Rate Limit, Secrets und Lösch-/Providerdokumentation hosten;
 7. Sentry nativ mit DSN, Source Maps und Test-Crash aktivieren;
@@ -92,7 +92,7 @@ Vor einer externen Beta zwingend offen:
 
 ## Bekannte Toolchain-Hinweise
 
-`npm audit --omit=dev` meldet aktuell 18 transitive Hinweise (9 hoch, 9 mittel) in Expo-/Metro-Buildabhängigkeiten, insbesondere `image-size`, `postcss` und `uuid`. Der von npm vorgeschlagene vollständige Fix würde Expo 57 installieren. Das ist für diesen Branch kein sicherer Patch, weil Kandro absichtlich auf Expo SDK 54 und die aktuelle Expo-Go-Kompatibilität festgelegt ist. Deshalb wurde **kein** `npm audit fix --force` ausgeführt. Die Hinweise müssen beim nächsten isolierten Expo-SDK-Upgrade erneut geprüft werden; bis dahin dürfen nur vertrauenswürdige lokale Build-Assets verarbeitet werden.
+`npm audit --omit=dev` meldet aktuell 25 Paket-Hinweise (9 hoch, 16 mittel) im Expo-/Metro-/Router-Abhängigkeitsbaum, insbesondere `image-size`, `postcss`, `query-string` und `uuid`. Der von npm vorgeschlagene vollständige Fix würde Expo 57 installieren. Das ist für diesen Branch kein sicherer Patch, weil Kandro absichtlich auf Expo SDK 54 und die aktuelle Expo-Go-Kompatibilität festgelegt ist. Deshalb wurde **kein** `npm audit fix --force` ausgeführt. Die Hinweise müssen beim nächsten isolierten Expo-SDK-Upgrade erneut geprüft werden; bis dahin dürfen nur vertrauenswürdige lokale Build-Assets verarbeitet werden.
 
 ## Verifikation dieses Abgleichs
 
