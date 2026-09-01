@@ -182,6 +182,24 @@ async function lookupBarcode(barcode) {
   const result = await response.json();
   const product = result.product;
   const values = product?.nutriments || {};
+  // A zero-calorie product is not a product without data. Diet drinks,
+  // sparkling water and sugar-free gum are among the most scanned items, and
+  // rejecting them as "missing nutrition" was simply wrong. Presence of the
+  // key decides, not its value.
+  const NUTRIMENT_KEYS = ['energy-kcal_100g', 'proteins_100g', 'carbohydrates_100g', 'fat_100g'];
+  const hasNutrition = NUTRIMENT_KEYS.some((key) => {
+    const value = values[key];
+    return value !== undefined && value !== null && value !== '' && Number.isFinite(Number(value));
+  });
+  if (!hasNutrition) {
+    return {
+      status: 422,
+      body: {
+        code: 'missing_nutrition',
+        message: 'Für dieses Produkt sind keine Nährwerte hinterlegt. Beschreibe die Mahlzeit kurz, dann rechnen wir sie aus.',
+      },
+    };
+  }
   return {
     status: 200,
     body: {

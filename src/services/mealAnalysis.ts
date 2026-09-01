@@ -147,10 +147,10 @@ export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResul
   if (!response.ok || !payload) {
     throw new MealAnalysisError('provider-error', payload?.message ?? 'Das Produkt wurde nicht gefunden.');
   }
+  // Whether values exist is decided by the gateway, which sees the raw record.
+  // Checking for a positive number here rejected every genuinely zero-calorie
+  // product: diet drinks, sparkling water, sugar-free gum.
   const nutrition = payload.per100g;
-  if (![nutrition.calories, nutrition.protein, nutrition.carbs, nutrition.fat].some((value) => value > 0)) {
-    throw new MealAnalysisError('provider-error', 'Für dieses Produkt fehlen verwertbare Nährwerte.');
-  }
   return {
     title: payload.name,
     confidence: 'high',

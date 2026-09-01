@@ -121,6 +121,14 @@ if (/create policy .*usda_food_cache/.test(cacheMigration)) {
 if (!gateway.includes('context.supabaseAdmin') || !gateway.includes('usda_food_cache')) {
   failures.push('the gateway must reach the USDA cache through the service role only');
 }
+// A zero-calorie product is not a product without data. Diet drinks and
+// sparkling water are among the most scanned items and were being rejected.
+if (!gateway.includes('missing_nutrition') || !gateway.includes('NUTRIMENT_KEYS')) {
+  failures.push('the barcode lookup must distinguish absent nutrition from genuine zeroes');
+}
+if (/some\(\(value\) => value > 0\)/.test(mealAnalysis)) {
+  failures.push('the client must not reject a product for having zero calories');
+}
 if (!gateway.includes('normalizeSearchTerm')) {
   failures.push('USDA cache keys must be normalized or the cache will miss constantly');
 }
