@@ -28,9 +28,9 @@
 <body>
 <header class="site"><div class="wrap wide"><a class="brand" href="../"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="../support/">Support</a><a href="../privacy/">Datenschutz</a><a href="../terms/">Bedingungen</a><a href="../sources/">Datenquellen</a><a href="../impressum/">Impressum</a><a class="lang" href="../en/sources/" hreflang="en">English</a></nav></div></header>
 <main><div class="wrap">
-  <p class="eyebrow">Version 1.0 · Stand 1. September 2026</p>
+  <p class="eyebrow">Version 1.1 · Stand 2. September 2026</p>
   <h1>Datenquellen</h1>
-  <p class="lead">Kandro erfindet keine Nährwerte. Jede Zahl stammt aus einer benannten Quelle, und bei jeder erfassten Zutat siehst du, aus welcher.</p>
+  <p class="lead">Erfasste Zutaten zeigen ihre Nährwertquelle. Kandro trennt Datenbankwerte, KI-gestützte Zuordnung und eigene typische Planungsrichtwerte sichtbar voneinander.</p>
 
   <h2>Deutsche Gerichte · Bundeslebensmittelschlüssel</h2>
   <p>Für typische deutsche Gerichte verwendet Kandro geprüfte Nährwerte aus dem Bundeslebensmittelschlüssel. Das Modell erkennt Gericht und Portion, die Nährwerte selbst stammen aus dieser Datenbank und werden nicht geschätzt.</p>
@@ -44,6 +44,14 @@
   <h2>Verpackte Produkte · Open Food Facts</h2>
   <p>Barcodes werden bei Open Food Facts nachgeschlagen. Die Produktdatenbank steht unter der Open Database License (ODbL) und wird von Freiwilligen gepflegt.</p>
   <p>Nährwerte verpackter Produkte stammen damit von den Herstellerangaben und können unvollständig oder veraltet sein. Prüfe den Wert im Zweifel auf der Verpackung.</p>
+
+  <h2>Kandro-Empfehlungskatalog</h2>
+  <p>Die drei nächsten Mahlzeiten stammen aus einem von Kandro kuratierten Katalog. Kalorien und Makros darin sind typische, plausible Planungsrichtwerte für die beschriebene Standardportion und keine Messwerte einer einzelnen Zubereitung. In der App sind sie als „Kandro-Katalog · typischer Richtwert“ gekennzeichnet.</p>
+  <p>Der Katalog wird deterministisch nach deinem verbleibenden Tagesrahmen, Kontext und deinen Präferenzen sortiert. Die KI erfindet keine Empfehlungskarten.</p>
+
+  <h2>So entsteht eine Foto-Schätzung</h2>
+  <p>GPT-4.1 mini erkennt Lebensmittel und schätzt sichtbare Grammangaben. Kandro übernimmt Nährwerte nicht vom Modell, sondern ordnet die erkannten Begriffe Referenzen aus BLS oder USDA zu. Unsichere Zuordnungen, versteckte Kalorien und breite Portionsspannen werden markiert.</p>
+  <p>Vor dem Speichern zeigt Kandro jede Zutat, Grammangabe und Quelle zur Bestätigung. Du kannst Mengen verändern oder Zutaten abwählen. Diese Prüfung ist Teil jeder Foto- und Textanalyse.</p>
 
   <h2>Bildmaterial</h2>
   <p>Das Beispielfoto einer Mahlzeit stammt von Markus Winkler und wird unter der Unsplash-Lizenz verwendet. Es erscheint nur, solange du noch kein eigenes Foto aufgenommen hast.</p>

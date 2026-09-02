@@ -17,6 +17,7 @@ import { getDictionary, getLanguage, getLocale } from '@/i18n/active';
  * provider keys live there, never on the device.
  */
 const localApiUrl = process.env.EXPO_PUBLIC_ANALYSIS_API_URL?.replace(/\/$/, '');
+const MAX_IMAGE_BASE64 = 3_000_000;
 
 /**
  * The gateway's own message is German: it is one deployed function serving
@@ -59,6 +60,7 @@ function gatewayMessage(code: string | undefined, fallback: string | undefined) 
     unauthorized: t.gatewayUnauthorized,
     provider_error: t.gatewayProviderError,
     daily_limit_reached: t.gatewayDailyLimit,
+    consent_required: t.gatewayConsentRequired,
     unclear_image: t.noClearMeal,
     multiple_dishes: t.gatewayMultipleDishes,
     server_not_configured: t.analysisNotConfigured,
@@ -129,14 +131,34 @@ async function gatewayFetch(path: string, init?: { method: 'POST'; body: unknown
 }
 
 export async function prepareMealPhoto(photoUri: string): Promise<PreparedMealPhoto> {
-  const result = await manipulateAsync(
-    photoUri,
-    [{ resize: { width: 1600 } }],
-    { base64: true, compress: 0.82, format: SaveFormat.JPEG },
-  );
+  const passes = [
+    { width: 1600, compress: 0.82 },
+    { width: 1280, compress: 0.68 },
+    { width: 1024, compress: 0.55 },
+  ];
+  let result = await manipulateAsync(photoUri, [{ resize: { width: passes[0].width } }], {
+    base64: true,
+    compress: passes[0].compress,
+    format: SaveFormat.JPEG,
+  });
+
+  for (const pass of passes.slice(1)) {
+    if (result.base64 && result.base64.length <= MAX_IMAGE_BASE64) break;
+    const oversizedUri = result.uri;
+    result = await manipulateAsync(photoUri, [{ resize: { width: pass.width } }], {
+      base64: true,
+      compress: pass.compress,
+      format: SaveFormat.JPEG,
+    });
+    deleteTemporaryPhoto(oversizedUri);
+  }
 
   if (!result.base64) {
     throw new MealAnalysisError('provider-error', getDictionary().errors.photoNotPrepared);
+  }
+  if (result.base64.length > MAX_IMAGE_BASE64) {
+    deleteTemporaryPhoto(result.uri);
+    throw new MealAnalysisError('invalid-input', getDictionary().errors.gatewayPhotoTooLarge);
   }
 
   return {
@@ -173,6 +195,10 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
         ? 'multiple-dishes'
         : payload?.code === 'server_not_configured'
           ? 'not-configured'
+          : payload?.code === 'consent_required'
+            ? 'consent-required'
+            : payload?.code === 'invalid_input'
+              ? 'invalid-input'
           : 'provider-error';
     throw new MealAnalysisError(kind, gatewayMessage(payload?.code, payload?.message));
   }

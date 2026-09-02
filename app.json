@@ -13,11 +13,18 @@
       "backgroundColor": "#F5F3EE"
     },
     "userInterfaceStyle": "light",
+    "locales": {
+      "en": "./locales/en.json",
+      "de": "./locales/de.json"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.hewaddorani.kandro",
       "infoPlist": {
-        "NSCameraUsageDescription": "Kandro nutzt die Kamera, um deine Mahlzeit zu fotografieren und daraus Nährwerte zu schätzen. Das Originalfoto wird nach der Analyse verworfen und nicht gespeichert.",
+        "NSCameraUsageDescription": "Kandro uses the camera to photograph your meal and estimate nutrition. The original photo is discarded after analysis and is not stored.",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false
+        },
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -39,7 +46,8 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Erlaube Kandro, Mahlzeiten für die Analyse zu fotografieren.",
+          "cameraPermission": "Allow Kandro to photograph meals for analysis.",
+          "microphonePermission": false,
           "recordAudioAndroid": false
         }
       ],

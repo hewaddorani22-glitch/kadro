@@ -38,6 +38,13 @@ function dailyGoalOffset(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
   return goal === 'lose' ? -daily : Math.min(350, daily);
 }
 
+/** The pace the calorie target actually applies after Kandro's safety caps. */
+export function effectiveWeeklyRate(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
+  if (goal !== 'gain') return weeklyRateKg;
+  const appliedDaily = dailyGoalOffset(goal, weeklyRateKg);
+  return Math.round(((appliedDaily * 7) / KCAL_PER_KG) * 100) / 100;
+}
+
 type PaceLabels = { paceHold: string; paceLose: (rate: string) => string; paceGain: (rate: string) => string };
 
 export function weeklyRateLabel(
@@ -50,7 +57,7 @@ export function weeklyRateLabel(
   if (goal === 'maintain') return source.paceHold;
   // The unit travels with the number so "0,5 kg" can become "1 lb" without
   // rewriting the sentence around it.
-  const value = formatWeeklyRate(weeklyRateKg, unitSystem);
+  const value = formatWeeklyRate(effectiveWeeklyRate(goal, weeklyRateKg), unitSystem);
   return goal === 'lose' ? source.paceLose(value) : source.paceGain(value);
 }
 
@@ -105,6 +112,7 @@ export function estimatedPace(
 
 /** True when the safety floor overrode the requested rate. */
 export function isRateLimited(profile: UserProfile) {
+  if (profile.goal === 'gain') return effectiveWeeklyRate(profile.goal, profile.weeklyRateKg) < profile.weeklyRateKg;
   if (profile.goal !== 'lose') return false;
   const restingEstimate = 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age - 78;
   const maintenance = restingEstimate * activityMultipliers[profile.activityLevel];

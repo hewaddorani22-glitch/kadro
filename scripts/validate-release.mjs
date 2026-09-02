@@ -25,6 +25,7 @@ const [appJsonRaw, legalDe, legalEn, paywall, legalConstants, dictDe, dictEn] = 
   read('src/i18n/en.ts'),
 ]);
 const appJson = JSON.parse(appJsonRaw);
+const production = process.argv.includes('--production');
 
 const blockers = [];
 const warnings = [];
@@ -106,10 +107,18 @@ if (plist.ITSAppUsesNonExemptEncryption !== false) {
   blockers.push('ios.infoPlist.ITSAppUsesNonExemptEncryption must be set, or every submission asks the export question by hand');
 }
 if (!plist.NSCameraUsageDescription) blockers.push('NSCameraUsageDescription is missing');
+if (plist.NSAppTransportSecurity?.NSAllowsArbitraryLoads !== false) {
+  blockers.push('production iOS must not allow arbitrary unencrypted network loads');
+}
 if (/demo|test|beispiel/i.test(plist.NSCameraUsageDescription ?? '')) {
   blockers.push('NSCameraUsageDescription calls the app a demo — App Review reads this string');
 }
 if (!ios.bundleIdentifier?.includes('kandro')) warnings.push('bundle identifier does not mention kandro');
+if (!appJson.expo?.locales?.en || !appJson.expo?.locales?.de) blockers.push('English and German iOS permission localizations are required');
+const cameraPlugin = appJson.expo?.plugins?.find((entry) => Array.isArray(entry) && entry[0] === 'expo-camera');
+if (cameraPlugin?.[1]?.microphonePermission !== false || cameraPlugin?.[1]?.recordAudioAndroid !== false) {
+  blockers.push('camera-only Kandro must disable microphone permissions on iOS and Android');
+}
 
 // --- Analysis gateway -------------------------------------------------------
 // A release build that keeps the local override points at the developer's LAN
@@ -126,7 +135,9 @@ if (process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim().startsWith('sb_secr
 
 // --- Subscriptions ----------------------------------------------------------
 if (!process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim()) {
-  warnings.push('EXPO_PUBLIC_REVENUECAT_IOS_API_KEY is empty — required for a real App Store build, not for Expo Go');
+  const message = 'EXPO_PUBLIC_REVENUECAT_IOS_API_KEY is empty — required for a real App Store build, not for Expo Go';
+  if (production) blockers.push(message);
+  else warnings.push(message);
 }
 
 if (warnings.length) {
@@ -136,4 +147,4 @@ if (blockers.length) {
   throw new Error(`Not ready to ship:\n- ${blockers.join('\n- ')}`);
 }
 
-console.log('Release checks passed: provider identity, legal copy, subscription disclosure, iOS config and gateway wiring.');
+console.log(`Release checks passed${production ? ' for production' : ''}: provider identity, legal copy, subscription disclosure, iOS config and gateway wiring.`);

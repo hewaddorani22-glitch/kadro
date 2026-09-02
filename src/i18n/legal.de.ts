@@ -41,7 +41,7 @@ function contact() {
 }
 
 export const legalDe: LegalCopySet = {
-  version: '1.0 · Stand 1. September 2026',
+  version: '1.1 · Stand 2. September 2026',
   privacy: {
     title: 'Datenschutzhinweise',
     intro: 'Diese Hinweise erklären in klarer Sprache, welche Daten Kandro verarbeitet, warum, und wie du sie jederzeit wieder löschen kannst.',
@@ -64,14 +64,14 @@ export const legalDe: LegalCopySet = {
       {
         title: '3. Fotoanalyse und Empfänger',
         paragraphs: [
-          'Ein Foto wird auf dem Gerät verkleinert. Das Original wird danach verworfen. Die Arbeitskopie oder deine bewusst eingegebene Mahlzeitenbeschreibung geht nur an den konfigurierten Kandro-Analysezugang und von dort zur Lebensmittel- und Portionserkennung an OpenRouter oder OpenAI. USDA FoodData Central wird anschließend nur mit Textsuchbegriffen abgefragt. Bei einem Barcode wird die Nummer über den Kandro-Analysezugang bei Open Food Facts nachgeschlagen.',
+          'Ein Foto wird auf dem Gerät verkleinert. Das Original wird danach verworfen. Die Arbeitskopie oder deine bewusst eingegebene Mahlzeitenbeschreibung wird an OpenRouter in den USA und von dort ausschließlich an Microsoft Azure übermittelt; dort läuft das OpenAI-Modell GPT-4.1 mini zur Erkennung von Lebensmitteln und Portionen. USDA FoodData Central wird anschließend nur mit Textsuchbegriffen abgefragt. Bei einem Barcode wird die Nummer über den Kandro-Analysezugang bei Open Food Facts nachgeschlagen.',
           'Bestätigte Mahlzeiten enthalten kein Foto. Die lokale Fehlerwarteschlange wird auf drei Scans begrenzt und nach erfolgreicher Analyse entfernt.',
         ],
       },
       {
         title: '4. Zweck, Rechtsgrundlage und Speicherdauer',
         paragraphs: [
-          'Ernährungs- und Zieldaten sind Gesundheitsdaten im Sinne von Art. 9 DSGVO. Rechtsgrundlage ist deine ausdrückliche Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO, die du im Onboarding erteilst und jederzeit für die Zukunft widerrufen kannst. Sie wird mit Zeitstempel und Hinweisversion auf deinem Gerät und bei aktiver Cloud in deinem geschützten Profil gespeichert.',
+          'Ernährungs- und Zieldaten sind Gesundheitsdaten im Sinne von Art. 9 DSGVO. Rechtsgrundlage ist deine ausdrückliche Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO, die du im Onboarding erteilst und unter „Du → Analyse & Datennutzung“ jederzeit für die Zukunft widerrufen kannst. Nach dem Widerruf sendet Kandro keine Analyse-, Körper- oder Ernährungsdaten mehr an die genannten Empfänger. Die Einwilligung wird mit Zeitstempel und Hinweisversion auf deinem Gerät und bei aktiver Cloud in deinem geschützten Profil gespeichert.',
           'Lokale Daten bleiben bis zur Löschung der App-Daten oder deines Accounts erhalten. Bestätigte Mahlzeiten werden lokal für den Verlauf gespeichert; die App lädt für den Cloud-Verlauf derzeit höchstens 90 Tage. Cloud-Daten bleiben bis zur Accountlöschung erhalten. Technisch notwendige Sicherungskopien können nach den Fristen des jeweiligen Auftragsverarbeiters auslaufen.',
         ],
       },
@@ -86,8 +86,8 @@ export const legalDe: LegalCopySet = {
       {
         title: '6. Auftragsverarbeiter und Übermittlung',
         paragraphs: [
-          'Wir setzen Supabase (Datenbank und Konto, EU-Region), OpenRouter beziehungsweise OpenAI (Bild- und Textanalyse), USDA FoodData Central und Open Food Facts (Nährwertabgleich), RevenueCat (Abo-Verwaltung) sowie optional PostHog (anonyme Nutzungsanalyse, EU) ein.',
-          'Für die Analyse können Daten in die USA übermittelt werden. Die Analyseanfragen sind so konfiguriert, dass Inhalte nicht zum Training verwendet werden. Fotos werden ausschließlich für die Dauer der Analyse verarbeitet und nicht dauerhaft gespeichert.',
+          'Wir setzen Supabase (Datenbank und Konto, EU-Region), OpenRouter in den USA und Microsoft Azure mit dem OpenAI-Modell GPT-4.1 mini (Bild- und Textanalyse), USDA FoodData Central und Open Food Facts (Nährwertabgleich), RevenueCat (Abo-Verwaltung) sowie optional PostHog (anonyme Nutzungsanalyse, EU) ein.',
+          'Der KI-Datenweg ist auf OpenRouter und ZDR-fähige Microsoft-Azure-Endpunkte ohne Fallback begrenzt. Analyseanfragen sind mit „store: false“, untersagter Datensammlung und Zero Data Retention konfiguriert: Inhalte werden nicht zum Training verwendet und beim KI-Anbieter nicht dauerhaft gespeichert. Fotos werden ausschließlich für die Dauer der Analyse verarbeitet. OpenRouter und USDA FoodData Central verarbeiten Daten in den USA; USDA erhält nur normalisierte Lebensmittelbegriffe, keine Fotos, Account-ID oder Körperdaten.',
         ],
       },
     ],
@@ -99,7 +99,7 @@ export const legalDe: LegalCopySet = {
       {
         title: '1. Leistungsumfang',
         paragraphs: [
-          'Kandro ist ein allgemeines Wellness- und Planungstool. Die App strukturiert fotografierte oder beschriebene Lebensmittel beziehungsweise verpackte Produkte per Barcode, schätzt Nährwerte, berechnet einen Tagesrahmen und schlägt passende nächste Mahlzeiten aus einer überprüften Bibliothek vor.',
+          'Kandro ist ein allgemeines Wellness- und Planungstool für Erwachsene ab 18 Jahren. Die App strukturiert fotografierte oder beschriebene Lebensmittel beziehungsweise verpackte Produkte per Barcode, schätzt Nährwerte, berechnet einen Tagesrahmen und schlägt passende nächste Mahlzeiten aus einem kuratierten Katalog mit typischen Richtwerten vor.',
           'Alle Angaben sind Schätzungen. Du kannst erkannte Zutaten und Portionsgrößen vor dem Speichern korrigieren.',
         ],
       },
@@ -142,7 +142,7 @@ export const legalDe: LegalCopySet = {
   },
   sources: {
     title: 'Datenquellen',
-    intro: 'Kandro erfindet keine Nährwerte. Jede Zahl stammt aus einer benannten Quelle, und bei jeder erfassten Zutat siehst du, aus welcher.',
+    intro: 'Erfasste Zutaten zeigen ihre Nährwertquelle. Kandro trennt Datenbankwerte, KI-gestützte Zuordnung und eigene typische Planungsrichtwerte sichtbar voneinander.',
     sections: [
       {
         title: 'Deutsche Gerichte · Bundeslebensmittelschlüssel',
@@ -164,6 +164,20 @@ export const legalDe: LegalCopySet = {
         paragraphs: [
           'Barcodes werden bei Open Food Facts nachgeschlagen. Die Produktdatenbank steht unter der Open Database License (ODbL) und wird von Freiwilligen gepflegt.',
           'Nährwerte verpackter Produkte stammen damit von den Herstellerangaben und können unvollständig oder veraltet sein. Prüfe den Wert im Zweifel auf der Verpackung.',
+        ],
+      },
+      {
+        title: 'Kandro-Empfehlungskatalog',
+        paragraphs: [
+          'Die drei nächsten Mahlzeiten stammen aus einem von Kandro kuratierten Katalog. Kalorien und Makros darin sind typische, plausible Planungsrichtwerte für die beschriebene Standardportion und keine Messwerte einer einzelnen Zubereitung. In der App sind sie als „Kandro-Katalog · typischer Richtwert“ gekennzeichnet.',
+          'Der Katalog wird deterministisch nach deinem verbleibenden Tagesrahmen, Kontext und deinen Präferenzen sortiert. Die KI erfindet keine Empfehlungskarten.',
+        ],
+      },
+      {
+        title: 'So entsteht eine Foto-Schätzung',
+        paragraphs: [
+          'GPT-4.1 mini erkennt Lebensmittel und schätzt sichtbare Grammangaben. Kandro übernimmt Nährwerte nicht vom Modell, sondern ordnet die erkannten Begriffe Referenzen aus BLS oder USDA zu. Unsichere Zuordnungen, versteckte Kalorien und breite Portionsspannen werden markiert.',
+          'Vor dem Speichern zeigt Kandro jede Zutat, Grammangabe und Quelle zur Bestätigung. Du kannst Mengen verändern oder Zutaten abwählen. Diese Prüfung ist Teil jeder Foto- und Textanalyse.',
         ],
       },
       {

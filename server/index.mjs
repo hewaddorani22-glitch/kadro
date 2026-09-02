@@ -29,7 +29,6 @@ const visionModel = isOpenRouter
   : process.env.OPENAI_VISION_MODEL || 'gpt-4.1-mini';
 const configuredImageDetail = (process.env.VISION_IMAGE_DETAIL || 'high').toLowerCase();
 const imageDetail = ['low', 'high', 'auto'].includes(configuredImageDetail) ? configuredImageDetail : 'high';
-const openRouterZdr = process.env.OPENROUTER_ZDR !== 'false';
 const usdaApiKey = process.env.USDA_API_KEY || 'DEMO_KEY';
 
 function json(response, status, body) {
@@ -80,8 +79,9 @@ async function requestDetection(content) {
       ...(isOpenRouter ? {
         provider: {
           data_collection: 'deny',
-          require_parameters: true,
-          ...(openRouterZdr ? { zdr: true } : {}),
+          only: ['azure'],
+          allow_fallbacks: false,
+          zdr: true,
         },
       } : {}),
       input: [{
@@ -241,7 +241,7 @@ const server = createServer(async (request, response) => {
       aiProvider,
       model: visionModel,
       aiConfigured: Boolean(aiApiKey),
-      privacyMode: isOpenRouter ? (openRouterZdr ? 'zdr' : 'no-data-collection') : 'provider-default',
+      privacyMode: isOpenRouter ? 'zdr' : 'provider-default',
       usdaMode: process.env.USDA_API_KEY ? 'personal-key' : 'demo-key',
     });
   }

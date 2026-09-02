@@ -1,44 +1,53 @@
 # App Store and TestFlight handoff
 
-This file is the source of truth for Kandro's first iOS beta. Store metadata remains a draft until the legal controller details, public privacy URL, Apple Developer account, and native subscription products are complete.
+This file is the source of truth for Kandro's first iOS release. English is the primary App Store localization; German is provided as an additional localization. Build-specific fields remain open until Apple activates the Developer Program membership and the native subscriptions exist.
 
-## Product metadata (German)
+## Product metadata (English — primary)
 
 - **Name:** Kandro
-- **Subtitle:** Die Aufstellung deines Tages
+- **Subtitle:** Know what to eat next
 - **Primary category:** Health & Fitness
 - **Bundle ID:** `com.hewaddorani.kandro`
 - **Version:** `1.0.0`
 - **SKU suggestion:** `kandro-ios-001`
-- **Copyright:** must be filled with the legal publisher name
-- **Support URL:** must be a public page with a working contact channel
-- **Privacy Policy URL:** publish the reviewed `/datenschutz` landing-page route after adding the legal controller and contact details
+- **Copyright:** `2026 Hewad Dorani`
+- **Support URL:** `https://getkandro.com/en/support`
+- **Privacy Policy URL:** `https://getkandro.com/en/privacy`
 
 ### Promotional text
 
-Fotografiere deine Mahlzeit, bestätige die Schätzung und sieh sofort, was heute noch passt. Kandro stellt deinen Tag nach jedem Essen neu auf.
+Snap what you ate. Confirm the estimate and know what fits next. Kandro re-plans your day after every meal.
 
 ### Description
 
-Kandro ist kein klassisches Ernährungstagebuch. Die App hilft dir, nach jeder Mahlzeit eine praktische nächste Entscheidung zu treffen.
+Kandro is not another food diary. It helps you make the next practical decision after every meal.
 
 So funktioniert es:
 
-- Fotografiere, beschreibe oder scanne den Barcode deiner Mahlzeit.
-- Prüfe erkannte Zutaten und passe die Portion mit einem Tap an.
-- Sieh geschätzte Kalorien und Makronährstoffe samt Konfidenz.
-- Erhalte einen neu berechneten Tagesstand.
-- Wähle zwischen genau drei Ideen für Zuhause, Supermarkt oder unterwegs.
+- Photograph or describe a meal, scan a barcode, or search for a food.
+- Review every detected ingredient and adjust the portion before saving.
+- See estimated calories and macros with confidence and source labels.
+- Get a recalculated daily balance.
+- Choose from exactly three ideas for home, the supermarket or on the go.
 
-Kandro zeigt Schätzungen bewusst mit Unsicherheit und lässt dich jede Zutat vor dem Speichern korrigieren. Originalfotos werden nicht als Teil deiner Mahlzeit gespeichert. Die App bietet allgemeine Wellness-Orientierung und ersetzt keine medizinische Beratung.
+Kandro shows estimates honestly and keeps every ingredient and portion editable. Original photos are discarded after analysis and are not saved with your meal. Kandro is a general wellness tool for adults and does not replace medical advice.
 
 ### Keywords
 
-Ernährung,Kalorien,Makros,Mahlzeit,Protein,Essensplan,Foto,Wellness,Tagesplan
+nutrition,calories,macros,meal,protein,food,photo,wellness,daily plan
 
 ### What's New
 
-Erste private Kandro-Beta: Foto, Beschreibung oder Barcode, Zutaten- und Portionskorrektur, Tagesbilanz, drei kontextbezogene nächste Ideen, echter Gewichtsverlauf, Cloud-Sicherung und transparente Schätzwerte.
+Meet Kandro: meal photo, description, barcode and food search; ingredient and portion review; adaptive daily totals; three practical next-meal ideas; progress and secure cloud sync.
+
+## German localization
+
+- **Subtitle:** Die Aufstellung deines Tages
+- **Promotional text:** Fotografiere deine Mahlzeit, bestätige die Schätzung und sieh sofort, was heute noch passt. Kandro stellt deinen Tag nach jedem Essen neu auf.
+- **Keywords:** Ernährung,Kalorien,Makros,Mahlzeit,Protein,Essensplan,Foto,Wellness,Tagesplan
+- **Support URL:** `https://getkandro.com/support`
+- **Privacy Policy URL:** `https://getkandro.com/privacy`
+- Use the German description from the current in-app positioning, with the same 18+, estimate and non-medical disclosures as the English description.
 
 ## Screenshot storyboard
 
@@ -62,12 +71,9 @@ Capture native screenshots from the production/TestFlight build, not the web pre
 7. Test camera permission denied/granted, no network queue/retry, account linking, consent, analytics opt-out, and live account deletion in that exact build.
 8. Capture the six final screenshots only after the build passes.
 
-## Release blockers
+## What remains after Apple enrollment
 
 - Apple Developer Program activation is pending Apple's identity review. The signed bundle ID, App Store record, subscriptions, and TestFlight upload remain unavailable until Apple approves the paid enrollment.
-- Legal publisher/controller name, address, contact channel, processor/transfer review, and final retention periods.
-- Public privacy and support URLs.
-- Final legal/provider disclosure and retention review for the live production analysis gateway.
 - Native StoreKit sandbox test and App Store subscription metadata/review screenshots.
 - At least 30 real iPhone meal-photo results reviewed against the confirmed food and portion, including poor light, blur, partial plates, multiple dishes, and offline retry.
 - Native accessibility pass with VoiceOver, Dynamic Type, Reduce Motion, and contrast on a physical iPhone.
@@ -88,9 +94,10 @@ Diese Werte sind gesetzt und werden von `npm run validate:release` erzwungen:
 
 Die Website liegt in `site/` und wird bei jedem Push automatisch über GitHub
 Pages deployt. Sie ist bereits live unter
-https://hewaddorani22-glitch.github.io/kadro/ — für `getkandro.com` fehlt nur
-noch der DNS-Eintrag beim Registrar; die exakten Records stehen in
-[site/README.md](../site/README.md).
+https://getkandro.com/ sowie als GitHub-Pages-Ursprung unter
+https://hewaddorani22-glitch.github.io/kadro/.
 
 Die Rechtstexte auf der Website und in der App sind wortgleich. Änderst du
 einen, ändere beide.
+
+The exact privacy-label mapping is in [APP_PRIVACY.md](./APP_PRIVACY.md). The reviewer-ready English note and the evidence checklist are in [APP_REVIEW_NOTES.md](./APP_REVIEW_NOTES.md). Run the production gate inside the EAS production environment before building: `npm run validate:release:production`.

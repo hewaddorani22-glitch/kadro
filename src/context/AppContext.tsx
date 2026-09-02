@@ -15,6 +15,7 @@ import {
   saveLifetimeScanCount,
   saveProfile,
   saveWeightEntry,
+  clearAnalysisQueue,
 } from '@/services/localRepository';
 import {
   createPlannedMeal,
@@ -35,6 +36,8 @@ import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor,
 import { localDateKey } from '@/utils/date';
 import { getDictionary } from '@/i18n/active';
 import type { UnitSystem } from '@/utils/units';
+import { hasCurrentWellnessConsent, recordWellnessConsent, withdrawWellnessConsent as withdrawStoredWellnessConsent } from '@/services/consent';
+import { setEveningReminderEnabled } from '@/services/reminders';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
 type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search';
@@ -52,6 +55,7 @@ type AppContextValue = {
   userName: string;
   profile: UserProfile;
   hydrationReady: boolean;
+  wellnessConsentGranted: boolean;
   targets: DailyTargets;
   meals: Meal[];
   mealHistory: Meal[];
@@ -74,6 +78,8 @@ type AppContextValue = {
   pendingAnalysisCount: number;
   syncMode: SyncMode;
   refreshCloudState: () => Promise<void>;
+  grantWellnessConsent: () => Promise<void>;
+  withdrawWellnessConsent: () => Promise<void>;
   completeOnboarding: (profile: UserProfile) => Promise<void>;
   setUnitSystem: (unitSystem: UnitSystem) => Promise<void>;
   addWeightEntry: (weightKg: number) => Promise<void>;
@@ -127,6 +133,7 @@ function scaleItem(item: MealItem, nextAmount: number): MealItem {
 export function AppProvider({ children }: PropsWithChildren) {
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [hydrationReady, setHydrationReady] = useState(false);
+  const [wellnessConsentGranted, setWellnessConsentGranted] = useState(false);
   const [targets, setTargets] = useState(DEFAULT_TARGETS);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [mealHistory, setMealHistory] = useState<Meal[]>([]);
@@ -158,6 +165,10 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   const refreshCloudState = useCallback(async () => {
+    if (!wellnessConsentGranted) {
+      setSyncMode('local');
+      return;
+    }
     if (!isSupabaseConfigured) {
       setSyncMode('local');
       return;
@@ -181,19 +192,20 @@ export function AppProvider({ children }: PropsWithChildren) {
       captureOperationalError(error, { area: 'cloud_sync', operation: 'refresh_cloud_state' });
       throw error;
     }
-  }, [adoptScanCount]);
+  }, [adoptScanCount, wellnessConsentGranted]);
 
   useEffect(() => {
     let active = true;
-    const stopAuthLifecycle = startSupabaseAuthLifecycle();
+    let stopAuthLifecycle: () => void = () => undefined;
     void (async () => {
-      const [storedMeals, storedHistory, queue, storedProfile, storedWeights, storedScanCount] = await Promise.all([
+      const [storedMeals, storedHistory, queue, storedProfile, storedWeights, storedScanCount, hasConsent] = await Promise.all([
         loadMeals(),
         loadAllStoredScans(),
         loadAnalysisQueue(),
         loadProfile(),
         loadWeightEntries(),
         loadLifetimeScanCount(),
+        hasCurrentWellnessConsent(),
       ]);
       if (!active) return;
       setMeals(storedMeals);
@@ -203,12 +215,15 @@ export function AppProvider({ children }: PropsWithChildren) {
       setPendingAnalysisCount(queue.length);
       setProfile(storedProfile);
       setWeightEntries(storedWeights);
+      setWellnessConsentGranted(hasConsent);
       if (storedProfile.completedAt) setTargets(calculateDailyTargets(storedProfile));
 
-      if (!isSupabaseConfigured) {
+      if (!isSupabaseConfigured || !hasConsent) {
+        setSyncMode('local');
         setHydrationReady(true);
         return;
       }
+      stopAuthLifecycle = startSupabaseAuthLifecycle();
       try {
         const cloudState = await hydrateCloudState();
         if (!active) return;
@@ -235,6 +250,50 @@ export function AppProvider({ children }: PropsWithChildren) {
       active = false;
       stopAuthLifecycle();
     };
+  }, []);
+
+  const grantWellnessConsent = useCallback(async () => {
+    await recordWellnessConsent();
+    setWellnessConsentGranted(true);
+    // Returning users may have kept cloud history while consent was paused.
+    // New onboarding users do not hydrate the consent-only placeholder row.
+    if (profile.completedAt && isSupabaseConfigured) {
+      try {
+        const cloudState = await hydrateCloudState();
+        if (cloudState) {
+          setMeals(cloudState.meals);
+          setMealHistory(cloudState.mealHistory);
+          await adoptScanCount(Math.max(countScans(cloudState.mealHistory), cloudState.hasEverLoggedScan ? 1 : 0));
+          setTargets(cloudState.targets);
+          setProfile(cloudState.profile);
+          await saveProfile(cloudState.profile);
+          setSyncMode('cloud');
+        }
+      } catch (error) {
+        // Consent is already valid on both sides. Keep the user in local mode
+        // and let the normal refresh path recover cloud history later.
+        setSyncMode('local');
+        captureOperationalError(error, { area: 'cloud_sync', operation: 'hydrate_after_consent' });
+      }
+    }
+  }, [adoptScanCount, profile.completedAt]);
+
+  const withdrawWellnessConsent = useCallback(async () => {
+    await withdrawStoredWellnessConsent();
+    deleteTemporaryPhoto(photoUriRef.current);
+    await clearAnalysisQueue();
+    await setEveningReminderEnabled(false).catch(() => false);
+    photoUriRef.current = null;
+    scanModeRef.current = 'demo';
+    setPhotoUri(null);
+    setScanMode('demo');
+    setQueuedInput(null);
+    setAnalysisStatus('idle');
+    setAnalysisError(null);
+    setAnalysisMessage(null);
+    setPendingAnalysisCount(0);
+    setSyncMode('local');
+    setWellnessConsentGranted(false);
   }, []);
 
   useEffect(() => {
@@ -573,6 +632,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setAnalysisMessage(null);
     setPendingAnalysisCount(0);
     setSyncMode('local');
+    setWellnessConsentGranted(false);
   }, []);
 
   const logScannedMeal = useCallback(async () => {
@@ -681,6 +741,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       userName,
       profile,
       hydrationReady,
+      wellnessConsentGranted,
       targets,
       meals,
       mealHistory,
@@ -704,6 +765,8 @@ export function AppProvider({ children }: PropsWithChildren) {
       pendingAnalysisCount,
       syncMode,
       refreshCloudState,
+      grantWellnessConsent,
+      withdrawWellnessConsent,
       completeOnboarding,
       addWeightEntry,
       setCapturedPhoto,
@@ -725,7 +788,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       adjustLoggedMealPortion,
       setLoggedMealType,
     }),
-    [addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, setUnitSystem, setLoggedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
+    [addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, setUnitSystem, setLoggedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

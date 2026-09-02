@@ -27,21 +27,20 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
 };
 
-const aiProvider = (Deno.env.get('AI_PROVIDER') || (Deno.env.get('OPENROUTER_API_KEY') ? 'openrouter' : 'openai')).toLowerCase();
-const isOpenRouter = aiProvider === 'openrouter';
-const aiApiKey = isOpenRouter ? Deno.env.get('OPENROUTER_API_KEY') : Deno.env.get('OPENAI_API_KEY');
-const aiApiUrl = isOpenRouter ? 'https://openrouter.ai/api/v1/responses' : 'https://api.openai.com/v1/responses';
-const visionModel = isOpenRouter
-  ? Deno.env.get('OPENROUTER_VISION_MODEL') || 'openai/gpt-4.1-mini'
-  : Deno.env.get('OPENAI_VISION_MODEL') || 'gpt-4.1-mini';
+// Production has one disclosed AI path. Keeping a second provider selectable
+// by secret would let configuration drift invalidate the user's consent.
+const aiProvider = 'openrouter';
+const aiApiKey = Deno.env.get('OPENROUTER_API_KEY');
+const aiApiUrl = 'https://openrouter.ai/api/v1/responses';
+const visionModel = Deno.env.get('OPENROUTER_VISION_MODEL') || 'openai/gpt-4.1-mini';
 const configuredImageDetail = (Deno.env.get('VISION_IMAGE_DETAIL') || 'high').toLowerCase();
 const imageDetail = ['low', 'high', 'auto'].includes(configuredImageDetail) ? configuredImageDetail : 'high';
-const openRouterZdr = Deno.env.get('OPENROUTER_ZDR') !== 'false';
 const usdaApiKey = Deno.env.get('USDA_API_KEY') || 'DEMO_KEY';
 const configuredDailyLimit = Number(Deno.env.get('ANALYSIS_DAILY_LIMIT') || '60');
 const dailyLimit = Number.isSafeInteger(configuredDailyLimit) && configuredDailyLimit > 0
   ? configuredDailyLimit
   : 60;
+const REQUIRED_PRIVACY_VERSION = '2026-09-02-ai-v1';
 
 /** Largest base64 payload we accept. The client sends a 1600px JPEG at q0.82. */
 const MAX_IMAGE_BASE64 = 3_000_000;
@@ -96,7 +95,6 @@ function extractResponseText(response: any): string {
 
 // deno-lint-ignore no-explicit-any
 async function requestDetection(content: unknown[]): Promise<any> {
-  if (!['openai', 'openrouter'].includes(aiProvider)) throw new Error('ai_provider_invalid');
   if (!aiApiKey) throw new Error('ai_key_missing');
 
   const response = await fetch(aiApiUrl, {
@@ -104,19 +102,18 @@ async function requestDetection(content: unknown[]): Promise<any> {
     headers: {
       Authorization: `Bearer ${aiApiKey}`,
       'Content-Type': 'application/json',
-      ...(isOpenRouter ? { 'X-Title': 'Kandro' } : {}),
+      'X-Title': 'Kandro',
     },
     body: JSON.stringify({
       model: visionModel,
       store: false,
       max_output_tokens: 2000,
-      ...(isOpenRouter ? {
-        provider: {
-          data_collection: 'deny',
-          require_parameters: true,
-          ...(openRouterZdr ? { zdr: true } : {}),
-        },
-      } : {}),
+      provider: {
+        data_collection: 'deny',
+        only: ['azure'],
+        allow_fallbacks: false,
+        zdr: true,
+      },
       input: [{ role: 'user', content }],
       text: {
         format: { type: 'json_schema', name: 'kandro_meal_detection', strict: true, schema: detectionSchema },
@@ -465,6 +462,20 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
   const { data, error: userError } = await context.supabase.auth.getUser();
   if (userError || !data.user) {
     return Response.json({ code: 'unauthorized', message: 'Bitte öffne Kandro erneut.' }, { status: 401, headers: corsHeaders });
+  }
+
+  // Navigation is not a security boundary: check the current, versioned
+  // consent before any request can reach AI or a nutrition provider.
+  const { data: consent, error: consentError } = await context.supabase
+    .from('profiles')
+    .select('privacy_version, wellness_consent_at')
+    .eq('user_id', data.user.id)
+    .maybeSingle();
+  if (consentError) {
+    return reply({ status: 503, body: { code: 'provider_error', message: 'Die Einwilligung konnte nicht geprüft werden.' } });
+  }
+  if (consent?.privacy_version !== REQUIRED_PRIVACY_VERSION || !consent.wellness_consent_at) {
+    return reply({ status: 403, body: { code: 'consent_required', message: 'Bitte bestätige zuerst die aktuelle Datenschutzeinwilligung.' } });
   }
 
   const route = routeOf(request);

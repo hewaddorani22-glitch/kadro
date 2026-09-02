@@ -20,10 +20,8 @@ export default function AnalyzingScreen() {
     analysisMessage,
     analysisStatus,
     analyzeCurrentPhoto,
-    detectedItems,
     photoUri,
     scanMode,
-    scannedMeal,
     startDemoScan,
   } = useApp();
   const [visible, setVisible] = useState(0);
@@ -33,6 +31,8 @@ export default function AnalyzingScreen() {
   const stages = [t.analyzing.stage1, t.analyzing.stage2, t.analyzing.stage3, t.analyzing.stage4];
   const errorCopy: Record<AnalysisErrorKind, { title: string; detail: string }> = {
     'not-configured': { title: t.analyzing.errNotConfiguredTitle, detail: t.analyzing.errNotConfiguredBody },
+    'consent-required': { title: t.analyzing.errConsentTitle, detail: t.analyzing.errConsentBody },
+    'invalid-input': { title: t.analyzing.errInputTitle, detail: t.analyzing.errInputBody },
     offline: { title: t.analyzing.errOfflineTitle, detail: t.analyzing.errOfflineBody },
     'unclear-image': { title: t.analyzing.errUnclearTitle, detail: t.analyzing.errUnclearBody },
     'multiple-dishes': { title: t.analyzing.errMultipleTitle, detail: t.analyzing.errMultipleBody },
@@ -65,17 +65,11 @@ export default function AnalyzingScreen() {
   useEffect(() => {
     if (analysisStatus !== 'ready') return;
     setVisible(stages.length);
-    // The confirmation step cost a full screen and a tap on every single meal,
-    // including the ones the model was sure about. It now appears only when
-    // there is genuinely something to check: a hedged estimate, a warning from
-    // the gateway, or an ingredient flagged as uncertain.
-    const needsReview = scannedMeal.confidence === 'medium'
-      || Boolean(analysisMessage)
-      || detectedItems.some((item) => item.optional);
-    const destination = needsReview ? '/confirm' : '/result';
-    const timer = setTimeout(() => router.replace(destination), reduceMotion ? 0 : 260);
+    // Confidence describes the model, not certainty about a real portion.
+    // Every estimate is reviewed before result.tsx stores it.
+    const timer = setTimeout(() => router.replace('/confirm'), reduceMotion ? 0 : 260);
     return () => clearTimeout(timer);
-  }, [analysisMessage, analysisStatus, detectedItems, reduceMotion, router, scannedMeal.confidence]);
+  }, [analysisStatus, reduceMotion, router]);
 
   const runDemo = () => {
     startDemoScan();
@@ -126,13 +120,18 @@ export default function AnalyzingScreen() {
 
           {failed ? (
             <View style={styles.actions}>
-              {analysisError === 'product-not-found' ? (
+              {analysisError === 'consent-required' ? (
                 <>
-                  <PrimaryButton
+                  <PrimaryButton icon="shield-checkmark-outline" label={t.analyzing.openConsent} onPress={() => router.replace('/data-consent' as never)} />
+                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+                </>
+              ) : analysisError === 'product-not-found' || analysisError === 'invalid-input' ? (
+                <>
+                  {analysisError === 'product-not-found' ? <PrimaryButton
                     icon="create-outline"
                     label={t.analyzing.describeInstead}
                     onPress={() => router.replace('/(tabs)/scan?mode=description')}
-                  />
+                  /> : null}
                   <PrimaryButton label={t.analyzing.changeInput} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
                 </>
               ) : (

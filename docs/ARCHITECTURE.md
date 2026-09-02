@@ -3,6 +3,8 @@
 ## Product loop
 
 ```text
+Versioned explicit AI/wellness consent
+   ↓
 Onboarding
    ↓
 Today dashboard
@@ -33,19 +35,20 @@ The application deliberately keeps this loop narrow. New features should strengt
 Expo Router uses `src/app` as the route root.
 
 - `src/app/_layout.tsx`: root stack and application providers.
-- `src/app/index.tsx`: initial redirect to onboarding.
-- `src/app/onboarding.tsx`: six-step local German onboarding flow.
+- `src/app/index.tsx`: initial redirect to consent, onboarding or the completed app.
+- `src/app/data-consent.tsx`: named AI-recipient disclosure, explicit grant and future withdrawal.
+- `src/app/onboarding.tsx`: localized personalization flow with metric, US and UK units.
 - `src/app/(tabs)/_layout.tsx`: Today, Plan, Scan, Progress, and Profile tabs.
-- `src/app/(tabs)/scan.tsx`: photo-first camera plus real description, barcode, and demo fallbacks; the second completed scan is gated by RevenueCat.
-- `src/app/analyzing.tsx`: staged mock analysis animation.
+- `src/app/(tabs)/scan.tsx`: photo-first camera plus real description, barcode, search and demo fallbacks; AI analyses after the first three are gated by RevenueCat.
+- `src/app/analyzing.tsx`: staged analysis plus deterministic consent, input, offline and provider errors; every success goes to confirmation.
 - `src/app/confirm.tsx`: ingredient inclusion, one-tap meal portion sizing, and optional gram-level correction.
 - `src/app/result.tsx`: animated meal estimate, projected remaining targets, automatic idempotent meal save, and delayed recommendation reveal.
 - `src/app/paywall.tsx`: transparent annual/monthly choice backed by RevenueCat Offering prices, purchase, and user-triggered restore.
-- `src/app/privacy.tsx` and `src/app/terms.tsx`: in-app legal drafts linked from onboarding, Profile, and the paywall.
+- `src/app/privacy.tsx` and `src/app/terms.tsx`: in-app bilingual legal copy generated identically on the public website.
 - `src/app/account-deletion.tsx`: explicit irreversible deletion confirmation and subscription-separation warning.
 - `src/app/(tabs)/progress.tsx`: real locally persisted weight history and meal-derived progress instead of fixture achievements.
 - `src/components/AccountLinkCard.tsx`: anonymous account upgrade, email verification, password setup, and existing-account recovery from Profile.
-- `src/components/AppRouteGuard.tsx`: keeps analysis, progress, account, and paywall deep links behind completed onboarding consent while leaving the legal drafts readable beforehand.
+- `src/components/AppRouteGuard.tsx`: keeps processing routes behind current consent while leaving consent, legal copy and deletion reachable.
 
 Root stack routes sit above the tab navigator so camera analysis, confirmation, result, and paywall can focus the user on one step.
 
@@ -71,7 +74,7 @@ Root stack routes sit above the tab navigator so camera analysis, confirmation, 
 - `sumMeals` derives daily consumption;
 - `getRemaining` derives the daily balance;
 
-`recommendations.ts` scores the 200-entry German catalog by context, remaining calories/protein/fat, and saved preferences. Vegetarian, pork-free, and lactose-free choices are hard constraints; high-protein and quick choices affect ranking. It sorts deterministically and returns exactly three entries; no model invents nutrition values. The catalog validator enforces balanced context coverage, known catalog tags, plausible nutrition ranges, calorie-to-macro consistency, and 90 deterministic recommendation sets across 30 budget/preference scenarios.
+`recommendations.ts` scores the paired 200-entry German/English catalogs by context, remaining calories/protein/fat, and saved preferences. Vegetarian, pork-free, and lactose-free choices are hard constraints; high-protein and quick choices affect ranking. It sorts deterministically and returns exactly three entries. The values are explicitly labeled Kandro planning references, not sourced measurements. The catalog validator enforces balanced context coverage, known tags, plausible nutrition ranges, calorie-to-macro consistency, translation parity, and 90 deterministic recommendation sets across 30 budget/preference scenarios.
 
 Screens must not maintain separate copies of these totals.
 
@@ -100,7 +103,7 @@ Current responsibilities:
 - `syncRepository.ts`: preserves local-first writes, uploads pending local scans during hydration, and merges cloud meals back into domain state.
 - `subscription.ts` + `SubscriptionContext.tsx`: platform/Test Store key selection, Supabase-user identity, current Offering, `kandro_pro` entitlement state, purchase cancellation, and user-triggered restore. Without public SDK configuration, the paywall remains a clearly labeled non-billing preview.
 - `telemetry.ts`: optional PostHog client with a typed event allowlist, anonymous-only profiles, no health-value properties, persisted opt-in/out, and scrubbed operational error capture. It is a no-op when the public project token is absent.
-- `recommendations.ts`: deterministic scoring over the reviewed German MVP catalog.
+- `recommendations.ts`: deterministic scoring over the bilingual Kandro planning catalog with explicit typical-value provenance.
 
 Raw provider payloads should be mapped to the domain types in `src/types/nutrition.ts` before reaching React components.
 

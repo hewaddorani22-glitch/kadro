@@ -1,6 +1,6 @@
 # Kandro
 
-An iOS-first, production-shaped nutrition MVP built with React Native, Expo Router and TypeScript.
+An iOS-first nutrition app built with React Native, Expo Router and TypeScript.
 
 [![CI](https://github.com/hewaddorani22-glitch/kadro/actions/workflows/ci.yml/badge.svg)](https://github.com/hewaddorani22-glitch/kadro/actions/workflows/ci.yml)
 
@@ -8,19 +8,19 @@ An iOS-first, production-shaped nutrition MVP built with React Native, Expo Rout
 
 ## Included product loop
 
-1. Six-step German onboarding that persists a real personalized target and transparent wellness guardrails
+1. English-first onboarding with German localization, personalized targets and transparent wellness guardrails
 2. Daily calorie and macro dashboard with an honest empty timeline before the first meal
 3. Full-screen meal camera with real Describe, Barcode, and deterministic demo fallbacks
 4. Real photo compression plus structured vision analysis through an authenticated server boundary
 5. One-tap `weniger / passt / mehr` portion confirmation plus optional gram-level editing
 6. Animated meal result with confidence and estimated nutrition
 7. Recalculated daily balance
-8. Three deterministic contextual suggestions from a 200-meal German catalog
+8. Three deterministic contextual suggestions from a 200-meal bilingual catalog
 9. Real local weight/meal progress, profile and transparent subscription paywall
 
 The demo meal remains available as a deterministic fallback. Real scans use GPT-4.1-mini through OpenRouter or direct OpenAI only for visible-food, preparation, hidden-calorie risk, and portion detection. Nutrition then resolves through a 64-dish German BLS 4.0 reference set, with USDA FoodData Central as the ingredient fallback. Typed meal descriptions use the same structured boundary. The barcode adapter reads packaged-food data from Open Food Facts and starts at 100 g for explicit correction. RevenueCat-backed purchase and restore actions use a non-billing preview until its public SDK keys and offering are configured. Typed integration contracts keep raw provider payloads out of the UI.
 
-The first complete scan is free. A confirmed result is saved automatically so closing the screen cannot silently lose the meal; subsequent scans require an active `kandro_pro` RevenueCat entitlement. The paywall still appears only after the first result and recommendation Aha moment.
+The first three complete AI analyses are free. Every estimate must be confirmed before it is saved, so the user can correct ingredients and portions. Further analyses require an active `kandro_pro` RevenueCat entitlement; search and the user's existing history remain available.
 
 When configured, Supabase provides an anonymous authenticated session, RLS-isolated profiles, daily targets, confirmed meals, ingredients, recommendation impressions, and acceptance/rejection feedback. The profile screen can upgrade that same anonymous user ID to a verified email/password account without placing a login wall before the first scan. Without Supabase configuration the app remains fully local-first.
 
@@ -107,7 +107,7 @@ npm run db:remote:list
 npm run db:remote:check
 ```
 
-OpenRouter requests require providers that support every requested parameter, deny provider data collection, use `store: false`, and enable ZDR by default. Set `OPENROUTER_ZDR=false` only for local debugging if your selected model has no ZDR-compatible endpoint.
+OpenRouter requests are restricted to Microsoft Azure endpoints. Provider data collection is denied, `store: false` and ZDR are enforced in code, and fallbacks are disabled so the recipient named in the user's consent cannot change silently. OpenRouter's dedicated EU ingress requires an enterprise account, so the consent and privacy notice explicitly disclose OpenRouter's U.S. processing instead of claiming EU-only AI routing.
 
 ## Enable RevenueCat subscriptions
 
@@ -155,7 +155,7 @@ The complete plan audit, including the external TestFlight and legal gates, live
 
 The repository is linked to the Expo EAS project `@hewad/kandro` and includes explicit preview and production profiles. Public Supabase values are configured for both environments; PostHog and RevenueCat Test Store values are configured for preview. The production analysis gateway is live, while production billing remains unset until the real App Store products exist. Apple Developer Program activation is currently pending Apple's identity approval. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
 
-The in-app privacy policy and terms are deliberately marked as MVP drafts. They need the legal publisher/controller identity, a real contact channel, final retention periods, and legal/provider review before public distribution. The authenticated Supabase deletion function is live and its regression test confirms account deletion, profile cascade, and refresh-token revocation.
+The in-app privacy policy, terms and public website share the same generated bilingual source. The authenticated Supabase deletion function is live and its regression test confirms account deletion, profile cascade, and refresh-token revocation. The exact App Store privacy answers and reviewer notes live in `docs/APP_PRIVACY.md` and `docs/APP_REVIEW_NOTES.md`.
 
 ## Working with coding agents
 
@@ -174,5 +174,5 @@ Contributions should follow [CONTRIBUTING.md](./CONTRIBUTING.md). Pull requests 
 - Versioned wellness-data consent, privacy/terms drafts, and authenticated account deletion with local cleanup
 - Confirmed meal records never retain photos; only a compressed failed scan can live temporarily in the local retry queue
 - Confirmed meals survive restarts in local AsyncStorage
-- Onboarding, calculated targets, preferences, weight entries, and the one-free-scan boundary survive restarts
+- Onboarding, consent, calculated targets, preferences, weight entries, and the three-free-analysis boundary survive restarts
 - Failed network scans are queued locally (maximum three) until the user explicitly retries

@@ -13,12 +13,12 @@ import { remindersSupported, syncEveningReminder } from '@/services/reminders';
  * Lives inside AppProvider because the root layout sits outside it.
  */
 export function ReminderScheduler() {
-  const { hydrationReady, targets } = useApp();
+  const { hydrationReady, targets, wellnessConsentGranted } = useApp();
 
   useEffect(() => {
-    if (!remindersSupported || !hydrationReady) return;
+    if (!remindersSupported || !hydrationReady || !wellnessConsentGranted) return;
     void syncEveningReminder({ calories: targets.calories, protein: targets.protein });
-  }, [hydrationReady, targets.calories, targets.protein]);
+  }, [hydrationReady, targets.calories, targets.protein, wellnessConsentGranted]);
 
   return null;
 }

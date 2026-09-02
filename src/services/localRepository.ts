@@ -98,6 +98,10 @@ export async function removeQueuedAnalysis(id: string): Promise<number> {
   return next.length;
 }
 
+export async function clearAnalysisQueue() {
+  await AsyncStorage.removeItem(QUEUE_KEY);
+}
+
 /**
  * Monotonic count of meals this device has ever logged. Meal history is pruned
  * (locally by day, in the cloud after 90 days), so the free allowance cannot be
@@ -124,6 +128,10 @@ function positiveNumber(value: unknown, fallback: number) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
+function numberInRange(value: unknown, minimum: number, maximum: number, fallback: number) {
+  return typeof value === 'number' && Number.isFinite(value) && value >= minimum && value <= maximum ? value : fallback;
+}
+
 export async function loadProfile(): Promise<UserProfile> {
   const stored = await readJson<Partial<UserProfile> | null>(PROFILE_KEY, null);
   if (!stored) return DEFAULT_PROFILE;
@@ -135,7 +143,7 @@ export async function loadProfile(): Promise<UserProfile> {
     ...stored,
     goal: oneOf(stored.goal, ['lose', 'maintain', 'gain'], DEFAULT_PROFILE.goal),
     activityLevel: oneOf(stored.activityLevel, ['low', 'light', 'high'], DEFAULT_PROFILE.activityLevel),
-    age: positiveNumber(stored.age, DEFAULT_PROFILE.age),
+    age: numberInRange(stored.age, 18, 100, DEFAULT_PROFILE.age),
     heightCm: positiveNumber(stored.heightCm, DEFAULT_PROFILE.heightCm),
     weightKg: positiveNumber(stored.weightKg, DEFAULT_PROFILE.weightKg),
     // Profiles written before the rate existed must not deserialize as undefined.

@@ -34,7 +34,7 @@ Do not upgrade Expo, React, React Native, Expo Router, or other native packages 
 - The app is an adaptive decision system, not a conventional food diary or seven-day meal planner.
 - Always communicate nutrition as an estimate. Preserve confidence labels and easy ingredient/portion correction.
 - Never introduce guilt, punishment, medical diagnosis, treatment claims, or eating-disorder guidance.
-- The user-facing UI is German. Keep internal domain identifiers stable when translating copy.
+- The user-facing UI is bilingual. English is the primary international locale and German is the complete localized alternative; keep internal domain identifiers stable when translating copy.
 - The recommendation screen returns exactly three contextual options for Zuhause, Supermarkt, or Unterwegs.
 - Meal photos are temporary by default. Do not persist or upload originals without an explicit privacy decision and deletion policy.
 - Keep the central Scan action visually dominant and available from the primary navigation.
@@ -44,7 +44,7 @@ Do not upgrade Expo, React, React Native, Expo Router, or other native packages 
 
 ## Engineering boundaries
 
-- The MVP has a local analysis gateway with live OpenRouter/OpenAI and USDA adapters, optional Supabase Auth/data sync, RevenueCat Test Store billing, and privacy-minimal EU PostHog analytics. Native StoreKit billing, native Sentry, and a hosted production analysis gateway remain release gates; do not imply those are live.
+- The MVP has a local development gateway and a hosted Supabase Edge Function for production analysis, live OpenRouter/OpenAI and USDA adapters, Supabase Auth/data sync, RevenueCat Test Store billing, and optional privacy-minimal EU PostHog analytics. Native StoreKit billing and purchase/restore testing remain release gates until the Apple enrollment and App Store products exist; do not imply those are live.
 - Supabase access from the app uses only the publishable key and a user JWT. Never add a secret or `service_role` key to Expo code or an `EXPO_PUBLIC_` variable.
 - Every table in an exposed Supabase schema must enable RLS, revoke unnecessary grants, and include owner-scoped policies before it is used by the client.
 - UI components should consume typed domain data, not raw third-party API responses.

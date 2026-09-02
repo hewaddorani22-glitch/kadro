@@ -1,0 +1,4 @@
+{
+  "CFBundleDisplayName": "Kandro",
+  "NSCameraUsageDescription": "Kandro nutzt die Kamera, um deine Mahlzeit zu fotografieren und daraus Nährwerte zu schätzen. Das Originalfoto wird nach der Analyse verworfen und nicht gespeichert."
+}

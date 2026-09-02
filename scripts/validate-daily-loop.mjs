@@ -169,11 +169,11 @@ if (!result.includes('variant="secondary"')) {
 }
 
 // 10. The confirmation step is worth a screen only when something is uncertain.
-if (!analyzing.includes('needsReview')) {
-  failures.push('a confident scan must not cost an extra screen and tap');
+if (!analyzing.includes("router.replace('/confirm')")) {
+  failures.push('every estimate must pass through ingredient and portion confirmation');
 }
-if (!analyzing.includes("scannedMeal.confidence === 'medium'") || !analyzing.includes('item.optional')) {
-  failures.push('the review gate must trigger on hedged estimates and flagged ingredients');
+if (analyzing.includes('needsReview')) {
+  failures.push('model confidence must not bypass the user confirmation step');
 }
 
 // 11. The reminder is the only thing that brings anyone back. It has to be

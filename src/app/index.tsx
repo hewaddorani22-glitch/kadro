@@ -5,7 +5,7 @@ import { colors } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 
 export default function Index() {
-  const { hydrationReady, profile } = useApp();
+  const { hydrationReady, profile, wellnessConsentGranted } = useApp();
 
   if (!hydrationReady) {
     return (
@@ -15,6 +15,9 @@ export default function Index() {
     );
   }
 
+  if (!wellnessConsentGranted) {
+    return <Redirect href={(profile.completedAt ? '/data-consent' : '/onboarding') as never} />;
+  }
   return <Redirect href={profile.completedAt ? '/(tabs)/today' : '/onboarding'} />;
 }
 

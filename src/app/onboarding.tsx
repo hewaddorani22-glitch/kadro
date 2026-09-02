@@ -9,7 +9,6 @@ import { KandroMark } from '@/components/KandroMark';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { colors, radii, spacing } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { recordWellnessConsent } from '@/services/consent';
 import { calculateDailyTargets, estimatedPace, isRateLimited, weeklyRateLabel } from '@/services/personalization';
 import { trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -82,7 +81,7 @@ const skippableSteps = new Set<StepId>(['name', 'preferences']);
 export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { completeOnboarding } = useApp();
+  const { completeOnboarding, grantWellnessConsent } = useApp();
   const { locale, t } = useLanguage();
   const copy = copyFor(t);
   const goalChoices = goalChoicesFor(t);
@@ -179,7 +178,7 @@ export default function OnboardingScreen() {
     setConsentBusy(true);
     setConsentError(null);
     try {
-      await recordWellnessConsent();
+      await grantWellnessConsent();
       await completeOnboarding(draftProfile);
       trackEvent('onboarding completed', { completion: skippedAnything ? 'skipped' : 'finished' });
       setShowConsent(false);
@@ -575,7 +574,7 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
         <View style={styles.limitRow}>
           <Ionicons color={colors.attention} name="information-circle-outline" size={16} />
           <Text style={styles.limitText}>
-            {t.onboarding.rateLimited}
+            {profile.goal === 'gain' ? t.onboarding.rateLimitedGain : t.onboarding.rateLimited}
           </Text>
         </View>
       ) : null}

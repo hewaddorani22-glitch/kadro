@@ -138,7 +138,7 @@ if (!gateway.includes('usdaCacheKey') || !gateway.includes('match.cacheable')) {
 if (!gateway.includes("resolveBlsFacts") || !accuracyMigration.includes("'bls'")) {
   failures.push('BLS references must retain their provider in the gateway and database');
 }
-if (!gateway.includes("'openai/gpt-4.1-mini'") || !gateway.includes("'gpt-4.1-mini'")) {
+if (!gateway.includes("'openai/gpt-4.1-mini'")) {
   failures.push('the cost-controlled vision default must stay GPT-4.1-mini');
 }
 

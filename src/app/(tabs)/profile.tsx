@@ -136,6 +136,8 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <SectionTitle>{t.profile.privacySettings}</SectionTitle>
         <Card style={styles.listCard}>
+          <MenuRow icon="shield-checkmark-outline" label={t.profile.dataConsent} onPress={() => router.push('/data-consent' as never)} />
+          <View style={styles.divider} />
           <InfoRow
             detail={t.profile.photoHandlingDetail}
             icon="image-outline"

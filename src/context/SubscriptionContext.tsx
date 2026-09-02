@@ -12,6 +12,7 @@ import {
 import { supabase } from '@/services/supabaseClient';
 import { captureOperationalError } from '@/services/telemetry';
 import { getDictionary } from '@/i18n/active';
+import { useApp } from '@/context/AppContext';
 
 type SubscriptionStatus = 'loading' | 'unconfigured' | 'ready' | 'active' | 'error';
 
@@ -28,12 +29,18 @@ type SubscriptionContextValue = {
 const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
 
 export function SubscriptionProvider({ children }: PropsWithChildren) {
+  const { hydrationReady, wellnessConsentGranted } = useApp();
   const [snapshot, setSnapshot] = useState<SubscriptionSnapshot | null>(null);
   const [status, setStatus] = useState<SubscriptionStatus>('loading');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
+    if (!wellnessConsentGranted) {
+      setSnapshot(null);
+      setStatus('unconfigured');
+      return;
+    }
     setError(null);
     try {
       const next = await loadSubscriptionSnapshot();
@@ -44,19 +51,19 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
       setError(subscriptionErrorMessage(failure));
       captureOperationalError(failure, { area: 'subscription', operation: 'refresh' });
     }
-  }, []);
+  }, [wellnessConsentGranted]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    if (hydrationReady) void refresh();
+  }, [hydrationReady, refresh]);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase || !wellnessConsentGranted) return;
     const { data } = supabase.auth.onAuthStateChange(() => {
       void refresh();
     });
     return () => data.subscription.unsubscribe();
-  }, [refresh]);
+  }, [refresh, wellnessConsentGranted]);
 
   const purchase = useCallback(async (planId: SubscriptionPlanId) => {
     const plan = snapshot?.plans[planId];

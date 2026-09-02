@@ -28,7 +28,7 @@
 <body>
 <header class="site"><div class="wrap wide"><a class="brand" href="../../"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="../support/">Support</a><a href="../privacy/">Privacy</a><a href="../terms/">Terms</a><a href="../sources/">Data sources</a><a href="../../impressum/">Imprint</a><a class="lang" href="../../privacy/" hreflang="de">Deutsch</a></nav></div></header>
 <main><div class="wrap">
-  <p class="eyebrow">Version 1.0 · Last updated 1 September 2026</p>
+  <p class="eyebrow">Version 1.1 · Last updated 2 September 2026</p>
   <h1>Privacy notice</h1>
   <p class="lead">This notice explains in plain language which data Kandro processes, why, and how you can delete it again at any time.</p>
 
@@ -42,11 +42,11 @@
   <p>PostHog only receives anonymous feature events and sanitised errors, and only if you switch them on. Photos, email addresses, foods, calories, macros and Supabase IDs are not sent to PostHog.</p>
 
   <h2>3. Photo analysis and recipients</h2>
-  <p>A photo is downscaled on your device. The original is discarded afterwards. The working copy, or a meal description you deliberately typed, goes only to the configured Kandro analysis gateway and from there to OpenRouter or OpenAI for food and portion recognition. USDA FoodData Central is then queried with text search terms only. For a barcode, the number is looked up at Open Food Facts through the Kandro analysis gateway.</p>
+  <p>A photo is downscaled on your device. The original is discarded afterwards. The working copy, or a meal description you deliberately typed, is transferred to OpenRouter in the United States and from there exclusively to Microsoft Azure, where the OpenAI GPT-4.1 mini model identifies foods and portions. USDA FoodData Central is then queried with text search terms only. For a barcode, the number is looked up at Open Food Facts through the Kandro analysis gateway.</p>
   <p>Confirmed meals contain no photo. The local failure queue is capped at three scans and is cleared once an analysis succeeds.</p>
 
   <h2>4. Purpose, legal basis and retention</h2>
-  <p>Nutrition and goal data are health data within the meaning of Art. 9 GDPR. The legal basis is your explicit consent under Art. 9(2)(a) GDPR, which you give during onboarding and can withdraw at any time with effect for the future. It is stored with a timestamp and notice version on your device and, when the cloud is active, in your protected profile.</p>
+  <p>Nutrition and goal data are health data within the meaning of Art. 9 GDPR. The legal basis is your explicit consent under Art. 9(2)(a) GDPR, which you give during onboarding and can withdraw at any time under “You → Analysis &amp; data use” with effect for the future. After withdrawal, Kandro sends no analysis, body or nutrition data to the named recipients. Consent is stored with a timestamp and notice version on your device and, when the cloud is active, in your protected profile.</p>
   <p>Local data remains until you delete the app data or your account. Confirmed meals are stored locally for your history; for the cloud history the app currently loads at most 90 days. Cloud data remains until the account is deleted. Technically necessary backups may expire according to the retention periods of the respective processor.</p>
 
   <h2>5. Your rights</h2>
@@ -55,8 +55,8 @@
   <p>You have the right to lodge a complaint with a supervisory authority; for North Rhine-Westphalia this is the State Commissioner for Data Protection and Freedom of Information NRW.</p>
 
   <h2>6. Processors and transfers</h2>
-  <p>We use Supabase (database and account, EU region), OpenRouter or OpenAI (image and text analysis), USDA FoodData Central and Open Food Facts (nutrition matching), RevenueCat (subscription management) and optionally PostHog (anonymous usage analytics, EU).</p>
-  <p>For the analysis, data may be transferred to the United States. Analysis requests are configured so that content is not used for training. Photos are processed solely for the duration of the analysis and are not stored permanently.</p>
+  <p>We use Supabase (database and account, EU region), OpenRouter in the United States and Microsoft Azure with the OpenAI GPT-4.1 mini model (image and text analysis), USDA FoodData Central and Open Food Facts (nutrition matching), RevenueCat (subscription management) and optionally PostHog (anonymous usage analytics, EU).</p>
+  <p>The AI data path is restricted to OpenRouter and ZDR-capable Microsoft Azure endpoints without fallback. Requests are configured with “store: false”, data collection denied and Zero Data Retention: content is not used for training and is not stored permanently by the AI provider. Photos are processed solely for the duration of the analysis. OpenRouter and USDA FoodData Central process data in the United States; USDA receives normalized food terms only, not photos, account IDs or body data.</p>
 </div></main>
 <footer class="site"><div class="wrap wide"><span class="small">© 2026 Hewad Dorani · Essen</span><span class="small"><a href="../support/">Support</a> · <a href="../privacy/">Privacy</a> · <a href="../terms/">Terms</a> · <a href="../sources/">Data sources</a> · <a href="../../impressum/">Imprint</a></span></div></footer>
 </body>

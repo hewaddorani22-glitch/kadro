@@ -19,7 +19,7 @@
 - [x] Expo Go compatibility on SDK 54
 - [x] TypeScript, Expo Doctor, web export, and iOS bundle checks
 - [x] Typed service contracts for analysis, nutrition lookup, persistence, retry, and recommendations
-- [x] Real Describe and camera Barcode fallbacks plus lifetime one-free-scan enforcement
+- [x] Real Describe and camera Barcode fallbacks plus lifetime three-free-analysis enforcement
 - [x] Credentialed real-photo smoke test on an iPhone with OpenRouter and USDA
 
 ## Day 2: real meal intelligence
@@ -35,7 +35,7 @@ Priority order:
 5. [x] Preserve the existing confirmation UI as the correction layer.
 6. [x] Save the confirmed meal and reload Today from the repository.
 7. [x] Add a local-first retry queue plus unclear-image and multiple-dish error states.
-8. [x] Seed 45 reviewed German meal estimates and rank exactly three deterministically by context, remaining macros, and preferences.
+8. [x] Seed 45 curated German/English meal-planning estimates and rank exactly three deterministically by context, remaining macros, and preferences.
 
 The code path, mock path, gateway health endpoint, Open Food Facts lookup, catalog validator, TypeScript, Expo Doctor, exports, and one credentialed real-photo iPhone smoke test are complete.
 
@@ -64,7 +64,7 @@ Acceptance criteria:
 - [x] Deploy the authenticated Supabase `nutrition` gateway with server-only provider secrets, a private per-user daily quota, and live barcode/text/photo security smoke tests
 - [x] Run the cloud-hydration smoke test in Expo Go and verify the persisted anonymous session after an app restart
 - [x] Add permanent account linking with verified email and password recovery; Apple remains optional after MVP validation
-- [x] Expand the verified German catalog from 45 to 200 meals after live schema and ranking validation
+- [x] Expand the validated bilingual catalog from 45 to 200 meals after live schema and ranking validation
 - [ ] RevenueCat subscription and restore flow
   - [x] Expo Go-safe Test Store adapter, Supabase identity, live Offering prices, entitlement check, purchase, cancellation, and restore UI
   - [x] Create RevenueCat project, `kandro_pro` entitlement, current annual/monthly Offering, and run a Test Store purchase/restore smoke test
@@ -85,10 +85,10 @@ Acceptance criteria:
 - [ ] Native VoiceOver, Dynamic Type, contrast, camera-permission, and offline retry pass on a physical iPhone
 - [x] RevenueCat Test Store purchase, entitlement, and restore smoke test
 - [ ] App Store Connect products plus native StoreKit sandbox purchase/restore in the TestFlight build
-- [x] Explicit wellness-data consent, privacy/terms drafts, non-medical guardrails, and live Supabase account-deletion test
-- [ ] Add legal controller/contact details and complete legal/provider/retention review
+- [x] Versioned explicit AI/wellness consent, in-app withdrawal, server enforcement, bilingual privacy/terms, non-medical guardrails, and live Supabase account-deletion test
+- [x] Add legal controller/contact details, public support/privacy URLs, provider/transfer disclosure and ZDR configuration
 - [x] Responsive Kandro landing page with private deployment plus privacy and terms routes
-- [ ] Publish the landing page after legal contact details are complete
+- [x] Publish the landing page and generated bilingual legal pages at getkandro.com
 - [x] EAS production/preview configuration and App Store metadata/screenshot handoff
 - [x] Create and link the Expo EAS project `@hewad/kandro`, and configure public preview environment values
 - [x] Configure public Supabase values for production and keep the local analysis override absent from Preview and Production

@@ -10,7 +10,7 @@ ein Gerät gelangen — eine App im App Store ist für jeden auslesbar.
 |---|---|---|
 | Läuft als | `npm run api` auf deinem Mac | Supabase Edge Function `nutrition` |
 | Client findet ihn über | `EXPO_PUBLIC_ANALYSIS_API_URL` | Supabase-URL der App |
-| Auth | keine | Supabase-JWT, an Plattform- und Handler-Grenze geprüft |
+| Auth | keine | Supabase-JWT plus aktuelle ausdrückliche Analyse-Einwilligung |
 | Limit | keins | `ANALYSIS_DAILY_LIMIT` pro Nutzer und Tag |
 | Erkennung | GPT-4.1-mini, standardmäßig Bilddetail `high` | GPT-4.1-mini, standardmäßig Bilddetail `high` |
 
@@ -23,8 +23,10 @@ MacBook zu erreichen.
 Die Function ist seit dem 1. September 2026 im EU-Projekt aktiv. Migration und
 Secrets sind ausgerollt; `EXPO_PUBLIC_ANALYSIS_API_URL` ist weder in Preview
 noch Produktion gesetzt, und beide EAS-Umgebungen enthalten die öffentlichen
-Supabase-Clientwerte. Der Live-Smoke-Test hat anonyme/öffentliche Zugriffe
-abgewiesen und Barcode-, Text- sowie Fotoanalyse erfolgreich ausgeführt.
+Supabase-Clientwerte. Am 2. September wurde zusätzlich live bestätigt: ohne
+aktuelle ausdrückliche Einwilligung antwortet der Gateway mit 403; nach der
+Einwilligung läuft die Analyse über einen Zero-Data-Retention-Endpunkt von
+Microsoft Azure und liefert ein Ergebnis.
 
 ## Einmalig einrichten
 
@@ -65,6 +67,23 @@ Alle unter `https://<projekt>.supabase.co/functions/v1/nutrition`:
 | `POST` | `/v1/analyze` | Foto (Base64 JPEG) | ja |
 | `POST` | `/v1/describe` | Freitextbeschreibung | ja |
 | `GET` | `/v1/barcode/{ean}` | Open Food Facts | nein, kostet uns nichts |
+| `GET` | `/v1/search?q=...` | Lebensmittelsuche über BLS/USDA | nein, kostet keine KI-Tokens |
+
+Jede Route verlangt neben der gültigen Nutzer-JWT die aktuelle versionierte
+Einwilligung im eigenen `profiles`-Datensatz. Das verhindert auch dann eine
+Weitergabe, wenn ein veralteter oder manipulierter Client den Bildschirm
+umgeht.
+
+## Provider- und Datenschutzgrenze
+
+Produktionsanfragen gehen an OpenRouter in den USA. Die Provider-Auswahl ist
+auf Microsoft Azure beschränkt, `allow_fallbacks` ist deaktiviert und
+`zdr: true` wird pro Anfrage erzwungen. Datenweitergabe und Speicherung sind in
+der Provider-Policy deaktiviert; `store: false` wird zusätzlich am
+Responses-Endpunkt gesetzt. Kann OpenRouter keinen passenden
+Zero-Data-Retention-Endpunkt liefern, schlägt die Anfrage fehl, statt auf einen
+anderen Anbieter auszuweichen. Diese Grenze muss mit der Datenschutzerklärung
+und den App-Store-Datenschutzangaben übereinstimmen.
 
 ## Warum das Limit existiert
 
