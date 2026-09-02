@@ -2,6 +2,7 @@ import { Component, ErrorInfo, ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii } from '@/constants/theme';
+import { getDictionary } from '@/i18n/active';
 import { captureOperationalError } from '@/services/telemetry';
 
 type Props = { children: ReactNode };
@@ -26,14 +27,19 @@ export class AppErrorBoundary extends Component<Props, State> {
   render() {
     if (!this.state.failed) return this.props.children;
 
+    // A class component cannot use the hook, and this screen appears exactly
+    // when something already went wrong — so it reads the active dictionary
+    // directly rather than shipping German to every reader.
+    const t = getDictionary().errors;
+
     return (
       <View style={styles.screen}>
         <View style={styles.card}>
           <Text style={styles.eyebrow}>KANDRO</Text>
-          <Text style={styles.title}>Etwas ist schiefgelaufen.</Text>
-          <Text style={styles.copy}>Deine gespeicherten Mahlzeiten bleiben erhalten. Versuche die Ansicht noch einmal zu laden.</Text>
+          <Text style={styles.title}>{t.crashTitle}</Text>
+          <Text style={styles.copy}>{t.crashBody}</Text>
           <Pressable onPress={() => this.setState({ failed: false })} style={styles.button}>
-            <Text style={styles.buttonText}>Erneut versuchen</Text>
+            <Text style={styles.buttonText}>{t.crashRetry}</Text>
           </Pressable>
         </View>
       </View>

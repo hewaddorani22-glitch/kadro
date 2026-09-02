@@ -357,7 +357,10 @@ export const de = {
     insightStartText: 'Nach drei erfassten Mahlzeiten zeigt Kandro hier erste Muster – ohne erfundene Bewertungen oder perfekte Serien.',
     weightModalTitle: 'Heutiges Gewicht',
     weightModalText: 'Ein Eintrag pro Tag. Ein neuer Wert ersetzt den heutigen.',
-    weightLabel: 'Gewicht in Kilogramm',
+    weightLabel: (unit: string) => `Gewicht in ${unit}`,
+    unitKilograms: 'Kilogramm',
+    unitPounds: 'Pfund',
+    unitStone: 'Stone',
     weightError: 'Bitte gib ein Gewicht zwischen 35 und 350 kg ein.',
     today: 'Heute',
   },
@@ -410,6 +413,9 @@ export const de = {
    * or an inline error, so they belong in the dictionary like any other copy.
    */
   errors: {
+    crashTitle: 'Etwas ist schiefgelaufen.',
+    crashBody: 'Deine gespeicherten Mahlzeiten bleiben erhalten. Versuche die Ansicht noch einmal zu laden.',
+    crashRetry: 'Erneut versuchen',
     packagedFood: 'Verpacktes Lebensmittel',
     gatewayMultipleDishes: 'Auf dem Foto sind mehrere Gerichte. Fotografiere eines nach dem anderen.',
     gatewayUnexpected: 'Da ist etwas schiefgelaufen. Bitte versuche es erneut.',

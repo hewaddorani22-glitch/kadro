@@ -195,7 +195,7 @@ export default function ProgressScreen() {
             {units === 'uk' ? (
               <View style={styles.weightInputRow}>
                 <TextInput
-                  accessibilityLabel={`${t.progress.weightLabel} — stone`}
+                  accessibilityLabel={t.progress.weightLabel(t.progress.unitStone)}
                   autoFocus
                   keyboardType="number-pad"
                   onChangeText={setStoneInput}
@@ -205,7 +205,7 @@ export default function ProgressScreen() {
                 />
                 <Text style={styles.weightUnit}>st</Text>
                 <TextInput
-                  accessibilityLabel={`${t.progress.weightLabel} — pounds`}
+                  accessibilityLabel={t.progress.weightLabel(t.progress.unitPounds)}
                   keyboardType="decimal-pad"
                   onChangeText={setStonePounds}
                   selectTextOnFocus
@@ -217,7 +217,9 @@ export default function ProgressScreen() {
             ) : (
               <View style={styles.weightInputRow}>
                 <TextInput
-                  accessibilityLabel={t.progress.weightLabel}
+                  accessibilityLabel={t.progress.weightLabel(
+                    units === 'metric' ? t.progress.unitKilograms : t.progress.unitPounds,
+                  )}
                   autoFocus
                   keyboardType="decimal-pad"
                   onChangeText={setWeightInput}

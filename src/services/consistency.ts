@@ -1,5 +1,6 @@
 import { Meal } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
+import { getLocale } from '@/i18n/active';
 
 export type DayProtein = {
   key: string;
@@ -15,7 +16,13 @@ export type DayProtein = {
 
 // Narrow German weekdays collide: Mo and Mi are both "M", Di and Do both "D".
 // Two letters cost nothing and are actually readable.
-const SHORT_WEEKDAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+/**
+ * Weekday initials from the platform, not a hardcoded German list: the strip
+ * read "Do Fr Sa So Mo Di Mi" to English users.
+ */
+function shortWeekday(date: Date, locale: string) {
+  return new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date);
+}
 
 /**
  * Protein per day for the last `days` days.
@@ -38,7 +45,7 @@ export function proteinByDay(meals: Meal[], targetProtein: number, days = 7): Da
 
     return {
       key,
-      label: SHORT_WEEKDAYS[date.getDay()],
+      label: shortWeekday(date, getLocale()),
       protein,
       ratio: Math.min(1.2, protein / safeTarget),
       // 90% counts as reached: demanding the exact number would make the strip

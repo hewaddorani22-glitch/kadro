@@ -58,6 +58,44 @@ for (const file of sources) {
   }
 }
 
+// --- No literal words rendered straight into JSX ---------------------------
+// A word list only catches German it recognises: "Flexibel" has no umlaut and
+// shipped to English readers on the last onboarding step, even though the
+// dictionary key for it already existed. Any word rendered as JSX text without
+// coming from the dictionary is suspect, whatever language it is in.
+// The brand, and unit symbols that are the same word in every language we
+// ship. Everything else belongs in the dictionary.
+const literalAllowed = new Set(['KANDRO', 'Kandro', 'kcal', 'kJ']);
+for (const file of sources) {
+  const source = await readFile(file, 'utf8');
+  source.split('\n').forEach((line, index) => {
+    for (const match of line.matchAll(/>([A-Za-zÄÖÜäöüß][A-Za-zÄÖÜäöüß' ]{3,})</g)) {
+      const text = match[1].trim();
+      if (literalAllowed.has(text)) continue;
+      failures.push(
+        `hardcoded interface text "${text}" at ${relative(projectRoot, file)}:${index + 1} — it must come from the dictionary`,
+      );
+    }
+  });
+}
+
+// --- Dates and weekdays must come from the platform ------------------------
+// A hardcoded weekday list showed "Do Fr Sa So Mo Di Mi" to English readers on
+// the progress strip.
+const consistency = await readFile(resolve(projectRoot, 'src/services/consistency.ts'), 'utf8');
+assertNoHardcodedWeekdays(consistency, 'src/services/consistency.ts');
+
+function assertNoHardcodedWeekdays(source, label) {
+  const german = /\[\s*'(?:So|Mo|Di|Mi|Do|Fr|Sa)'/;
+  const english = /\[\s*'(?:Sun|Mon|Tue|Wed|Thu|Fri|Sat)'/;
+  if (german.test(source) || english.test(source)) {
+    failures.push(`${label}: weekday names must come from Intl, not a hardcoded list`);
+  }
+  if (!/Intl\.DateTimeFormat/.test(source)) {
+    failures.push(`${label}: expected the weekday label to be formatted with Intl`);
+  }
+}
+
 // --- No German left inside the English dictionaries ------------------------
 // Proper nouns stay German on purpose: they are the names of the sources we
 // are licensed to credit, and translating them would break the attribution.

@@ -301,39 +301,43 @@ export default function OnboardingScreen() {
             {step === 'height' ? (
               <View style={styles.unitStep}>
                 <UnitToggle onChange={setUnitSystem} value={unitSystem} />
-                {usesMetricHeight(unitSystem) ? (
-                  <NumberStep max={220} min={130} onChange={setHeight} step={1} unit="cm" value={height} />
-                ) : (
-                  <NumberStep
-                    format={(inches) => `${Math.floor(inches / 12)}′ ${inches % 12}″`}
-                    max={cmToTotalInches(220)}
-                    min={cmToTotalInches(130)}
-                    onChange={(inches) => setHeight(totalInchesToCm(inches))}
-                    step={1}
-                    unit=""
-                    value={cmToTotalInches(height)}
-                  />
-                )}
+                <View style={styles.unitStepValue}>
+                  {usesMetricHeight(unitSystem) ? (
+                    <NumberStep max={220} min={130} onChange={setHeight} step={1} unit="cm" value={height} />
+                  ) : (
+                    <NumberStep
+                      format={(inches) => `${Math.floor(inches / 12)}′ ${inches % 12}″`}
+                      max={cmToTotalInches(220)}
+                      min={cmToTotalInches(130)}
+                      onChange={(inches) => setHeight(totalInchesToCm(inches))}
+                      step={1}
+                      unit=""
+                      value={cmToTotalInches(height)}
+                    />
+                  )}
+                </View>
               </View>
             ) : null}
             {step === 'weight' ? (
               <View style={styles.unitStep}>
                 <UnitToggle onChange={setUnitSystem} value={unitSystem} />
-                {usesMetricWeight(unitSystem) ? (
-                  <NumberStep max={200} min={40} onChange={setWeight} step={1} unit="kg" value={weight} />
-                ) : (
-                  <NumberStep
-                    format={(pounds) => (unitSystem === 'uk'
-                      ? formatWeight(poundsToKg(pounds), 'uk', locale)
-                      : String(pounds))}
-                    max={Math.round(kgToPounds(200))}
-                    min={Math.round(kgToPounds(40))}
-                    onChange={(pounds) => setWeight(Math.round(poundsToKg(pounds) * 10) / 10)}
-                    step={1}
-                    unit={unitSystem === 'uk' ? '' : 'lb'}
-                    value={Math.round(kgToPounds(weight))}
-                  />
-                )}
+                <View style={styles.unitStepValue}>
+                  {usesMetricWeight(unitSystem) ? (
+                    <NumberStep max={200} min={40} onChange={setWeight} step={1} unit="kg" value={weight} />
+                  ) : (
+                    <NumberStep
+                      format={(pounds) => (unitSystem === 'uk'
+                        ? formatWeight(poundsToKg(pounds), 'uk', locale)
+                        : String(pounds))}
+                      max={Math.round(kgToPounds(200))}
+                      min={Math.round(kgToPounds(40))}
+                      onChange={(pounds) => setWeight(Math.round(poundsToKg(pounds) * 10) / 10)}
+                      step={1}
+                      unit={unitSystem === 'uk' ? '' : 'lb'}
+                      value={Math.round(kgToPounds(weight))}
+                    />
+                  )}
+                </View>
               </View>
             ) : null}
 
@@ -503,16 +507,32 @@ function NumberStep({ format, max, min, onChange, step, unit, value }: { format?
 
   useEffect(() => stop, [stop]);
 
+  const display = String(format ? format(value) : value);
+
   return (
     <View style={styles.numberStep}>
       <StepperButton icon="remove" label={t.common.decreaseUnit(unit)} onPressIn={() => start(-1)} onPressOut={stop} />
       <View style={styles.numberCenter}>
-        <Text adjustsFontSizeToFit numberOfLines={1} style={styles.number}>{format ? format(value) : value}</Text>
-        {unit ? <Text style={styles.numberUnit}>{unit}</Text> : null}
+        <View style={styles.numberRow}>
+          <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.number, numberSize(display)]}>{display}</Text>
+          {unit ? <Text style={styles.numberUnit}>{unit}</Text> : null}
+        </View>
       </View>
       <StepperButton icon="add" label={t.common.increaseUnit(unit)} onPressIn={() => start(1)} onPressOut={stop} />
     </View>
   );
+}
+
+/**
+ * adjustsFontSizeToFit is an iOS-only prop, so on every other surface a long
+ * value keeps its full size: "12 st 4 lb" at 76pt overlapped both stepper
+ * buttons by 46 points. Sizing from the string is deterministic and works
+ * everywhere.
+ */
+function numberSize(display: string) {
+  if (display.length <= 3) return { fontSize: 76, lineHeight: 86 };
+  if (display.length <= 6) return { fontSize: 52, lineHeight: 62 };
+  return { fontSize: 34, lineHeight: 42 };
 }
 
 function StepperButton({ icon, label, onPressIn, onPressOut }: { icon: 'add' | 'remove'; label: string; onPressIn: () => void; onPressOut: () => void }) {
@@ -562,7 +582,7 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
           <Text style={styles.planStatLabel}>{t.onboarding.estimatedPace}</Text>
         </View>
         <View style={styles.planStat}>
-          <Text numberOfLines={2} style={styles.planStatValue}>Flexibel</Text>
+          <Text numberOfLines={2} style={styles.planStatValue}>{t.onboarding.flexible}</Text>
           <Text style={styles.planStatLabel}>{t.onboarding.mealTimes}</Text>
         </View>
       </View>
@@ -611,17 +631,24 @@ const styles = StyleSheet.create({
   nameField: { gap: 7 },
   nameInput: { minHeight: 64, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 22, fontWeight: '600', paddingHorizontal: 18 },
   numberStep: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  unitStep: { gap: 26, alignItems: 'center' },
+  // 'stretch', not 'center': centring shrank the stepper to its content width,
+  // and its space-between then pressed the number flat against the − and +
+  // circles with no gap at all.
+  unitStep: { flex: 1, justifyContent: 'space-between', paddingBottom: 24 },
   unitToggle: { flexDirection: 'row', gap: 8, alignSelf: 'stretch' },
+  unitStepValue: { flex: 1, justifyContent: 'center' },
   unitOption: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   unitOptionActive: { borderColor: colors.accentDeep, backgroundColor: colors.accent },
   unitLabel: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   unitLabelActive: { color: colors.text },
   numberButton: { width: 64, height: 64, borderRadius: 32, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   numberButtonPressed: { backgroundColor: colors.neutralSoft, transform: [{ scale: 0.94 }] },
-  numberCenter: { flex: 1, minWidth: 0, alignItems: 'center' },
+  numberCenter: { flex: 1, minWidth: 0, alignItems: 'center', paddingHorizontal: 12 },
   number: { color: colors.text, fontSize: 76, lineHeight: 86, fontWeight: '700', letterSpacing: -2.5, fontVariant: ['tabular-nums'] },
-  numberUnit: { color: colors.muted, fontSize: 15, fontWeight: '600', marginTop: -4 },
+  // Beside the value, on its baseline: underneath it read as a caption, and
+  // people reported not seeing the unit at all.
+  numberRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 6 },
+  numberUnit: { color: colors.muted, fontSize: 20, fontWeight: '700' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   chip: { minHeight: 52, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 6 },
   chipSelected: { backgroundColor: colors.accent, borderColor: colors.accent },

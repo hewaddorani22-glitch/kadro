@@ -142,6 +142,26 @@ for (const file of [
   });
   assert.deepEqual(offending, [], `a hardcoded decimal comma ships to English readers at ${offending.join(', ')}`);
 }
+// A screen reader must be told the unit the field actually takes. The label
+// said "Weight in kilograms — stone" on the UK entry.
+const progress = await read('src/app/(tabs)/progress.tsx');
+for (const match of progress.matchAll(/accessibilityLabel=\{([^}]*weightLabel[^}]*)\}/g)) {
+  assert.ok(
+    /weightLabel\(/.test(match[1]),
+    `the weight field label must name its own unit, found: ${match[1].trim()}`,
+  );
+  // The unit must be a dictionary value, never a literal appended to the
+  // label. Check the quoted strings themselves rather than scanning the whole
+  // expression, where a closing quote can start a spurious match.
+  const literals = [...match[1].matchAll(/'([^']*)'|`([^`]*)`/g)].map((m) => m[1] ?? m[2]);
+  for (const literal of literals) {
+    assert.ok(
+      !/stone|pound|kilogram/i.test(literal),
+      `the unit in the label must come from the dictionary, found the literal "${literal}"`,
+    );
+  }
+}
+
 const onboarding = await read('src/app/onboarding.tsx');
 assert.ok(onboarding.includes('UnitToggle'), 'onboarding must let the user pick their units');
 assert.ok(onboarding.includes('usesMetricHeight'), 'the height step must respect the chosen units');
