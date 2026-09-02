@@ -17,12 +17,12 @@ export const detectionSchema = {
         type: 'object',
         additionalProperties: false,
         required: [
-          'nameDe', 'searchTermEn', 'referenceKey', 'estimatedGrams',
+          'name', 'searchTermEn', 'referenceKey', 'estimatedGrams',
           'estimatedGramsLow', 'estimatedGramsHigh', 'preparation',
           'hiddenCaloriesRisk', 'confidence', 'optional',
         ],
         properties: {
-          nameDe: { type: 'string' },
+          name: { type: 'string' },
           searchTermEn: { type: 'string' },
           referenceKey: { type: 'string', enum: [...BLS_REFERENCE_KEYS, 'other'] },
           estimatedGrams: { type: 'integer', minimum: 5, maximum: 2000 },
@@ -41,21 +41,34 @@ export const detectionSchema = {
   },
 };
 
-const accuracyRules = `
-Arbeite konservativ und gib niemals Nährwerte aus.
-- referenceKey: Wähle einen BLS-Schlüssel nur, wenn das komplette erkannte Item genau diesem zusammengesetzten Gericht entspricht. Dann zerlege es nicht zusätzlich. Sonst referenceKey=other.
-- Bei referenceKey=other: Zerlege die Mahlzeit in sichtbare, ernährungsrelevante Zutaten. Suche dafür kurze präzise englische USDA-Begriffe inklusive Zubereitung, z. B. "chicken breast grilled" statt "chicken".
-- Berücksichtige Panade, Käse, Dressing, Sauce und wahrscheinlich verwendetes Bratöl. Unsichtbares Öl oder unklare Sauce erhält hiddenCaloriesRisk=high und confidence=medium.
-- estimatedGrams ist die beste Schätzung. estimatedGramsLow und estimatedGramsHigh bilden den kleinsten realistischen Bereich und müssen low <= best <= high erfüllen.
-- Nutze Tellergröße, Schichtdicke, Stückzahl und typische Portionsgrößen. Verwechsle Volumen nicht mit Gewicht.
+/**
+ * `title` and `name` are shown to the user, so they follow the app's language.
+ * `searchTermEn` is not display text — it is the USDA query — and stays
+ * English whatever the user speaks. The BLS keys stay German because they are
+ * the names of the database entries we are licensed to credit.
+ */
+const OUTPUT_LANGUAGES = { de: 'German', en: 'English' };
 
-Verfügbare BLS-Komplettgerichte:
-${BLS_MODEL_CATALOG}`.trim();
-
-export function photoDetectionPrompt() {
-  return `Analysiere genau eine sichtbare Mahlzeit. Erkenne nur Lebensmittel, die sichtbar oder durch die Zubereitung sehr wahrscheinlich sind. Bei Unschärfe clarity=unclear; bei mehreren getrennten Tellern dishCount>1. ${accuracyRules}`;
+function languageRule(language) {
+  const label = OUTPUT_LANGUAGES[language] ?? OUTPUT_LANGUAGES.en;
+  return `Write "title" and every item "name" in ${label}. Keep "searchTermEn" in English regardless.`;
 }
 
-export function descriptionDetectionPrompt(description) {
-  return `Strukturiere genau die beschriebene Mahlzeit. Übernimm genannte Grammzahlen exakt und erfinde keine nicht genannten Lebensmittel. Unklare Mengen oder Saucen erhalten medium confidence bzw. optional=true. ${accuracyRules}\n\nBeschreibung: ${description}`;
+const accuracyRules = `
+Work conservatively and never output nutrition values.
+- referenceKey: pick a BLS key only when the whole detected item is exactly that composed dish. In that case do not break it down further. Otherwise referenceKey=other.
+- With referenceKey=other: break the meal into visible, nutritionally relevant ingredients. Use short, precise English USDA terms including the preparation, e.g. "chicken breast grilled" rather than "chicken".
+- Account for breading, cheese, dressing, sauce and the frying oil likely used. Invisible oil or an unclear sauce gets hiddenCaloriesRisk=high and confidence=medium.
+- estimatedGrams is the best estimate. estimatedGramsLow and estimatedGramsHigh form the smallest realistic range and must satisfy low <= best <= high.
+- Use plate size, layer thickness, piece count and typical portion sizes. Do not confuse volume with weight.
+
+Available BLS complete dishes:
+${BLS_MODEL_CATALOG}`.trim();
+
+export function photoDetectionPrompt(language = 'en') {
+  return `Analyse exactly one visible meal. Detect only foods that are visible or very likely from the preparation. If the image is blurred, clarity=unclear; with several separate plates, dishCount>1. ${languageRule(language)} ${accuracyRules}`;
+}
+
+export function descriptionDetectionPrompt(description, language = 'en') {
+  return `Structure exactly the meal described. Take stated gram amounts verbatim and do not invent foods that were not named. Unclear amounts or sauces get medium confidence or optional=true. ${languageRule(language)} ${accuracyRules}\n\nDescription: ${description}`;
 }

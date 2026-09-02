@@ -8,6 +8,7 @@ import {
   normalizeSearchTerm,
   toFoodFacts,
   usdaCacheKey,
+  requestedLanguage,
   validateAnalysisInput,
 } from '../_shared/nutrition.mjs';
 import { resolveBlsFacts } from '../_shared/bls-reference.mjs';
@@ -242,7 +243,7 @@ async function analyzePhoto(input: any, admin: any): Promise<Result> {
     return { status: 413, body: { code: 'invalid_input', message: 'Das Foto ist zu groß.' } };
   }
   return resolveDetection(await requestDetection([
-    { type: 'input_text', text: photoDetectionPrompt() },
+    { type: 'input_text', text: photoDetectionPrompt(requestedLanguage(input)) },
     { type: 'input_image', image_url: `data:${input.mimeType};base64,${input.imageBase64}`, detail: imageDetail },
   ]), admin);
 }
@@ -255,7 +256,7 @@ async function analyzeDescription(input: any, admin: any): Promise<Result> {
   }
   return resolveDetection(await requestDetection([{
     type: 'input_text',
-    text: descriptionDetectionPrompt(description),
+    text: descriptionDetectionPrompt(description, requestedLanguage(input)),
   }]), admin, 'text');
 }
 

@@ -12,6 +12,7 @@ export {
   mapUsdaFood,
   normalizeSearchTerm,
   nutrient,
+  requestedLanguage,
   toFoodFacts,
   usdaCacheKey,
   USDA_MATCHER_VERSION,

@@ -25,14 +25,13 @@ async function walk(dir, extension) {
 
 // Umlauts alone are not enough — "Monatlich" and "Dein Tagesstand" have none.
 // These function words are frequent in our own copy and are not English.
-const germanWords = /\b(?:aber|auch|dein|deine|deinen|deiner|dich|dir|ein|eine|einen|für|ist|jederzeit|kannst|keine|mahlzeit|mahlzeiten|mit|monatlich|nicht|noch|nur|oder|sich|sind|über|und|von|werden|wird|wurde)\b/i;
+const germanWords = /\b(?:aber|auch|dein|deine|deinen|deiner|dich|dir|ein|eine|einen|für|ist|jederzeit|kannst|keine|mahlzeit|mahlzeiten|mit|monatlich|nicht|noch|nur|oder|sich|sind|über|und|von|werden|wird|wurde|richtwert|richtwerte|typischer|typische|katalog|zubereitung|tagesstand|mahlzeit)\b/i;
 
 // --- No German text outside the dictionaries -------------------------------
 // Services count too. Checking only the screens is what let a German push
 // notification, German billing lines and German error alerts survive the
 // translation: none of them live in a .tsx file.
 const dictionaryFiles = /src\/i18n\//;
-const germanContent = /src\/(data|services)\/(germanMeals|mockNutrition|catalog)/;
 const sources = [
   ...await walk(resolve(projectRoot, 'src/app'), '.tsx'),
   ...await walk(resolve(projectRoot, 'src/components'), '.tsx'),
@@ -40,12 +39,7 @@ const sources = [
   ...await walk(resolve(projectRoot, 'src/context'), '.tsx'),
   ...await walk(resolve(projectRoot, 'src/utils'), '.ts'),
   ...await walk(resolve(projectRoot, 'src/constants'), '.ts'),
-].filter((file) => {
-  const rel = relative(projectRoot, file);
-  // The German meal catalogue is data, not interface copy: the dish names are
-  // the reference entries we credit, and translating them breaks the lookup.
-  return !dictionaryFiles.test(rel) && !germanContent.test(rel);
-});
+].filter((file) => !dictionaryFiles.test(relative(projectRoot, file)));
 for (const file of sources) {
   const source = await readFile(file, 'utf8');
   const offending = source.split('\n').flatMap((line, index) => {

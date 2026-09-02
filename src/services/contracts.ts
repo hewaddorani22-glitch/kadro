@@ -3,7 +3,9 @@ import { DailyTargets, Meal, MealContext, MealItem, MealSuggestion, Nutrition } 
 export type MealAnalysisInput = {
   imageBase64: string;
   mimeType: 'image/jpeg';
-  locale: 'de-DE';
+  /** Language the detected title and ingredient names come back in. */
+  language: 'de' | 'en';
+  locale: string;
 };
 
 export type MealAnalysisResult = {

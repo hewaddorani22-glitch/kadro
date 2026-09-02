@@ -9,7 +9,7 @@ import {
   supabaseAnonKey,
 } from '@/services/supabaseClient';
 import { MealItem, Nutrition } from '@/types/nutrition';
-import { getDictionary } from '@/i18n/active';
+import { getDictionary, getLanguage, getLocale } from '@/i18n/active';
 
 /**
  * Optional local override for development. When it is unset the app talks to
@@ -17,6 +17,28 @@ import { getDictionary } from '@/i18n/active';
  * provider keys live there, never on the device.
  */
 const localApiUrl = process.env.EXPO_PUBLIC_ANALYSIS_API_URL?.replace(/\/$/, '');
+
+/**
+ * The gateway's own message is German: it is one deployed function serving
+ * every language. Translate by code here so the user reads their own language
+ * without a redeploy, and fall back to the server text only for a code we do
+ * not know yet.
+ */
+function gatewayMessage(code: string | undefined, fallback: string | undefined) {
+  const t = getDictionary().errors;
+  const byCode: Record<string, string> = {
+    invalid_input: t.gatewayInvalidInput,
+    invalid_barcode: t.gatewayInvalidBarcode,
+    product_not_found: t.gatewayProductNotFound,
+    missing_nutrition: t.gatewayMissingNutrition,
+    unauthorized: t.gatewayUnauthorized,
+    provider_error: t.gatewayProviderError,
+    daily_limit_reached: t.gatewayDailyLimit,
+    unclear_image: t.noClearMeal,
+    server_not_configured: t.analysisNotConfigured,
+  };
+  return (code && byCode[code]) || fallback || t.analysisFailed;
+}
 
 export class MealAnalysisError extends Error {
   constructor(
@@ -90,7 +112,10 @@ export async function prepareMealPhoto(photoUri: string): Promise<PreparedMealPh
 
   return {
     imageBase64: result.base64,
-    locale: 'de-DE',
+    // The gateway writes the dish title and the ingredient names in this
+    // language; the USDA search term stays English either way.
+    language: getLanguage(),
+    locale: getLocale(),
     mimeType: 'image/jpeg',
     previewUri: result.uri,
   };
@@ -120,7 +145,7 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
         : payload?.code === 'server_not_configured'
           ? 'not-configured'
           : 'provider-error';
-    throw new MealAnalysisError(kind, payload?.message ?? getDictionary().errors.analysisFailed);
+    throw new MealAnalysisError(kind, gatewayMessage(payload?.code, payload?.message));
   }
   if (!payload?.items?.length) throw new MealAnalysisError('unclear-image', getDictionary().errors.noClearMeal);
   return payload;
@@ -129,7 +154,7 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
 export async function analyzeDescription(description: string): Promise<MealAnalysisResult> {
   return readAnalysisResponse(await gatewayFetch('/v1/describe', {
     method: 'POST',
-    body: { description: description.trim(), locale: 'de-DE' },
+    body: { description: description.trim(), language: getLanguage(), locale: getLocale() },
   }));
 }
 
@@ -146,7 +171,7 @@ export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResul
   const response = await gatewayFetch(`/v1/barcode/${encodeURIComponent(barcode)}`);
   const payload = (await response.json().catch(() => null)) as BarcodePayload | null;
   if (!response.ok || !payload) {
-    throw new MealAnalysisError('provider-error', payload?.message ?? getDictionary().errors.productNotFound);
+    throw new MealAnalysisError('provider-error', gatewayMessage(payload?.code, payload?.message));
   }
   // Whether values exist is decided by the gateway, which sees the raw record.
   // Checking for a positive number here rejected every genuinely zero-calorie

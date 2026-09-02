@@ -366,6 +366,20 @@ export const de = {
    * or an inline error, so they belong in the dictionary like any other copy.
    */
   errors: {
+    catalogSourceLabel: 'Kandro-Katalog · typischer Richtwert',
+    gatewayInvalidInput: 'Die Aufnahme konnte nicht gelesen werden.',
+    gatewayPhotoTooLarge: 'Das Foto ist zu groß.',
+    gatewayDescriptionLength: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.',
+    gatewayInvalidBarcode: 'Der Barcode ist ungültig.',
+    gatewayProductNotFound: 'Das Produkt wurde nicht gefunden.',
+    gatewayMissingNutrition: 'Für dieses Produkt sind keine Nährwerte hinterlegt.',
+    gatewayUnauthorized: 'Bitte öffne Kandro erneut.',
+    gatewayProviderError: 'Die Analyse ist gerade nicht erreichbar.',
+    gatewayDailyLimit: 'Du hast heute sehr viele Mahlzeiten erfasst. Morgen geht es normal weiter.',
+    demoChicken: 'Gegrilltes Hähnchen',
+    demoRice: 'Weißer Reis',
+    demoAvocado: 'Avocado',
+    demoSauce: 'Sesamsauce',
     sessionNotLoaded: 'Die aktuelle Sitzung konnte nicht geladen werden.',
     permanentAccountNotLoaded: 'Das permanente Konto konnte nicht geladen werden.',
     tooManyEmails: 'Bitte warte kurz, bevor du eine neue E-Mail anforderst.',

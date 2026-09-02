@@ -13,10 +13,12 @@ import { Dictionary, Language, dictionaryFor, localeTag } from '@/i18n';
  */
 let active: Dictionary = dictionaryFor('en');
 let activeLocale = localeTag('en');
+let activeLanguage: Language = 'en';
 
 export function setActiveDictionary(language: Language) {
   active = dictionaryFor(language);
   activeLocale = localeTag(language);
+  activeLanguage = language;
 }
 
 export function getDictionary(): Dictionary {
@@ -26,4 +28,9 @@ export function getDictionary(): Dictionary {
 /** BCP 47 tag for number and date formatting outside React. */
 export function getLocale() {
   return activeLocale;
+}
+
+/** The active language, for code that picks a data file rather than a string. */
+export function getLanguage(): Language {
+  return activeLanguage;
 }

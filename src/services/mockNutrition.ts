@@ -1,4 +1,5 @@
-import { DailyTargets, Meal, MealContext, MealItem, MealSuggestion, Nutrition, PortionFactor } from '@/types/nutrition';
+import { getDictionary } from '@/i18n/active';
+import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor } from '@/types/nutrition';
 
 export const DEFAULT_TARGETS: DailyTargets = {
   calories: 2230,
@@ -7,27 +8,10 @@ export const DEFAULT_TARGETS: DailyTargets = {
   fat: 72,
 };
 
-export const INITIAL_MEALS: Meal[] = [
-  {
-    id: 'breakfast-1',
-    title: 'Skyr mit Beeren und Granola',
-    type: 'Breakfast',
-    time: '08:12',
-    calories: 430,
-    protein: 40,
-    carbs: 52,
-    fat: 9,
-    fiber: 8,
-    confidence: 'high',
-    items: [],
-    origin: 'seed',
-  },
-];
-
 export const DETECTED_ITEMS: MealItem[] = [
   {
     id: 'chicken',
-    name: 'Gegrilltes Hähnchen',
+    name: getDictionary().errors.demoChicken,
     amountG: 180,
     baseAmountG: 180,
     portionFactor: 1,
@@ -42,7 +26,7 @@ export const DETECTED_ITEMS: MealItem[] = [
   },
   {
     id: 'rice',
-    name: 'Weißer Reis',
+    name: getDictionary().errors.demoRice,
     amountG: 220,
     baseAmountG: 220,
     portionFactor: 1,
@@ -57,7 +41,7 @@ export const DETECTED_ITEMS: MealItem[] = [
   },
   {
     id: 'avocado',
-    name: 'Avocado',
+    name: getDictionary().errors.demoAvocado,
     amountG: 70,
     baseAmountG: 70,
     portionFactor: 1,
@@ -72,7 +56,7 @@ export const DETECTED_ITEMS: MealItem[] = [
   },
   {
     id: 'sauce',
-    name: 'Sesamsauce',
+    name: getDictionary().errors.demoSauce,
     amountG: 30,
     baseAmountG: 30,
     portionFactor: 1,
@@ -101,7 +85,7 @@ export function nutritionFromItems(items: MealItem[]): Nutrition {
   );
 }
 
-export function createScannedMeal(items: MealItem[], title = 'Hähnchen-Reis-Bowl', id = 'scan-chicken-bowl'): Meal {
+export function createScannedMeal(items: MealItem[], title = getDictionary().errors.demoMealTitle, id = 'scan-chicken-bowl'): Meal {
   const now = new Date();
   const hour = now.getHours();
   return {
@@ -146,7 +130,7 @@ export function createPlannedMeal(suggestion: MealSuggestion, portion: PortionFa
     confidence: 'medium',
     optional: false,
     included: true,
-    source: suggestion.source ?? { provider: 'kandro-catalog', label: 'Kandro-Katalog · typischer Richtwert' },
+    source: suggestion.source ?? { provider: 'kandro-catalog', label: getDictionary().errors.catalogSourceLabel },
   };
 
   return {
@@ -183,20 +167,3 @@ export function getRemaining(targets: DailyTargets, consumed: Nutrition): Nutrit
   };
 }
 
-export const SUGGESTIONS: Record<MealContext, MealSuggestion[]> = {
-  home: [
-    { id: 'home-1', title: 'Kräuter-Hähnchen-Teller', detail: 'Hähnchen, Kartoffeln, Gemüse und Joghurt', time: '20 Min.', calories: 520, protein: 46, carbs: 48, fat: 14 },
-    { id: 'home-2', title: 'Eier-Taco-Bowl', detail: 'Eier, schwarze Bohnen, Salsa und Reis', time: '15 Min.', calories: 485, protein: 40, carbs: 52, fat: 11 },
-    { id: 'home-3', title: 'Warmer Thunfisch-Nudelsalat', detail: 'Thunfisch, Nudeln, Tomaten und Rucola', time: '18 Min.', calories: 505, protein: 43, carbs: 57, fat: 10 },
-  ],
-  supermarket: [
-    { id: 'market-1', title: 'Proteinreiche Skyr-Bowl', detail: 'Skyr, Beeren, Haferflocken und Mandeln', time: 'Ohne Kochen', calories: 440, protein: 42, carbs: 47, fat: 9 },
-    { id: 'market-2', title: 'Hähnchen-Wrap und Skyr', detail: 'Ein frischer Wrap und ein Natur-Skyr', time: 'Direkt essen', calories: 510, protein: 48, carbs: 56, fat: 12 },
-    { id: 'market-3', title: 'Protein-Sandwich und Obst', detail: 'Vollkorn-Hähnchen-Sandwich und Apfel', time: 'Direkt essen', calories: 485, protein: 39, carbs: 61, fat: 10 },
-  ],
-  'eating-out': [
-    { id: 'out-1', title: 'Hähnchen-Pho', detail: 'Klare Brühe, extra Hähnchen und Kräuter', time: 'Vietnamesisch', calories: 500, protein: 41, carbs: 58, fat: 9 },
-    { id: 'out-2', title: 'Gegrillter Hähnchensalat', detail: 'Dressing separat, dazu Kartoffeln', time: 'Bistro', calories: 470, protein: 45, carbs: 38, fat: 14 },
-    { id: 'out-3', title: 'Proteinreiches Sushi-Set', detail: 'Sashimi, Edamame und sechs Maki', time: 'Japanisch', calories: 530, protein: 43, carbs: 62, fat: 11 },
-  ],
-};

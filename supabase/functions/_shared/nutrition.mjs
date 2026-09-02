@@ -1,3 +1,12 @@
+/**
+ * The display language for the detected title and ingredient names. An older
+ * build sends nothing, and an unknown value is not worth a 400: falling back to
+ * the app's default language is the safe reading.
+ */
+export function requestedLanguage(input) {
+  return input?.language === 'de' ? 'de' : 'en';
+}
+
 export function validateAnalysisInput(input) {
   return input?.mimeType === 'image/jpeg'
     && typeof input?.imageBase64 === 'string'
@@ -189,7 +198,7 @@ export function buildMealItem(item, facts, index) {
   if (!facts) {
     return {
       id: `detected-${index}`,
-      name: item.nameDe,
+      name: item.name,
       amountG: item.estimatedGrams,
       baseAmountG: item.estimatedGrams,
       portionFactor: 1,
@@ -210,7 +219,7 @@ export function buildMealItem(item, facts, index) {
   const referenceId = String(facts.referenceId || facts.fdcId || 'unknown');
   return {
     id: `${provider}-${referenceId}-${index}`,
-    name: item.nameDe,
+    name: item.name,
     amountG: item.estimatedGrams,
     baseAmountG: item.estimatedGrams,
     portionFactor: 1,

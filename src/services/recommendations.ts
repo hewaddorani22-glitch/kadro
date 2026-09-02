@@ -1,4 +1,7 @@
-import catalog from '@/data/mealCatalog.de.json';
+import dietaryTerms from '@/data/dietaryTerms.json';
+import catalogDe from '@/data/mealCatalog.de.json';
+import catalogEn from '@/data/mealCatalog.en.json';
+import { getDictionary, getLanguage } from '@/i18n/active';
 import { MealContext, MealSuggestion, Nutrition } from '@/types/nutrition';
 
 type CatalogEntry = Omit<MealSuggestion, 'contexts' | 'preferences' | 'source'> & {
@@ -6,11 +9,18 @@ type CatalogEntry = Omit<MealSuggestion, 'contexts' | 'preferences' | 'source'> 
   tags: string[];
 };
 
-const porkWords = /schwein|speck|schinken|salami/i;
-const lactoseWords = /skyr|joghurt|käse|quark|kefir|milch|mozzarella|ricotta|halloumi|frischkäse/i;
+/**
+ * The dietary words live in a shared file because both catalogues describe the
+ * same 200 meals and must filter identically. A German-only word list silently
+ * stopped excluding pork and dairy the moment the app also spoke English.
+ */
+const porkWords = new RegExp(dietaryTerms.pork.join('|'), 'i');
+const lactoseWords = new RegExp(dietaryTerms.lactose.join('|'), 'i');
+/** "without cheese" names an absence; matching it would hide a safe meal. */
+const negated = /\b(?:ohne|without|no)\s+\S+/gi;
 
 function matchesDietaryConstraints(entry: CatalogEntry, preferences: string[]) {
-  const copy = `${entry.title} ${entry.detail}`;
+  const copy = `${entry.title} ${entry.detail}`.replace(negated, ' ');
   if (preferences.includes('vegetarian') && !entry.tags.some((tag) => tag === 'vegetarian' || tag === 'vegan')) return false;
   if (preferences.includes('pork-free') && porkWords.test(copy)) return false;
   if (preferences.includes('lactose-free') && lactoseWords.test(copy)) return false;
@@ -39,7 +49,8 @@ export function recommendMeals(
   remaining: Nutrition,
   preferences: string[] = [],
 ): MealSuggestion[] {
-  return (catalog as CatalogEntry[])
+  const catalog = (getLanguage() === 'de' ? catalogDe : catalogEn) as CatalogEntry[];
+  return catalog
     .filter((entry) => entry.context === context)
     .filter((entry) => matchesDietaryConstraints(entry, preferences))
     .map((entry) => ({ entry, score: score(entry, remaining, preferences) }))
@@ -51,6 +62,6 @@ export function recommendMeals(
       preferences: entry.tags,
       // These are hand-built typical values, not sourced measurements. Calling
       // them "geprüft" claimed a provenance the catalog does not have.
-      source: { provider: 'kandro-catalog', label: 'Kandro-Katalog · typischer Richtwert' },
+      source: { provider: 'kandro-catalog', label: getDictionary().errors.catalogSourceLabel },
     }));
 }

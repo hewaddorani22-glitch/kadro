@@ -10,6 +10,7 @@ import {
   detectionSchema,
   normalizeSearchTerm,
   photoDetectionPrompt,
+  requestedLanguage,
   resolveBlsFacts,
   toFoodFacts,
   usdaCacheKey,
@@ -103,17 +104,17 @@ async function requestDetection(content) {
   return JSON.parse(extractResponseText(await response.json()));
 }
 
-async function detectFoods({ imageBase64, mimeType }) {
+async function detectFoods({ imageBase64, mimeType, language }) {
   return requestDetection([
-    { type: 'input_text', text: photoDetectionPrompt() },
+    { type: 'input_text', text: photoDetectionPrompt(language) },
     { type: 'input_image', image_url: `data:${mimeType};base64,${imageBase64}`, detail: imageDetail },
   ]);
 }
 
-async function detectDescription(description) {
+async function detectDescription(description, language) {
   return requestDetection([{
     type: 'input_text',
-    text: descriptionDetectionPrompt(description),
+    text: descriptionDetectionPrompt(description, language),
   }]);
 }
 
@@ -151,7 +152,7 @@ async function analyzeMeal(input) {
     return { status: 400, body: { code: 'invalid_input', message: 'Ungültiges Fotoformat.' } };
   }
 
-  const detection = await detectFoods(input);
+  const detection = await detectFoods({ ...input, language: requestedLanguage(input) });
   return resolveDetection(detection);
 }
 
@@ -169,7 +170,7 @@ async function analyzeDescription(input) {
   if (description.length < 3 || description.length > 500) {
     return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
   }
-  return resolveDetection(await detectDescription(description), 'text');
+  return resolveDetection(await detectDescription(description, requestedLanguage(input)), 'text');
 }
 
 async function lookupBarcode(barcode) {
