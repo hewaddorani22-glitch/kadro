@@ -292,6 +292,7 @@ export const de = {
     proText: 'Unbegrenzte Scans und neue Aufstellungen freischalten.',
   },
   progress: {
+    weightChartLabel: (count: number) => `Gewichtsverlauf mit ${count} Messungen`,
     eyebrow: 'Letzte 7 Tage',
     title: 'Dein Verlauf',
     proteinReached: 'PROTEINZIEL ERREICHT',
@@ -360,7 +361,66 @@ export const de = {
     wellness: 'Kandro liefert allgemeine Wellness-Schätzungen und ist kein medizinischer Dienst. Nährwerte: Bundeslebensmittelschlüssel 4.0 (Max Rubner-Institut, CC BY 4.0), USDA FoodData Central und Open Food Facts.',
     version: 'Kandro · Version 1.0.0',
   },
+  /**
+   * Messages raised outside React, in services. They reach the user as an alert
+   * or an inline error, so they belong in the dictionary like any other copy.
+   */
+  errors: {
+    sessionNotLoaded: 'Die aktuelle Sitzung konnte nicht geladen werden.',
+    permanentAccountNotLoaded: 'Das permanente Konto konnte nicht geladen werden.',
+    tooManyEmails: 'Bitte warte kurz, bevor du eine neue E-Mail anforderst.',
+    wrongCredentials: 'E-Mail oder Passwort ist nicht korrekt.',
+    codeExpired: 'Der Code ist abgelaufen oder nicht korrekt.',
+    noConnection: 'Keine Verbindung. Der Scan wurde lokal vorgemerkt.',
+    analysisNotConfigured: 'Die Analyse ist noch nicht eingerichtet.',
+    photoNotPrepared: 'Das Foto konnte nicht vorbereitet werden.',
+    noClearMeal: 'Es wurde keine eindeutige Mahlzeit erkannt.',
+    analysisFailed: 'Die Analyse konnte nicht abgeschlossen werden.',
+    productNotFound: 'Das Produkt wurde nicht gefunden.',
+    billingSetupMissing: 'Der Abo-Dienst ist noch nicht eingerichtet.',
+    offeringMissing: 'Im Abo-Dienst fehlen noch das aktuelle Angebot oder seine Monats-/Jahrespakete.',
+    billingStatusFailed: 'Der Abo-Status konnte gerade nicht geladen werden.',
+    demoMealTitle: 'Hähnchen-Reis-Bowl',
+    packageUnavailable: 'Dieses Paket ist im aktuellen Angebot noch nicht verfügbar.',
+    sessionUnavailable: 'Die Sitzung ist gerade nicht verfügbar. Der Scan wurde vorgemerkt.',
+    portionStartValue: 'Startwert pro 100 g – passe die tatsächlich gegessene Menge im nächsten Schritt an.',
+    deletionSessionGone: 'Die aktuelle Kontositzung ist nicht mehr verfügbar.',
+    deletionExpired: 'Deine Sitzung ist abgelaufen. Öffne Kandro erneut und versuche die Löschung noch einmal.',
+    deletionUnreachable: 'Die sichere Löschfunktion ist gerade nicht erreichbar. Bitte prüfe deine Verbindung und versuche es erneut.',
+    deletionFailed: 'Der Account konnte gerade nicht gelöscht werden.',
+    cloudNotConfigured: 'Die Cloud ist für diese App noch nicht eingerichtet.',
+    invalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+    linkingLostId: 'Die Kontoverknüpfung konnte die bestehende User-ID nicht sicher erhalten.',
+    confirmEmailFirst: 'Bestätige zuerst deine E-Mail-Adresse.',
+    linkingNotEnabled: 'Die sichere Kontoverknüpfung muss im Kandro-Projekt noch aktiviert werden.',
+    emailAlreadyUsed: 'Diese E-Mail gehört bereits zu einem Konto. Nutze unten „Vorhandenes Konto laden“.',
+    linkingFailed: 'Die Kontoverknüpfung ist gerade nicht möglich. Bitte versuche es erneut.',
+    billingKeyMismatch: 'Der Abo-Schlüssel passt nicht zu dieser Umgebung.',
+    billingUnreachable: 'Der Abo-Dienst ist gerade nicht erreichbar. Bitte prüfe deine Verbindung.',
+    billingNotConfigured: 'Der Abo-Dienst ist für diesen Build noch nicht eingerichtet.',
+  },
+  /**
+   * Paywall price lines. These are the § 3.1.2 disclosure a reviewer reads, so
+   * they have to appear in the reviewer's language, not only in German.
+   */
+  billing: {
+    pricePerPeriod: (price: string, yearly: boolean) => `${price} / ${yearly ? 'Jahr' : 'Monat'}`,
+    perMonth: (price: string) => `${price} pro Monat`,
+    yearlyBilling: 'Jährliche Abrechnung',
+    monthlyFlexible: 'Flexibel, jederzeit kündbar',
+    billingLine: (price: string, yearly: boolean) =>
+      `${price} pro ${yearly ? 'Jahr' : 'Monat'}. Automatische Verlängerung, jederzeit im Store kündbar.`,
+    trialPeriod: (count: number, unit: 'day' | 'week' | 'month' | 'year') => {
+      const nouns = { day: ['Tag', 'Tage'], week: ['Woche', 'Wochen'], month: ['Monat', 'Monate'], year: ['Jahr', 'Jahre'] };
+      return `${count} ${count === 1 ? nouns[unit][0] : nouns[unit][1]}`;
+    },
+  },
   evening: {
+    morningTitle: 'Dein Tag ist aufgestellt',
+    morningBody: (calories: string, protein: number, breakfastProtein: number) =>
+      `Heute rund ${calories} kcal und ${protein} g Protein. Fürs Frühstück reichen ${breakfastProtein} g+.`,
+    notificationTitle: 'Dein Tag ist zusammengefasst',
+    notificationBody: 'Ein Blick, und du weißt, wie der Tag gelaufen ist.',
     title: 'Tagesabschluss',
     close: 'Schließen',
     share: 'Tag teilen',

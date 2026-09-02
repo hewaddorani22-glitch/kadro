@@ -147,7 +147,7 @@ export default function OnboardingScreen() {
   }, [step]);
 
   const draftProfile = useMemo<UserProfile>(() => ({
-    displayName: displayName.trim() || 'Du',
+    displayName: displayName.trim(),
     goal,
     age,
     heightCm: height,
@@ -347,7 +347,7 @@ export default function OnboardingScreen() {
               <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/terms'); }}><Text style={styles.consentLink}>{t.onboarding.consentTerms}</Text></Pressable>
             </View>
             {consentError ? <Text accessibilityLiveRegion="assertive" style={styles.consentError}>{consentError}</Text> : null}
-            <PrimaryButton disabled={consentBusy} icon="checkmark" label={consentBusy ? 'Einen Moment …' : 'Einverstanden, los geht’s'} onPress={() => void acceptConsent()} />
+            <PrimaryButton disabled={consentBusy} icon="checkmark" label={consentBusy ? t.common.moment : t.onboarding.consentAccept} onPress={() => void acceptConsent()} />
             <PrimaryButton disabled={consentBusy} label={t.common.back} onPress={() => setShowConsent(false)} variant="ghost" />
           </View>
         </View>

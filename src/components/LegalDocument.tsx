@@ -3,16 +3,12 @@ import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Screen } from '@/components/ui';
-import { legalVersion } from '@/constants/legal';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import type { LegalCopy } from '@/i18n/legal.de';
 import { colors, radii } from '@/constants/theme';
 
-export type LegalSection = {
-  title: string;
-  paragraphs: string[];
-};
-
-export function LegalDocument({ title, intro, sections }: { title: string; intro: string; sections: LegalSection[] }) {
+export function LegalDocument({ document, version }: { document: LegalCopy; version: string }) {
+  const { title, intro, sections } = document;
   const router = useRouter();
   const { t } = useLanguage();
   return (
@@ -26,7 +22,7 @@ export function LegalDocument({ title, intro, sections }: { title: string; intro
       </View>
       <View style={styles.heading}>
         <Text accessibilityRole="header" style={styles.title}>{title}</Text>
-        <Text style={styles.version}>{t.common.versionPrefix} {legalVersion}</Text>
+        <Text style={styles.version}>{t.common.versionPrefix} {version}</Text>
         <Text style={styles.intro}>{intro}</Text>
       </View>
       {sections.map((section) => (

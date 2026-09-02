@@ -1,5 +1,6 @@
 import { User } from '@supabase/supabase-js';
 
+import { getDictionary } from '@/i18n/active';
 import {
   ensureSupabaseUser,
   enableCloudSyncAfterDeletion,
@@ -24,19 +25,19 @@ function stateFromUser(user: User | null): AccountLinkState {
 }
 
 function requireClient() {
-  if (!supabase || !isSupabaseConfigured) throw new Error('Supabase ist für diese App noch nicht eingerichtet.');
+  if (!supabase || !isSupabaseConfigured) throw new Error(getDictionary().errors.cloudNotConfigured);
   return supabase;
 }
 
 function normalizeEmail(email: string) {
   const normalized = email.trim().toLocaleLowerCase('de-DE');
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new Error('Bitte gib eine gültige E-Mail-Adresse ein.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new Error(getDictionary().errors.invalidEmail);
   return normalized;
 }
 
 function assertSameUser(expectedUserId: string, user: User | null) {
   if (!user || user.id !== expectedUserId) {
-    throw new Error('Die Kontoverknüpfung konnte die bestehende User-ID nicht sicher erhalten.');
+    throw new Error(getDictionary().errors.linkingLostId);
   }
   rememberSupabaseUser(user);
   return user;
@@ -69,7 +70,7 @@ export async function enableNewCloudAccount(): Promise<AccountLinkState> {
 export async function requestEmailLink(email: string): Promise<AccountLinkState> {
   const client = requireClient();
   const user = await currentUser();
-  if (!user) throw new Error('Die aktuelle Sitzung konnte nicht geladen werden.');
+  if (!user) throw new Error(getDictionary().errors.sessionNotLoaded);
   if (!user.is_anonymous) return stateFromUser(user);
 
   const normalizedEmail = normalizeEmail(email);
@@ -89,7 +90,7 @@ export async function resendEmailLink(email: string) {
 export async function verifyEmailLink(email: string, token: string): Promise<AccountLinkState> {
   const client = requireClient();
   const user = await currentUser();
-  if (!user) throw new Error('Die aktuelle Sitzung konnte nicht geladen werden.');
+  if (!user) throw new Error(getDictionary().errors.sessionNotLoaded);
   const normalizedToken = token.replace(/\s/g, '');
   if (!/^\d{6,8}$/.test(normalizedToken)) throw new Error('Der Code muss aus 6 bis 8 Ziffern bestehen.');
 
@@ -105,7 +106,7 @@ export async function verifyEmailLink(email: string, token: string): Promise<Acc
 export async function refreshEmailLink(): Promise<AccountLinkState> {
   const client = requireClient();
   const user = await currentUser();
-  if (!user) throw new Error('Die aktuelle Sitzung konnte nicht geladen werden.');
+  if (!user) throw new Error(getDictionary().errors.sessionNotLoaded);
   const { data, error } = await client.auth.refreshSession();
   if (error) throw error;
   return stateFromUser(assertSameUser(user.id, data.user));
@@ -114,7 +115,7 @@ export async function refreshEmailLink(): Promise<AccountLinkState> {
 export async function setAccountPassword(password: string): Promise<AccountLinkState> {
   const client = requireClient();
   const user = await currentUser();
-  if (!user || user.is_anonymous || !user.email) throw new Error('Bestätige zuerst deine E-Mail-Adresse.');
+  if (!user || user.is_anonymous || !user.email) throw new Error(getDictionary().errors.confirmEmailFirst);
   if (password.length < 8) throw new Error('Das Passwort muss mindestens 8 Zeichen lang sein.');
   const { data, error } = await client.auth.updateUser({ password });
   if (error) throw error;
@@ -126,7 +127,7 @@ export async function signInToExistingAccount(email: string, password: string): 
   if (password.length < 8) throw new Error('Das Passwort muss mindestens 8 Zeichen lang sein.');
   const { data, error } = await client.auth.signInWithPassword({ email: normalizeEmail(email), password });
   if (error) throw error;
-  if (!data.user || data.user.is_anonymous) throw new Error('Das permanente Konto konnte nicht geladen werden.');
+  if (!data.user || data.user.is_anonymous) throw new Error(getDictionary().errors.permanentAccountNotLoaded);
   rememberSupabaseUser(data.user);
   return stateFromUser(data.user);
 }
@@ -134,10 +135,10 @@ export async function signInToExistingAccount(email: string, password: string): 
 export function accountLinkErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   const normalized = message.toLocaleLowerCase('en-US');
-  if (normalized.includes('manual linking')) return 'Die sichere Kontoverknüpfung muss im Kandro-Projekt noch aktiviert werden.';
-  if (normalized.includes('already') || normalized.includes('registered')) return 'Diese E-Mail gehört bereits zu einem Konto. Nutze unten „Vorhandenes Konto laden“.';
-  if (normalized.includes('rate') || normalized.includes('seconds')) return 'Bitte warte kurz, bevor du eine neue E-Mail anforderst.';
-  if (normalized.includes('invalid login')) return 'E-Mail oder Passwort ist nicht korrekt.';
-  if (normalized.includes('token') || normalized.includes('otp')) return 'Der Code ist abgelaufen oder nicht korrekt.';
-  return message || 'Die Kontoverknüpfung ist gerade nicht möglich. Bitte versuche es erneut.';
+  if (normalized.includes('manual linking')) return getDictionary().errors.linkingNotEnabled;
+  if (normalized.includes('already') || normalized.includes('registered')) return getDictionary().errors.emailAlreadyUsed;
+  if (normalized.includes('rate') || normalized.includes('seconds')) return getDictionary().errors.tooManyEmails;
+  if (normalized.includes('invalid login')) return getDictionary().errors.wrongCredentials;
+  if (normalized.includes('token') || normalized.includes('otp')) return getDictionary().errors.codeExpired;
+  return message || getDictionary().errors.linkingFailed;
 }

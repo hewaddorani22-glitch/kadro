@@ -1,18 +1,21 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 
+import { getDictionary, getLocale } from '@/i18n/active';
 import { Meal } from '@/types/nutrition';
 
-export function formatNumber(value: number, locale = 'de-DE') {
+/**
+ * The locale defaults to the active language rather than to German: a caller
+ * that forgets to pass one used to silently format 1950 as "1.950" for an
+ * English reader.
+ */
+export function formatNumber(value: number, locale = getLocale()) {
   return value.toLocaleString(locale);
 }
 
 type MealLabels = { mealBreakfast: string; mealLunch: string; mealDinner: string; mealSnack: string };
 
 export function mealTypeLabel(type: Meal['type'], labels?: MealLabels) {
-  const fallback: MealLabels = {
-    mealBreakfast: 'Frühstück', mealLunch: 'Mittagessen', mealDinner: 'Abendessen', mealSnack: 'Snack',
-  };
-  const source = labels ?? fallback;
+  const source = labels ?? getDictionary().common;
   return {
     Breakfast: source.mealBreakfast,
     Lunch: source.mealLunch,

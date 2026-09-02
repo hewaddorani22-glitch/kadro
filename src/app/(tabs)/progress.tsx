@@ -216,7 +216,7 @@ function WeightChart({ entries }: { entries: { date: string; weightKg: number }[
   const min = Math.min(...shown.map((entry) => entry.weightKg));
   const max = Math.max(...shown.map((entry) => entry.weightKg));
   return (
-    <View accessibilityLabel={`Gewichtsverlauf mit ${shown.length} Messungen`} style={styles.chart}>
+    <View accessibilityLabel={t.progress.weightChartLabel(shown.length)} style={styles.chart}>
       {[0, 1, 2].map((line) => <View key={line} style={[styles.gridLine, { top: `${line * 45 + 5}%` }]} />)}
       <View style={styles.bars}>
         {shown.map((entry, index) => {

@@ -8,6 +8,7 @@ import Purchases, {
 } from 'react-native-purchases';
 
 import { ensureSupabaseUser } from '@/services/supabaseClient';
+import { getDictionary } from '@/i18n/active';
 
 export type SubscriptionPlanId = 'yearly' | 'monthly';
 
@@ -95,21 +96,16 @@ function trialLabelFrom(product: PurchasesPackage['product']): string | null {
   const count = intro.periodNumberOfUnits ?? 0;
   if (count < 1) return null;
 
-  const unit = String(intro.periodUnit ?? '').toUpperCase();
-  const nouns: Record<string, [string, string]> = {
-    DAY: ['Tag', 'Tage'],
-    WEEK: ['Woche', 'Wochen'],
-    MONTH: ['Monat', 'Monate'],
-    YEAR: ['Jahr', 'Jahre'],
-  };
-  const noun = nouns[unit];
-  if (!noun) return null;
-  return `${count} ${count === 1 ? noun[0] : noun[1]}`;
+  const units = { DAY: 'day', WEEK: 'week', MONTH: 'month', YEAR: 'year' } as const;
+  const unit = units[String(intro.periodUnit ?? '').toUpperCase() as keyof typeof units];
+  if (!unit) return null;
+  return getDictionary().billing.trialPeriod(count, unit);
 }
 
 function toPlan(id: SubscriptionPlanId, purchasePackage: PurchasesPackage | null): SubscriptionPlan | null {
   if (!purchasePackage) return null;
   const { product } = purchasePackage;
+  const t = getDictionary();
   const yearly = id === 'yearly';
   const hasFreeTrial = Boolean(product.introPrice && product.introPrice.price === 0);
   const monthlyEquivalent = yearly
@@ -118,13 +114,13 @@ function toPlan(id: SubscriptionPlanId, purchasePackage: PurchasesPackage | null
   return {
     id,
     package: purchasePackage,
-    price: `${product.priceString} / ${yearly ? 'Jahr' : 'Monat'}`,
+    price: t.billing.pricePerPeriod(product.priceString, yearly),
     detail: yearly && product.pricePerMonthString
-      ? `${product.pricePerMonthString} pro Monat`
+      ? t.billing.perMonth(product.pricePerMonthString)
       : yearly
-        ? 'Jährliche Abrechnung'
-        : 'Flexibel, jederzeit kündbar',
-    billing: `${product.priceString} pro ${yearly ? 'Jahr' : 'Monat'}. Automatische Verlängerung, jederzeit im Store kündbar.`,
+        ? t.billing.yearlyBilling
+        : t.billing.monthlyFlexible,
+    billing: t.billing.billingLine(product.priceString, yearly),
     hasFreeTrial,
     trialLabel: trialLabelFrom(product),
     priceAmount: product.price,
@@ -160,13 +156,13 @@ export async function loadSubscriptionSnapshot(): Promise<SubscriptionSnapshot> 
 }
 
 export async function purchaseSubscription(plan: SubscriptionPlan) {
-  if (!(await ensureRevenueCatConfigured())) throw new Error('RevenueCat ist noch nicht eingerichtet.');
+  if (!(await ensureRevenueCatConfigured())) throw new Error(getDictionary().errors.billingSetupMissing);
   const { customerInfo } = await Purchases.purchasePackage(plan.package);
   return hasPro(customerInfo);
 }
 
 export async function restoreSubscription() {
-  if (!(await ensureRevenueCatConfigured())) throw new Error('RevenueCat ist noch nicht eingerichtet.');
+  if (!(await ensureRevenueCatConfigured())) throw new Error(getDictionary().errors.billingSetupMissing);
   return hasPro(await Purchases.restorePurchases());
 }
 
@@ -179,9 +175,14 @@ export function isSubscriptionPurchaseCancelled(error: unknown) {
 export function subscriptionErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   const normalized = message.toLocaleLowerCase('en-US');
-  if (normalized.includes('invalid api key')) return 'Der RevenueCat-Schlüssel passt nicht zu dieser Umgebung.';
-  if (normalized.includes('offering') || normalized.includes('package')) return 'In RevenueCat fehlen noch das aktuelle Offering oder seine Monats-/Jahrespakete.';
-  if (normalized.includes('network')) return 'RevenueCat ist gerade nicht erreichbar. Bitte prüfe deine Verbindung.';
-  if (normalized.includes('not configured') || normalized.includes('nicht eingerichtet')) return 'RevenueCat ist für diesen Build noch nicht eingerichtet.';
-  return message || 'Der Abo-Status konnte gerade nicht geladen werden.';
+  const t = getDictionary();
+  // The provider speaks English; our own thrown messages come from the
+  // dictionary, so match those by value instead of by a German fragment that
+  // stopped matching the moment the app also spoke English.
+  const ownSetupError = message === t.errors.billingSetupMissing || message === t.errors.billingNotConfigured;
+  if (normalized.includes('invalid api key')) return t.errors.billingKeyMismatch;
+  if (normalized.includes('offering') || normalized.includes('package')) return t.errors.offeringMissing;
+  if (normalized.includes('network')) return t.errors.billingUnreachable;
+  if (normalized.includes('not configured') || ownSetupError) return t.errors.billingNotConfigured;
+  return message || t.errors.billingStatusFailed;
 }

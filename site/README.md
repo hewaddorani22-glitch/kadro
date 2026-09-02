@@ -21,9 +21,33 @@ und die App verweist im Datenschutz und in den Bedingungen darauf:
 | `/terms` | EULA-Verweis auf der Paywall |
 | `/impressum` | § 5 DDG, Pflicht für gewerbliche Anbieter in Deutschland |
 
-Die Texte auf `/privacy` und `/terms` sind wortgleich mit den Screens in der
-App. **Wenn du einen davon änderst, ändere beide** — eine Abweichung zwischen
-App und Website fällt im Review auf.
+## Die Rechtstexte nicht von Hand bearbeiten
+
+`/privacy`, `/terms`, `/sources` und ihre englischen Gegenstücke unter `/en/`
+werden aus den Wörterbüchern der App erzeugt:
+
+```
+src/i18n/legal.de.ts  →  site/privacy|terms|sources/index.html
+src/i18n/legal.en.ts  →  site/en/privacy|terms|sources/index.html
+```
+
+Text ändern heißt: die `.ts`-Datei ändern und `npm run site:legal` laufen
+lassen. `npm run verify` bricht ab, wenn die HTML-Dateien nicht mehr zur App
+passen.
+
+Vorher stand hier „ändere beide von Hand". Das hat nicht funktioniert: die
+Website sprach von „Account-ID", die App von „Supabase-IDs", und § 4 hatte in
+beiden eine andere Überschrift. Genau so eine Abweichung fällt im Review auf.
+
+## Zweisprachigkeit
+
+Deutsch liegt in der Wurzel, Englisch unter `/en/`. Jede übersetzte Seite trägt
+`canonical` plus `hreflang` für `de`, `en` und `x-default` (Standard ist die
+deutsche Seite). `npm run validate:site` prüft, dass jeder interne Link
+auflöst und die Sprachpaare aufeinander zeigen.
+
+Das Impressum bleibt bewusst nur auf Deutsch — § 5 DDG ist deutsches Recht und
+die Pflichtangaben sind an die deutschen Begriffe gebunden.
 
 ## Domain anschließen — der einzige offene Schritt
 

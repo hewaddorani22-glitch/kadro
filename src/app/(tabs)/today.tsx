@@ -24,7 +24,7 @@ export default function TodayScreen() {
   const hour = new Date().getHours();
   const daypart = hour < 11 ? t.today.goodMorning : hour < 18 ? t.today.goodDay : t.today.goodEvening;
   const eveningReady = hour >= 18;
-  const greeting = userName === 'Du' ? daypart : `${daypart}, ${userName}`;
+  const greeting = userName.trim() ? `${daypart}, ${userName}` : daypart;
   const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
   const calorieRange = `${Math.max(300, calorieCenter - 50)}–${calorieCenter + 50}`;
   const proteinCenter = Math.round(Math.min(45, Math.max(28, remaining.protein * 0.48)) / 5) * 5;
@@ -55,12 +55,12 @@ export default function TodayScreen() {
   return (
     <Screen>
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerCopy}>
           <Text style={styles.date}>{dateLabel}</Text>
           <Text style={styles.greeting}>{greeting}</Text>
         </View>
         <Pressable accessibilityLabel={t.common.openProfile} onPress={() => router.push('/(tabs)/profile')} style={styles.avatar}>
-          <Text style={styles.avatarText}>{userName === 'Du' ? 'K' : userName.trim().charAt(0).toUpperCase()}</Text>
+          <Text style={styles.avatarText}>{userName.trim().charAt(0).toUpperCase() || 'K'}</Text>
         </Pressable>
       </View>
 
@@ -213,9 +213,12 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  // The greeting has to yield to the avatar: "Good afternoon, <name>" is far
+  // longer than "Guten Tag" and ran underneath it.
+  headerCopy: { flex: 1, paddingRight: 12 },
   date: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   greeting: { color: colors.text, fontSize: 28, lineHeight: 35, fontWeight: '700', letterSpacing: -0.8, marginTop: 5 },
-  avatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 44, height: 44, flexShrink: 0, borderRadius: 22, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: colors.white, fontSize: 15, fontWeight: '800' },
   pendingBanner: { minHeight: 66, borderRadius: radii.card, backgroundColor: colors.attentionSoft, borderWidth: 1, borderColor: colors.attention, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 11 },
   pendingIcon: { width: 38, height: 38, borderRadius: 14, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },

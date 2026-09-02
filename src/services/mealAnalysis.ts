@@ -9,6 +9,7 @@ import {
   supabaseAnonKey,
 } from '@/services/supabaseClient';
 import { MealItem, Nutrition } from '@/types/nutrition';
+import { getDictionary } from '@/i18n/active';
 
 /**
  * Optional local override for development. When it is unset the app talks to
@@ -48,17 +49,17 @@ async function gatewayFetch(path: string, init?: { method: 'POST'; body: unknown
         body: JSON.stringify(init.body),
       } : undefined);
     } catch {
-      throw new MealAnalysisError('offline', 'Keine Verbindung. Der Scan wurde lokal vorgemerkt.');
+      throw new MealAnalysisError('offline', getDictionary().errors.noConnection);
     }
   }
 
   if (!functionsBaseUrl || !supabaseAnonKey) {
-    throw new MealAnalysisError('not-configured', 'Die Analyse ist noch nicht eingerichtet.');
+    throw new MealAnalysisError('not-configured', getDictionary().errors.analysisNotConfigured);
   }
 
   const accessToken = await getAccessToken().catch(() => null);
   if (!accessToken) {
-    throw new MealAnalysisError('offline', 'Die Sitzung ist gerade nicht verfügbar. Der Scan wurde vorgemerkt.');
+    throw new MealAnalysisError('offline', getDictionary().errors.sessionUnavailable);
   }
 
   try {
@@ -72,7 +73,7 @@ async function gatewayFetch(path: string, init?: { method: 'POST'; body: unknown
       ...(init ? { body: JSON.stringify(init.body) } : {}),
     });
   } catch {
-    throw new MealAnalysisError('offline', 'Keine Verbindung. Der Scan wurde lokal vorgemerkt.');
+    throw new MealAnalysisError('offline', getDictionary().errors.noConnection);
   }
 }
 
@@ -84,7 +85,7 @@ export async function prepareMealPhoto(photoUri: string): Promise<PreparedMealPh
   );
 
   if (!result.base64) {
-    throw new MealAnalysisError('provider-error', 'Das Foto konnte nicht vorbereitet werden.');
+    throw new MealAnalysisError('provider-error', getDictionary().errors.photoNotPrepared);
   }
 
   return {
@@ -119,9 +120,9 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
         : payload?.code === 'server_not_configured'
           ? 'not-configured'
           : 'provider-error';
-    throw new MealAnalysisError(kind, payload?.message ?? 'Die Analyse konnte nicht abgeschlossen werden.');
+    throw new MealAnalysisError(kind, payload?.message ?? getDictionary().errors.analysisFailed);
   }
-  if (!payload?.items?.length) throw new MealAnalysisError('unclear-image', 'Es wurde keine eindeutige Mahlzeit erkannt.');
+  if (!payload?.items?.length) throw new MealAnalysisError('unclear-image', getDictionary().errors.noClearMeal);
   return payload;
 }
 
@@ -145,7 +146,7 @@ export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResul
   const response = await gatewayFetch(`/v1/barcode/${encodeURIComponent(barcode)}`);
   const payload = (await response.json().catch(() => null)) as BarcodePayload | null;
   if (!response.ok || !payload) {
-    throw new MealAnalysisError('provider-error', payload?.message ?? 'Das Produkt wurde nicht gefunden.');
+    throw new MealAnalysisError('provider-error', payload?.message ?? getDictionary().errors.productNotFound);
   }
   // Whether values exist is decided by the gateway, which sees the raw record.
   // Checking for a positive number here rejected every genuinely zero-calorie
@@ -154,7 +155,7 @@ export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResul
   return {
     title: payload.name,
     confidence: 'high',
-    warnings: ['Startwert pro 100 g – passe die tatsächlich gegessene Menge im nächsten Schritt an.'],
+    warnings: [getDictionary().errors.portionStartValue],
     items: [{
       id: `barcode-${payload.barcode}`,
       name: payload.name,

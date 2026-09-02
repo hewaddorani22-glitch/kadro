@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
+import { getDictionary, getLocale } from '@/i18n/active';
+
 const REMINDER_KEY = '@kandro/evening-reminder:v1';
 const OFFER_SEEN_KEY = '@kandro/reminder-offer-seen:v1';
 const IDENTIFIER = 'kandro-evening-summary';
@@ -64,13 +66,16 @@ export async function markReminderOfferSeen() {
 }
 
 async function scheduleEveningReminder() {
+  // Read the dictionary at scheduling time: the notification is written once
+  // and fires days later, so it has to carry the language chosen back then.
+  const t = getDictionary();
   await Notifications.cancelScheduledNotificationAsync(IDENTIFIER).catch(() => undefined);
   await Notifications.scheduleNotificationAsync({
     identifier: IDENTIFIER,
     content: {
-      title: 'Dein Tag ist zusammengefasst',
+      title: t.evening.notificationTitle,
       // No streaks, no guilt, no numbers the user has not seen yet.
-      body: 'Ein Blick, und du weißt, wie der Tag gelaufen ist.',
+      body: t.evening.notificationBody,
       data: { route: '/evening' },
       ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}),
     },
@@ -90,12 +95,19 @@ async function scheduleEveningReminder() {
  * from the plan it describes.
  */
 async function scheduleMorningReminder(calories: number, protein: number) {
+  const t = getDictionary();
   await Notifications.cancelScheduledNotificationAsync(MORNING_IDENTIFIER).catch(() => undefined);
   await Notifications.scheduleNotificationAsync({
     identifier: MORNING_IDENTIFIER,
     content: {
-      title: 'Dein Tag ist aufgestellt',
-      body: `Heute rund ${new Intl.NumberFormat('de-DE').format(calories)} kcal und ${protein} g Protein. Fürs Frühstück reichen ${Math.round((protein * 0.22) / 5) * 5} g+.`,
+      title: t.evening.morningTitle,
+      // The locale has to follow the language too: a hardcoded de-DE turns
+      // 1950 into "1.950" on an English phone.
+      body: t.evening.morningBody(
+        new Intl.NumberFormat(getLocale()).format(calories),
+        protein,
+        Math.round((protein * 0.22) / 5) * 5,
+      ),
       data: { route: '/(tabs)/today' },
       ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}),
     },

@@ -33,6 +33,7 @@ import { isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/sup
 import { captureOperationalError, countBucket, trackEvent } from '@/services/telemetry';
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
+import { getDictionary } from '@/i18n/active';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
 type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode';
@@ -128,7 +129,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [lifetimeScanCount, setLifetimeScanCount] = useState(0);
   const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([]);
   const [detectedItems, setDetectedItems] = useState<MealItem[]>(DETECTED_ITEMS);
-  const [mealTitle, setMealTitle] = useState('Hähnchen-Reis-Bowl');
+  const [mealTitle, setMealTitle] = useState(getDictionary().errors.demoMealTitle);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [scanId, setScanId] = useState(makeScanId);
   const [scanMode, setScanMode] = useState<ScanMode>('demo');
@@ -321,7 +322,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setDescriptionInput('');
     setBarcodeInput('');
     setDetectedItems(DETECTED_ITEMS);
-    setMealTitle('Hähnchen-Reis-Bowl');
+    setMealTitle(getDictionary().errors.demoMealTitle);
     setAnalysisStatus('idle');
     setAnalysisError(null);
     setAnalysisMessage(null);
@@ -369,7 +370,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     if (forceDemo || activeScanMode === 'demo') {
       await new Promise((resolve) => setTimeout(resolve, 1900));
       setDetectedItems(DETECTED_ITEMS);
-      setMealTitle('Hähnchen-Reis-Bowl');
+      setMealTitle(getDictionary().errors.demoMealTitle);
       setAnalysisStatus('ready');
       trackEvent('meal analysis completed', {
         confidence: DETECTED_ITEMS.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
@@ -414,7 +415,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     } catch (error) {
       const failure = error instanceof MealAnalysisError
         ? error
-        : new MealAnalysisError('provider-error', 'Die Analyse konnte nicht abgeschlossen werden.');
+        : new MealAnalysisError('provider-error', getDictionary().errors.analysisFailed);
       const shouldQueue = activeScanMode === 'live' || activeScanMode === 'queued'
         ? input && (failure.kind === 'offline' || failure.kind === 'provider-error')
         : false;
@@ -486,7 +487,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     photoUriRef.current = null;
     scanModeRef.current = 'demo';
     setDetectedItems(DETECTED_ITEMS);
-    setMealTitle('Hähnchen-Reis-Bowl');
+    setMealTitle(getDictionary().errors.demoMealTitle);
     setPhotoUri(null);
     setScanId(makeScanId());
     setScanMode('demo');
@@ -510,7 +511,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setLifetimeScanCount(0);
     setWeightEntries([]);
     setDetectedItems(DETECTED_ITEMS);
-    setMealTitle('Hähnchen-Reis-Bowl');
+    setMealTitle(getDictionary().errors.demoMealTitle);
     setPhotoUri(null);
     setScanId(makeScanId());
     setScanMode('demo');

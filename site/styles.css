@@ -220,3 +220,12 @@ main .wrap.wide > div.card { max-width: 720px; }
 .next .r { font-size: 10px; color: var(--muted); margin-top: 6px; font-variant-numeric: tabular-nums; }
 
 .caption { font-size: 12px; color: var(--muted); text-align: center; margin-top: 12px; }
+
+/* Language switch: a quieter sibling of the nav links, so it reads as a
+   setting rather than another section of the site. */
+nav.site a.lang {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 11px;
+  font-size: 13px;
+}

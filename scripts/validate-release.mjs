@@ -15,13 +15,14 @@ import 'dotenv/config';
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relative) => readFile(resolve(projectRoot, relative), 'utf8');
 
-const [appJsonRaw, privacy, terms, sources, paywall, legalConstants] = await Promise.all([
+const [appJsonRaw, legalDe, legalEn, paywall, legalConstants, dictDe, dictEn] = await Promise.all([
   read('app.json'),
-  read('src/app/privacy.tsx'),
-  read('src/app/terms.tsx'),
-  read('src/app/sources.tsx'),
+  read('src/i18n/legal.de.ts'),
+  read('src/i18n/legal.en.ts'),
   read('src/app/paywall.tsx'),
   read('src/constants/legal.ts'),
+  read('src/i18n/de.ts'),
+  read('src/i18n/en.ts'),
 ]);
 const appJson = JSON.parse(appJsonRaw);
 
@@ -49,7 +50,7 @@ for (const [name, value] of Object.entries(process.env)) {
 // --- Copy that must not ship ----------------------------------------------
 // Text telling a reviewer the app is a draft is an instant completeness fail.
 const draftWords = /MVP|Entwurf|Platzhalter|noch nicht fertig|vor der externen|TODO|FIXME/i;
-for (const [label, contents] of [['privacy', privacy], ['terms', terms], ['sources', sources], ['legal constants', legalConstants]]) {
+for (const [label, contents] of [['German legal copy', legalDe], ['English legal copy', legalEn], ['legal constants', legalConstants]]) {
   const offending = contents
     .split('\n')
     .filter((line) => draftWords.test(line) && !line.trimStart().startsWith('*') && !line.trimStart().startsWith('//'));
@@ -59,9 +60,42 @@ for (const [label, contents] of [['privacy', privacy], ['terms', terms], ['sourc
 }
 
 // --- Subscription disclosure (App Review 3.1.2) ----------------------------
-for (const required of ['Verlängert sich automatisch', 'Apple-ID', 'Wiederherstellen']) {
-  if (!paywall.includes(required)) {
-    blockers.push(`the paywall must state "${required}" before the purchase`);
+// The paywall renders from the dictionaries, so the disclosure has to hold in
+// every language we ship — a German-only assertion passed while an English
+// buyer saw nothing about renewal.
+for (const key of ['renewalYear', 'renewalMonth', 'renewalTail', 'restore', 'terms', 'privacy']) {
+  if (!paywall.includes(`t.paywall.${key}`)) {
+    blockers.push(`the paywall must render t.paywall.${key} before the purchase`);
+  }
+}
+// Pin each disclosure to its own key. Matching the phrase anywhere in the
+// paywall section is too loose: a neighbouring line kept the check green while
+// the annual plan had lost its renewal sentence.
+const disclosures = {
+  de: {
+    renewalYear: [/Verlängert sich automatisch um 12 Monate/, /bis du kündigst/],
+    renewalMonth: [/Verlängert sich automatisch um 1 Monat/, /bis du kündigst/],
+    renewalTail: [/Apple-ID/, /24 Stunden vor Ablauf/],
+  },
+  en: {
+    renewalYear: [/Renews automatically every 12 months/, /until you cancel/],
+    renewalMonth: [/Renews automatically every month/, /until you cancel/],
+    renewalTail: [/Apple ID/, /24 hours before the period ends/],
+  },
+};
+for (const [language, dictionary] of [['de', dictDe], ['en', dictEn]]) {
+  const section = dictionary.slice(dictionary.indexOf('  paywall: {'));
+  for (const [key, patterns] of Object.entries(disclosures[language])) {
+    const line = section.split('\n').find((entry) => entry.trimStart().startsWith(`${key}:`));
+    if (!line) {
+      blockers.push(`the ${language} paywall copy is missing ${key}`);
+      continue;
+    }
+    for (const pattern of patterns) {
+      if (!pattern.test(line)) {
+        blockers.push(`${language} paywall ${key} must state ${pattern.source.replace(/\\/g, '')}`);
+      }
+    }
   }
 }
 

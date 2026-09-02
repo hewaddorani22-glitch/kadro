@@ -1,7 +1,8 @@
 import { ActivityLevel, DailyTargets, NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
+import { getDictionary } from '@/i18n/active';
 
 export const DEFAULT_PROFILE: UserProfile = {
-  displayName: 'Du',
+  displayName: '',
   goal: 'lose',
   age: 29,
   heightCm: 178,
@@ -75,14 +76,14 @@ type GoalLabels = { goalLose: string; goalMaintain: string; goalGain: string };
 type ActivityLabels = { activityLow: string; activityLight: string; activityHigh: string };
 
 export function goalLabel(goal: NutritionGoal, labels?: GoalLabels) {
-  const source = labels ?? { goalLose: 'Reduzieren', goalMaintain: 'Halten', goalGain: 'Stärker werden' };
+  const source = labels ?? getDictionary().common;
   if (goal === 'maintain') return source.goalMaintain;
   if (goal === 'gain') return source.goalGain;
   return source.goalLose;
 }
 
 export function activityLabel(activity: ActivityLevel, labels?: ActivityLabels) {
-  const source = labels ?? { activityLow: 'Meist sitzend', activityLight: 'Leicht aktiv', activityHigh: 'Sehr aktiv' };
+  const source = labels ?? getDictionary().common;
   if (activity === 'low') return source.activityLow;
   if (activity === 'high') return source.activityHigh;
   return source.activityLight;

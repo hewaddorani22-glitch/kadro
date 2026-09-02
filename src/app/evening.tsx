@@ -56,7 +56,7 @@ export default function EveningScreen() {
       : t.evening.headlineOk;
 
   const shareDay = async () => {
-    const name = userName === 'Du' ? '' : `${userName}: `;
+    const name = userName.trim() ? `${userName}: ` : '';
     await Share.share({
       message: logged
         ? `${name}${formatNumber(consumed.calories, locale)} / ${formatNumber(targets.calories, locale)} kcal · ${consumed.protein} g ${t.common.protein} · ${dateLabel}. Kandro.`

@@ -9,11 +9,17 @@ import {
   localeTag,
   saveLanguage,
 } from '@/i18n';
+import { setActiveDictionary } from '@/i18n/active';
+import { syncEveningReminder } from '@/services/reminders';
+import { LegalCopySet, legalDe } from '@/i18n/legal.de';
+import { legalEn } from '@/i18n/legal.en';
 
 type LanguageContextValue = {
   language: Language;
   /** Dictionary for the active language. */
   t: Dictionary;
+  /** Privacy, terms and sources copy; kept word-for-word in sync with getkandro.com. */
+  legal: LegalCopySet;
   locale: string;
   ready: boolean;
   setLanguage: (language: Language) => Promise<void>;
@@ -41,16 +47,26 @@ export function LanguageProvider({ children }: PropsWithChildren) {
 
   const setLanguage = useCallback(async (next: Language) => {
     setLanguageState(next);
+    setActiveDictionary(next);
     await saveLanguage(next);
+    // A notification is written once and fires days later, so an already
+    // scheduled reminder would keep speaking the old language.
+    await syncEveningReminder().catch(() => undefined);
   }, []);
 
-  const value = useMemo<LanguageContextValue>(() => ({
+  const value = useMemo<LanguageContextValue>(() => {
+    // Publish during render, not in an effect: a service called from the very
+    // first screen must already see the right language.
+    setActiveDictionary(language);
+    return {
     language,
     t: dictionaryFor(language),
+    legal: language === 'de' ? legalDe : legalEn,
     locale: localeTag(language),
     ready,
     setLanguage,
-  }), [language, ready, setLanguage]);
+    };
+  }, [language, ready, setLanguage]);
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }

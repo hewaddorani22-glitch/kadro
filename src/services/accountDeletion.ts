@@ -8,6 +8,7 @@ import {
 } from '@/services/supabaseClient';
 import { clearRemindersAfterAccountDeletion } from '@/services/reminders';
 import { clearTelemetryAfterAccountDeletion } from '@/services/telemetry';
+import { getDictionary } from '@/i18n/active';
 
 export async function deleteKandroAccount() {
   if (!supabase || !isSupabaseConfigured) {
@@ -17,7 +18,7 @@ export async function deleteKandroAccount() {
 
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) throw sessionError;
-  if (!sessionData.session) throw new Error('Die aktuelle Kontositzung ist nicht mehr verfügbar.');
+  if (!sessionData.session) throw new Error(getDictionary().errors.deletionSessionGone);
 
   const { error } = await supabase.functions.invoke('delete-account', { method: 'DELETE' });
   if (error) throw error;
@@ -37,10 +38,10 @@ export function accountDeletionErrorMessage(error: unknown) {
   const message = error instanceof Error ? error.message : '';
   const normalized = message.toLocaleLowerCase('en-US');
   if (normalized.includes('session') || normalized.includes('jwt') || normalized.includes('unauthorized')) {
-    return 'Deine Sitzung ist abgelaufen. Öffne Kandro erneut und versuche die Löschung noch einmal.';
+    return getDictionary().errors.deletionExpired;
   }
   if (normalized.includes('function') || normalized.includes('fetch') || normalized.includes('network')) {
-    return 'Die sichere Löschfunktion ist gerade nicht erreichbar. Bitte prüfe deine Verbindung und versuche es erneut.';
+    return getDictionary().errors.deletionUnreachable;
   }
-  return message || 'Der Account konnte gerade nicht gelöscht werden.';
+  return message || getDictionary().errors.deletionFailed;
 }

@@ -11,6 +11,7 @@ import {
 } from '@/services/subscription';
 import { supabase } from '@/services/supabaseClient';
 import { captureOperationalError } from '@/services/telemetry';
+import { getDictionary } from '@/i18n/active';
 
 type SubscriptionStatus = 'loading' | 'unconfigured' | 'ready' | 'active' | 'error';
 
@@ -60,7 +61,7 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
   const purchase = useCallback(async (planId: SubscriptionPlanId) => {
     const plan = snapshot?.plans[planId];
     if (!plan) {
-      setError('Dieses Paket ist im aktuellen RevenueCat Offering noch nicht verfügbar.');
+      setError(getDictionary().errors.packageUnavailable);
       return 'failed';
     }
     setBusy(true);

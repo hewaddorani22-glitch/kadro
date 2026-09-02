@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy notice — Kandro</title>
+<meta name="description" content="What data the Kandro app processes, why, and how you delete it.">
+<link rel="stylesheet" href="../../styles.css">
+<link rel="icon" href="../../icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../icon.svg">
+<meta name="theme-color" content="#F5F3EE">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Kandro">
+<meta property="og:title" content="Privacy notice — Kandro">
+<meta property="og:description" content="What data the Kandro app processes, why, and how you delete it.">
+<meta property="og:url" content="https://getkandro.com/en/privacy">
+<meta property="og:image" content="https://getkandro.com/social.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Kandro">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="og:locale" content="en_GB">
+<link rel="canonical" href="https://getkandro.com/en/privacy">
+<link rel="alternate" hreflang="en" href="https://getkandro.com/en/privacy">
+<link rel="alternate" hreflang="de" href="https://getkandro.com/privacy">
+<link rel="alternate" hreflang="x-default" href="https://getkandro.com/privacy">
+</head>
+<body>
+<header class="site"><div class="wrap wide"><a class="brand" href="../../"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="../support/">Support</a><a href="../privacy/">Privacy</a><a href="../terms/">Terms</a><a href="../sources/">Data sources</a><a href="../../impressum/">Imprint</a><a class="lang" href="../../privacy/" hreflang="de">Deutsch</a></nav></div></header>
+<main><div class="wrap">
+  <p class="eyebrow">Version 1.0 · Last updated 1 September 2026</p>
+  <h1>Privacy notice</h1>
+  <p class="lead">This notice explains in plain language which data Kandro processes, why, and how you can delete it again at any time.</p>
+
+  <h2>1. Controller and contact</h2>
+  <p>The controller responsible for processing is Hewad Dorani, Altenessener Str. 124, 45326 Essen, Germany.</p>
+  <p>You can reach us for privacy requests and support at <a href="mailto:hewaddorani22@gmail.com">hewaddorani22@gmail.com</a>.</p>
+
+  <h2>2. What data is processed</h2>
+  <p>On your device, Kandro processes your profile, your targets, weight entries, confirmed meals and at most three failed, compressed photo scans kept for a retry you trigger yourself.</p>
+  <p>When the cloud is active, Supabase stores in the EU a random account ID, your profile, your current targets, confirmed meals, ingredients, recommendations and feedback. Weight entries stay on your device; an email address is only stored if you deliberately secure your guest account.</p>
+  <p>PostHog only receives anonymous feature events and sanitised errors, and only if you switch them on. Photos, email addresses, foods, calories, macros and Supabase IDs are not sent to PostHog.</p>
+
+  <h2>3. Photo analysis and recipients</h2>
+  <p>A photo is downscaled on your device. The original is discarded afterwards. The working copy, or a meal description you deliberately typed, goes only to the configured Kandro analysis gateway and from there to OpenRouter or OpenAI for food and portion recognition. USDA FoodData Central is then queried with text search terms only. For a barcode, the number is looked up at Open Food Facts through the Kandro analysis gateway.</p>
+  <p>Confirmed meals contain no photo. The local failure queue is capped at three scans and is cleared once an analysis succeeds.</p>
+
+  <h2>4. Purpose, legal basis and retention</h2>
+  <p>Nutrition and goal data are health data within the meaning of Art. 9 GDPR. The legal basis is your explicit consent under Art. 9(2)(a) GDPR, which you give during onboarding and can withdraw at any time with effect for the future. It is stored with a timestamp and notice version on your device and, when the cloud is active, in your protected profile.</p>
+  <p>Local data remains until you delete the app data or your account. Confirmed meals are stored locally for your history; for the cloud history the app currently loads at most 90 days. Cloud data remains until the account is deleted. Technically necessary backups may expire according to the retention periods of the respective processor.</p>
+
+  <h2>5. Your rights</h2>
+  <p>You can request access, rectification, erasure, restriction and – where applicable – data portability, and you can withdraw consent with effect for the future. Anonymous usage analytics can be switched off at any time under “You”.</p>
+  <p>Under “You → Delete account and data” you can delete your Supabase account, the associated cloud data and your local history. An Apple subscription must additionally be cancelled in your Apple subscription settings.</p>
+  <p>You have the right to lodge a complaint with a supervisory authority; for North Rhine-Westphalia this is the State Commissioner for Data Protection and Freedom of Information NRW.</p>
+
+  <h2>6. Processors and transfers</h2>
+  <p>We use Supabase (database and account, EU region), OpenRouter or OpenAI (image and text analysis), USDA FoodData Central and Open Food Facts (nutrition matching), RevenueCat (subscription management) and optionally PostHog (anonymous usage analytics, EU).</p>
+  <p>For the analysis, data may be transferred to the United States. Analysis requests are configured so that content is not used for training. Photos are processed solely for the duration of the analysis and are not stored permanently.</p>
+</div></main>
+<footer class="site"><div class="wrap wide"><span class="small">© 2026 Hewad Dorani · Essen</span><span class="small"><a href="../support/">Support</a> · <a href="../privacy/">Privacy</a> · <a href="../terms/">Terms</a> · <a href="../sources/">Data sources</a> · <a href="../../impressum/">Imprint</a></span></div></footer>
+</body>
+</html>

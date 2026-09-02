@@ -114,12 +114,29 @@ export async function saveLifetimeScanCount(count: number): Promise<number> {
   return next;
 }
 
+/** Keeps a stored value only when it is one the app can actually compute with. */
+function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
+  return allowed.includes(value as T) ? (value as T) : fallback;
+}
+
+function positiveNumber(value: unknown, fallback: number) {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
 export async function loadProfile(): Promise<UserProfile> {
   const stored = await readJson<Partial<UserProfile> | null>(PROFILE_KEY, null);
   if (!stored) return DEFAULT_PROFILE;
+  // A stored value the app no longer knows — from an older build, a corrupted
+  // write, or a cloud row written by a newer one — used to reach the target
+  // maths unchecked and surface as "NaN kcal left" on the Today screen.
   return {
     ...DEFAULT_PROFILE,
     ...stored,
+    goal: oneOf(stored.goal, ['lose', 'maintain', 'gain'], DEFAULT_PROFILE.goal),
+    activityLevel: oneOf(stored.activityLevel, ['low', 'light', 'high'], DEFAULT_PROFILE.activityLevel),
+    age: positiveNumber(stored.age, DEFAULT_PROFILE.age),
+    heightCm: positiveNumber(stored.heightCm, DEFAULT_PROFILE.heightCm),
+    weightKg: positiveNumber(stored.weightKg, DEFAULT_PROFILE.weightKg),
     // Profiles written before the rate existed must not deserialize as undefined.
     weeklyRateKg: stored.weeklyRateKg === 0.25 ? 0.25 : 0.5,
     preferences: Array.isArray(stored.preferences) ? stored.preferences.filter((item): item is string => typeof item === 'string') : [],

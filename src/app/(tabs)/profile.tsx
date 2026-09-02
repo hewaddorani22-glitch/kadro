@@ -23,12 +23,22 @@ import {
 import { activityLabel, goalLabel, weeklyRateLabel } from '@/services/personalization';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber } from '@/utils/format';
+import type { Language } from '@/i18n';
+
+/**
+ * Endonyms, not translations: someone who opened the app in the wrong language
+ * has to recognise their own language in the list without reading the rest.
+ */
+const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
+  { value: 'en', label: 'English' },
+  { value: 'de', label: 'Deutsch' },
+];
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { profile, syncMode, targets, userName } = useApp();
   const { status: subscriptionStatus } = useSubscription();
-  const { locale, t } = useLanguage();
+  const { language, locale, setLanguage, t } = useLanguage();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const reminderTime = `${String(REMINDER_HOUR).padStart(2, '0')}:${String(REMINDER_MINUTE).padStart(2, '0')}`;
@@ -62,7 +72,7 @@ export default function ProfileScreen() {
         <View style={styles.avatar}><Text style={styles.avatarText}>{userName.trim().charAt(0).toUpperCase() || 'K'}</Text></View>
         <View style={styles.headerCopy}>
           <Eyebrow>{t.profile.eyebrow}</Eyebrow>
-          <PageTitle>{userName}</PageTitle>
+          <PageTitle>{userName.trim() || t.tabs.profile}</PageTitle>
           <Text style={styles.subtitle}>
             {syncMode === 'cloud'
               ? t.profile.syncCloud
@@ -141,6 +151,35 @@ export default function ProfileScreen() {
             onValueChange={(enabled) => void updateAnalytics(enabled)}
             value={analyticsEnabled}
           />
+        </Card>
+      </View>
+
+      <View style={styles.section}>
+        <SectionTitle>{t.profile.language}</SectionTitle>
+        <Card style={styles.listCard}>
+          <View style={styles.toggleRow}>
+            <View style={styles.rowIcon}><Ionicons color={colors.text} name="language-outline" size={20} /></View>
+            <View style={styles.rowCopy}>
+              <Text style={styles.rowLabel}>{t.profile.language}</Text>
+              <Text style={styles.rowDetail}>{t.profile.languageDetail}</Text>
+            </View>
+          </View>
+          <View style={styles.languageChoice}>
+            {LANGUAGE_OPTIONS.map((option) => {
+              const active = option.value === language;
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  key={option.value}
+                  onPress={() => void setLanguage(option.value)}
+                  style={[styles.languageOption, active && styles.languageOptionActive]}
+                >
+                  <Text style={[styles.languageLabel, active && styles.languageLabelActive]}>{option.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </Card>
       </View>
 
@@ -233,6 +272,11 @@ const styles = StyleSheet.create({
   listCard: { padding: 8 },
   toggleRow: { minHeight: 78, padding: 9, flexDirection: 'row', alignItems: 'center', gap: 11 },
   disabledRow: { opacity: 0.55 },
+  languageChoice: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 16 },
+  languageOption: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  languageOptionActive: { borderColor: colors.text, backgroundColor: colors.text },
+  languageLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  languageLabelActive: { color: colors.surface },
   menuRow: { minHeight: 58, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 11 },
   rowIcon: { width: 40, height: 40, borderRadius: 15, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   rowCopy: { flex: 1, gap: 3 },

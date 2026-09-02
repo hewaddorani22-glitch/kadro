@@ -13,8 +13,8 @@ const quotaMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901120
 const cacheMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901140000_add_usda_food_cache.sql');
 const accuracyMigrationPath = resolve(projectRoot, 'supabase/migrations/20260901150000_harden_nutrition_accuracy.sql');
 const mealAnalysisPath = resolve(projectRoot, 'src/services/mealAnalysis.ts');
-const sourcesScreenPath = resolve(projectRoot, 'src/app/sources.tsx');
-const [migration, config, accountLinking, emailTemplate, accountDeletion, gateway, quotaMigration, cacheMigration, accuracyMigration, mealAnalysis, sourcesScreen] = await Promise.all([
+const legalCopyPaths = ['src/i18n/legal.de.ts', 'src/i18n/legal.en.ts'].map((p) => resolve(projectRoot, p));
+const [migration, config, accountLinking, emailTemplate, accountDeletion, gateway, quotaMigration, cacheMigration, accuracyMigration, mealAnalysis, ...legalCopy] = await Promise.all([
   readFile(migrationPath, 'utf8'),
   readFile(configPath, 'utf8'),
   readFile(accountLinkingPath, 'utf8'),
@@ -25,7 +25,7 @@ const [migration, config, accountLinking, emailTemplate, accountDeletion, gatewa
   readFile(cacheMigrationPath, 'utf8'),
   readFile(accuracyMigrationPath, 'utf8'),
   readFile(mealAnalysisPath, 'utf8'),
-  readFile(sourcesScreenPath, 'utf8'),
+  ...legalCopyPaths.map((path) => readFile(path, 'utf8')),
 ]);
 
 const tables = [
@@ -148,8 +148,16 @@ if (!mealAnalysis.includes('functionsBaseUrl') || !mealAnalysis.includes('Author
 
 // BLS 4.0 is CC BY 4.0 and Open Food Facts is ODbL: both require the credit to
 // be visible in the shipped product, not just in a repository file.
-for (const credit of ['Max Rubner-Institut', 'CC BY 4.0', 'Open Food Facts', 'USDA FoodData Central', '10.25826/Data20251217-134202-0']) {
-  if (!sourcesScreen.includes(credit)) failures.push(`user-visible attribution missing: ${credit}`);
+// Both licences bind us in every language the app ships, so check each
+// dictionary rather than a single screen.
+for (const [index, copy] of legalCopy.entries()) {
+  const language = index === 0 ? 'German' : 'English';
+  for (const credit of ['Max Rubner-Institut', 'Open Food Facts', 'USDA FoodData Central', '10.25826/Data20251217-134202-0', 'Open Database License (ODbL)']) {
+    if (!copy.includes(credit)) failures.push(`user-visible ${language} attribution missing: ${credit}`);
+  }
+  if (!/Creative Commons (Namensnennung|Attribution) 4\.0 International \(CC BY 4\.0\)/.test(copy)) {
+    failures.push(`the ${language} sources text must name the CC BY 4.0 licence in full`);
+  }
 }
 
 if (failures.length) {
