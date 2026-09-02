@@ -8,7 +8,9 @@ import {
   normalizeSearchTerm,
   toFoodFacts,
   usdaCacheKey,
+  isUsableSearchTerm,
   requestedLanguage,
+  searchTermVariants,
   validateAnalysisInput,
 } from '../_shared/nutrition.mjs';
 import { resolveBlsFacts } from '../_shared/bls-reference.mjs';
@@ -128,7 +130,7 @@ async function requestDetection(content: unknown[]): Promise<any> {
   return JSON.parse(extractResponseText(await response.json()));
 }
 
-async function searchUsda(term: string): Promise<{ facts: FoodFacts | null; cacheable: boolean }> {
+async function searchUsdaOnce(term: string): Promise<{ facts: FoodFacts | null; cacheable: boolean }> {
   const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -138,6 +140,21 @@ async function searchUsda(term: string): Promise<{ facts: FoodFacts | null; cach
   const result = await response.json();
   const match = chooseFoodMatch(result.foods || [], term);
   return { facts: toFoodFacts(match.food, match), cacheable: match.cacheable };
+}
+
+/**
+ * Tries the model's own term first, then a rewrite. Rejecting a bad match is
+ * right, but leaving the ingredient unpriced when a good row exists under
+ * USDA's own wording is not.
+ */
+async function searchUsda(term: string): Promise<{ facts: FoodFacts | null; cacheable: boolean }> {
+  const first = await searchUsdaOnce(term);
+  if (first.facts) return first;
+  for (const variant of searchTermVariants(term)) {
+    const retry = await searchUsdaOnce(variant);
+    if (retry.facts) return retry;
+  }
+  return first;
 }
 
 /**
@@ -223,12 +240,17 @@ async function resolveDetection(detection: any, admin: any, source: 'photo' | 't
   // deno-lint-ignore no-explicit-any
   const terms = detection.items
     .filter((item: any) => !resolveBlsFacts(item))
-    .map((item: any) => normalizeSearchTerm(item.searchTermEn));
+    .map((item: any) => normalizeSearchTerm(item.searchTermEn))
+    // A term that names no food would be looked up, cached, and then reused for
+    // every other ingredient that produced the same placeholder.
+    .filter(isUsableSearchTerm);
   const facts = await resolveFacts(terms, admin);
   // deno-lint-ignore no-explicit-any
   const items = detection.items.map((item: any, index: number) => {
     const blsFacts = resolveBlsFacts(item);
-    return buildMealItem(item, blsFacts ?? facts.get(normalizeSearchTerm(item.searchTermEn)) ?? null, index);
+    const term = normalizeSearchTerm(item.searchTermEn);
+    const usdaFacts = isUsableSearchTerm(term) ? facts.get(term) ?? null : null;
+    return buildMealItem(item, blsFacts ?? usdaFacts, index);
   });
   const warnings = buildAccuracyWarnings(detection, items);
   return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };

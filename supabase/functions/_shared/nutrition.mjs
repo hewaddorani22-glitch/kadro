@@ -62,8 +62,28 @@ export function normalizeSearchTerm(term) {
   return String(term ?? '').trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 120);
 }
 
+/**
+ * Terms that name a category rather than a food. The model once returned
+ * "other" — the referenceKey sentinel — as the search term for every
+ * ingredient of a plate, so chicken, rice and broccoli all resolved to one
+ * cached row and the whole meal was priced from it. A term that cannot
+ * identify a food must never reach USDA or the cache.
+ */
+const UNUSABLE_SEARCH_TERMS = new Set([
+  'other', 'unknown', 'none', 'n/a', 'na', 'null', 'undefined', 'food', 'meal', 'dish', 'ingredient',
+]);
+
+export function isUsableSearchTerm(term) {
+  const normalized = normalizeSearchTerm(term);
+  if (normalized.length < 3) return false;
+  if (UNUSABLE_SEARCH_TERMS.has(normalized)) return false;
+  // A BLS key is a reference id, not something USDA can look up.
+  if (/^[a-z]+_[a-z_]+$/.test(normalized) && !normalized.includes(' ')) return false;
+  return true;
+}
+
 /** Changing the matcher invalidates previous choices without deleting data. */
-export const USDA_MATCHER_VERSION = 2;
+export const USDA_MATCHER_VERSION = 3;
 
 export function usdaCacheKey(term) {
   return `v${USDA_MATCHER_VERSION}:${normalizeSearchTerm(term)}`;
@@ -77,8 +97,29 @@ const PREPARATION_WORDS = new Set([
 ]);
 
 const LOW_INFORMATION_WORDS = new Set([
-  'and', 'in', 'of', 'the', 'with', 'without', 'style', 'prepared', 'food',
+  'and', 'in', 'of', 'the', 'with', 'without', 'style', 'prepared', 'food', 'as', 'to',
 ]);
+
+/**
+ * USDA bookkeeping that narrows a label without changing the food: "Rice,
+ * cooked, NFS" is still rice. These must not be charged like an extra
+ * ingredient, or a plainly-worded row loses to a terser one from a
+ * higher-priority data set.
+ */
+const QUALIFIER_WORDS = new Set([
+  'nfs', 'ns', 'unspecified', 'form', 'salt', 'added', 'drained', 'includes',
+  'commodity', 'usda', 'variety', 'varieties', 'type', 'types', 'product',
+  'no', 'fresh', 'frozen',
+]);
+
+/**
+ * Fat added during cooking, which USDA sometimes folds into the row. It is not
+ * a different food, but it is a different calorie density, and the model lists
+ * oil as its own ingredient — so an unrequested "cooked with oil" row would be
+ * counted twice.
+ */
+const ADDED_FAT_WORDS = new Set(['oil', 'butter', 'fat', 'cream', 'cheese', 'sauce', 'gravy', 'dressing', 'margarine']);
+const NO_ADDED_FAT = /\bno(?:t)? +(?:added +)?(?:fat|oil|butter)\b|\bwithout +(?:added +)?(?:fat|oil|butter)\b/;
 
 function words(value) {
   return normalizeSearchTerm(value)
@@ -134,17 +175,44 @@ export function chooseFoodMatch(foods, term = '') {
       if (targetSet.has(preparation) && !descriptionSet.has(preparation)) value -= 18;
     }
 
-    // Extra food nouns often indicate a different composite dish ("beef and
-    // broccoli", "rice pudding"). Cap the penalty for verbose USDA labels.
-    const extras = descriptionWords.filter((word) => !targetSet.has(word) && !PREPARATION_WORDS.has(word)).length;
-    value -= Math.min(extras, 5) * 5;
+    // An extra noun usually names a different food: "Rice noodles" is not
+    // rice and "Broccoli raab" is not broccoli. Five points was not enough to
+    // outweigh the data-type bonus, so both used to win. Bureaucratic
+    // qualifiers stay free.
+    const extras = descriptionWords.filter((word) => (
+      !targetSet.has(word) && !PREPARATION_WORDS.has(word) && !QUALIFIER_WORDS.has(word)
+    )).length;
+    // 9 was measured against real USDA responses for ten common foods: 5 still
+    // picked "Rice noodles" over rice, 11 dropped baked salmon and 14 dropped a
+    // boiled egg.
+    value -= Math.min(extras, 4) * 9;
+
+    // Prefer the plainly cooked row over an unspecified one. "Broccoli, NS as
+    // to form, cooked" is 63 kcal/100 g because it averages in cooking fat,
+    // while "Broccoli, fresh, cooked, no added fat" is 41 — and the model
+    // already reports the oil separately.
+    const targetWantsFat = targetWords.some((word) => ADDED_FAT_WORDS.has(word));
+    if (!targetWantsFat) {
+      // 16, not 12: the vaguer row is also the shorter one, so it wins on
+      // precision unless the explicit "no added fat" row is paid for.
+      if (NO_ADDED_FAT.test(description)) value += 16;
+      else if (descriptionWords.some((word) => ADDED_FAT_WORDS.has(word))) value -= 20;
+    }
 
     return value;
   };
 
+  // Ties must break on the data, not on the position USDA happened to return.
+  // Two broccoli rows scored identically, so the same query picked a different
+  // food depending on the order of the response.
   const ranked = list
     .map((food, index) => ({ food, index, score: score(food) }))
-    .sort((a, b) => b.score - a.score || a.index - b.index);
+    .sort((a, b) => (
+      b.score - a.score
+      || rank(a.food) - rank(b.food)
+      || String(a.food?.fdcId ?? '').localeCompare(String(b.food?.fdcId ?? ''))
+      || a.index - b.index
+    ));
   const winner = ranked[0];
   const margin = winner.score - (ranked[1]?.score ?? 0);
   const accepted = targetWords.length > 0 && winner.score >= 52;
@@ -194,6 +262,26 @@ export function toFoodFacts(food, match = null) {
 }
 
 /** Scales cached per-100g facts onto the portion the model estimated. */
+/**
+ * USDA describes most prepared foods as "cooked", almost never as "boiled" or
+ * "steamed", so the model's preparation vocabulary misses entries that plainly
+ * exist: "white rice boiled" returned mushrooms and beans and was rejected,
+ * while "white rice cooked" finds the right row. Callers try the original term
+ * first and fall back to these rewrites only when nothing acceptable matched.
+ */
+export function searchTermVariants(term) {
+  const normalized = String(term ?? '').trim();
+  if (!normalized) return [];
+  const variants = [];
+  const swapped = normalized.replace(/\b(?:boiled|steamed|poached|braised)\b/gi, 'cooked');
+  if (swapped !== normalized) variants.push(swapped);
+  // Dropping the preparation entirely is the last resort: less precise, but a
+  // raw-vs-cooked mismatch is a smaller error than counting the food as zero.
+  const bare = normalized.replace(/\b(?:boiled|steamed|poached|braised|cooked|grilled|fried|baked|roasted|raw)\b/gi, '').replace(/\s+/g, ' ').trim();
+  if (bare && bare !== normalized && !variants.includes(bare)) variants.push(bare);
+  return variants;
+}
+
 export function buildMealItem(item, facts, index) {
   if (!facts) {
     return {
@@ -209,8 +297,12 @@ export function buildMealItem(item, facts, index) {
       fiber: 0,
       confidence: 'medium',
       optional: true,
-      included: true,
-      source: { provider: 'usda', label: 'USDA: nicht gefunden' },
+      // Not included: an ingredient we could not price is worth zero calories
+      // only in the arithmetic, never in reality. Counting it silently made a
+      // plate of rice disappear from the day. The user sees it flagged on the
+      // confirm screen and can add it once the value is corrected.
+      included: false,
+      source: { provider: 'usda', code: 'unmatched', label: '' },
     };
   }
 
@@ -243,13 +335,17 @@ export function mapUsdaFood(item, food, index) {
   return buildMealItem(item, toFoodFacts(food), index);
 }
 
+/**
+ * Returns codes, not sentences: one deployed function serves every language,
+ * so the app renders the wording from its own dictionary.
+ */
 export function buildAccuracyWarnings(detection, items) {
   const warnings = [];
   if (items.some((item) => item.calories === 0)) {
-    warnings.push('Mindestens eine Zutat konnte keiner verlässlichen Referenz zugeordnet werden. Bitte prüfe sie.');
+    warnings.push('unmatched_ingredient');
   }
   if (detection.items.some((item) => item.hiddenCaloriesRisk === 'high')) {
-    warnings.push('Öl oder Sauce ist auf dem Foto schwer messbar. Prüfe Menge und Zutaten besonders genau.');
+    warnings.push('hidden_calories');
   }
   const widePortionRange = detection.items.some((item) => {
     const low = Number(item.estimatedGramsLow || item.estimatedGrams);
@@ -257,7 +353,7 @@ export function buildAccuracyWarnings(detection, items) {
     return high - low > Math.max(40, Number(item.estimatedGrams) * 0.35);
   });
   if (widePortionRange) {
-    warnings.push('Die Portionsgröße ist optisch unsicher. Passe die Grammangabe kurz an.');
+    warnings.push('wide_portion');
   }
   return warnings;
 }

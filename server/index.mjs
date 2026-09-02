@@ -10,7 +10,9 @@ import {
   detectionSchema,
   normalizeSearchTerm,
   photoDetectionPrompt,
+  isUsableSearchTerm,
   requestedLanguage,
+  searchTermVariants,
   resolveBlsFacts,
   toFoodFacts,
   usdaCacheKey,
@@ -123,21 +125,34 @@ async function detectDescription(description, language) {
 // lifetime — enough to stop a debugging session burning the hourly USDA quota.
 const usdaCache = new Map();
 
+async function searchUsdaOnce(query) {
+  const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, pageSize: 15 }),
+  });
+  if (!response.ok) throw new Error(`usda_${response.status}`);
+  const result = await response.json();
+  const match = chooseFoodMatch(result.foods || [], query);
+  return { facts: toFoodFacts(match.food, match), cacheable: match.cacheable };
+}
+
 async function resolveUsdaItem(item, index) {
   const term = normalizeSearchTerm(item.searchTermEn);
+  // Same guard as the hosted gateway: a placeholder term must not price food.
+  if (!isUsableSearchTerm(term)) return buildMealItem(item, null, index);
   const cacheKey = usdaCacheKey(term);
   let facts = usdaCache.get(cacheKey);
   if (!usdaCache.has(cacheKey)) {
-    const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: term, pageSize: 15 }),
-    });
-    if (!response.ok) throw new Error(`usda_${response.status}`);
-    const result = await response.json();
-    const match = chooseFoodMatch(result.foods || [], term);
-    facts = toFoodFacts(match.food, match);
-    if (match.cacheable || !facts) usdaCache.set(cacheKey, facts);
+    // Same two-step lookup as the hosted gateway, so development and
+    // production cannot disagree about what USDA knows.
+    let attempt = await searchUsdaOnce(term);
+    for (const variant of searchTermVariants(term)) {
+      if (attempt.facts) break;
+      attempt = await searchUsdaOnce(variant);
+    }
+    facts = attempt.facts;
+    if (attempt.cacheable || !facts) usdaCache.set(cacheKey, facts);
   }
   return buildMealItem(item, facts ?? null, index);
 }

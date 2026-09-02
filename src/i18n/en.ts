@@ -361,6 +361,12 @@ export const en: typeof de = {
     version: 'Kandro · Version 1.0.0',
   },
   errors: {
+    gatewayMultipleDishes: 'The photo shows several dishes. Photograph one at a time.',
+    gatewayUnexpected: 'Something went wrong there. Please try again.',
+    warnUnmatched: 'At least one ingredient could not be matched to a reliable reference. It is not counted yet — check it and add it.',
+    warnHiddenCalories: 'Oil or sauce is hard to judge from a photo. Check the amount and the ingredients carefully.',
+    warnWidePortion: 'The portion size is visually uncertain. Adjust the gram amount briefly.',
+    sourceUnmatched: 'No reference value found — please enter it yourself',
     catalogSourceLabel: 'Kandro catalog · typical reference value',
     gatewayInvalidInput: 'That capture could not be read.',
     gatewayPhotoTooLarge: 'The photo is too large.',

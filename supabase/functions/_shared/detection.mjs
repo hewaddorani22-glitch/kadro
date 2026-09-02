@@ -51,7 +51,11 @@ const OUTPUT_LANGUAGES = { de: 'German', en: 'English' };
 
 function languageRule(language) {
   const label = OUTPUT_LANGUAGES[language] ?? OUTPUT_LANGUAGES.en;
-  return `Write "title" and every item "name" in ${label}. Keep "searchTermEn" in English regardless.`;
+  return [
+    `"title" and every item "name" are shown to the user: write them in ${label} as a natural food name, e.g. "grilled chicken breast", not as a database query.`,
+    '"searchTermEn" is a USDA FoodData Central query and is always English, whatever the display language.',
+    'Never put "other" or a referenceKey value into "searchTermEn": it must always name the actual food, e.g. "chicken breast grilled". "other" belongs in "referenceKey" alone.',
+  ].join(' ');
 }
 
 const accuracyRules = `

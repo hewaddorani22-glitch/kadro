@@ -366,6 +366,12 @@ export const de = {
    * or an inline error, so they belong in the dictionary like any other copy.
    */
   errors: {
+    gatewayMultipleDishes: 'Auf dem Foto sind mehrere Gerichte. Fotografiere eines nach dem anderen.',
+    gatewayUnexpected: 'Da ist etwas schiefgelaufen. Bitte versuche es erneut.',
+    warnUnmatched: 'Mindestens eine Zutat konnte keiner verlässlichen Referenz zugeordnet werden. Sie zählt noch nicht mit – prüfe sie und füge sie hinzu.',
+    warnHiddenCalories: 'Öl oder Sauce ist auf dem Foto schwer messbar. Prüfe Menge und Zutaten besonders genau.',
+    warnWidePortion: 'Die Portionsgröße ist optisch unsicher. Passe die Grammangabe kurz an.',
+    sourceUnmatched: 'Kein Referenzwert gefunden – Wert bitte selbst eintragen',
     catalogSourceLabel: 'Kandro-Katalog · typischer Richtwert',
     gatewayInvalidInput: 'Die Aufnahme konnte nicht gelesen werden.',
     gatewayPhotoTooLarge: 'Das Foto ist zu groß.',

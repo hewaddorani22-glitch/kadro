@@ -24,6 +24,31 @@ const localApiUrl = process.env.EXPO_PUBLIC_ANALYSIS_API_URL?.replace(/\/$/, '')
  * without a redeploy, and fall back to the server text only for a code we do
  * not know yet.
  */
+/**
+ * The gateway returns codes for its warnings and for an ingredient it could
+ * not price, so the wording comes from the dictionary and a language fix never
+ * needs a redeploy. An unknown code is dropped rather than shown raw.
+ */
+function localizeResult(result: MealAnalysisResult): MealAnalysisResult {
+  const t = getDictionary().errors;
+  const warnings: Record<string, string> = {
+    unmatched_ingredient: t.warnUnmatched,
+    hidden_calories: t.warnHiddenCalories,
+    wide_portion: t.warnWidePortion,
+  };
+  const sources: Record<string, string> = { unmatched: t.sourceUnmatched };
+  return {
+    ...result,
+    warnings: (result.warnings ?? []).map((entry) => warnings[entry] ?? entry).filter(Boolean),
+    items: (result.items ?? []).map((item) => {
+      const code = (item.source as { code?: string } | undefined)?.code;
+      return code && sources[code]
+        ? { ...item, source: { ...item.source, label: sources[code] } }
+        : item;
+    }),
+  };
+}
+
 function gatewayMessage(code: string | undefined, fallback: string | undefined) {
   const t = getDictionary().errors;
   const byCode: Record<string, string> = {
@@ -35,7 +60,11 @@ function gatewayMessage(code: string | undefined, fallback: string | undefined) 
     provider_error: t.gatewayProviderError,
     daily_limit_reached: t.gatewayDailyLimit,
     unclear_image: t.noClearMeal,
+    multiple_dishes: t.gatewayMultipleDishes,
     server_not_configured: t.analysisNotConfigured,
+    // Routing faults a user should never reach; the raw German would be worse.
+    method_not_allowed: t.gatewayUnexpected,
+    not_found: t.gatewayUnexpected,
   };
   return (code && byCode[code]) || fallback || t.analysisFailed;
 }
@@ -148,7 +177,7 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
     throw new MealAnalysisError(kind, gatewayMessage(payload?.code, payload?.message));
   }
   if (!payload?.items?.length) throw new MealAnalysisError('unclear-image', getDictionary().errors.noClearMeal);
-  return payload;
+  return localizeResult(payload);
 }
 
 export async function analyzeDescription(description: string): Promise<MealAnalysisResult> {

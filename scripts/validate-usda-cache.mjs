@@ -5,9 +5,11 @@ import {
   chooseFood,
   chooseFoodMatch,
   mapUsdaFood,
+  isUsableSearchTerm,
   normalizeSearchTerm,
   toFoodFacts,
   usdaCacheKey,
+  USDA_MATCHER_VERSION,
 } from '../server/core.mjs';
 
 /** Shapes a USDA search hit the way FoodData Central returns one. */
@@ -49,8 +51,20 @@ const variants = ['Grilled Chicken Breast', 'grilled chicken breast', '  GRILLED
 const keys = new Set(variants.map(normalizeSearchTerm));
 if (keys.size !== 1) failures.push(`normalizeSearchTerm produced ${keys.size} keys for one term`);
 if (normalizeSearchTerm(undefined) !== '') failures.push('normalizeSearchTerm must tolerate missing terms');
-if (new Set(variants.map(usdaCacheKey)).size !== 1 || !usdaCacheKey(variants[0]).startsWith('v2:')) {
-  failures.push('versioned cache keys must be stable and invalidate the old matcher');
+// Pin the prefix to the exported constant, not to a literal: hard-coding "v2"
+// meant that bumping the matcher failed this check instead of the stale
+// entries it was meant to protect.
+if (new Set(variants.map(usdaCacheKey)).size !== 1
+  || !usdaCacheKey(variants[0]).startsWith(`v${USDA_MATCHER_VERSION}:`)) {
+  failures.push('versioned cache keys must be stable and carry the current matcher version');
+}
+if (!Number.isInteger(USDA_MATCHER_VERSION) || USDA_MATCHER_VERSION < 1) {
+  failures.push('USDA_MATCHER_VERSION must be a positive integer');
+}
+// A placeholder term must never become a cache key: one poisoned "other" row
+// priced an entire plate from a single entry.
+for (const bad of ['other', 'unknown', '', 'food']) {
+  if (isUsableSearchTerm(bad)) failures.push(`"${bad}" must never reach the USDA cache`);
 }
 
 // 2. A cached lookup must produce byte-identical items to a fresh one. This is
