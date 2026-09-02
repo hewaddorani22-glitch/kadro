@@ -2,6 +2,7 @@ import { DailyTargets, Meal, MealContext, MealItem, MealSuggestion, Nutrition, U
 import { localDateKey } from '@/utils/date';
 
 import { ensureSupabaseUser, isSupabaseConfigured, supabase } from './supabaseClient';
+import { isUnitSystem } from '@/utils/units';
 
 export type CloudProfile = {
   userId: string;
@@ -143,6 +144,7 @@ export async function initializeCloudProfile(defaultProfile: UserProfile, defaul
         goal: defaultProfile.goal,
         activity_level: defaultProfile.activityLevel,
         weekly_rate_kg: defaultProfile.weeklyRateKg,
+        unit_system: defaultProfile.unitSystem,
         preferences: defaultProfile.preferences,
         updated_at: now,
       },
@@ -165,7 +167,7 @@ export async function initializeCloudProfile(defaultProfile: UserProfile, defaul
   if (targetWrite.error) throw targetWrite.error;
 
   const [profileResult, targetResult] = await Promise.all([
-    supabase.from('profiles').select('display_name,goal,age,height_cm,weight_kg,activity_level,weekly_rate_kg,preferences,updated_at').eq('user_id', user.id).single(),
+    supabase.from('profiles').select('display_name,goal,age,height_cm,weight_kg,activity_level,weekly_rate_kg,unit_system,preferences,updated_at').eq('user_id', user.id).single(),
     supabase.from('daily_targets').select('calories,protein,carbs,fat').eq('user_id', user.id).eq('target_date', today).single(),
   ]);
   if (profileResult.error) throw profileResult.error;
@@ -181,6 +183,8 @@ export async function initializeCloudProfile(defaultProfile: UserProfile, defaul
       weightKg: Number(profileResult.data.weight_kg ?? defaultProfile.weightKg),
       activityLevel: profileResult.data.activity_level === 'high' ? 'high' : profileResult.data.activity_level === 'low' ? 'low' : 'light',
       weeklyRateKg: Number(profileResult.data.weekly_rate_kg) === 0.25 ? 0.25 : 0.5,
+      // A row written before the column existed comes back null.
+      unitSystem: isUnitSystem(profileResult.data.unit_system) ? profileResult.data.unit_system : defaultProfile.unitSystem,
       preferences: profileResult.data.preferences ?? [],
       completedAt: profileResult.data.age && profileResult.data.height_cm && profileResult.data.weight_kg
         ? profileResult.data.updated_at
@@ -207,6 +211,7 @@ export async function saveCloudProfile(profile: UserProfile, targets: DailyTarge
       weight_kg: profile.weightKg,
       activity_level: profile.activityLevel,
       weekly_rate_kg: profile.weeklyRateKg,
+      unit_system: profile.unitSystem,
       preferences: profile.preferences,
       updated_at: now,
     }, { onConflict: 'user_id' }),

@@ -24,6 +24,7 @@ import { activityLabel, goalLabel, weeklyRateLabel } from '@/services/personaliz
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber } from '@/utils/format';
 import type { Language } from '@/i18n';
+import { UNIT_SYSTEMS, UnitSystem, formatHeight, formatWeight } from '@/utils/units';
 
 /**
  * Endonyms, not translations: someone who opened the app in the wrong language
@@ -36,7 +37,7 @@ const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { profile, syncMode, targets, userName } = useApp();
+  const { profile, setUnitSystem, syncMode, targets, userName } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const { language, locale, setLanguage, t } = useLanguage();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
@@ -108,7 +109,7 @@ export default function ProfileScreen() {
             <PlanStat label={t.profile.calories} value={formatNumber(targets.calories, locale)} />
             <PlanStat label={t.common.protein} value={`${targets.protein} g`} />
             <PlanStat label={t.profile.goal} value={goalLabel(profile.goal, t.common)} />
-            <PlanStat label={t.profile.pace} value={weeklyRateLabel(profile.goal, profile.weeklyRateKg, t.common)} />
+            <PlanStat label={t.profile.pace} value={weeklyRateLabel(profile.goal, profile.weeklyRateKg, t.common, profile.unitSystem)} />
             <PlanStat label={t.profile.activity} value={activityLabel(profile.activityLevel, t.common)} />
           </View>
         </Card>
@@ -150,6 +151,46 @@ export default function ProfileScreen() {
             label={t.profile.analytics}
             onValueChange={(enabled) => void updateAnalytics(enabled)}
             value={analyticsEnabled}
+          />
+        </Card>
+      </View>
+
+      <View style={styles.section}>
+        <SectionTitle>{t.profile.units}</SectionTitle>
+        <Card style={styles.listCard}>
+          <View style={styles.toggleRow}>
+            <View style={styles.rowIcon}><Ionicons color={colors.text} name="swap-horizontal-outline" size={20} /></View>
+            <View style={styles.rowCopy}>
+              <Text style={styles.rowLabel}>{t.profile.units}</Text>
+              <Text style={styles.rowDetail}>{t.profile.unitsDetail}</Text>
+            </View>
+          </View>
+          <View style={styles.languageChoice}>
+            {UNIT_SYSTEMS.map((system) => {
+              const active = system === profile.unitSystem;
+              const labels: Record<UnitSystem, string> = {
+                metric: t.onboarding.unitMetric,
+                us: t.onboarding.unitUs,
+                uk: t.onboarding.unitUk,
+              };
+              return (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  key={system}
+                  onPress={() => void setUnitSystem(system)}
+                  style={[styles.languageOption, active && styles.languageOptionActive]}
+                >
+                  <Text style={[styles.languageLabel, active && styles.languageLabelActive]}>{labels[system]}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View style={styles.divider} />
+          <InfoRow
+            detail={`${formatHeight(profile.heightCm, profile.unitSystem)} · ${formatWeight(profile.weightKg, profile.unitSystem, locale)}`}
+            icon="body-outline"
+            label={t.profile.bodyValues}
           />
         </Card>
       </View>

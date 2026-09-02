@@ -14,6 +14,18 @@ import { calculateDailyTargets, estimatedPace, isRateLimited, weeklyRateLabel } 
 import { trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
+import {
+  UNIT_SYSTEMS,
+  UnitSystem,
+  cmToTotalInches,
+  defaultUnitSystem,
+  formatWeight,
+  kgToPounds,
+  poundsToKg,
+  totalInchesToCm,
+  usesMetricHeight,
+  usesMetricWeight,
+} from '@/utils/units';
 
 type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap };
 
@@ -79,6 +91,9 @@ export default function OnboardingScreen() {
   const [stepIndex, setStepIndex] = useState(0);
   const [goal, setGoal] = useState<NutritionGoal>('lose');
   const [displayName, setDisplayName] = useState('');
+  // Guessed from the device so most people never touch it, but visible and
+  // switchable right on the step where it matters.
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(defaultUnitSystem);
   const [age, setAge] = useState(29);
   const [height, setHeight] = useState(178);
   const [weight, setWeight] = useState(78);
@@ -148,6 +163,7 @@ export default function OnboardingScreen() {
 
   const draftProfile = useMemo<UserProfile>(() => ({
     displayName: displayName.trim(),
+    unitSystem,
     goal,
     age,
     heightCm: height,
@@ -156,7 +172,7 @@ export default function OnboardingScreen() {
     weeklyRateKg: weeklyRate,
     preferences,
     completedAt: null,
-  }), [activity, age, displayName, goal, height, preferences, weeklyRate, weight]);
+  }), [activity, age, displayName, goal, height, preferences, unitSystem, weeklyRate, weight]);
   const startingTargets = useMemo(() => calculateDailyTargets(draftProfile), [draftProfile]);
 
   const acceptConsent = async () => {
@@ -250,7 +266,7 @@ export default function OnboardingScreen() {
                         <Ionicons color={colors.text} name={rate === 0.25 ? 'leaf-outline' : 'flash-outline'} size={22} />
                       </View>
                       <View style={styles.choiceTextBlock}>
-                        <Text style={styles.choiceTitle}>{weeklyRateLabel(draftProfile.goal, rate, t.common)}</Text>
+                        <Text style={styles.choiceTitle}>{weeklyRateLabel(draftProfile.goal, rate, t.common, unitSystem)}</Text>
                         <Text style={styles.choiceDetail}>
                           {rate === 0.25 ? t.onboarding.rateCalm : t.onboarding.rateBrisk} · {draftProfile.goal === 'lose' ? '−' : '+'}{applied} {t.onboarding.perDay}
                         </Text>
@@ -284,10 +300,42 @@ export default function OnboardingScreen() {
               <NumberStep max={80} min={18} onChange={setAge} step={1} unit={t.onboarding.years} value={age} />
             ) : null}
             {step === 'height' ? (
-              <NumberStep max={220} min={130} onChange={setHeight} step={1} unit="cm" value={height} />
+              <View style={styles.unitStep}>
+                <UnitToggle onChange={setUnitSystem} value={unitSystem} />
+                {usesMetricHeight(unitSystem) ? (
+                  <NumberStep max={220} min={130} onChange={setHeight} step={1} unit="cm" value={height} />
+                ) : (
+                  <NumberStep
+                    format={(inches) => `${Math.floor(inches / 12)}′ ${inches % 12}″`}
+                    max={cmToTotalInches(220)}
+                    min={cmToTotalInches(130)}
+                    onChange={(inches) => setHeight(totalInchesToCm(inches))}
+                    step={1}
+                    unit=""
+                    value={cmToTotalInches(height)}
+                  />
+                )}
+              </View>
             ) : null}
             {step === 'weight' ? (
-              <NumberStep max={200} min={40} onChange={setWeight} step={1} unit="kg" value={weight} />
+              <View style={styles.unitStep}>
+                <UnitToggle onChange={setUnitSystem} value={unitSystem} />
+                {usesMetricWeight(unitSystem) ? (
+                  <NumberStep max={200} min={40} onChange={setWeight} step={1} unit="kg" value={weight} />
+                ) : (
+                  <NumberStep
+                    format={(pounds) => (unitSystem === 'uk'
+                      ? formatWeight(poundsToKg(pounds), 'uk', locale)
+                      : String(pounds))}
+                    max={Math.round(kgToPounds(200))}
+                    min={Math.round(kgToPounds(40))}
+                    onChange={(pounds) => setWeight(Math.round(poundsToKg(pounds) * 10) / 10)}
+                    step={1}
+                    unit={unitSystem === 'uk' ? '' : 'lb'}
+                    value={Math.round(kgToPounds(weight))}
+                  />
+                )}
+              </View>
             ) : null}
 
             {step === 'activity' ? (
@@ -393,7 +441,38 @@ function ChoiceList<T extends string>({ choices, onSelect, selected, values }: {
  * A tap steps by one, holding accelerates. Without the hold, moving the weight
  * from the default to a real value would cost dozens of taps.
  */
-function NumberStep({ max, min, onChange, step, unit, value }: { max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
+/**
+ * Three small pills rather than a settings menu: the moment somebody is asked
+ * for their height is the moment they know which unit they think in.
+ */
+function UnitToggle({ onChange, value }: { onChange: (system: UnitSystem) => void; value: UnitSystem }) {
+  const { t } = useLanguage();
+  const labels: Record<UnitSystem, string> = {
+    metric: t.onboarding.unitMetric,
+    us: t.onboarding.unitUs,
+    uk: t.onboarding.unitUk,
+  };
+  return (
+    <View style={styles.unitToggle}>
+      {UNIT_SYSTEMS.map((system) => {
+        const active = system === value;
+        return (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            key={system}
+            onPress={() => { void Haptics.selectionAsync(); onChange(system); }}
+            style={[styles.unitOption, active && styles.unitOptionActive]}
+          >
+            <Text style={[styles.unitLabel, active && styles.unitLabelActive]}>{labels[system]}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+function NumberStep({ format, max, min, onChange, step, unit, value }: { format?: (value: number) => string; max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
   const { t } = useLanguage();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latest = useRef(value);
@@ -429,8 +508,8 @@ function NumberStep({ max, min, onChange, step, unit, value }: { max: number; mi
     <View style={styles.numberStep}>
       <StepperButton icon="remove" label={t.common.decreaseUnit(unit)} onPressIn={() => start(-1)} onPressOut={stop} />
       <View style={styles.numberCenter}>
-        <Text adjustsFontSizeToFit numberOfLines={1} style={styles.number}>{value}</Text>
-        <Text style={styles.numberUnit}>{unit}</Text>
+        <Text adjustsFontSizeToFit numberOfLines={1} style={styles.number}>{format ? format(value) : value}</Text>
+        {unit ? <Text style={styles.numberUnit}>{unit}</Text> : null}
       </View>
       <StepperButton icon="add" label={t.common.increaseUnit(unit)} onPressIn={() => start(1)} onPressOut={stop} />
     </View>
@@ -480,7 +559,7 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
           <Text style={styles.planStatLabel}>{t.common.protein}</Text>
         </View>
         <View style={styles.planStat}>
-          <Text numberOfLines={2} style={styles.planStatValue}>{estimatedPace(profile.goal, profile.weeklyRateKg, t.common)}</Text>
+          <Text numberOfLines={2} style={styles.planStatValue}>{estimatedPace(profile.goal, profile.weeklyRateKg, t.common, profile.unitSystem)}</Text>
           <Text style={styles.planStatLabel}>{t.onboarding.estimatedPace}</Text>
         </View>
         <View style={styles.planStat}>
@@ -533,6 +612,12 @@ const styles = StyleSheet.create({
   nameField: { gap: 7 },
   nameInput: { minHeight: 64, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 22, fontWeight: '600', paddingHorizontal: 18 },
   numberStep: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  unitStep: { gap: 26, alignItems: 'center' },
+  unitToggle: { flexDirection: 'row', gap: 8, alignSelf: 'stretch' },
+  unitOption: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  unitOptionActive: { borderColor: colors.accentDeep, backgroundColor: colors.accent },
+  unitLabel: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  unitLabelActive: { color: colors.text },
   numberButton: { width: 64, height: 64, borderRadius: 32, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   numberButtonPressed: { backgroundColor: colors.neutralSoft, transform: [{ scale: 0.94 }] },
   numberCenter: { flex: 1, minWidth: 0, alignItems: 'center' },

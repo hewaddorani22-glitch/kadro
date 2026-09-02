@@ -4,6 +4,7 @@ import { PendingAnalysis } from '@/services/contracts';
 import { DEFAULT_PROFILE } from '@/services/personalization';
 import { Meal, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
+import { defaultUnitSystem, isUnitSystem } from '@/utils/units';
 
 const MEALS_KEY = '@kandro/meals:v1';
 const QUEUE_KEY = '@kandro/analysis-queue:v1';
@@ -139,6 +140,9 @@ export async function loadProfile(): Promise<UserProfile> {
     weightKg: positiveNumber(stored.weightKg, DEFAULT_PROFILE.weightKg),
     // Profiles written before the rate existed must not deserialize as undefined.
     weeklyRateKg: stored.weeklyRateKg === 0.25 ? 0.25 : 0.5,
+    // A profile written before units existed follows the device, so an
+    // American upgrading the app is not suddenly asked to think in kilograms.
+    unitSystem: isUnitSystem(stored.unitSystem) ? stored.unitSystem : defaultUnitSystem(),
     preferences: Array.isArray(stored.preferences) ? stored.preferences.filter((item): item is string => typeof item === 'string') : [],
   };
 }

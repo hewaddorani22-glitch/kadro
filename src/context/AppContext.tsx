@@ -34,6 +34,7 @@ import { captureOperationalError, countBucket, trackEvent } from '@/services/tel
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 import { getDictionary } from '@/i18n/active';
+import type { UnitSystem } from '@/utils/units';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
 type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode';
@@ -73,6 +74,7 @@ type AppContextValue = {
   syncMode: SyncMode;
   refreshCloudState: () => Promise<void>;
   completeOnboarding: (profile: UserProfile) => Promise<void>;
+  setUnitSystem: (unitSystem: UnitSystem) => Promise<void>;
   addWeightEntry: (weightKg: number) => Promise<void>;
   setCapturedPhoto: (uri: string) => void;
   startDemoScan: () => void;
@@ -278,6 +280,26 @@ export function AppProvider({ children }: PropsWithChildren) {
           setSyncMode('error');
           captureOperationalError(error, { area: 'cloud_sync', operation: 'save_personalization' });
         });
+    }
+  }, []);
+
+  /**
+   * Units are presentation only, so this writes the profile and syncs it
+   * without recalculating anything: the stored centimetres and kilograms, and
+   * therefore the targets, stay exactly as they were.
+   */
+  const setUnitSystem = useCallback(async (unitSystem: UnitSystem) => {
+    let nextProfile: UserProfile | null = null;
+    setProfile((current) => {
+      if (current.unitSystem === unitSystem) return current;
+      nextProfile = { ...current, unitSystem };
+      return nextProfile;
+    });
+    if (!nextProfile) return;
+    await saveProfile(nextProfile);
+    if (isSupabaseConfigured) {
+      void syncUserSetup(nextProfile, calculateDailyTargets(nextProfile))
+        .catch((error) => captureOperationalError(error, { area: 'cloud_sync', operation: 'save_units' }));
     }
   }, []);
 
@@ -628,6 +650,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const value = useMemo<AppContextValue>(
     () => ({
+      setUnitSystem,
       userName,
       profile,
       hydrationReady,
@@ -674,7 +697,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       adjustLoggedMealPortion,
       setLoggedMealType,
     }),
-    [addWeightEntry, adjustLoggedMealPortion, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, setLoggedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
+    [addWeightEntry, adjustLoggedMealPortion, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, setUnitSystem, setLoggedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

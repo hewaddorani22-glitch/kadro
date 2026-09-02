@@ -24,6 +24,18 @@ export function deviceLanguage(): Language {
   return tag === 'de' ? 'de' : 'en';
 }
 
+/**
+ * Where the device says it is, independent of the app's language.
+ *
+ * The two must not be conflated: the app tag for English is en-GB, so deriving
+ * units from it handed every American stone and pounds. Somebody in Texas with
+ * their phone in German is still weighed in pounds.
+ */
+export function deviceRegion(): string | undefined {
+  const locale = getLocales()[0];
+  return locale?.regionCode?.toUpperCase() ?? locale?.languageTag?.split(/[-_]/)[1]?.toUpperCase();
+}
+
 export async function loadLanguage(): Promise<Language> {
   const stored = await AsyncStorage.getItem(LANGUAGE_KEY);
   if (stored === 'de' || stored === 'en') return stored;

@@ -1,5 +1,6 @@
 import { ActivityLevel, DailyTargets, NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
 import { getDictionary } from '@/i18n/active';
+import { UnitSystem, formatWeeklyRate } from '@/utils/units';
 
 export const DEFAULT_PROFILE: UserProfile = {
   displayName: '',
@@ -9,6 +10,7 @@ export const DEFAULT_PROFILE: UserProfile = {
   weightKg: 78,
   activityLevel: 'light',
   weeklyRateKg: 0.5,
+  unitSystem: 'metric',
   preferences: ['high-protein'],
   completedAt: null,
 };
@@ -38,14 +40,17 @@ function dailyGoalOffset(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
 
 type PaceLabels = { paceHold: string; paceLose: (rate: string) => string; paceGain: (rate: string) => string };
 
-export function weeklyRateLabel(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg, labels?: PaceLabels) {
-  const source = labels ?? {
-    paceHold: 'Gewicht halten',
-    paceLose: (rate: string) => `${rate} kg pro Woche`,
-    paceGain: (rate: string) => `${rate} kg Aufbau pro Woche`,
-  };
+export function weeklyRateLabel(
+  goal: NutritionGoal,
+  weeklyRateKg: WeeklyRateKg,
+  labels?: PaceLabels,
+  unitSystem: UnitSystem = 'metric',
+) {
+  const source = labels ?? getDictionary().common;
   if (goal === 'maintain') return source.paceHold;
-  const value = String(weeklyRateKg).replace('.', ',');
+  // The unit travels with the number so "0,5 kg" can become "1 lb" without
+  // rewriting the sentence around it.
+  const value = formatWeeklyRate(weeklyRateKg, unitSystem);
   return goal === 'lose' ? source.paceLose(value) : source.paceGain(value);
 }
 
@@ -89,8 +94,13 @@ export function activityLabel(activity: ActivityLevel, labels?: ActivityLabels) 
   return source.activityLight;
 }
 
-export function estimatedPace(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg = 0.5, labels?: PaceLabels) {
-  return weeklyRateLabel(goal, weeklyRateKg, labels);
+export function estimatedPace(
+  goal: NutritionGoal,
+  weeklyRateKg: WeeklyRateKg = 0.5,
+  labels?: PaceLabels,
+  unitSystem: UnitSystem = 'metric',
+) {
+  return weeklyRateLabel(goal, weeklyRateKg, labels, unitSystem);
 }
 
 /** True when the safety floor overrode the requested rate. */

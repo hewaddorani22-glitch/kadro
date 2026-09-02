@@ -9,6 +9,7 @@ import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { proteinConsistency } from '@/services/consistency';
 import { localDateKey } from '@/utils/date';
+import { formatWeight, kgToStoneParts, parseStoneInput, parseWeightInput, weightInputUnit, weightInputValue } from '@/utils/units';
 
 
 
@@ -17,7 +18,11 @@ export default function ProgressScreen() {
   const { locale, t } = useLanguage();
   const { addWeightEntry, mealHistory, profile, targets, weightEntries } = useApp();
   const [showWeightEntry, setShowWeightEntry] = useState(false);
-  const [weightInput, setWeightInput] = useState(String(profile.weightKg).replace('.', ','));
+  const units = profile.unitSystem;
+  const [weightInput, setWeightInput] = useState(() => weightInputValue(profile.weightKg, units, locale));
+  // Nobody says "13.2 stone", so the UK entry is two fields rather than one.
+  const [stoneInput, setStoneInput] = useState(() => String(kgToStoneParts(profile.weightKg).stone));
+  const [stonePounds, setStonePounds] = useState(() => String(kgToStoneParts(profile.weightKg).pounds));
   const [weightError, setWeightError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -39,14 +44,21 @@ export default function ProgressScreen() {
   const showsScore = trackedDays >= 3;
 
   const openWeightEntry = () => {
-    setWeightInput(String(currentWeight).replace('.', ','));
+    setWeightInput(weightInputValue(currentWeight, units, locale));
+    const parts = kgToStoneParts(currentWeight);
+    setStoneInput(String(parts.stone));
+    setStonePounds(String(parts.pounds));
     setWeightError(null);
     setShowWeightEntry(true);
   };
 
   const saveWeight = async () => {
-    const value = Number(weightInput.replace(',', '.'));
-    if (!Number.isFinite(value) || value < 35 || value > 350) {
+    // Parsed back into kilograms: the entry is stored metric whatever the
+    // user typed, so switching units never rewrites their history.
+    const value = units === 'uk'
+      ? parseStoneInput(stoneInput, stonePounds)
+      : parseWeightInput(weightInput, units);
+    if (value === null) {
       setWeightError(t.progress.weightError);
       return;
     }
@@ -119,12 +131,12 @@ export default function ProgressScreen() {
         <View style={styles.weightTop}>
           <View>
             <Text style={styles.cardLabel}>{t.progress.currentWeight}</Text>
-            <Text style={styles.currentWeight}>{currentWeight.toFixed(1).replace('.', ',')}<Text style={styles.kg}> kg</Text></Text>
+            <Text style={styles.currentWeight}>{formatWeight(currentWeight, units, locale)}</Text>
           </View>
           {visibleWeights.length > 1 ? (
             <View style={[styles.changePill, weightChange > 0 && styles.changePillAttention]}>
               <Ionicons color={weightChange > 0 ? colors.attention : colors.success} name={weightChange > 0 ? 'arrow-up' : weightChange < 0 ? 'arrow-down' : 'remove'} size={15} />
-              <Text style={[styles.changeText, weightChange > 0 && styles.changeTextAttention]}>{Math.abs(weightChange).toFixed(1).replace('.', ',')} kg</Text>
+              <Text style={[styles.changeText, weightChange > 0 && styles.changeTextAttention]}>{formatWeight(Math.abs(weightChange), units, locale)}</Text>
             </View>
           ) : (
             <View style={styles.firstPill}><Text style={styles.firstPillText}>{t.progress.firstValue}</Text></View>
@@ -180,18 +192,42 @@ export default function ProgressScreen() {
           <View accessibilityViewIsModal style={[styles.modalCard, { paddingBottom: insets.bottom + 22 }]}>
             <Text accessibilityRole="header" style={styles.modalTitle}>{t.progress.weightModalTitle}</Text>
             <Text style={styles.modalText}>{t.progress.weightModalText}</Text>
-            <View style={styles.weightInputRow}>
-              <TextInput
-                accessibilityLabel={t.progress.weightLabel}
-                autoFocus
-                keyboardType="decimal-pad"
-                onChangeText={setWeightInput}
-                selectTextOnFocus
-                style={styles.weightInput}
-                value={weightInput}
-              />
-              <Text style={styles.weightUnit}>kg</Text>
-            </View>
+            {units === 'uk' ? (
+              <View style={styles.weightInputRow}>
+                <TextInput
+                  accessibilityLabel={`${t.progress.weightLabel} — stone`}
+                  autoFocus
+                  keyboardType="number-pad"
+                  onChangeText={setStoneInput}
+                  selectTextOnFocus
+                  style={[styles.weightInput, styles.weightInputSplit]}
+                  value={stoneInput}
+                />
+                <Text style={styles.weightUnit}>st</Text>
+                <TextInput
+                  accessibilityLabel={`${t.progress.weightLabel} — pounds`}
+                  keyboardType="decimal-pad"
+                  onChangeText={setStonePounds}
+                  selectTextOnFocus
+                  style={[styles.weightInput, styles.weightInputSplit]}
+                  value={stonePounds}
+                />
+                <Text style={styles.weightUnit}>lb</Text>
+              </View>
+            ) : (
+              <View style={styles.weightInputRow}>
+                <TextInput
+                  accessibilityLabel={t.progress.weightLabel}
+                  autoFocus
+                  keyboardType="decimal-pad"
+                  onChangeText={setWeightInput}
+                  selectTextOnFocus
+                  style={styles.weightInput}
+                  value={weightInput}
+                />
+                <Text style={styles.weightUnit}>{weightInputUnit(units)}</Text>
+              </View>
+            )}
             {weightError ? <Text accessibilityLiveRegion="assertive" style={styles.error}>{weightError}</Text> : null}
             <PrimaryButton disabled={saving} label={saving ? t.common.saving : t.common.save} onPress={() => void saveWeight()} />
             <PrimaryButton disabled={saving} label={t.common.cancel} onPress={() => setShowWeightEntry(false)} variant="ghost" />
@@ -291,6 +327,7 @@ const styles = StyleSheet.create({
   modalTitle: { color: colors.text, fontSize: 25, fontWeight: '700' },
   modalText: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   weightInputRow: { minHeight: 64, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' },
+  weightInputSplit: { minWidth: 76, flex: 0 },
   weightInput: { flex: 1, minWidth: 0, color: colors.text, fontSize: 28, fontWeight: '700', fontVariant: ['tabular-nums'] },
   weightUnit: { color: colors.muted, fontSize: 16, fontWeight: '600' },
   error: { color: colors.attention, fontSize: 12 },

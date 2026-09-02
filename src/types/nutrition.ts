@@ -1,3 +1,5 @@
+import type { UnitSystem } from '@/utils/units';
+
 export type MacroKey = 'protein' | 'carbs' | 'fat';
 
 export type Nutrition = {
@@ -71,6 +73,8 @@ export type UserProfile = {
   activityLevel: ActivityLevel;
   /** Only meaningful when goal is 'lose' or 'gain'. */
   weeklyRateKg: WeeklyRateKg;
+  /** Display only: height and weight are always stored in cm and kg. */
+  unitSystem: UnitSystem;
   preferences: string[];
   completedAt: string | null;
 };
