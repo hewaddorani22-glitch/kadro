@@ -33,7 +33,11 @@ src/i18n/legal.en.ts  →  site/en/privacy|terms|sources/index.html
 
 Text ändern heißt: die `.ts`-Datei ändern und `npm run site:legal` laufen
 lassen. `npm run verify` bricht ab, wenn die HTML-Dateien nicht mehr zur App
-passen.
+passen — lokal und in der CI.
+
+Die Anbieterangaben kommen aus `EXPO_PUBLIC_LEGAL_*`. Sie stehen deshalb auch
+im CI-Workflow: nach § 5 DDG sind sie ohnehin öffentlich und stehen im
+Impressum, und ohne sie könnten die Seiten nicht erzeugt werden.
 
 Vorher stand hier „ändere beide von Hand". Das hat nicht funktioniert: die
 Website sprach von „Account-ID", die App von „Supabase-IDs", und § 4 hatte in

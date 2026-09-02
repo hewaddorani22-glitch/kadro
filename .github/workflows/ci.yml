@@ -26,5 +26,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Not secrets: § 5 DDG requires this identity to be published, and it is
+      # already visible on getkandro.com/impressum. The checks need it because
+      # the legal pages are generated from it, and the release check refuses to
+      # ship a build whose own privacy notice has no controller named.
       - name: Verify project
+        env:
+          EXPO_PUBLIC_LEGAL_PROVIDER_NAME: Hewad Dorani
+          EXPO_PUBLIC_LEGAL_PROVIDER_ADDRESS: Altenessener Str. 124, 45326 Essen
+          EXPO_PUBLIC_LEGAL_CONTACT_EMAIL: hewaddorani22@gmail.com
+          EXPO_PUBLIC_LEGAL_PRIVACY_URL: https://getkandro.com/privacy
+          EXPO_PUBLIC_LEGAL_TERMS_URL: https://getkandro.com/terms
+          EXPO_PUBLIC_LEGAL_SUPPORT_URL: https://getkandro.com/support
         run: npm run verify
