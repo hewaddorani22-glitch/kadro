@@ -248,7 +248,15 @@ export default function OnboardingScreen() {
             ) : null}
 
             {step === 'rate' ? (
-              <View style={styles.choiceList}>
+              <View style={styles.rateStep}>
+                {/*
+                  This is the first screen that shows a unit, so it is the first
+                  place the choice has to be available. Without it an American
+                  whose phone reports another region read "0.25 kg per week"
+                  here and could not correct it until step five.
+                */}
+                <UnitToggle onChange={setUnitSystem} value={unitSystem} />
+                <View style={styles.choiceList}>
                 {([0.25, 0.5] as WeeklyRateKg[]).map((rate) => {
                   const active = weeklyRate === rate;
                   const daily = Math.round((rate * 7700) / 7);
@@ -274,6 +282,7 @@ export default function OnboardingScreen() {
                     </Pressable>
                   );
                 })}
+                </View>
               </View>
             ) : null}
 
@@ -635,6 +644,7 @@ const styles = StyleSheet.create({
   // and its space-between then pressed the number flat against the − and +
   // circles with no gap at all.
   unitStep: { flex: 1, justifyContent: 'space-between', paddingBottom: 24 },
+  rateStep: { gap: 22 },
   unitToggle: { flexDirection: 'row', gap: 8, alignSelf: 'stretch' },
   unitStepValue: { flex: 1, justifyContent: 'center' },
   unitOption: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },

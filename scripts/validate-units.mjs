@@ -164,6 +164,20 @@ for (const match of progress.matchAll(/accessibilityLabel=\{([^}]*weightLabel[^}
 
 const onboarding = await read('src/app/onboarding.tsx');
 assert.ok(onboarding.includes('UnitToggle'), 'onboarding must let the user pick their units');
+
+// Every step that shows a unit must also let the user change it. The rate step
+// comes before height and weight and printed "0.25 kg per week" with no way to
+// correct it for three more screens.
+const unitSteps = ['rate', 'height', 'weight'];
+for (const step of unitSteps) {
+  const start = onboarding.indexOf(`{step === '${step}' ?`);
+  assert.ok(start > 0, `could not locate the ${step} step`);
+  const block = onboarding.slice(start, onboarding.indexOf(') : null}', start));
+  assert.ok(
+    block.includes('<UnitToggle'),
+    `the ${step} step shows a unit but offers no way to change it`,
+  );
+}
 assert.ok(onboarding.includes('usesMetricHeight'), 'the height step must respect the chosen units');
 assert.ok(onboarding.includes('usesMetricWeight'), 'the weight step must respect the chosen units');
 
