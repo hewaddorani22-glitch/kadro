@@ -124,3 +124,30 @@ export function resolveBlsFacts(item) {
     ...meal.per100g,
   };
 }
+
+/**
+ * Free-text search over the German dish references.
+ *
+ * USDA is an English database, so a German user typing "Hähnchen" finds
+ * nothing there. These 64 dishes are the part of the catalogue that answers in
+ * German — and their values are vetted rather than matched, so they belong at
+ * the top of a result list, not below it.
+ */
+export function searchBlsReferences(query, limit = 6) {
+  const needle = String(query ?? '').trim().toLowerCase();
+  if (needle.length < 2) return [];
+  const terms = needle.split(/\s+/).filter(Boolean);
+  return BLS_REFERENCE_MEALS
+    .map((meal) => {
+      const name = meal.nameDe.toLowerCase();
+      const matched = terms.filter((term) => name.includes(term)).length;
+      if (!matched) return null;
+      // Prefer the dish whose name is mostly the query rather than one that
+      // merely contains it: "Reis" should not lead with a rice pudding.
+      return { meal, score: matched / terms.length + needle.length / name.length };
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score || a.meal.nameDe.localeCompare(b.meal.nameDe))
+    .slice(0, limit)
+    .map(({ meal }) => meal);
+}

@@ -3951,5 +3951,5217 @@
     }
    ]
   }
+ ],
+ "banana": [
+  {
+   "fdcId": 2012128,
+   "dataType": "Branded",
+   "description": "BANANA",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 12.5
+    },
+    {
+     "nutrientId": 1004,
+     "value": 6.25
+    },
+    {
+     "nutrientId": 1005,
+     "value": 40.6
+    },
+    {
+     "nutrientId": 1008,
+     "value": 312
+    },
+    {
+     "nutrientId": 1079,
+     "value": 6.2
+    }
+   ]
+  },
+  {
+   "fdcId": 2011468,
+   "dataType": "Branded",
+   "description": "BANANA",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.07
+    },
+    {
+     "nutrientId": 1005,
+     "value": 78.6
+    },
+    {
+     "nutrientId": 1008,
+     "value": 336
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.8
+    }
+   ]
+  },
+  {
+   "fdcId": 173945,
+   "dataType": "SR Legacy",
+   "description": "Bananas, dehydrated, or banana powder",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.89
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.81
+    },
+    {
+     "nutrientId": 1005,
+     "value": 88.3
+    },
+    {
+     "nutrientId": 1008,
+     "value": 346
+    },
+    {
+     "nutrientId": 1079,
+     "value": 9.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2709225,
+   "dataType": "Survey (FNDDS)",
+   "description": "Banana, baked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 0.82
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.21
+    },
+    {
+     "nutrientId": 1005,
+     "value": 32.43
+    },
+    {
+     "nutrientId": 1008,
+     "value": 161
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.8
+    }
+   ]
+  },
+  {
+   "fdcId": 2709224,
+   "dataType": "Survey (FNDDS)",
+   "description": "Banana, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 0.74
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.28
+    },
+    {
+     "nutrientId": 1005,
+     "value": 22.71
+    },
+    {
+     "nutrientId": 1008,
+     "value": 97
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.7
+    }
+   ]
+  },
+  {
+   "fdcId": 2709200,
+   "dataType": "Survey (FNDDS)",
+   "description": "Banana chips",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.3
+    },
+    {
+     "nutrientId": 1004,
+     "value": 33.6
+    },
+    {
+     "nutrientId": 1005,
+     "value": 58.4
+    },
+    {
+     "nutrientId": 1008,
+     "value": 519
+    },
+    {
+     "nutrientId": 1079,
+     "value": 7.7
+    }
+   ]
+  },
+  {
+   "fdcId": 2709342,
+   "dataType": "Survey (FNDDS)",
+   "description": "Banana nectar",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 0.26
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.13
+    },
+    {
+     "nutrientId": 1005,
+     "value": 18.01
+    },
+    {
+     "nutrientId": 1008,
+     "value": 74
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.6
+    }
+   ]
+  },
+  {
+   "fdcId": 2705697,
+   "dataType": "Survey (FNDDS)",
+   "description": "Banana pudding",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.57
+    },
+    {
+     "nutrientId": 1004,
+     "value": 4.26
+    },
+    {
+     "nutrientId": 1005,
+     "value": 28
+    },
+    {
+     "nutrientId": 1008,
+     "value": 160
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.7
+    }
+   ]
+  },
+  {
+   "fdcId": 2705660,
+   "dataType": "Survey (FNDDS)",
+   "description": "Banana split",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.42
+    },
+    {
+     "nutrientId": 1004,
+     "value": 6.88
+    },
+    {
+     "nutrientId": 1005,
+     "value": 32.59
+    },
+    {
+     "nutrientId": 1008,
+     "value": 199
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1
+    }
+   ]
+  },
+  {
+   "fdcId": 173944,
+   "dataType": "SR Legacy",
+   "description": "Bananas, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1005,
+     "value": 22.8
+    },
+    {
+     "nutrientId": 1008,
+     "value": 89.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.6
+    },
+    {
+     "nutrientId": 1003,
+     "value": 1.09
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.33
+    }
+   ]
+  },
+  {
+   "fdcId": 1105073,
+   "dataType": "Foundation",
+   "description": "Bananas, overripe, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 0.22
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.7
+    },
+    {
+     "nutrientId": 1003,
+     "value": 0.73
+    },
+    {
+     "nutrientId": 1005,
+     "value": 20.1
+    },
+    {
+     "nutrientId": 1008,
+     "value": 85.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2707856,
+   "dataType": "Survey (FNDDS)",
+   "description": "Cake or cupcake, banana",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.47
+    },
+    {
+     "nutrientId": 1004,
+     "value": 17.51
+    },
+    {
+     "nutrientId": 1005,
+     "value": 53.07
+    },
+    {
+     "nutrientId": 1008,
+     "value": 379
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1
+    }
+   ]
+  },
+  {
+   "fdcId": 167629,
+   "dataType": "SR Legacy",
+   "description": "Melon, banana (Navajo)",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 0.84
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.3
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.2
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.06
+    },
+    {
+     "nutrientId": 1008,
+     "value": 21.0
+    }
+   ]
+  },
+  {
+   "fdcId": 169394,
+   "dataType": "SR Legacy",
+   "description": "Pepper, banana, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1079,
+     "value": 3.4
+    },
+    {
+     "nutrientId": 1003,
+     "value": 1.66
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.45
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.35
+    },
+    {
+     "nutrientId": 1008,
+     "value": 27.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2709802,
+   "dataType": "Survey (FNDDS)",
+   "description": "Peppers, banana, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.66
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.45
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.35
+    },
+    {
+     "nutrientId": 1008,
+     "value": 27
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2708004,
+   "dataType": "Survey (FNDDS)",
+   "description": "Pie, banana cream",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.42
+    },
+    {
+     "nutrientId": 1004,
+     "value": 16.17
+    },
+    {
+     "nutrientId": 1005,
+     "value": 32.35
+    },
+    {
+     "nutrientId": 1008,
+     "value": 284
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.7
+    }
+   ]
+  },
+  {
+   "fdcId": 168849,
+   "dataType": "SR Legacy",
+   "description": "Snacks, banana chips",
+   "foodNutrients": [
+    {
+     "nutrientId": 1005,
+     "value": 58.4
+    },
+    {
+     "nutrientId": 1008,
+     "value": 519
+    },
+    {
+     "nutrientId": 1004,
+     "value": 33.6
+    },
+    {
+     "nutrientId": 1079,
+     "value": 7.7
+    },
+    {
+     "nutrientId": 1003,
+     "value": 2.3
+    }
+   ]
+  },
+  {
+   "fdcId": 171351,
+   "dataType": "SR Legacy",
+   "description": "Babyfood, apple-banana juice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1008,
+     "value": 51.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.1
+    },
+    {
+     "nutrientId": 1005,
+     "value": 12.3
+    },
+    {
+     "nutrientId": 1003,
+     "value": 0.2
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.2
+    }
+   ]
+  },
+  {
+   "fdcId": 167732,
+   "dataType": "SR Legacy",
+   "description": "Babyfood, banana no tapioca, strained",
+   "foodNutrients": [
+    {
+     "nutrientId": 1005,
+     "value": 21.3
+    },
+    {
+     "nutrientId": 1008,
+     "value": 91.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 1.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.6
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.2
+    }
+   ]
+  },
+  {
+   "fdcId": 170962,
+   "dataType": "SR Legacy",
+   "description": "Babyfood, juice, orange and banana",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 0.1
+    },
+    {
+     "nutrientId": 1005,
+     "value": 11.9
+    },
+    {
+     "nutrientId": 1008,
+     "value": 50.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 0.7
+    }
+   ]
+  },
+  {
+   "fdcId": 2709365,
+   "dataType": "Survey (FNDDS)",
+   "description": "Baby Toddler bananas, Stage 1",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.2
+    },
+    {
+     "nutrientId": 1005,
+     "value": 21.34
+    },
+    {
+     "nutrientId": 1008,
+     "value": 91
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.6
+    }
+   ]
+  },
+  {
+   "fdcId": 2709366,
+   "dataType": "Survey (FNDDS)",
+   "description": "Baby Toddler bananas, Stage 2",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.2
+    },
+    {
+     "nutrientId": 1005,
+     "value": 21.34
+    },
+    {
+     "nutrientId": 1008,
+     "value": 91
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.6
+    }
+   ]
+  },
+  {
+   "fdcId": 167733,
+   "dataType": "SR Legacy",
+   "description": "Babyfood, banana apple dessert, strained",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 0.2
+    },
+    {
+     "nutrientId": 1005,
+     "value": 16.3
+    },
+    {
+     "nutrientId": 1003,
+     "value": 0.3
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 68.0
+    }
+   ]
+  },
+  {
+   "fdcId": 170999,
+   "dataType": "SR Legacy",
+   "description": "Babyfood, banana with mixed berries, strained",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.01
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.36
+    },
+    {
+     "nutrientId": 1005,
+     "value": 21.3
+    },
+    {
+     "nutrientId": 1008,
+     "value": 92.0
+    }
+   ]
+  },
+  {
+   "fdcId": 170965,
+   "dataType": "SR Legacy",
+   "description": "Babyfood, cereal, mixed, with bananas, dry",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 4.6
+    },
+    {
+     "nutrientId": 1005,
+     "value": 77.1
+    },
+    {
+     "nutrientId": 1008,
+     "value": 391
+    },
+    {
+     "nutrientId": 1003,
+     "value": 10.7
+    },
+    {
+     "nutrientId": 1079,
+     "value": 7.8
+    }
+   ]
+  }
+ ],
+ "bread": [
+  {
+   "fdcId": 2058078,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.57
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 32.1
+    },
+    {
+     "nutrientId": 1008,
+     "value": 146
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.6
+    }
+   ]
+  },
+  {
+   "fdcId": 1916888,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 7.89
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 55.3
+    },
+    {
+     "nutrientId": 1008,
+     "value": 263
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.6
+    }
+   ]
+  },
+  {
+   "fdcId": 2339103,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 8.7
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.17
+    },
+    {
+     "nutrientId": 1005,
+     "value": 43.5
+    },
+    {
+     "nutrientId": 1008,
+     "value": 196
+    },
+    {
+     "nutrientId": 1079,
+     "value": 8.7
+    }
+   ]
+  },
+  {
+   "fdcId": 2071481,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 10.7
+    },
+    {
+     "nutrientId": 1004,
+     "value": 5.36
+    },
+    {
+     "nutrientId": 1005,
+     "value": 66.1
+    },
+    {
+     "nutrientId": 1008,
+     "value": 357
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.6
+    }
+   ]
+  },
+  {
+   "fdcId": 1850717,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 8.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 50.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 240
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2011754,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 5.56
+    },
+    {
+     "nutrientId": 1004,
+     "value": 4.17
+    },
+    {
+     "nutrientId": 1005,
+     "value": 44.4
+    },
+    {
+     "nutrientId": 1008,
+     "value": 222
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.8
+    }
+   ]
+  },
+  {
+   "fdcId": 2071305,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 8.77
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.88
+    },
+    {
+     "nutrientId": 1005,
+     "value": 56.1
+    },
+    {
+     "nutrientId": 1008,
+     "value": 263
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.8
+    }
+   ]
+  },
+  {
+   "fdcId": 2431121,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 5.88
+    },
+    {
+     "nutrientId": 1004,
+     "value": 7.06
+    },
+    {
+     "nutrientId": 1005,
+     "value": 51.8
+    },
+    {
+     "nutrientId": 1008,
+     "value": 306
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.2
+    }
+   ]
+  },
+  {
+   "fdcId": 2071165,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 10.2
+    },
+    {
+     "nutrientId": 1004,
+     "value": 8.16
+    },
+    {
+     "nutrientId": 1005,
+     "value": 49.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 306
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2072082,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 7.69
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.85
+    },
+    {
+     "nutrientId": 1005,
+     "value": 50.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 269
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2157209,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 270
+    },
+    {
+     "nutrientId": 1004,
+     "value": 150
+    },
+    {
+     "nutrientId": 1005,
+     "value": 1700.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 8600.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 90.0
+    }
+   ]
+  },
+  {
+   "fdcId": 1941823,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 7.14
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 50.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 250
+    }
+   ]
+  },
+  {
+   "fdcId": 1153769,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 10.4
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 52.1
+    },
+    {
+     "nutrientId": 1008,
+     "value": 250
+    }
+   ]
+  },
+  {
+   "fdcId": 2480938,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 7.27
+    },
+    {
+     "nutrientId": 1004,
+     "value": 4.55
+    },
+    {
+     "nutrientId": 1005,
+     "value": 47.3
+    },
+    {
+     "nutrientId": 1008,
+     "value": 255
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.6
+    }
+   ]
+  },
+  {
+   "fdcId": 2436286,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 11.1
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 44.4
+    },
+    {
+     "nutrientId": 1008,
+     "value": 222
+    },
+    {
+     "nutrientId": 1079,
+     "value": 8.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2014227,
+   "dataType": "Branded",
+   "description": "BREAD",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 10.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 54.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 248
+    },
+    {
+     "nutrientId": 1079,
+     "value": 6.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2707850,
+   "dataType": "Survey (FNDDS)",
+   "description": "Bread, fruit",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 6.01
+    },
+    {
+     "nutrientId": 1004,
+     "value": 18.1
+    },
+    {
+     "nutrientId": 1005,
+     "value": 47.34
+    },
+    {
+     "nutrientId": 1008,
+     "value": 374
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.2
+    }
+   ]
+  },
+  {
+   "fdcId": 2707613,
+   "dataType": "Survey (FNDDS)",
+   "description": "Bread, naan",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 11.09
+    },
+    {
+     "nutrientId": 1004,
+     "value": 7.28
+    },
+    {
+     "nutrientId": 1005,
+     "value": 50.23
+    },
+    {
+     "nutrientId": 1008,
+     "value": 311
+    },
+    {
+     "nutrientId": 1079,
+     "value": 5.2
+    }
+   ]
+  },
+  {
+   "fdcId": 2707851,
+   "dataType": "Survey (FNDDS)",
+   "description": "Bread, zucchini",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 5.05
+    },
+    {
+     "nutrientId": 1004,
+     "value": 13.14
+    },
+    {
+     "nutrientId": 1005,
+     "value": 42.64
+    },
+    {
+     "nutrientId": 1008,
+     "value": 306
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2707714,
+   "dataType": "Survey (FNDDS)",
+   "description": "Bread, puri",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 6.84
+    },
+    {
+     "nutrientId": 1004,
+     "value": 24.94
+    },
+    {
+     "nutrientId": 1005,
+     "value": 39.23
+    },
+    {
+     "nutrientId": 1008,
+     "value": 409
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.5
+    }
+   ]
+  },
+  {
+   "fdcId": 2707849,
+   "dataType": "Survey (FNDDS)",
+   "description": "Bread, pumpkin",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 4.97
+    },
+    {
+     "nutrientId": 1004,
+     "value": 12.93
+    },
+    {
+     "nutrientId": 1005,
+     "value": 43.21
+    },
+    {
+     "nutrientId": 1008,
+     "value": 305
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2707755,
+   "dataType": "Survey (FNDDS)",
+   "description": "Bread, rye",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 8.5
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.3
+    },
+    {
+     "nutrientId": 1005,
+     "value": 48.3
+    },
+    {
+     "nutrientId": 1008,
+     "value": 259
+    },
+    {
+     "nutrientId": 1079,
+     "value": 5.8
+    }
+   ]
+  },
+  {
+   "fdcId": 2707650,
+   "dataType": "Survey (FNDDS)",
+   "description": "Bread, vegetable",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 9.67
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.26
+    },
+    {
+     "nutrientId": 1005,
+     "value": 47.98
+    },
+    {
+     "nutrientId": 1008,
+     "value": 259
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.8
+    }
+   ]
+  },
+  {
+   "fdcId": 2707598,
+   "dataType": "Survey (FNDDS)",
+   "description": "Bread, white",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 9.43
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.59
+    },
+    {
+     "nutrientId": 1005,
+     "value": 49.2
+    },
+    {
+     "nutrientId": 1008,
+     "value": 267
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.3
+    }
+   ]
+  },
+  {
+   "fdcId": 2707687,
+   "dataType": "Survey (FNDDS)",
+   "description": "Bread stuffing",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.14
+    },
+    {
+     "nutrientId": 1004,
+     "value": 8.51
+    },
+    {
+     "nutrientId": 1005,
+     "value": 21.71
+    },
+    {
+     "nutrientId": 1008,
+     "value": 177
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.9
+    }
+   ]
+  }
+ ],
+ "chicken breast": [
+  {
+   "fdcId": 2187885,
+   "dataType": "Branded",
+   "description": "CHICKEN BREAST",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 20.4
+    },
+    {
+     "nutrientId": 1004,
+     "value": 8.1
+    },
+    {
+     "nutrientId": 1005,
+     "value": 1.06
+    },
+    {
+     "nutrientId": 1008,
+     "value": 165
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2092152,
+   "dataType": "Branded",
+   "description": "CHICKEN BREAST",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 14.3
+    },
+    {
+     "nutrientId": 1004,
+     "value": 8.93
+    },
+    {
+     "nutrientId": 1005,
+     "value": 3.57
+    },
+    {
+     "nutrientId": 1008,
+     "value": 143
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2125872,
+   "dataType": "Branded",
+   "description": "CHICKEN BREAST",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 19.6
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.79
+    },
+    {
+     "nutrientId": 1005,
+     "value": 1.79
+    },
+    {
+     "nutrientId": 1008,
+     "value": 107
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2055943,
+   "dataType": "Branded",
+   "description": "CHICKEN BREAST",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 21.4
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.79
+    },
+    {
+     "nutrientId": 1005,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 107
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2096160,
+   "dataType": "Branded",
+   "description": "CHICKEN BREAST",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 11.4
+    },
+    {
+     "nutrientId": 1004,
+     "value": 4.16
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.71
+    },
+    {
+     "nutrientId": 1008,
+     "value": 96.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.3
+    }
+   ]
+  },
+  {
+   "fdcId": 1935739,
+   "dataType": "Branded",
+   "description": "CHICKEN BREAST",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 18.4
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.02
+    },
+    {
+     "nutrientId": 1005,
+     "value": 2.04
+    },
+    {
+     "nutrientId": 1008,
+     "value": 92.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2620738,
+   "dataType": "Branded",
+   "description": "CHICKEN BREAST",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 17.9
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.68
+    },
+    {
+     "nutrientId": 1005,
+     "value": 1.79
+    },
+    {
+     "nutrientId": 1008,
+     "value": 107
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2279206,
+   "dataType": "Branded",
+   "description": "CHICKEN BREAST",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 21.4
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.79
+    },
+    {
+     "nutrientId": 1005,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 107
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 1648039,
+   "dataType": "Branded",
+   "description": "CHICKEN BREAST",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 17.9
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.79
+    },
+    {
+     "nutrientId": 1005,
+     "value": 3.57
+    },
+    {
+     "nutrientId": 1008,
+     "value": 107
+    }
+   ]
+  },
+  {
+   "fdcId": 2066523,
+   "dataType": "Branded",
+   "description": "CHICKEN BREAST",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 17.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.23
+    },
+    {
+     "nutrientId": 1005,
+     "value": 3.57
+    },
+    {
+     "nutrientId": 1008,
+     "value": 116
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2759004,
+   "dataType": "Foundation",
+   "description": "Lunchmeat, chicken breast, sliced",
+   "foodNutrients": []
+  },
+  {
+   "fdcId": 2705964,
+   "dataType": "Survey (FNDDS)",
+   "description": "Chicken breast, rotisserie, skin not eaten",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 28.04
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.57
+    },
+    {
+     "nutrientId": 1005,
+     "value": 0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 144
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0
+    }
+   ]
+  },
+  {
+   "fdcId": 171515,
+   "dataType": "SR Legacy",
+   "description": "Chicken breast tenders, breaded, uncooked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1079,
+     "value": 1.1
+    },
+    {
+     "nutrientId": 1003,
+     "value": 14.7
+    },
+    {
+     "nutrientId": 1004,
+     "value": 15.8
+    },
+    {
+     "nutrientId": 1005,
+     "value": 15.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 263
+    }
+   ]
+  },
+  {
+   "fdcId": 174608,
+   "dataType": "SR Legacy",
+   "description": "Chicken breast, roll, oven-roasted",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 7.65
+    },
+    {
+     "nutrientId": 1005,
+     "value": 1.79
+    },
+    {
+     "nutrientId": 1003,
+     "value": 14.6
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 134
+    }
+   ]
+  },
+  {
+   "fdcId": 2705963,
+   "dataType": "Survey (FNDDS)",
+   "description": "Chicken breast, rotisserie, skin eaten",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 26.37
+    },
+    {
+     "nutrientId": 1004,
+     "value": 7.67
+    },
+    {
+     "nutrientId": 1005,
+     "value": 0.09
+    },
+    {
+     "nutrientId": 1008,
+     "value": 175
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0
+    }
+   ]
+  },
+  {
+   "fdcId": 2705971,
+   "dataType": "Survey (FNDDS)",
+   "description": "Chicken breast, sauteed, skin eaten",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 25.72
+    },
+    {
+     "nutrientId": 1004,
+     "value": 10.62
+    },
+    {
+     "nutrientId": 1005,
+     "value": 0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 206
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0
+    }
+   ]
+  },
+  {
+   "fdcId": 2705972,
+   "dataType": "Survey (FNDDS)",
+   "description": "Chicken breast, sauteed, skin not eaten",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 29.62
+    },
+    {
+     "nutrientId": 1004,
+     "value": 5.45
+    },
+    {
+     "nutrientId": 1005,
+     "value": 0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 176
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0
+    }
+   ]
+  },
+  {
+   "fdcId": 2705965,
+   "dataType": "Survey (FNDDS)",
+   "description": "Chicken breast, stewed, skin eaten",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 24.7
+    },
+    {
+     "nutrientId": 1004,
+     "value": 8.28
+    },
+    {
+     "nutrientId": 1005,
+     "value": 0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 181
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0
+    }
+   ]
+  },
+  {
+   "fdcId": 2705966,
+   "dataType": "Survey (FNDDS)",
+   "description": "Chicken breast, stewed, skin not eaten",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 27.96
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.26
+    },
+    {
+     "nutrientId": 1005,
+     "value": 0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 149
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0
+    }
+   ]
+  },
+  {
+   "fdcId": 2646170,
+   "dataType": "Foundation",
+   "description": "Chicken, breast, boneless, skinless, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 1.93
+    },
+    {
+     "nutrientId": 1003,
+     "value": 22.5
+    },
+    {
+     "nutrientId": 1005,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2727569,
+   "dataType": "Foundation",
+   "description": "Chicken, breast, meat and skin, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 4.78
+    },
+    {
+     "nutrientId": 1003,
+     "value": 21.4
+    },
+    {
+     "nutrientId": 1005,
+     "value": -0.428
+    }
+   ]
+  },
+  {
+   "fdcId": 171514,
+   "dataType": "SR Legacy",
+   "description": "Chicken breast tenders, breaded, cooked, microwaved",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 12.9
+    },
+    {
+     "nutrientId": 1003,
+     "value": 16.4
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 17.6
+    },
+    {
+     "nutrientId": 1008,
+     "value": 252
+    }
+   ]
+  },
+  {
+   "fdcId": 2705969,
+   "dataType": "Survey (FNDDS)",
+   "description": "Chicken breast, grilled with sauce, skin eaten",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 21.15
+    },
+    {
+     "nutrientId": 1004,
+     "value": 9.15
+    },
+    {
+     "nutrientId": 1005,
+     "value": 7.34
+    },
+    {
+     "nutrientId": 1008,
+     "value": 202
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.2
+    }
+   ]
+  },
+  {
+   "fdcId": 2705970,
+   "dataType": "Survey (FNDDS)",
+   "description": "Chicken breast, grilled with sauce, skin not eaten",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 24.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 4.93
+    },
+    {
+     "nutrientId": 1005,
+     "value": 7.34
+    },
+    {
+     "nutrientId": 1008,
+     "value": 178
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.2
+    }
+   ]
+  },
+  {
+   "fdcId": 172945,
+   "dataType": "SR Legacy",
+   "description": "Oscar Mayer, Chicken Breast (honey glazed)",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 19.8
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.5
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.3
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 109
+    }
+   ]
+  }
+ ],
+ "milk": [
+  {
+   "fdcId": 1909132,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.39
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.12
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.08
+    },
+    {
+     "nutrientId": 1008,
+     "value": 55.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2078244,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.75
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.58
+    },
+    {
+     "nutrientId": 1008,
+     "value": 62.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2501185,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 62.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2475001,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.38
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.97
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.07
+    },
+    {
+     "nutrientId": 1008,
+     "value": 51.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2083027,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 62.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2062196,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 62.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2476573,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.75
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 67.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2503416,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 62.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2454032,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.75
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 67.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 1909141,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.39
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.12
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.08
+    },
+    {
+     "nutrientId": 1008,
+     "value": 55.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2098011,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 4.17
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.08
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 54.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2471393,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.75
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 71.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2062449,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.38
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.38
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.59
+    },
+    {
+     "nutrientId": 1008,
+     "value": 63.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2630156,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 62.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2658737,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.75
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 67.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2092649,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.58
+    },
+    {
+     "nutrientId": 1008,
+     "value": 62.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2074481,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 62.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2078442,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 62.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2657009,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.75
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 67.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2085761,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.75
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 67.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 1909137,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 62.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2658501,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.75
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 67.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 1960596,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.39
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.39
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.66
+    },
+    {
+     "nutrientId": 1008,
+     "value": 64.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 1909134,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.04
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 46.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 1909135,
+   "dataType": "Branded",
+   "description": "MILK",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.33
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.42
+    },
+    {
+     "nutrientId": 1008,
+     "value": 38.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  }
+ ],
+ "rice": [
+  {
+   "fdcId": 356554,
+   "dataType": "Branded",
+   "description": "RICE",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.47
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.43
+    },
+    {
+     "nutrientId": 1005,
+     "value": 26.4
+    },
+    {
+     "nutrientId": 1008,
+     "value": 139
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2077766,
+   "dataType": "Branded",
+   "description": "RICE",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 6.67
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 77.8
+    },
+    {
+     "nutrientId": 1008,
+     "value": 356
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    }
+   ]
+  },
+  {
+   "fdcId": 356582,
+   "dataType": "Branded",
+   "description": "RICE",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 6.67
+    },
+    {
+     "nutrientId": 1005,
+     "value": 80.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 356
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.2
+    }
+   ]
+  },
+  {
+   "fdcId": 1888780,
+   "dataType": "Branded",
+   "description": "RICE",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 6.67
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 80.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 356
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.2
+    }
+   ]
+  },
+  {
+   "fdcId": 2021679,
+   "dataType": "Branded",
+   "description": "RICE",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 6.38
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 78.7
+    },
+    {
+     "nutrientId": 1008,
+     "value": 340
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.1
+    }
+   ]
+  },
+  {
+   "fdcId": 2116789,
+   "dataType": "Branded",
+   "description": "RICE",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 6.67
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 75.6
+    },
+    {
+     "nutrientId": 1008,
+     "value": 333
+    }
+   ]
+  },
+  {
+   "fdcId": 2443255,
+   "dataType": "Branded",
+   "description": "RICE",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 6.67
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 80.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 356
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.2
+    }
+   ]
+  },
+  {
+   "fdcId": 2709078,
+   "dataType": "Survey (FNDDS)",
+   "description": "Dirty rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 5.12
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.25
+    },
+    {
+     "nutrientId": 1005,
+     "value": 17.25
+    },
+    {
+     "nutrientId": 1008,
+     "value": 112
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.6
+    }
+   ]
+  },
+  {
+   "fdcId": 2709089,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice dressing",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.98
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.29
+    },
+    {
+     "nutrientId": 1005,
+     "value": 17.61
+    },
+    {
+     "nutrientId": 1008,
+     "value": 110
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.6
+    }
+   ]
+  },
+  {
+   "fdcId": 2708163,
+   "dataType": "Survey (FNDDS)",
+   "description": "Crackers, rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 10
+    },
+    {
+     "nutrientId": 1004,
+     "value": 5
+    },
+    {
+     "nutrientId": 1005,
+     "value": 82.64
+    },
+    {
+     "nutrientId": 1008,
+     "value": 416
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0
+    }
+   ]
+  },
+  {
+   "fdcId": 2708166,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice paper",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 5.91
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.11
+    },
+    {
+     "nutrientId": 1005,
+     "value": 72.26
+    },
+    {
+     "nutrientId": 1008,
+     "value": 323
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.5
+    }
+   ]
+  },
+  {
+   "fdcId": 2709077,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice pilaf",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.29
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.03
+    },
+    {
+     "nutrientId": 1005,
+     "value": 24.08
+    },
+    {
+     "nutrientId": 1008,
+     "value": 137
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2708162,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice cake",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 7.1
+    },
+    {
+     "nutrientId": 1004,
+     "value": 4.3
+    },
+    {
+     "nutrientId": 1005,
+     "value": 81.1
+    },
+    {
+     "nutrientId": 1008,
+     "value": 392
+    },
+    {
+     "nutrientId": 1079,
+     "value": 4.2
+    }
+   ]
+  },
+  {
+   "fdcId": 2708161,
+   "dataType": "Survey (FNDDS)",
+   "description": "Chips, rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 8.2
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.8
+    },
+    {
+     "nutrientId": 1005,
+     "value": 81.5
+    },
+    {
+     "nutrientId": 1008,
+     "value": 384
+    },
+    {
+     "nutrientId": 1079,
+     "value": 4.2
+    }
+   ]
+  },
+  {
+   "fdcId": 2708958,
+   "dataType": "Survey (FNDDS)",
+   "description": "Adobo, with rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 17.69
+    },
+    {
+     "nutrientId": 1004,
+     "value": 7.94
+    },
+    {
+     "nutrientId": 1005,
+     "value": 8.86
+    },
+    {
+     "nutrientId": 1008,
+     "value": 181
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.2
+    }
+   ]
+  },
+  {
+   "fdcId": 2707794,
+   "dataType": "Survey (FNDDS)",
+   "description": "Bread, rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 4.31
+    },
+    {
+     "nutrientId": 1004,
+     "value": 5.24
+    },
+    {
+     "nutrientId": 1005,
+     "value": 45.78
+    },
+    {
+     "nutrientId": 1008,
+     "value": 248
+    },
+    {
+     "nutrientId": 1079,
+     "value": 4.3
+    }
+   ]
+  },
+  {
+   "fdcId": 2708415,
+   "dataType": "Survey (FNDDS)",
+   "description": "Cream of rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.17
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.09
+    },
+    {
+     "nutrientId": 1005,
+     "value": 15.28
+    },
+    {
+     "nutrientId": 1008,
+     "value": 69
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.1
+    }
+   ]
+  },
+  {
+   "fdcId": 2706726,
+   "dataType": "Survey (FNDDS)",
+   "description": "Gumbo with rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 8.16
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.43
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.55
+    },
+    {
+     "nutrientId": 1008,
+     "value": 89
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2706879,
+   "dataType": "Survey (FNDDS)",
+   "description": "Gumbo, no rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 8.54
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.68
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.03
+    },
+    {
+     "nutrientId": 1008,
+     "value": 83
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2705685,
+   "dataType": "Survey (FNDDS)",
+   "description": "Pudding, rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.23
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.15
+    },
+    {
+     "nutrientId": 1005,
+     "value": 18.39
+    },
+    {
+     "nutrientId": 1008,
+     "value": 108
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.3
+    }
+   ]
+  },
+  {
+   "fdcId": 173161,
+   "dataType": "SR Legacy",
+   "description": "Rice crackers",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 10.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 82.6
+    },
+    {
+     "nutrientId": 1008,
+     "value": 416
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 5.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2709071,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice croquette",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.35
+    },
+    {
+     "nutrientId": 1004,
+     "value": 6.58
+    },
+    {
+     "nutrientId": 1005,
+     "value": 20.08
+    },
+    {
+     "nutrientId": 1008,
+     "value": 154
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2705411,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice milk",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 0.28
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.97
+    },
+    {
+     "nutrientId": 1005,
+     "value": 9.17
+    },
+    {
+     "nutrientId": 1008,
+     "value": 47
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.3
+    }
+   ]
+  },
+  {
+   "fdcId": 2709090,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice with raisins",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.65
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.58
+    },
+    {
+     "nutrientId": 1005,
+     "value": 32.13
+    },
+    {
+     "nutrientId": 1008,
+     "value": 162
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.8
+    }
+   ]
+  },
+  {
+   "fdcId": 2709146,
+   "dataType": "Survey (FNDDS)",
+   "description": "Soup, rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.54
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.15
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.78
+    },
+    {
+     "nutrientId": 1008,
+     "value": 51
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.5
+    }
+   ]
+  },
+  {
+   "fdcId": 2708356,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice noodles, cooked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.78
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.2
+    },
+    {
+     "nutrientId": 1005,
+     "value": 23.87
+    },
+    {
+     "nutrientId": 1008,
+     "value": 107
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1
+    }
+   ]
+  },
+  {
+   "fdcId": 168914,
+   "dataType": "SR Legacy",
+   "description": "Rice noodles, cooked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1079,
+     "value": 1.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.2
+    },
+    {
+     "nutrientId": 1005,
+     "value": 24.0
+    },
+    {
+     "nutrientId": 1008,
+     "value": 108
+    },
+    {
+     "nutrientId": 1003,
+     "value": 1.79
+    }
+   ]
+  },
+  {
+   "fdcId": 2708402,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, cooked, NFS",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.67
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.28
+    },
+    {
+     "nutrientId": 1005,
+     "value": 27.99
+    },
+    {
+     "nutrientId": 1008,
+     "value": 129
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2708416,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, cooked, with milk",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 5.13
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.31
+    },
+    {
+     "nutrientId": 1005,
+     "value": 25.01
+    },
+    {
+     "nutrientId": 1008,
+     "value": 144
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.3
+    }
+   ]
+  },
+  {
+   "fdcId": 168897,
+   "dataType": "SR Legacy",
+   "description": "Wild rice, cooked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1079,
+     "value": 1.8
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.34
+    },
+    {
+     "nutrientId": 1005,
+     "value": 21.3
+    },
+    {
+     "nutrientId": 1008,
+     "value": 101
+    },
+    {
+     "nutrientId": 1003,
+     "value": 3.99
+    }
+   ]
+  },
+  {
+   "fdcId": 2708422,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, white, cooked, glutinous",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.01
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.19
+    },
+    {
+     "nutrientId": 1005,
+     "value": 20.97
+    },
+    {
+     "nutrientId": 1008,
+     "value": 96
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1
+    }
+   ]
+  },
+  {
+   "fdcId": 2710789,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, brown, cooked, as ingredient",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.45
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.12
+    },
+    {
+     "nutrientId": 1005,
+     "value": 25.89
+    },
+    {
+     "nutrientId": 1008,
+     "value": 124
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1
+    }
+   ]
+  },
+  {
+   "fdcId": 2709032,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, cooked with coconut milk",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.57
+    },
+    {
+     "nutrientId": 1004,
+     "value": 17.23
+    },
+    {
+     "nutrientId": 1005,
+     "value": 26.55
+    },
+    {
+     "nutrientId": 1008,
+     "value": 267
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2708417,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, sweet, cooked with honey",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.52
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.26
+    },
+    {
+     "nutrientId": 1005,
+     "value": 31.12
+    },
+    {
+     "nutrientId": 1008,
+     "value": 139
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2710788,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, white, cooked, as ingredient",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.54
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.37
+    },
+    {
+     "nutrientId": 1005,
+     "value": 28.98
+    },
+    {
+     "nutrientId": 1008,
+     "value": 130
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0
+    }
+   ]
+  },
+  {
+   "fdcId": 2708404,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, white, cooked, made with oil",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.6
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.12
+    },
+    {
+     "nutrientId": 1005,
+     "value": 27.19
+    },
+    {
+     "nutrientId": 1008,
+     "value": 151
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2708408,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, white, cooked, no added fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.67
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.28
+    },
+    {
+     "nutrientId": 1005,
+     "value": 27.99
+    },
+    {
+     "nutrientId": 1008,
+     "value": 129
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2708403,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, white, cooked, NS as to fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.67
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.28
+    },
+    {
+     "nutrientId": 1005,
+     "value": 27.99
+    },
+    {
+     "nutrientId": 1008,
+     "value": 129
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2708406,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, white, cooked, made with margarine",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.6
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.12
+    },
+    {
+     "nutrientId": 1005,
+     "value": 27.22
+    },
+    {
+     "nutrientId": 1008,
+     "value": 142
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2708405,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, white, cooked, made with butter",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.62
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.61
+    },
+    {
+     "nutrientId": 1005,
+     "value": 27.2
+    },
+    {
+     "nutrientId": 1008,
+     "value": 147
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2708411,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, brown, cooked, made with butter",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.4
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3
+    },
+    {
+     "nutrientId": 1005,
+     "value": 25.16
+    },
+    {
+     "nutrientId": 1008,
+     "value": 137
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1
+    }
+   ]
+  },
+  {
+   "fdcId": 2708412,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, brown, cooked, made with margarine",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.38
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.6
+    },
+    {
+     "nutrientId": 1005,
+     "value": 25.18
+    },
+    {
+     "nutrientId": 1008,
+     "value": 134
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1
+    }
+   ]
+  },
+  {
+   "fdcId": 2708414,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, brown, cooked, no added fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.43
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.11
+    },
+    {
+     "nutrientId": 1005,
+     "value": 25.76
+    },
+    {
+     "nutrientId": 1008,
+     "value": 123
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1
+    }
+   ]
+  },
+  {
+   "fdcId": 2708409,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, brown, cooked, NS as to fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.44
+    },
+    {
+     "nutrientId": 1004,
+     "value": 1.11
+    },
+    {
+     "nutrientId": 1005,
+     "value": 25.76
+    },
+    {
+     "nutrientId": 1008,
+     "value": 123
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1
+    }
+   ]
+  },
+  {
+   "fdcId": 169711,
+   "dataType": "SR Legacy",
+   "description": "Rice, white, glutinous, unenriched, cooked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 0.19
+    },
+    {
+     "nutrientId": 1005,
+     "value": 21.1
+    },
+    {
+     "nutrientId": 1008,
+     "value": 97.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 2.02
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2708421,
+   "dataType": "Survey (FNDDS)",
+   "description": "Yellow rice, cooked, fat added",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.76
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.43
+    },
+    {
+     "nutrientId": 1005,
+     "value": 18.7
+    },
+    {
+     "nutrientId": 1008,
+     "value": 103
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2708420,
+   "dataType": "Survey (FNDDS)",
+   "description": "Yellow rice, cooked, no added fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.8
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.45
+    },
+    {
+     "nutrientId": 1005,
+     "value": 19.1
+    },
+    {
+     "nutrientId": 1008,
+     "value": 88
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.5
+    }
+   ]
+  },
+  {
+   "fdcId": 2708419,
+   "dataType": "Survey (FNDDS)",
+   "description": "Yellow rice, cooked, NS as to fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.8
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.45
+    },
+    {
+     "nutrientId": 1005,
+     "value": 19.1
+    },
+    {
+     "nutrientId": 1008,
+     "value": 88
+    },
+    {
+     "nutrientId": 1079,
+     "value": 0.5
+    }
+   ]
+  },
+  {
+   "fdcId": 2708425,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, wild, 100%, cooked, fat added",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.86
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.08
+    },
+    {
+     "nutrientId": 1005,
+     "value": 20.63
+    },
+    {
+     "nutrientId": 1008,
+     "value": 122
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.7
+    }
+   ]
+  },
+  {
+   "fdcId": 2708424,
+   "dataType": "Survey (FNDDS)",
+   "description": "Rice, wild, 100%, cooked, no added fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.97
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.34
+    },
+    {
+     "nutrientId": 1005,
+     "value": 21.21
+    },
+    {
+     "nutrientId": 1008,
+     "value": 100
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.8
+    }
+   ]
+  }
+ ],
+ "broccoli": [
+  {
+   "fdcId": 2549992,
+   "dataType": "Branded",
+   "description": "BROCCOLI",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.35
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.71
+    },
+    {
+     "nutrientId": 1008,
+     "value": 24.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.5
+    }
+   ]
+  },
+  {
+   "fdcId": 2384291,
+   "dataType": "Branded",
+   "description": "BROCCOLI",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.18
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 3.53
+    },
+    {
+     "nutrientId": 1008,
+     "value": 29.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.4
+    }
+   ]
+  },
+  {
+   "fdcId": 1935906,
+   "dataType": "Branded",
+   "description": "BROCCOLI",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.53
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.71
+    },
+    {
+     "nutrientId": 1008,
+     "value": 29.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.5
+    }
+   ]
+  },
+  {
+   "fdcId": 539572,
+   "dataType": "Branded",
+   "description": "BROCCOLI",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.7
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.34
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.41
+    },
+    {
+     "nutrientId": 1008,
+     "value": 34.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2325759,
+   "dataType": "Branded",
+   "description": "BROCCOLI",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.35
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.71
+    },
+    {
+     "nutrientId": 1008,
+     "value": 24.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.5
+    }
+   ]
+  },
+  {
+   "fdcId": 2709656,
+   "dataType": "Survey (FNDDS)",
+   "description": "Fried broccoli",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 4.28
+    },
+    {
+     "nutrientId": 1004,
+     "value": 12.88
+    },
+    {
+     "nutrientId": 1005,
+     "value": 22.41
+    },
+    {
+     "nutrientId": 1008,
+     "value": 223
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.7
+    }
+   ]
+  },
+  {
+   "fdcId": 2709643,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.57
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.34
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.27
+    },
+    {
+     "nutrientId": 1008,
+     "value": 39
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2706738,
+   "dataType": "Survey (FNDDS)",
+   "description": "Beef and broccoli",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 10.43
+    },
+    {
+     "nutrientId": 1004,
+     "value": 10.63
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.09
+    },
+    {
+     "nutrientId": 1008,
+     "value": 160
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.3
+    }
+   ]
+  },
+  {
+   "fdcId": 747447,
+   "dataType": "Foundation",
+   "description": "Broccoli, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1005,
+     "value": 6.27
+    },
+    {
+     "nutrientId": 1008,
+     "value": 31.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.34
+    },
+    {
+     "nutrientId": 1003,
+     "value": 2.57
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.4
+    }
+   ]
+  },
+  {
+   "fdcId": 170379,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1005,
+     "value": 6.64
+    },
+    {
+     "nutrientId": 1008,
+     "value": 34.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.37
+    },
+    {
+     "nutrientId": 1003,
+     "value": 2.82
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.6
+    }
+   ]
+  },
+  {
+   "fdcId": 170382,
+   "dataType": "SR Legacy",
+   "description": "Broccoli raab, cooked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1008,
+     "value": 25.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 3.12
+    },
+    {
+     "nutrientId": 1003,
+     "value": 3.83
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.8
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.52
+    }
+   ]
+  },
+  {
+   "fdcId": 170381,
+   "dataType": "SR Legacy",
+   "description": "Broccoli raab, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1005,
+     "value": 2.85
+    },
+    {
+     "nutrientId": 1008,
+     "value": 22.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.49
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.7
+    },
+    {
+     "nutrientId": 1003,
+     "value": 3.17
+    }
+   ]
+  },
+  {
+   "fdcId": 2709572,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli raab, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.17
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.49
+    },
+    {
+     "nutrientId": 1005,
+     "value": 2.85
+    },
+    {
+     "nutrientId": 1008,
+     "value": 22
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.7
+    }
+   ]
+  },
+  {
+   "fdcId": 2709573,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli raab, cooked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.2
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.15
+    },
+    {
+     "nutrientId": 1005,
+     "value": 2.88
+    },
+    {
+     "nutrientId": 1008,
+     "value": 46
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.7
+    }
+   ]
+  },
+  {
+   "fdcId": 2709813,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli slaw salad",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.97
+    },
+    {
+     "nutrientId": 1004,
+     "value": 8.11
+    },
+    {
+     "nutrientId": 1005,
+     "value": 10.41
+    },
+    {
+     "nutrientId": 1008,
+     "value": 123
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2709658,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, Chinese, cooked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.22
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.42
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.72
+    },
+    {
+     "nutrientId": 1008,
+     "value": 50
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.6
+    }
+   ]
+  },
+  {
+   "fdcId": 2709657,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, chinese, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.2
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.76
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.67
+    },
+    {
+     "nutrientId": 1008,
+     "value": 26
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.6
+    }
+   ]
+  },
+  {
+   "fdcId": 2709654,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli casserole with noodles",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.55
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.77
+    },
+    {
+     "nutrientId": 1005,
+     "value": 15.86
+    },
+    {
+     "nutrientId": 1008,
+     "value": 112
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2709655,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli casserole with rice",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 4.14
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.6
+    },
+    {
+     "nutrientId": 1005,
+     "value": 15.06
+    },
+    {
+     "nutrientId": 1008,
+     "value": 107
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.9
+    }
+   ]
+  },
+  {
+   "fdcId": 169392,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, chinese, cooked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1079,
+     "value": 2.5
+    },
+    {
+     "nutrientId": 1005,
+     "value": 3.81
+    },
+    {
+     "nutrientId": 1008,
+     "value": 22.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 1.14
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.72
+    }
+   ]
+  },
+  {
+   "fdcId": 169404,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, chinese, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 0.76
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.67
+    },
+    {
+     "nutrientId": 1003,
+     "value": 1.2
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.6
+    },
+    {
+     "nutrientId": 1008,
+     "value": 26.0
+    }
+   ]
+  },
+  {
+   "fdcId": 2710792,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, cooked, as ingredient",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.68
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.35
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.53
+    },
+    {
+     "nutrientId": 1008,
+     "value": 41
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.5
+    }
+   ]
+  },
+  {
+   "fdcId": 169329,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, leaves, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1079,
+     "value": 2.3
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.06
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.35
+    },
+    {
+     "nutrientId": 1008,
+     "value": 28.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 2.98
+    }
+   ]
+  },
+  {
+   "fdcId": 169331,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, stalks, raw",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 0.35
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.24
+    },
+    {
+     "nutrientId": 1008,
+     "value": 28.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 2.98
+    }
+   ]
+  },
+  {
+   "fdcId": 2709659,
+   "dataType": "Survey (FNDDS)",
+   "description": "Soup, broccoli cheese",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 4.26
+    },
+    {
+     "nutrientId": 1004,
+     "value": 4.54
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.08
+    },
+    {
+     "nutrientId": 1008,
+     "value": 82
+    },
+    {
+     "nutrientId": 1079,
+     "value": 1.3
+    }
+   ]
+  },
+  {
+   "fdcId": 2709644,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, cooked, from restaurant",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.55
+    },
+    {
+     "nutrientId": 1004,
+     "value": 4.66
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.2
+    },
+    {
+     "nutrientId": 1008,
+     "value": 77
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2709650,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, fresh, cooked with oil",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.59
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.37
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.32
+    },
+    {
+     "nutrientId": 1008,
+     "value": 67
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2709652,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, frozen, cooked with oil",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3.02
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.18
+    },
+    {
+     "nutrientId": 1008,
+     "value": 53
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2709647,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, NS as to form, cooked",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.6
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.33
+    },
+    {
+     "nutrientId": 1008,
+     "value": 63
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2709645,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, fresh, cooked, no added fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.67
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.35
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.51
+    },
+    {
+     "nutrientId": 1008,
+     "value": 41
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.5
+    }
+   ]
+  },
+  {
+   "fdcId": 2709646,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, frozen, cooked, no added fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.09
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.12
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.33
+    },
+    {
+     "nutrientId": 1008,
+     "value": 28
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3
+    }
+   ]
+  },
+  {
+   "fdcId": 2710031,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli and cauliflower, cooked, no added fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.35
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.17
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.54
+    },
+    {
+     "nutrientId": 1008,
+     "value": 23
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.8
+    }
+   ]
+  },
+  {
+   "fdcId": 2709651,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, fresh, cooked with butter or margarine",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.61
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.62
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.33
+    },
+    {
+     "nutrientId": 1008,
+     "value": 60
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2709653,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, frozen, cooked with butter or margarine",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.02
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.3
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.19
+    },
+    {
+     "nutrientId": 1008,
+     "value": 47
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.9
+    }
+   ]
+  },
+  {
+   "fdcId": 2710032,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli and cauliflower, cooked, fat added",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.29
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.71
+    },
+    {
+     "nutrientId": 1005,
+     "value": 4.41
+    },
+    {
+     "nutrientId": 1008,
+     "value": 46
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.8
+    }
+   ]
+  },
+  {
+   "fdcId": 168510,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, cooked, boiled, drained, with salt",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 0.41
+    },
+    {
+     "nutrientId": 1005,
+     "value": 7.18
+    },
+    {
+     "nutrientId": 1008,
+     "value": 35.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 2.38
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.3
+    }
+   ]
+  },
+  {
+   "fdcId": 2710033,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, cauliflower and carrots, cooked, no added fat",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.76
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.34
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.59
+    },
+    {
+     "nutrientId": 1008,
+     "value": 28
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3
+    }
+   ]
+  },
+  {
+   "fdcId": 2710034,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, cauliflower and carrots, cooked, fat added",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 1.72
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.9
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.43
+    },
+    {
+     "nutrientId": 1008,
+     "value": 50
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.9
+    }
+   ]
+  },
+  {
+   "fdcId": 169967,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, cooked, boiled, drained, without salt",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 0.41
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.3
+    },
+    {
+     "nutrientId": 1003,
+     "value": 2.38
+    },
+    {
+     "nutrientId": 1005,
+     "value": 7.18
+    },
+    {
+     "nutrientId": 1008,
+     "value": 35.0
+    }
+   ]
+  },
+  {
+   "fdcId": 168511,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, frozen, chopped, cooked, boiled, drained, with salt",
+   "foodNutrients": [
+    {
+     "nutrientId": 1079,
+     "value": 3.0
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.35
+    },
+    {
+     "nutrientId": 1008,
+     "value": 28.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 3.1
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.12
+    }
+   ]
+  },
+  {
+   "fdcId": 168512,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, frozen, spears, cooked, boiled, drained, with salt",
+   "foodNutrients": [
+    {
+     "nutrientId": 1079,
+     "value": 3.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.11
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.35
+    },
+    {
+     "nutrientId": 1008,
+     "value": 28.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 3.1
+    }
+   ]
+  },
+  {
+   "fdcId": 2709648,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, fresh, cooked, fat added, NS as to fat type",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 2.6
+    },
+    {
+     "nutrientId": 1004,
+     "value": 3
+    },
+    {
+     "nutrientId": 1005,
+     "value": 6.33
+    },
+    {
+     "nutrientId": 1008,
+     "value": 63
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.4
+    }
+   ]
+  },
+  {
+   "fdcId": 2709649,
+   "dataType": "Survey (FNDDS)",
+   "description": "Broccoli, frozen, cooked, fat added, NS as to fat type",
+   "foodNutrients": [
+    {
+     "nutrientId": 1003,
+     "value": 3.01
+    },
+    {
+     "nutrientId": 1004,
+     "value": 2.66
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.18
+    },
+    {
+     "nutrientId": 1008,
+     "value": 50
+    },
+    {
+     "nutrientId": 1079,
+     "value": 2.9
+    }
+   ]
+  },
+  {
+   "fdcId": 169969,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, frozen, chopped, cooked, boiled, drained, without salt",
+   "foodNutrients": [
+    {
+     "nutrientId": 1004,
+     "value": 0.12
+    },
+    {
+     "nutrientId": 1005,
+     "value": 5.35
+    },
+    {
+     "nutrientId": 1008,
+     "value": 28.0
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.0
+    },
+    {
+     "nutrientId": 1003,
+     "value": 3.1
+    }
+   ]
+  },
+  {
+   "fdcId": 170380,
+   "dataType": "SR Legacy",
+   "description": "Broccoli, frozen, spears, cooked, boiled, drained, without salt",
+   "foodNutrients": [
+    {
+     "nutrientId": 1005,
+     "value": 5.36
+    },
+    {
+     "nutrientId": 1008,
+     "value": 28.0
+    },
+    {
+     "nutrientId": 1004,
+     "value": 0.11
+    },
+    {
+     "nutrientId": 1003,
+     "value": 3.1
+    },
+    {
+     "nutrientId": 1079,
+     "value": 3.0
+    }
+   ]
+  }
  ]
 }

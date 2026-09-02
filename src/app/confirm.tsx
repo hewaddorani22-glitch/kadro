@@ -10,12 +10,13 @@ import { useApp } from '@/context/AppContext';
 import { countBucket, trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { PortionFactor } from '@/types/nutrition';
+import { formatNumber } from '@/utils/format';
 
 export default function ConfirmScreen() {
   const router = useRouter();
   const { adjustItem, analysisMessage, detectedItems, mealPortion, photoUri, scanMode, scannedMeal, setMealPortion, toggleItem } = useApp();
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
 
   const confirm = () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -85,9 +86,9 @@ export default function ConfirmScreen() {
         </View>
         <View style={styles.portionSelector}>
           {([
-            { factor: 0.7 as PortionFactor, label: t.confirm.less, multiplier: '0,7×' },
+            { factor: 0.7 as PortionFactor, label: t.confirm.less, multiplier: `${formatNumber(0.7, locale)}×` },
             { factor: 1 as PortionFactor, label: t.confirm.fits, multiplier: '1×' },
-            { factor: 1.4 as PortionFactor, label: t.confirm.more, multiplier: '1,4×' },
+            { factor: 1.4 as PortionFactor, label: t.confirm.more, multiplier: `${formatNumber(1.4, locale)}×` },
           ]).map((choice) => {
             const active = mealPortion === choice.factor;
             return (

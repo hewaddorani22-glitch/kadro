@@ -13,6 +13,7 @@ export {
   mapUsdaFood,
   normalizeSearchTerm,
   nutrient,
+  rankFoodMatches,
   requestedLanguage,
   searchTermVariants,
   toFoodFacts,

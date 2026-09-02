@@ -235,3 +235,62 @@ export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResul
     }],
   };
 }
+
+export type FoodSearchResult = {
+  id: string;
+  name: string;
+  per100g: Nutrition;
+  defaultGrams: number;
+  source: MealItem['source'];
+};
+
+/**
+ * Free-text food search.
+ *
+ * No model call and no quota: logging a banana should not spend one of three
+ * free analyses, and should not take five seconds. That is also why this is
+ * the cheapest path for us — every search is a lookup the AI never has to do.
+ */
+export async function searchFoods(query: string): Promise<FoodSearchResult[]> {
+  const term = query.trim();
+  if (term.length < 2) return [];
+  const response = await gatewayFetch(
+    `/v1/search?q=${encodeURIComponent(term)}&language=${getLanguage()}`,
+  );
+  const payload = (await response.json().catch(() => null)) as
+    { results?: FoodSearchResult[]; code?: string; message?: string } | null;
+  if (!response.ok) {
+    throw new MealAnalysisError('provider-error', gatewayMessage(payload?.code, payload?.message));
+  }
+  return payload?.results ?? [];
+}
+
+/**
+ * Turns a chosen search result into a meal the rest of the app already knows
+ * how to handle — same shape as a scanned one, so the timeline, the cloud sync
+ * and the ingredient list need no special case.
+ */
+export function mealFromSearch(result: FoodSearchResult, grams: number): MealAnalysisResult {
+  const factor = grams / 100;
+  const scale = (value: number) => Math.round(value * factor);
+  return {
+    title: result.name,
+    confidence: 'high',
+    warnings: [],
+    items: [{
+      id: `search-${result.id}`,
+      name: result.name,
+      amountG: grams,
+      baseAmountG: grams,
+      portionFactor: 1,
+      calories: scale(result.per100g.calories),
+      protein: scale(result.per100g.protein),
+      carbs: scale(result.per100g.carbs),
+      fat: scale(result.per100g.fat),
+      fiber: scale(result.per100g.fiber ?? 0),
+      confidence: 'high',
+      included: true,
+      source: result.source,
+    }],
+  };
+}

@@ -83,7 +83,7 @@ export function isUsableSearchTerm(term) {
 }
 
 /** Changing the matcher invalidates previous choices without deleting data. */
-export const USDA_MATCHER_VERSION = 3;
+export const USDA_MATCHER_VERSION = 4;
 
 export function usdaCacheKey(term) {
   return `v${USDA_MATCHER_VERSION}:${normalizeSearchTerm(term)}`;
@@ -121,11 +121,29 @@ const QUALIFIER_WORDS = new Set([
 const ADDED_FAT_WORDS = new Set(['oil', 'butter', 'fat', 'cream', 'cheese', 'sauce', 'gravy', 'dressing', 'margarine']);
 const NO_ADDED_FAT = /\bno(?:t)? +(?:added +)?(?:fat|oil|butter)\b|\bwithout +(?:added +)?(?:fat|oil|butter)\b/;
 
+/**
+ * USDA writes many entries in the plural — "Bananas, raw" — while a search
+ * term is singular, so the two share no token at all without this.
+ *
+ * Measured effect on the captured responses: it moves "banana" from the Survey
+ * row at 97 kcal to the canonical SR Legacy one at 89. Small, but it is the
+ * difference between matching the reference and matching something near it.
+ */
+function singular(word) {
+  if (word.length <= 3) return word;
+  if (word.endsWith('ss') || word.endsWith('us') || word.endsWith('is')) return word;
+  if (word.endsWith('ies') && word.length > 4) return `${word.slice(0, -3)}y`;
+  if (word.endsWith('es') && word.length > 4 && /(?:ch|sh|x|z)es$/.test(word)) return word.slice(0, -2);
+  if (word.endsWith('s')) return word.slice(0, -1);
+  return word;
+}
+
 function words(value) {
   return normalizeSearchTerm(value)
     .replace(/[^a-z0-9]+/g, ' ')
     .split(/\s+/)
-    .filter((word) => word && !LOW_INFORMATION_WORDS.has(word));
+    .filter((word) => word && !LOW_INFORMATION_WORDS.has(word))
+    .map(singular);
 }
 
 /**
@@ -139,7 +157,9 @@ function words(value) {
  */
 export function chooseFoodMatch(foods, term = '') {
   const list = [...(foods || [])];
-  if (!list.length) return { food: undefined, score: 0, margin: 0, confidence: 'low', cacheable: false };
+  // `ranked` must be present even here: search destructures it, and an empty
+  // USDA response turned a "nothing found" into a crash and a 503.
+  if (!list.length) return { food: undefined, score: 0, margin: 0, confidence: 'low', cacheable: false, ranked: [] };
 
   const target = normalizeSearchTerm(term);
   const targetWords = words(term);
@@ -154,12 +174,26 @@ export function chooseFoodMatch(foods, term = '') {
     const descriptionWords = words(food.description);
     const descriptionSet = new Set(descriptionWords);
     const targetSet = new Set(targetWords);
-    let value = Math.max(0, 12 - rank(food) * 3);
+    // Curated data outranks user-submitted data, but only as a tie-breaker:
+    // relevance still decides. A grid search over fourteen captured USDA
+    // responses passes every case for a step of 3 to 7; 5 sits in the middle.
+    let value = Math.max(0, 16 - rank(food) * 5);
 
     if (!target) return value;
 
-    if (description === target) value += 120;
-    else if (description.startsWith(target)) value += 35;
+    // A Branded row is one manufacturer's product, not the food. USDA lists
+    // an all-caps "BANANA" at 336 kcal — dried chips, unlabelled — and the
+    // full exact-match bonus let it beat "Bananas, raw" at 89. Matching the
+    // query exactly says nothing about being the right reference.
+    // A Branded row gets no name bonus at all. USDA lists an all-caps
+    // "BANANA" at 336 kcal — dried chips, unlabelled — and a manufacturer
+    // naming their product exactly after the food says nothing about it being
+    // a good reference for that food.
+    const branded = food.dataType === 'Branded';
+    if (!branded) {
+      if (description === target) value += 120;
+      else if (description.startsWith(target)) value += 35;
+    }
 
     const covered = targetWords.filter((word) => descriptionSet.has(word)).length;
     const coverage = targetWords.length ? covered / targetWords.length : 0;
@@ -230,7 +264,83 @@ export function chooseFoodMatch(foods, term = '') {
     // Ambiguous matches may be usable for this review screen, but caching them
     // would amplify one uncertain lookup across every user for months.
     cacheable: confidence === 'high',
+    // A person choosing from a list can resolve an ambiguity the matcher
+    // cannot, so search shows the runners-up the automatic path discards.
+    ranked: ranked.map((entry) => ({ food: entry.food, score: Number(entry.score.toFixed(2)) })),
   };
+}
+
+/**
+ * The same ranking, but every plausible row instead of the single winner.
+ *
+ * Automatic analysis has to pick one and must refuse when unsure; a person
+ * typing "rice" wants the shortlist. The threshold is lower here for that
+ * reason — a human reading "Rice, cooked, NFS" next to "Rice noodles" can tell
+ * them apart, and offering nothing is the worse answer.
+ */
+/**
+ * The food a description is about, with preparation and paperwork removed.
+ *
+ * The "no added fat" phrase goes first: it is a statement about the cooking,
+ * not an ingredient, and leaving the word "fat" in it made the plainly cooked
+ * entry look like a different food from the vague one.
+ */
+function foodNouns(value) {
+  return words(String(value).toLowerCase().replace(NO_ADDED_FAT, ' '))
+    .filter((word) => !PREPARATION_WORDS.has(word) && !QUALIFIER_WORDS.has(word));
+}
+
+export function rankFoodMatches(foods, term, limit = 12) {
+  const { ranked = [] } = chooseFoodMatch(foods, term);
+  if (!ranked.length) return [];
+
+  // Searching "rice" must lead with rice, not with rice crackers. USDA's own
+  // relevance puts crackers, cakes and paper first, and the general scoring
+  // cannot separate them: a two-word compound scores higher on precision than
+  // "Rice, cooked, NFS" does. Here the question is simpler than for automatic
+  // matching — is this entry the food that was asked for, or a dish made from
+  // it? — so an exact match on the food nouns wins outright.
+  const wanted = foodNouns(term).join(' ');
+  const rescored = ranked.map((entry) => ({
+    ...entry,
+    // Branded rows are excluded for the same reason they get no name bonus:
+    // one manufacturer's product is not the reference for a food.
+    score: entry.score + (
+      wanted
+      && entry.food?.dataType !== 'Branded'
+      && foodNouns(entry.food?.description ?? '').join(' ') === wanted ? 25 : 0
+    ),
+  })).sort((a, b) => b.score - a.score);
+
+  const best = rescored[0]?.score ?? 0;
+  // Relative to the best hit, not an absolute number: the score range depends
+  // entirely on the query. "rice cooked" tops out near 88 and "salmon baked"
+  // near 54, so one fixed cut-off either buried real results or let peanuts
+  // into a search for boiled eggs.
+  const floor = Math.max(30, best * 0.72);
+
+  // The food itself must be in the description. Without this, a search for
+  // "broccoli steamed" returned "Oysters, steamed" — USDA had no steamed
+  // broccoli at all, and the preparation word alone carried the match.
+  const contentWords = words(term).filter((word) => !PREPARATION_WORDS.has(word));
+
+  const seen = new Set();
+  const results = [];
+  for (const entry of rescored) {
+    if (!entry.food || entry.score < floor) continue;
+    // A row with no energy value cannot be logged, only misread as free food.
+    if (typeof nutrient(entry.food, [1008, 208]) !== 'number') continue;
+    const description = normalizeSearchTerm(entry.food.description);
+    if (contentWords.length && !contentWords.some((word) => description.includes(word))) continue;
+    // USDA repeats near-identical rows; a list of six identical labels reads
+    // as a broken screen, not as a choice.
+    const key = description.replace(/[^a-z0-9]+/g, ' ').trim();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    results.push(entry.food);
+    if (results.length >= limit) break;
+  }
+  return results;
 }
 
 export function chooseFood(foods, term = '') {

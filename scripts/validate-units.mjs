@@ -122,6 +122,26 @@ for (const file of ['src/app/onboarding.tsx', 'src/app/(tabs)/progress.tsx', 'sr
   const screen = await read(file);
   assert.ok(!screen.includes("replace('.', ',')"), `${file}: still forces a German decimal comma`);
 }
+
+// A decimal comma can also be written straight into a literal, which is how
+// "0,7×" survived on the confirm screen long after the rest was translated.
+for (const file of [
+  'src/app/confirm.tsx',
+  'src/app/(tabs)/progress.tsx',
+  'src/app/(tabs)/today.tsx',
+  'src/components/MealDetailSheet.tsx',
+]) {
+  const screen = await read(file);
+  const offending = screen.split('\n').flatMap((line, index) => {
+    const values = [...line.matchAll(/'((?:[^'\\]|\\.)*)'|`([^`]*)`/g)]
+      .map((m) => m[1] ?? m[2])
+      // rgba(255,255,255,0.58) is a colour, not a number a reader ever sees.
+      .map((value) => value.replace(/rgba?\([^)]*\)/g, ' '))
+      .join(' ');
+    return /\d,\d/.test(values) ? [`${file}:${index + 1}`] : [];
+  });
+  assert.deepEqual(offending, [], `a hardcoded decimal comma ships to English readers at ${offending.join(', ')}`);
+}
 const onboarding = await read('src/app/onboarding.tsx');
 assert.ok(onboarding.includes('UnitToggle'), 'onboarding must let the user pick their units');
 assert.ok(onboarding.includes('usesMetricHeight'), 'the height step must respect the chosen units');

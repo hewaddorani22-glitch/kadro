@@ -3,10 +3,11 @@ import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-ca
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
+import { FoodSearchResult, searchFoods } from '@/services/mealAnalysis';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
@@ -15,19 +16,26 @@ import { useLanguage } from '@/i18n/LanguageProvider';
 export default function ScanScreen() {
   const router = useRouter();
   const pathname = usePathname();
-  const { freeScansLeft, hasEverLoggedScan, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan } = useApp();
+  const { applySearchResult, freeScansLeft, hasEverLoggedScan, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const { mode: requestedMode } = useLocalSearchParams<{ mode?: string }>();
-  const [mode, setMode] = useState<'photo' | 'description' | 'barcode'>(
+  const [mode, setMode] = useState<'photo' | 'description' | 'barcode' | 'search'>(
     requestedMode === 'description' ? 'description' : 'photo',
   );
   const [description, setDescription] = useState('');
   // Arriving with ?mode=description means the user just hit a barcode the
   // database does not know; the sheet should already be open for them.
   const [showDescription, setShowDescription] = useState(requestedMode === 'description');
+  const [showSearch, setShowSearch] = useState(requestedMode === 'search');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<FoodSearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchGrams, setSearchGrams] = useState('100');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestSearch = useRef('');
   const [barcodeBusy, setBarcodeBusy] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const insets = useSafeAreaInsets();
@@ -106,9 +114,53 @@ export default function ScanScreen() {
     router.push('/analyzing');
   };
 
-  const chooseMode = (nextMode: 'photo' | 'description' | 'barcode') => {
+  const chooseMode = (nextMode: 'photo' | 'description' | 'barcode' | 'search') => {
     setMode(nextMode);
     if (nextMode === 'description') setShowDescription(true);
+    if (nextMode === 'search') setShowSearch(true);
+  };
+
+  /**
+   * Search does not reach the model, so it costs neither a free meal nor any
+   * credit — that is the whole reason it exists next to the camera.
+   *
+   * Debounced, and every response is checked against the request that is still
+   * current: typing "rice" fired four searches, and a slow first one could
+   * land after a later, better one and overwrite it.
+   */
+  const runSearch = (value: string) => {
+    setSearchQuery(value);
+    const term = value.trim();
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (term.length < 2) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    searchTimer.current = setTimeout(() => {
+      const request = term;
+      latestSearch.current = request;
+      void searchFoods(request)
+        .then((results) => {
+          if (latestSearch.current !== request) return;
+          setSearchResults(results);
+          setSearching(false);
+        })
+        .catch(() => {
+          if (latestSearch.current !== request) return;
+          setSearchResults([]);
+          setSearching(false);
+        });
+    }, 350);
+  };
+
+  const addSearchResult = (result: FoodSearchResult) => {
+    const grams = Number(searchGrams.replace(',', '.'));
+    applySearchResult(result, Number.isFinite(grams) && grams > 0 ? Math.round(grams) : result.defaultGrams);
+    setShowSearch(false);
+    setMode('photo');
+    router.push('/confirm');
   };
 
   const submitDescription = () => {
@@ -207,6 +259,7 @@ export default function ScanScreen() {
             <ModeButton active={mode === 'photo'} label={t.scan.modePhoto} onPress={() => chooseMode('photo')} />
             <ModeButton active={mode === 'description'} label={t.scan.modeDescribe} onPress={() => chooseMode('description')} />
             <ModeButton active={mode === 'barcode'} label={t.scan.modeBarcode} onPress={() => chooseMode('barcode')} />
+            <ModeButton active={mode === 'search'} label={t.scan.modeSearch} onPress={() => chooseMode('search')} />
           </View>
           {mode === 'photo' ? (
             <View style={styles.shutterRow}>
@@ -233,6 +286,65 @@ export default function ScanScreen() {
           <Text style={styles.privacy}>{mode === 'photo' ? t.scan.privacyPhoto : t.scan.privacyOther}</Text>
         </View>
       </SafeAreaView>
+
+      <Modal animationType="slide" onRequestClose={() => { setShowSearch(false); setMode('photo'); }} transparent visible={showSearch}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
+          <View accessibilityViewIsModal style={[styles.searchSheet, { paddingBottom: insets.bottom + 16 }]}>
+            <View style={styles.searchHead}>
+              <Text accessibilityRole="header" style={styles.describeTitle}>{t.scan.searchTitle}</Text>
+              <View style={styles.freePill}><Text style={styles.freePillText}>{t.scan.searchFree}</Text></View>
+            </View>
+            <Text style={styles.describeText}>{t.scan.searchHint}</Text>
+            <TextInput
+              accessibilityLabel={t.scan.searchTitle}
+              autoCorrect={false}
+              autoFocus
+              maxLength={60}
+              onChangeText={runSearch}
+              placeholder={t.scan.searchPlaceholder}
+              placeholderTextColor={colors.muted}
+              returnKeyType="search"
+              style={styles.searchInput}
+              value={searchQuery}
+            />
+            <View style={styles.searchAmountRow}>
+              <Text style={styles.searchAmountLabel}>{t.scan.searchAmount}</Text>
+              <TextInput
+                accessibilityLabel={t.scan.searchAmount}
+                keyboardType="number-pad"
+                maxLength={4}
+                onChangeText={setSearchGrams}
+                style={styles.searchGrams}
+                value={searchGrams}
+              />
+              <Text style={styles.searchAmountLabel}>g</Text>
+            </View>
+            <ScrollView keyboardShouldPersistTaps="handled" style={styles.searchResults}>
+              {searching ? <Text style={styles.searchStatus}>{t.scan.searchSearching}</Text> : null}
+              {!searching && searchQuery.trim().length >= 2 && !searchResults.length ? (
+                <Text style={styles.searchStatus}>{t.scan.searchEmpty}</Text>
+              ) : null}
+              {!searching && t.scan.searchHintEnglish && searchQuery.trim().length >= 2 && searchResults.length < 3 ? (
+                <Text style={styles.searchStatus}>{t.scan.searchHintEnglish}</Text>
+              ) : null}
+              {searchResults.map((result) => (
+                <Pressable accessibilityRole="button" key={result.id} onPress={() => addSearchResult(result)} style={styles.searchRow}>
+                  <View style={styles.searchRowCopy}>
+                    <Text numberOfLines={2} style={styles.searchRowName}>{result.name}</Text>
+                    <Text style={styles.searchRowMeta}>
+                      {result.per100g.calories} kcal {t.scan.searchPer100} · {result.per100g.protein} g {t.common.protein}
+                    </Text>
+                  </View>
+                  <Ionicons color={colors.accentDeep} name="add-circle" size={26} />
+                </Pressable>
+              ))}
+            </ScrollView>
+            <Pressable accessibilityRole="button" onPress={() => { setShowSearch(false); setMode('photo'); }} style={styles.describeCancel}>
+              <Text style={styles.describeCancelText}>{t.common.cancel}</Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal animationType="fade" onRequestClose={() => { setShowDescription(false); setMode('photo'); }} transparent visible={showDescription}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
@@ -319,6 +431,20 @@ const styles = StyleSheet.create({
   describeButtonText: { color: colors.text, fontSize: 13, fontWeight: '800' },
   privacy: { color: 'rgba(255,255,255,0.48)', fontSize: 10 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.58)', justifyContent: 'flex-end' },
+  searchSheet: { maxHeight: '86%', borderTopLeftRadius: radii.card, borderTopRightRadius: radii.card, backgroundColor: colors.background, paddingHorizontal: 20, paddingTop: 20, gap: 12 },
+  searchHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  freePill: { borderRadius: radii.pill, backgroundColor: colors.accentSoft, paddingHorizontal: 10, paddingVertical: 4 },
+  freePillText: { color: colors.accentDeep, fontSize: 11, fontWeight: '800', letterSpacing: 0.4 },
+  searchInput: { minHeight: 52, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 17, paddingHorizontal: 16 },
+  searchAmountRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  searchAmountLabel: { color: colors.muted, fontSize: 14, fontWeight: '600' },
+  searchGrams: { minWidth: 78, minHeight: 44, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 17, fontWeight: '700', paddingHorizontal: 12, textAlign: 'center' },
+  searchResults: { flexGrow: 0 },
+  searchStatus: { color: colors.muted, fontSize: 14, lineHeight: 21, paddingVertical: 12 },
+  searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.border },
+  searchRowCopy: { flex: 1, gap: 3 },
+  searchRowName: { color: colors.text, fontSize: 16, fontWeight: '600', lineHeight: 21 },
+  searchRowMeta: { color: colors.muted, fontSize: 13 },
   describeSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 22, gap: 13 },
   describeTitle: { color: colors.text, fontSize: 26, fontWeight: '700' },
   describeText: { color: colors.muted, fontSize: 13, lineHeight: 19 },

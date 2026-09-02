@@ -9,11 +9,12 @@ import {
   toFoodFacts,
   usdaCacheKey,
   isUsableSearchTerm,
+  rankFoodMatches,
   requestedLanguage,
   searchTermVariants,
   validateAnalysisInput,
 } from '../_shared/nutrition.mjs';
-import { resolveBlsFacts } from '../_shared/bls-reference.mjs';
+import { resolveBlsFacts, searchBlsReferences } from '../_shared/bls-reference.mjs';
 import {
   descriptionDetectionPrompt,
   detectionSchema,
@@ -282,6 +283,109 @@ async function analyzeDescription(input: any, admin: any): Promise<Result> {
   }]), admin, 'text');
 }
 
+/**
+ * Free-text food search. No model call, so it costs nothing and stays outside
+ * the paid quota — which is the point: logging a banana should not spend one
+ * of three free analyses, and should not take five seconds.
+ *
+ * Two sources. The German dish references come first because their values are
+ * vetted rather than matched; USDA supplies everything else, in English.
+ */
+async function searchFoods(query: string, language: string): Promise<Result> {
+  const term = normalizeSearchTerm(query);
+  if (!isUsableSearchTerm(term)) {
+    return { status: 400, body: { code: 'invalid_input', message: 'Query too short.' } };
+  }
+
+  const results: unknown[] = [];
+
+  // Only German readers are offered the German dish names, because that is the
+  // only language those entries exist in.
+  if (language === 'de') {
+    for (const meal of searchBlsReferences(term, 4)) {
+      results.push({
+        id: `bls-${meal.key}`,
+        name: meal.nameDe,
+        per100g: meal.per100g,
+        defaultGrams: meal.defaultGrams,
+        source: { provider: 'bls', referenceId: meal.code, label: `BLS 4.0 ${meal.code}` },
+      });
+    }
+  }
+
+  let foods: unknown[] = [];
+  try {
+    foods = await searchUsdaFoods(term);
+  } catch {
+    // A USDA outage must not empty a list that already has German dishes in it.
+    if (!results.length) {
+      return { status: 503, body: { code: 'provider_error', message: 'Search is unavailable.' } };
+    }
+  }
+
+  for (const food of foods) {
+    // deno-lint-ignore no-explicit-any
+    const entry = food as any;
+    const facts = toFoodFacts(entry, { confidence: 'medium' });
+    if (!facts) continue;
+    results.push({
+      id: `usda-${entry.fdcId}`,
+      name: String(entry.description ?? '').trim(),
+      per100g: {
+        calories: Math.round(Number(facts.calories) || 0),
+        protein: Math.round(Number(facts.protein) || 0),
+        carbs: Math.round(Number(facts.carbs) || 0),
+        fat: Math.round(Number(facts.fat) || 0),
+        fiber: Math.round(Number(facts.fiber) || 0),
+      },
+      defaultGrams: 100,
+      source: { provider: 'usda', referenceId: String(entry.fdcId), label: `USDA FDC ${entry.fdcId}` },
+    });
+  }
+
+  return { status: 200, body: { query: term, results: results.slice(0, 15) } };
+}
+
+async function usdaRows(query: string): Promise<unknown[]> {
+  const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query, pageSize: 25 }),
+  });
+  if (!response.ok) throw new Error(`usda_${response.status}`);
+  const result = await response.json();
+  return result.foods || [];
+}
+
+/**
+ * Raw USDA rows for the search list.
+ *
+ * A bare food word needs a second probe: USDA's own relevance for "rice"
+ * returns crackers, cakes and paper, and plain cooked rice is not in the first
+ * twenty-five results at all. Asking again for "rice cooked" finds it. The
+ * merged rows are then ranked against what the user actually typed.
+ */
+async function searchUsdaFoods(term: string): Promise<unknown[]> {
+  const probes = [term, ...searchTermVariants(term)];
+  const hasPreparation = /\b(?:raw|cooked|boiled|grilled|fried|baked|roasted|steamed)\b/.test(term);
+  if (!hasPreparation) probes.push(`${term} cooked`);
+
+  const rows: unknown[] = [];
+  const seen = new Set<string>();
+  for (const probe of probes) {
+    for (const row of await usdaRows(probe)) {
+      // deno-lint-ignore no-explicit-any
+      const id = String((row as any)?.fdcId ?? '');
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      rows.push(row);
+    }
+    // Two probes are enough; each one is a round trip the user is waiting on.
+    if (probes.indexOf(probe) >= 1) break;
+  }
+  return rankFoodMatches(rows, term, 12);
+}
+
 /** Picks the product name in the reader's language, falling back sensibly. */
 // deno-lint-ignore no-explicit-any
 function localizedProductName(product: any, language: string): string {
@@ -372,6 +476,10 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     if (match) {
       const requested = new URL(request.url).searchParams.get('language');
       return reply(await lookupBarcode(match[1], requestedLanguage({ language: requested })));
+    }
+    if (route === '/v1/search') {
+      const params = new URL(request.url).searchParams;
+      return reply(await searchFoods(params.get('q') ?? '', requestedLanguage({ language: params.get('language') })));
     }
     return reply({ status: 404, body: { code: 'not_found', message: 'Route nicht gefunden.' } });
   }

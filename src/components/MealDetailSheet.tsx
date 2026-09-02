@@ -9,6 +9,7 @@ import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { Meal, PortionFactor } from '@/types/nutrition';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { formatNumber } from '@/utils/format';
 import { MEAL_TYPES, mealTypeIcon, mealTypeLabel } from '@/utils/format';
 
 /**
@@ -20,7 +21,7 @@ import { MEAL_TYPES, mealTypeIcon, mealTypeLabel } from '@/utils/format';
 export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
   const { adjustLoggedMealPortion, deleteLoggedMeal, setLoggedMealType } = useApp();
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
@@ -138,9 +139,9 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
             <Text style={styles.sectionHint}>{t.mealSheet.correctPortionHint}</Text>
             <View style={styles.portionSelector}>
               {([
-                { factor: 0.7 as PortionFactor, label: t.confirm.less, multiplier: '0,7×' },
+                { factor: 0.7 as PortionFactor, label: t.confirm.less, multiplier: `${formatNumber(0.7, locale)}×` },
                 { factor: 1 as PortionFactor, label: t.mealSheet.original, multiplier: '1×' },
-                { factor: 1.4 as PortionFactor, label: t.confirm.more, multiplier: '1,4×' },
+                { factor: 1.4 as PortionFactor, label: t.confirm.more, multiplier: `${formatNumber(1.4, locale)}×` },
               ]).map((choice) => {
                 const active = Math.abs(currentFactor - choice.factor) < 0.05;
                 return (

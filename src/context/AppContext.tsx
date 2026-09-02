@@ -2,7 +2,7 @@ import { createContext, PropsWithChildren, useCallback, useContext, useEffect, u
 import { AppState } from 'react-native';
 
 import { AnalysisErrorKind, MealAnalysisInput } from '@/services/contracts';
-import { analyzeBarcode, analyzeDescription, analyzePreparedPhoto, deleteTemporaryPhoto, MealAnalysisError, prepareMealPhoto } from '@/services/mealAnalysis';
+import { analyzeBarcode, analyzeDescription, analyzePreparedPhoto, deleteTemporaryPhoto, FoodSearchResult, MealAnalysisError, mealFromSearch, prepareMealPhoto } from '@/services/mealAnalysis';
 import {
   loadAllStoredScans,
   loadAnalysisQueue,
@@ -37,13 +37,14 @@ import { getDictionary } from '@/i18n/active';
 import type { UnitSystem } from '@/utils/units';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
-type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode';
+type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search';
 
 function telemetryScanSource(mode: ScanMode) {
   if (mode === 'live') return 'camera' as const;
   if (mode === 'queued') return 'queued_retry' as const;
   if (mode === 'description') return 'description' as const;
   if (mode === 'barcode') return 'barcode' as const;
+  if (mode === 'search') return 'search' as const;
   return 'demo' as const;
 }
 
@@ -80,6 +81,7 @@ type AppContextValue = {
   startDemoScan: () => void;
   startDescriptionScan: (description: string) => void;
   startBarcodeScan: (barcode: string) => void;
+  applySearchResult: (result: FoodSearchResult, grams: number) => void;
   analyzeCurrentPhoto: (forceDemo?: boolean) => Promise<void>;
   resumeLatestAnalysis: () => Promise<boolean>;
   adjustItem: (id: string, direction: -1 | 1) => void;
@@ -365,6 +367,31 @@ export function AppProvider({ children }: PropsWithChildren) {
     setAnalysisError(null);
     setAnalysisMessage(null);
     trackEvent('meal scan started', { scan_source: 'description' });
+  }, []);
+
+  /**
+   * A food picked from search is already resolved: there is nothing to analyse,
+   * so this skips the gateway, the spinner and the quota entirely and puts the
+   * result straight on the confirm screen.
+   */
+  const applySearchResult = useCallback((result: FoodSearchResult, grams: number) => {
+    deleteTemporaryPhoto(photoUriRef.current);
+    photoUriRef.current = null;
+    scanModeRef.current = 'search';
+    setPhotoUri(null);
+    setScanMode('search');
+    setScanId(makeScanId());
+    setQueuedInput(null);
+    setDescriptionInput('');
+    setBarcodeInput('');
+    const meal = mealFromSearch(result, grams);
+    setDetectedItems(meal.items);
+    setMealTitle(meal.title);
+    setMealPortionState(1);
+    setAnalysisMessage(null);
+    setAnalysisError(null);
+    setAnalysisStatus('ready');
+    trackEvent('meal scan started', { scan_source: 'search' });
   }, []);
 
   const startBarcodeScan = useCallback((barcode: string) => {
@@ -672,6 +699,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       mealPortion,
       analysisStatus,
       analysisError,
+      applySearchResult,
       analysisMessage,
       pendingAnalysisCount,
       syncMode,
@@ -697,7 +725,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       adjustLoggedMealPortion,
       setLoggedMealType,
     }),
-    [addWeightEntry, adjustLoggedMealPortion, analysisError, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, setUnitSystem, setLoggedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
+    [addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, setUnitSystem, setLoggedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
