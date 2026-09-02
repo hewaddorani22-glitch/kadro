@@ -185,6 +185,9 @@ export const en: typeof de = {
     allowanceLeft: (left: number, total: number) => `${left} of ${total} meals left for free`,
   },
   analyzing: {
+    errProductTitle: 'We do not know this product',
+    errProductBody: 'The product database has nothing for this barcode. Describe briefly what is in it — that takes ten seconds.',
+    describeInstead: 'Describe it instead',
     title: 'Meal analysis',
     close: 'Close analysis',
     working: 'Analysing your meal …',
@@ -367,6 +370,7 @@ export const en: typeof de = {
     version: 'Kandro · Version 1.0.0',
   },
   errors: {
+    packagedFood: 'Packaged food',
     gatewayMultipleDishes: 'The photo shows several dishes. Photograph one at a time.',
     gatewayUnexpected: 'Something went wrong there. Please try again.',
     warnUnmatched: 'At least one ingredient could not be matched to a reliable reference. It is not counted yet — check it and add it.',

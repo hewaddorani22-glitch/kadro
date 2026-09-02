@@ -186,6 +186,9 @@ export const de = {
     allowanceLeft: (left: number, total: number) => `Noch ${left} von ${total} Mahlzeiten gratis`,
   },
   analyzing: {
+    errProductTitle: 'Dieses Produkt kennen wir nicht',
+    errProductBody: 'Die Produktdatenbank hat zu diesem Barcode nichts. Beschreib kurz, was drin ist – das dauert zehn Sekunden.',
+    describeInstead: 'Stattdessen beschreiben',
     title: 'Mahlzeitenanalyse',
     close: 'Analyse schließen',
     working: 'Wir analysieren deine Mahlzeit …',
@@ -372,6 +375,7 @@ export const de = {
    * or an inline error, so they belong in the dictionary like any other copy.
    */
   errors: {
+    packagedFood: 'Verpacktes Lebensmittel',
     gatewayMultipleDishes: 'Auf dem Foto sind mehrere Gerichte. Fotografiere eines nach dem anderen.',
     gatewayUnexpected: 'Da ist etwas schiefgelaufen. Bitte versuche es erneut.',
     warnUnmatched: 'Mindestens eine Zutat konnte keiner verlässlichen Referenz zugeordnet werden. Sie zählt noch nicht mit – prüfe sie und füge sie hinzu.',

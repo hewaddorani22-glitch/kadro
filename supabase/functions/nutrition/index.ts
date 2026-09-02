@@ -282,13 +282,24 @@ async function analyzeDescription(input: any, admin: any): Promise<Result> {
   }]), admin, 'text');
 }
 
-async function lookupBarcode(barcode: string): Promise<Result> {
+/** Picks the product name in the reader's language, falling back sensibly. */
+// deno-lint-ignore no-explicit-any
+function localizedProductName(product: any, language: string): string {
+  const ordered = language === 'de'
+    ? [product?.product_name_de, product?.product_name, product?.product_name_en]
+    : [product?.product_name_en, product?.product_name, product?.product_name_de];
+  return ordered.map((value) => (typeof value === 'string' ? value.trim() : '')).find(Boolean) ?? '';
+}
+
+async function lookupBarcode(barcode: string, language: string): Promise<Result> {
   if (!/^\d{7,14}$/.test(barcode)) {
     return { status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } };
   }
-  const fields = 'code,product_name_de,product_name,nutriments';
+  const fields = 'code,product_name_de,product_name_en,product_name,nutriments';
   const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`, {
-    headers: { 'User-Agent': 'Kandro/1.0' },
+    // Open Food Facts asks callers to identify themselves and throttles the
+    // ones that do not. A generic agent is how you get rate limited at scale.
+    headers: { 'User-Agent': 'Kandro/1.0 (https://getkandro.com; hewaddorani22@gmail.com)' },
   });
   if (!response.ok) {
     return {
@@ -321,7 +332,13 @@ async function lookupBarcode(barcode: string): Promise<Result> {
     status: 200,
     body: {
       barcode,
-      name: product?.product_name_de || product?.product_name || 'Verpacktes Lebensmittel',
+      // The product name follows the reader, not the database's field order.
+      // Preferring product_name_de unconditionally showed German names to
+      // English users whenever Open Food Facts happened to carry one.
+      name: localizedProductName(product, language),
+      // Empty rather than a sentence: the app fills in the fallback wording
+      // from its own dictionary, so it is never German for an English reader.
+      nameMissing: !localizedProductName(product, language),
       per100g: {
         calories: Math.round(Number(values['energy-kcal_100g'] || 0)),
         protein: Math.round(Number(values.proteins_100g || 0)),
@@ -351,7 +368,11 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
   // Barcode lookups are free for us, so they stay outside the paid quota.
   if (request.method === 'GET') {
     const match = route.match(/^\/v1\/barcode\/(\d{7,14})$/);
-    if (match) return reply(await lookupBarcode(match[1]));
+    // A GET carries no body, so the language rides along in the query string.
+    if (match) {
+      const requested = new URL(request.url).searchParams.get('language');
+      return reply(await lookupBarcode(match[1], requestedLanguage({ language: requested })));
+    }
     return reply({ status: 404, body: { code: 'not_found', message: 'Route nicht gefunden.' } });
   }
 

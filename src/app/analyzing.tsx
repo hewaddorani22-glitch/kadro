@@ -36,6 +36,7 @@ export default function AnalyzingScreen() {
     offline: { title: t.analyzing.errOfflineTitle, detail: t.analyzing.errOfflineBody },
     'unclear-image': { title: t.analyzing.errUnclearTitle, detail: t.analyzing.errUnclearBody },
     'multiple-dishes': { title: t.analyzing.errMultipleTitle, detail: t.analyzing.errMultipleBody },
+    'product-not-found': { title: t.analyzing.errProductTitle, detail: t.analyzing.errProductBody },
     'provider-error': { title: t.analyzing.errProviderTitle, detail: t.analyzing.errProviderBody },
   };
   const insets = useSafeAreaInsets();
@@ -125,9 +126,22 @@ export default function AnalyzingScreen() {
 
           {failed ? (
             <View style={styles.actions}>
-              {analysisError !== 'not-configured' ? <PrimaryButton icon="refresh" label={t.analyzing.retry} onPress={retry} /> : null}
-              <PrimaryButton label={t.analyzing.openDemo} onPress={runDemo} variant={analysisError === 'not-configured' ? 'primary' : 'secondary'} />
-              <PrimaryButton label={t.analyzing.changeInput} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+              {analysisError === 'product-not-found' ? (
+                <>
+                  <PrimaryButton
+                    icon="create-outline"
+                    label={t.analyzing.describeInstead}
+                    onPress={() => router.replace('/(tabs)/scan?mode=description')}
+                  />
+                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+                </>
+              ) : (
+                <>
+                  {analysisError !== 'not-configured' ? <PrimaryButton icon="refresh" label={t.analyzing.retry} onPress={retry} /> : null}
+                  <PrimaryButton label={t.analyzing.openDemo} onPress={runDemo} variant={analysisError === 'not-configured' ? 'primary' : 'secondary'} />
+                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+                </>
+              )}
             </View>
           ) : (
             <View style={styles.chips}>

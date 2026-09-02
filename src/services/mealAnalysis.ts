@@ -190,6 +190,8 @@ export async function analyzeDescription(description: string): Promise<MealAnaly
 type BarcodePayload = {
   barcode: string;
   name: string;
+  /** The record carried no usable name; the wording comes from the dictionary. */
+  nameMissing?: boolean;
   per100g: Nutrition;
   source: MealItem['source'];
   code?: string;
@@ -197,22 +199,32 @@ type BarcodePayload = {
 };
 
 export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResult> {
-  const response = await gatewayFetch(`/v1/barcode/${encodeURIComponent(barcode)}`);
+  const response = await gatewayFetch(`/v1/barcode/${encodeURIComponent(barcode)}?language=${getLanguage()}`);
   const payload = (await response.json().catch(() => null)) as BarcodePayload | null;
   if (!response.ok || !payload) {
-    throw new MealAnalysisError('provider-error', gatewayMessage(payload?.code, payload?.message));
+    // A barcode the database does not know will not start knowing it on a
+    // retry, so this needs its own kind and its own way out.
+    const kind: AnalysisErrorKind = payload?.code === 'product_not_found' || payload?.code === 'missing_nutrition'
+      ? 'product-not-found'
+      : 'provider-error';
+    throw new MealAnalysisError(kind, gatewayMessage(payload?.code, payload?.message));
   }
   // Whether values exist is decided by the gateway, which sees the raw record.
   // Checking for a positive number here rejected every genuinely zero-calorie
   // product: diet drinks, sparkling water, sugar-free gum.
   const nutrition = payload.per100g;
+  // An unnamed product used to arrive as the German "Verpacktes Lebensmittel"
+  // from the gateway, regardless of who was reading it.
+  const name = payload.nameMissing || !payload.name
+    ? getDictionary().errors.packagedFood
+    : payload.name;
   return {
-    title: payload.name,
+    title: name,
     confidence: 'high',
     warnings: [getDictionary().errors.portionStartValue],
     items: [{
       id: `barcode-${payload.barcode}`,
-      name: payload.name,
+      name,
       amountG: 100,
       baseAmountG: 100,
       portionFactor: 1,

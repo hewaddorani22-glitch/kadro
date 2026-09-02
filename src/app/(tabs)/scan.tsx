@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { usePathname, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,9 +20,14 @@ export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
-  const [mode, setMode] = useState<'photo' | 'description' | 'barcode'>('photo');
+  const { mode: requestedMode } = useLocalSearchParams<{ mode?: string }>();
+  const [mode, setMode] = useState<'photo' | 'description' | 'barcode'>(
+    requestedMode === 'description' ? 'description' : 'photo',
+  );
   const [description, setDescription] = useState('');
-  const [showDescription, setShowDescription] = useState(false);
+  // Arriving with ?mode=description means the user just hit a barcode the
+  // database does not know; the sheet should already be open for them.
+  const [showDescription, setShowDescription] = useState(requestedMode === 'description');
   const [barcodeBusy, setBarcodeBusy] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const insets = useSafeAreaInsets();

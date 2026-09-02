@@ -62,7 +62,7 @@
     "validate:subscription": "node scripts/validate-subscription.mjs",
     "doctor": "npx expo-doctor",
     "check": "npm run typecheck && npx expo export --platform web",
-    "verify": "npm run typecheck && npm run validate:i18n && npm run validate:units && npm run validate:meals && npm run validate:german && npm run validate:catalog && npm run validate:analysis-language && npm run validate:cache && npm run validate:matching && npm run validate:product && npm run validate:loop && npm run validate:supabase && npm run validate:subscription && npm run validate:site && node --check server/index.mjs && npm run doctor && npx expo export --platform web",
+    "verify": "npm run typecheck && npm run validate:i18n && npm run validate:units && npm run validate:meals && npm run validate:german && npm run validate:catalog && npm run validate:analysis-language && npm run validate:barcode && npm run validate:cache && npm run validate:matching && npm run validate:product && npm run validate:loop && npm run validate:supabase && npm run validate:subscription && npm run validate:site && node --check server/index.mjs && npm run doctor && npx expo export --platform web",
     "validate:cache": "node scripts/validate-usda-cache.mjs",
     "validate:release": "node scripts/validate-release.mjs",
     "accuracy": "node scripts/analyze-accuracy.mjs",
@@ -73,7 +73,8 @@
     "preflight": "npm run verify && npm run validate:release",
     "validate:analysis-language": "node scripts/validate-analysis-language.mjs",
     "validate:matching": "node scripts/validate-usda-matching.mjs",
-    "validate:units": "node scripts/validate-units.mjs"
+    "validate:units": "node scripts/validate-units.mjs",
+    "validate:barcode": "node scripts/validate-barcode.mjs"
   },
   "private": true
 }
