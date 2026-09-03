@@ -85,6 +85,7 @@ export const de = {
     pendingHint: 'Tippen und in ein paar Sekunden fertig machen',
   },
   onboarding: {
+    saveChanges: 'Änderungen speichern',
     rateSubtitleGain: 'Langsamer heißt, dass mehr davon Muskel wird und weniger Fett.',
     sexTitle: 'Was passt biologisch zu dir?',
     sexSubtitle: 'Der Ruheumsatz unterscheidet sich um rund 165 kcal. Ohne Angabe rechnet Kandro mit der Mitte.',
@@ -395,6 +396,7 @@ export const de = {
     today: 'Heute',
   },
   profile: {
+    changePlan: 'Ziel und Angaben ändern',
     bodyValues: 'Deine Werte',
     units: 'Einheiten',
     unitsDetail: 'Größe und Gewicht in cm/kg, lb oder stone. Deine Werte bleiben gleich.',

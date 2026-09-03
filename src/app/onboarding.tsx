@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +31,9 @@ type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyph
 
 
 const STEPS = ['goal', 'rate', 'name', 'sex', 'age', 'height', 'weight', 'activity', 'preferences', 'building', 'plan'] as const;
+// The same questions, minus the first-run theatre: someone changing from
+// losing weight to building muscle has already seen the plan being built.
+const EDIT_STEPS = STEPS.filter((id) => id !== 'building');
 type StepId = (typeof STEPS)[number];
 
 type Dict = ReturnType<typeof useLanguage>['t'];
@@ -95,26 +98,29 @@ const skippableSteps = new Set<StepId>(['name', 'preferences']);
 export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { completeOnboarding, grantWellnessConsent } = useApp();
+  const { completeOnboarding, grantWellnessConsent, profile } = useApp();
   const { locale, t } = useLanguage();
   const copy = copyFor(t);
   const goalChoices = goalChoicesFor(t);
   const sexChoices = sexChoicesFor(t);
   const activityChoices = activityChoicesFor(t);
   const preferenceChoices = preferenceChoicesFor(t);
+  const params = useLocalSearchParams<{ edit?: string }>();
+  const editing = params.edit === '1' && !!profile.completedAt;
+  const steps: readonly StepId[] = editing ? EDIT_STEPS : STEPS;
   const [stepIndex, setStepIndex] = useState(0);
-  const [goal, setGoal] = useState<NutritionGoal>('lose');
-  const [displayName, setDisplayName] = useState('');
-  const [sex, setSex] = useState<BiologicalSex>('unspecified');
+  const [goal, setGoal] = useState<NutritionGoal>(() => (editing ? profile.goal : 'lose'));
+  const [displayName, setDisplayName] = useState(() => (editing ? profile.displayName : ''));
+  const [sex, setSex] = useState<BiologicalSex>(() => (editing ? profile.sex : 'unspecified'));
   // Guessed from the device so most people never touch it, but visible and
   // switchable right on the step where it matters.
-  const [unitSystem, setUnitSystem] = useState<UnitSystem>(defaultUnitSystem);
-  const [age, setAge] = useState(29);
-  const [height, setHeight] = useState(178);
-  const [weight, setWeight] = useState(78);
-  const [activity, setActivity] = useState<UserProfile['activityLevel']>('light');
-  const [weeklyRate, setWeeklyRate] = useState<WeeklyRateKg>(0.5);
-  const [preferences, setPreferences] = useState<string[]>(['high-protein']);
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => (editing ? profile.unitSystem : defaultUnitSystem()));
+  const [age, setAge] = useState(() => (editing ? profile.age : 29));
+  const [height, setHeight] = useState(() => (editing ? profile.heightCm : 178));
+  const [weight, setWeight] = useState(() => (editing ? profile.weightKg : 78));
+  const [activity, setActivity] = useState<UserProfile['activityLevel']>(() => (editing ? profile.activityLevel : 'light'));
+  const [weeklyRate, setWeeklyRate] = useState<WeeklyRateKg>(() => (editing ? profile.weeklyRateKg : 0.5));
+  const [preferences, setPreferences] = useState<string[]>(() => (editing ? profile.preferences : ['high-protein']));
   const [showConsent, setShowConsent] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
@@ -123,7 +129,7 @@ export default function OnboardingScreen() {
   const goalRef = useRef(goal);
   goalRef.current = goal;
 
-  const step = STEPS[stepIndex];
+  const step = steps[stepIndex];
 
   const clearAdvance = useCallback(() => {
     if (advanceTimer.current) clearTimeout(advanceTimer.current);
@@ -135,19 +141,19 @@ export default function OnboardingScreen() {
   const goNext = useCallback(() => {
     clearAdvance();
     setStepIndex((current) => {
-      let next = Math.min(STEPS.length - 1, current + 1);
+      let next = Math.min(steps.length - 1, current + 1);
       // Holding weight has no rate to choose.
-      if (STEPS[next] === 'rate' && goalRef.current === 'maintain') next += 1;
-      return Math.min(STEPS.length - 1, next);
+      if (steps[next] === 'rate' && goalRef.current === 'maintain') next += 1;
+      return Math.min(steps.length - 1, next);
     });
-  }, [clearAdvance]);
+  }, [clearAdvance, steps]);
 
   const goBack = () => {
     void Haptics.selectionAsync();
     clearAdvance();
     setStepIndex((current) => {
       let previous = Math.max(0, current - 1);
-      if (STEPS[previous] === 'rate' && goalRef.current === 'maintain') previous -= 1;
+      if (steps[previous] === 'rate' && goalRef.current === 'maintain') previous -= 1;
       return Math.max(0, previous);
     });
   };
@@ -172,9 +178,9 @@ export default function OnboardingScreen() {
   // loading bar: it never blocks and always resolves.
   useEffect(() => {
     if (step !== 'building') return;
-    const timer = setTimeout(() => setStepIndex((current) => Math.min(STEPS.length - 1, current + 1)), 1500);
+    const timer = setTimeout(() => setStepIndex((current) => Math.min(steps.length - 1, current + 1)), 1500);
     return () => clearTimeout(timer);
-  }, [step]);
+  }, [step, steps]);
 
   const draftProfile = useMemo<UserProfile>(() => ({
     displayName: displayName.trim(),
@@ -187,8 +193,8 @@ export default function OnboardingScreen() {
     activityLevel: activity,
     weeklyRateKg: weeklyRate,
     preferences,
-    completedAt: null,
-  }), [activity, age, displayName, goal, height, preferences, sex, unitSystem, weeklyRate, weight]);
+    completedAt: editing ? profile.completedAt : null,
+  }), [activity, editing, profile.completedAt, age, displayName, goal, height, preferences, sex, unitSystem, weeklyRate, weight]);
   const startingTargets = useMemo(() => calculateDailyTargets(draftProfile), [draftProfile]);
 
   const acceptConsent = async () => {
@@ -207,9 +213,23 @@ export default function OnboardingScreen() {
     }
   };
 
+  /**
+   * Editing skips the consent sheet: consent was given once and is not
+   * re-asked because someone changed their activity level.
+   */
+  const saveEdits = async () => {
+    await completeOnboarding(draftProfile);
+    trackEvent('plan edited', { goal: draftProfile.goal });
+    router.replace('/(tabs)/profile');
+  };
+
   const primaryAction = () => {
     void Haptics.selectionAsync();
     if (step === 'plan') {
+      if (editing) {
+        void saveEdits();
+        return;
+      }
       setShowConsent(true);
       return;
     }
@@ -217,7 +237,7 @@ export default function OnboardingScreen() {
   };
 
   const showFooterButton = step !== 'building' && !isChoiceStep(step);
-  const footerLabel = step === 'plan' ? t.onboarding.scanFirstMeal : t.common.next;
+  const footerLabel = step === 'plan' ? (editing ? t.onboarding.saveChanges : t.onboarding.scanFirstMeal) : t.common.next;
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
@@ -225,15 +245,15 @@ export default function OnboardingScreen() {
         <Pressable
           accessibilityLabel={t.common.back}
           accessibilityRole="button"
-          accessibilityState={{ disabled: stepIndex === 0 }}
-          disabled={stepIndex === 0}
+          accessibilityState={{ disabled: stepIndex === 0 && !editing }}
+          disabled={stepIndex === 0 && !editing}
           hitSlop={10}
-          onPress={goBack}
-          style={[styles.backButton, stepIndex === 0 && styles.invisible]}
+          onPress={stepIndex === 0 && editing ? () => router.replace('/(tabs)/profile') : goBack}
+          style={[styles.backButton, stepIndex === 0 && !editing && styles.invisible]}
         >
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
-        <Text style={styles.stepLabel}>{t.onboarding.step(stepIndex + 1, STEPS.length)}</Text>
+        <Text style={styles.stepLabel}>{t.onboarding.step(stepIndex + 1, steps.length)}</Text>
         {skippableSteps.has(step) ? (
           <Pressable accessibilityRole="button" hitSlop={10} onPress={skipStep}>
             <Text style={styles.skip}>{t.common.skip}</Text>
@@ -241,7 +261,7 @@ export default function OnboardingScreen() {
         ) : <View style={styles.skipPlaceholder} />}
       </View>
 
-      <ProgressBar value={(stepIndex + 1) / STEPS.length} />
+      <ProgressBar value={(stepIndex + 1) / steps.length} />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ScrollView

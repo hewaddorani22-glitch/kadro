@@ -112,6 +112,14 @@ export default function ProfileScreen() {
             <PlanStat label={t.profile.pace} value={weeklyRateLabel(profile.goal, profile.weeklyRateKg, t.common, profile.unitSystem)} />
             <PlanStat label={t.profile.activity} value={activityLabel(profile.activityLevel, t.common)} />
           </View>
+          <View style={styles.divider} />
+          {/*
+            A goal is not a one-time decision: people finish losing weight and
+            move on to building muscle, and their weight and activity change
+            under them either way. Re-running the same questions keeps one
+            source of truth for how a plan is calculated.
+          */}
+          <MenuRow icon="create-outline" label={t.profile.changePlan} onPress={() => router.push('/onboarding?edit=1' as never)} />
         </Card>
       </View>
 
@@ -189,10 +197,11 @@ export default function ProfileScreen() {
             })}
           </View>
           <View style={styles.divider} />
-          <InfoRow
+          <MenuRow
             detail={`${formatHeight(profile.heightCm, profile.unitSystem)} · ${formatWeight(profile.weightKg, profile.unitSystem, locale)}`}
             icon="body-outline"
             label={t.profile.bodyValues}
+            onPress={() => router.push('/onboarding?edit=1' as never)}
           />
         </Card>
       </View>
@@ -296,17 +305,22 @@ function InfoRow({ detail, icon, label }: { detail: string; icon: keyof typeof I
   );
 }
 
-function MenuRow({ icon, label, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
+function MenuRow({ detail, icon, label, onPress }: { detail?: string; icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.menuRow}>
       <View style={styles.rowIcon}><Ionicons color={colors.text} name={icon} size={20} /></View>
-      <Text style={styles.menuLabel}>{label}</Text>
+      <View style={styles.menuCopy}>
+        <Text style={styles.menuLabel}>{label}</Text>
+        {detail ? <Text style={styles.menuDetail}>{detail}</Text> : null}
+      </View>
       <Ionicons color={colors.muted} name="chevron-forward" size={18} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  menuCopy: { flex: 1, gap: 2 },
+  menuDetail: { color: colors.muted, fontSize: 12 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
   avatarText: { color: colors.white, fontSize: 20, fontWeight: '800' },
@@ -338,7 +352,7 @@ const styles = StyleSheet.create({
   rowCopy: { flex: 1, gap: 3 },
   rowLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
   rowDetail: { color: colors.muted, fontSize: 10, lineHeight: 14 },
-  menuLabel: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
+  menuLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 60 },
   wellnessNote: { flexDirection: 'row', gap: 9, paddingHorizontal: 8 },
   wellnessText: { flex: 1, color: colors.muted, fontSize: 11, lineHeight: 17 },

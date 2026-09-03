@@ -84,6 +84,7 @@ export const en: typeof de = {
     pendingHint: 'Tap to finish it in a few seconds',
   },
   onboarding: {
+    saveChanges: 'Save changes',
     rateSubtitleGain: 'Slower means more of it becomes muscle and less of it becomes fat.',
     sexTitle: 'What fits you biologically?',
     sexSubtitle: 'Resting energy differs by about 165 kcal. Without an answer Kandro uses the midpoint.',
@@ -394,6 +395,7 @@ export const en: typeof de = {
     today: 'Today',
   },
   profile: {
+    changePlan: 'Change goal and details',
     bodyValues: 'Your measurements',
     units: 'Units',
     unitsDetail: 'Height and weight in cm/kg, lb or stone. Your values stay the same.',

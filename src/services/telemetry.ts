@@ -1,7 +1,7 @@
 import PostHog from 'posthog-react-native';
 
 import { AnalysisErrorKind } from '@/services/contracts';
-import { MealContext } from '@/types/nutrition';
+import { MealContext, NutritionGoal } from '@/types/nutrition';
 
 type ScanSource = 'camera' | 'demo' | 'queued_retry' | 'description' | 'barcode' | 'search';
 type CountBucket = '1' | '2-3' | '4+';
@@ -9,6 +9,7 @@ type BillingMode = 'preview' | 'test_store' | 'native_store' | 'web';
 
 type AnalyticsEventMap = {
   'onboarding completed': { completion: 'finished' | 'skipped' };
+  'plan edited': { goal: NutritionGoal };
   'meal scan started': { scan_source: ScanSource };
   'meal analysis completed': {
     confidence: 'high' | 'medium';
@@ -49,6 +50,7 @@ const telemetryAvailable = process.env.EXPO_PUBLIC_POSTHOG_ENABLED?.trim().toLow
 const allowedEvents = new Set<string>([
   ...([
     'onboarding completed',
+    'plan edited',
     'meal scan started',
     'meal analysis completed',
     'meal analysis failed',
