@@ -157,6 +157,9 @@ export default function ConfirmScreen() {
               fat: per100(item.fat / item.portionFactor),
             },
             defaultGrams: item.amountG,
+            // This is the amount already on the meal, not a database default.
+            amountIsChosen: true,
+            portions: item.portions,
             sourceLabel: item.source.label,
           };
         })()}

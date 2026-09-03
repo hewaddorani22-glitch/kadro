@@ -219,6 +219,7 @@ type BarcodePayload = {
   /** The record carried no usable name; the wording comes from the dictionary. */
   nameMissing?: boolean;
   per100g: Nutrition;
+  portions?: { label: string; grams: number }[];
   source: MealItem['source'];
   code?: string;
   message?: string;
@@ -256,6 +257,7 @@ export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResul
       portionFactor: 1,
       confidence: 'high',
       included: true,
+      portions: payload.portions,
       source: payload.source,
       ...nutrition,
     }],
@@ -318,6 +320,9 @@ export function mealFromSearch(result: FoodSearchResult, grams: number): MealAna
       fiber: scale(result.per100g.fiber ?? 0),
       confidence: 'high',
       included: true,
+      // Carried through so re-opening the amount on the confirm screen still
+      // offers "1 banana" rather than dropping back to grams only.
+      portions: result.portions,
       source: result.source,
     }],
   };

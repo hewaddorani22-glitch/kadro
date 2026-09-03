@@ -5,6 +5,7 @@
  * pin down the arithmetic and the portion list the gateway hands the picker.
  */
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,7 +18,7 @@ const source = (await readFile(resolve(projectRoot, 'src/utils/portions.ts'), 'u
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 });
-const { resolveGrams, scaleNutrition } = await import(
+const { initialSelection, resolveGrams, scaleNutrition } = await import(
   `data:text/javascript;charset=utf-8,${encodeURIComponent(outputText)}`
 );
 const { usdaPortions } = await import(resolve(projectRoot, 'supabase/functions/_shared/nutrition.mjs'));
@@ -72,4 +73,43 @@ assert.deepEqual(usdaPortions({ servingSize: 3, servingSizeUnit: 'IU', household
 assert.ok(usdaPortions({ foodMeasures: Array.from({ length: 9 }, (_, i) => ({ disseminationText: `1 piece ${i}`, gramWeight: 10 + i, rank: i })) }).length <= 4,
   'a picker with nine units is a picker nobody reads');
 
-console.log('Portion arithmetic and portion lists check out.');
+// --- Where the sheet opens for an amount that already exists ---------------
+const chosen = { chosen: true };
+// Picking a food from search: the friendly unit, not the database's 100 g.
+assert.deepEqual(initialSelection(100, [banana]), { unitIndex: 0, amount: '1' },
+  'a food with a household portion must not open in grams');
+assert.deepEqual(initialSelection(100, []), { unitIndex: -1, amount: '100' });
+// Re-opening an amount someone already set.
+assert.deepEqual(initialSelection(252, [banana], chosen), { unitIndex: 0, amount: '2' },
+  're-opening 252 g must say two bananas, not one');
+assert.deepEqual(initialSelection(126, [banana], chosen), { unitIndex: 0, amount: '1' });
+assert.deepEqual(initialSelection(63, [banana], chosen), { unitIndex: 0, amount: '0.5' });
+assert.deepEqual(initialSelection(189, [banana], chosen), { unitIndex: 0, amount: '1.5' });
+// Not a clean count: grams are the honest answer.
+assert.deepEqual(initialSelection(200, [banana], chosen), { unitIndex: -1, amount: '200' });
+assert.deepEqual(initialSelection(150, [], chosen), { unitIndex: -1, amount: '150' });
+assert.deepEqual(initialSelection(0, [banana], chosen), { unitIndex: -1, amount: '100' });
+assert.deepEqual(initialSelection(Number.NaN, [], chosen), { unitIndex: -1, amount: '100' });
+
+// --- Portions must survive every hop to the amount sheet -------------------
+/**
+ * The amount sheet is only as good as the portions it is handed. Each of these
+ * hops dropped them at some point: a search hit that offered "1 banana" became
+ * an item that offered grams only, and the barcode path never asked Open Food
+ * Facts for the pack's serving at all.
+ */
+const readSource = (relative) => readFileSync(resolve(projectRoot, relative), 'utf8');
+const hops = [
+  ['supabase/functions/nutrition/index.ts', /portions: servingPortion\(product\)/, 'the barcode endpoint does not return the pack serving'],
+  ['supabase/functions/nutrition/index.ts', /serving_size,serving_quantity/, 'the barcode lookup does not ask for the serving fields'],
+  ['supabase/functions/nutrition/index.ts', /portions: usdaPortions\(entry\)/, 'search results carry no household measures'],
+  ['src/services/mealAnalysis.ts', /portions: payload\.portions/, 'a scanned barcode drops its portions'],
+  ['src/services/mealAnalysis.ts', /portions: result\.portions/, 'a searched food drops its portions'],
+  ['src/app/confirm.tsx', /portions: item\.portions/, 'the confirm screen opens the sheet without them'],
+  ['src/app/(tabs)/scan.tsx', /portions: pendingFood\.portions/, 'the search sheet opens without them'],
+];
+for (const [file, pattern, message] of hops) {
+  assert.match(readSource(file), pattern, `${file}: ${message}`);
+}
+
+console.log('Portion arithmetic and portion lists check out, and portions survive every hop to the sheet.');

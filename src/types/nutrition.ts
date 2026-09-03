@@ -25,6 +25,8 @@ export type MealItem = Nutrition & {
   confidence: 'high' | 'medium';
   optional?: boolean;
   included: boolean;
+  /** Named household portions from the source, when it has any. */
+  portions?: { label: string; grams: number }[];
   source: NutritionSource;
 };
 

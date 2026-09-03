@@ -472,7 +472,7 @@ async function lookupBarcode(barcode: string, language: string): Promise<Result>
   if (!/^\d{7,14}$/.test(barcode)) {
     return { status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } };
   }
-  const fields = 'code,product_name_de,product_name_en,product_name,nutriments';
+  const fields = 'code,product_name_de,product_name_en,product_name,nutriments,serving_size,serving_quantity';
   const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`, {
     // Open Food Facts asks callers to identify themselves and throttles the
     // ones that do not. A generic agent is how you get rate limited at scale.
@@ -523,9 +523,21 @@ async function lookupBarcode(barcode: string, language: string): Promise<Result>
         fat: Math.round(Number(values.fat_100g || 0)),
         fiber: Math.round(Number(values.fiber_100g || 0)),
       },
+      // The pack's own serving, so "2 servings" is a tap rather than a
+      // multiplication the user does in their head.
+      portions: servingPortion(product),
       source: { provider: 'open-food-facts', referenceId: barcode, label: `Open Food Facts ${barcode}` },
     },
   };
+}
+
+/** An Open Food Facts serving size, when it is a weight anyone would trust. */
+// deno-lint-ignore no-explicit-any
+function servingPortion(product: any): { label: string; grams: number }[] {
+  const grams = Math.round(Number(product?.serving_quantity));
+  if (!Number.isFinite(grams) || grams < 1 || grams > 2000) return [];
+  const label = String(product?.serving_size ?? '').trim().slice(0, 40);
+  return [{ label: label || '1', grams }];
 }
 
 /** Strips the /functions/v1/nutrition prefix so routes read the same as locally. */

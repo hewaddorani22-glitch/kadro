@@ -5,7 +5,7 @@ import { PrimaryButton } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import type { Nutrition } from '@/types/nutrition';
-import { type FoodPortion, resolveGrams, scaleNutrition } from '@/utils/portions';
+import { type FoodPortion, initialSelection, resolveGrams, scaleNutrition } from '@/utils/portions';
 
 export type { FoodPortion };
 
@@ -14,6 +14,8 @@ export type PortionTarget = {
   per100g: Nutrition;
   defaultGrams: number;
   portions?: FoodPortion[];
+  /** True when defaultGrams is an amount the user set, not a database default. */
+  amountIsChosen?: boolean;
   sourceLabel?: string;
 };
 
@@ -53,9 +55,10 @@ export function PortionSheet({
   // with an empty amount field.
   const [seen, setSeen] = useState('\u0000');
   if (seen !== signature) {
+    const opening = initialSelection(target?.defaultGrams ?? 100, portions, { chosen: target?.amountIsChosen });
     setSeen(signature);
-    setUnitIndex(portions.length ? 0 : -1);
-    setAmount(portions.length ? '1' : String(target?.defaultGrams ?? 100));
+    setUnitIndex(opening.unitIndex);
+    setAmount(opening.amount);
   }
 
   const activePortion = unitIndex >= 0 ? portions[unitIndex] : undefined;
