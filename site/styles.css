@@ -107,7 +107,13 @@ h1 em { color: var(--moss); font-style: normal; }
 .story h3 { max-width: 570px; font-size: clamp(2.2rem, 4vw, 4rem); }
 .story-copy > p:not(.eyebrow):not(.data-note) { margin: 25px 0 0; color: var(--muted); font-size: 1.04rem; }
 .story-media { width: min(100%, 510px); justify-self: center; padding: 20px; border: 1px solid var(--line); border-radius: 46px; background: rgba(255,255,255,.56); box-shadow: 0 24px 70px rgba(20,21,15,.09); }
-.story-media img { width: 100%; border-radius: 28px; }
+.story-media img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: auto;
+  object-fit: contain;
+  border-radius: 28px;
+}
 .proof-list { display: grid; gap: 10px; margin: 27px 0 0; padding: 0; list-style: none; }
 .proof-list li { position: relative; padding-left: 26px; color: #505249; font-size: .94rem; }
 .proof-list li::before { content: "✓"; position: absolute; left: 0; color: var(--moss); font-weight: 900; }
