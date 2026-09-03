@@ -6,11 +6,27 @@
   "build": {
     "preview": {
       "distribution": "internal",
-      "environment": "preview"
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_LEGAL_PROVIDER_NAME": "Hewad Dorani",
+        "EXPO_PUBLIC_LEGAL_PROVIDER_ADDRESS": "Altenessener Str. 124, 45326 Essen",
+        "EXPO_PUBLIC_LEGAL_CONTACT_EMAIL": "hewaddorani22@gmail.com",
+        "EXPO_PUBLIC_LEGAL_PRIVACY_URL": "https://getkandro.com/privacy",
+        "EXPO_PUBLIC_LEGAL_TERMS_URL": "https://getkandro.com/terms",
+        "EXPO_PUBLIC_LEGAL_SUPPORT_URL": "https://getkandro.com/support"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "environment": "production"
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_LEGAL_PROVIDER_NAME": "Hewad Dorani",
+        "EXPO_PUBLIC_LEGAL_PROVIDER_ADDRESS": "Altenessener Str. 124, 45326 Essen",
+        "EXPO_PUBLIC_LEGAL_CONTACT_EMAIL": "hewaddorani22@gmail.com",
+        "EXPO_PUBLIC_LEGAL_PRIVACY_URL": "https://getkandro.com/privacy",
+        "EXPO_PUBLIC_LEGAL_TERMS_URL": "https://getkandro.com/terms",
+        "EXPO_PUBLIC_LEGAL_SUPPORT_URL": "https://getkandro.com/support"
+      }
     }
   },
   "submit": {
