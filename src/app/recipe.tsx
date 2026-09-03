@@ -12,10 +12,14 @@ import { formatNumber } from '@/utils/format';
 
 export default function RecipeScreen() {
   const router = useRouter();
-  const { locale, t } = useLanguage();
+  const { language, locale, t } = useLanguage();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const recipe = useMemo(() => (id ? getRecipe(id) : null), [id]);
-  const title = useMemo(() => (id ? recipeTitle(id) : ''), [id]);
+  // `language` is in the dependencies because these read it through the
+  // non-React mirror. The stored language lands one render after the device
+  // guess, and without it a German phone showed an English reader German
+  // ingredients under English headings.
+  const recipe = useMemo(() => (id ? getRecipe(id) : null), [id, language]);
+  const title = useMemo(() => (id ? recipeTitle(id) : ''), [id, language]);
 
   if (!recipe) {
     return (

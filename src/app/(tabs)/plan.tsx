@@ -21,7 +21,7 @@ export default function PlanScreen() {
   const params = useLocalSearchParams<{ context?: string; fromScan?: string }>();
   const router = useRouter();
   const { hasLoggedScan, logPlannedMeal, profile, remaining } = useApp();
-  const { locale, t } = useLanguage();
+  const { language, locale, t } = useLanguage();
   const contexts: { id: MealContext; title: string; detail: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { id: 'home', title: t.plan.ctxHome, detail: t.plan.ctxHomeDetail, icon: 'home-outline' },
     { id: 'supermarket', title: t.plan.ctxMarket, detail: t.plan.ctxMarketDetail, icon: 'basket-outline' },
@@ -46,7 +46,9 @@ export default function PlanScreen() {
   const dayIsDone = remaining.calories < 150;
   const suggestions = useMemo(
     () => (selected && !dayIsDone ? recommendMeals(selected, remaining, profile.preferences) : []),
-    [dayIsDone, profile.preferences, remaining, selected],
+    // `language` picks the catalogue, and it arrives one render after the
+    // device guess.
+    [dayIsDone, language, profile.preferences, remaining, selected],
   );
   const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
   const proteinCenter = Math.round(Math.min(45, Math.max(28, remaining.protein * 0.48)) / 5) * 5;

@@ -10,7 +10,7 @@ import {
   saveLanguage,
 } from '@/i18n';
 import { setActiveDictionary } from '@/i18n/active';
-import { syncEveningReminder } from '@/services/reminders';
+import { applyNotificationChannel, syncEveningReminder } from '@/services/reminders';
 import { LegalCopySet, legalDe } from '@/i18n/legal.de';
 import { legalEn } from '@/i18n/legal.en';
 
@@ -44,6 +44,13 @@ export function LanguageProvider({ children }: PropsWithChildren) {
       active = false;
     };
   }, []);
+
+  // Also on boot, not just on a switch: the stored language arrives a render
+  // after the device guess, and the channel name is what the user reads in
+  // Android's own settings.
+  useEffect(() => {
+    applyNotificationChannel();
+  }, [language]);
 
   const setLanguage = useCallback(async (next: Language) => {
     setLanguageState(next);

@@ -32,15 +32,24 @@ export function configureNotifications() {
     }),
   });
 
-  if (Platform.OS === 'android') {
-    void Notifications.setNotificationChannelAsync('evening-summary', {
-      name: 'Tagesabschluss',
-      importance: Notifications.AndroidImportance.DEFAULT,
-      sound: null,
-      vibrationPattern: [0, 180],
-      enableVibrate: true,
-    }).catch(() => undefined);
-  }
+  applyNotificationChannel();
+}
+
+/**
+ * The Android channel name is what a user sees in system settings, and it was
+ * hard-coded German for everyone. Setting the channel again under the same id
+ * updates it, so this runs once at boot and again whenever the language
+ * changes — the language is only known a render after the first call.
+ */
+export function applyNotificationChannel() {
+  if (!remindersSupported || Platform.OS !== 'android') return;
+  void Notifications.setNotificationChannelAsync('evening-summary', {
+    name: getDictionary().today.eveningTitle,
+    importance: Notifications.AndroidImportance.DEFAULT,
+    sound: null,
+    vibrationPattern: [0, 180],
+    enableVibrate: true,
+  }).catch(() => undefined);
 }
 
 export async function isEveningReminderEnabled() {
