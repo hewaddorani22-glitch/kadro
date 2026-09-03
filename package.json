@@ -85,6 +85,7 @@
     "validate:eas": "node scripts/validate-eas-env.mjs",
     "validate:day-complete": "node scripts/validate-day-complete.mjs",
     "validate:language-memos": "node scripts/validate-language-memos.mjs",
+    "catalog:quick": "node scripts/tag-quick-meals.mjs",
     "validate:preferences": "node scripts/validate-preferences.mjs",
     "validate:meal-slots": "node scripts/validate-meal-slots.mjs",
     "validate:recipes": "node scripts/validate-recipes.mjs",

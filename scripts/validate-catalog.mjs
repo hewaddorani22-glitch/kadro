@@ -10,7 +10,10 @@ const catalogs = {
 const dietaryTerms = await load('dietaryTerms.json');
 
 const contexts = ['home', 'supermarket', 'eating-out'];
-const tags = ['high-protein', 'pescetarian', 'vegan', 'vegetarian'];
+// 'quick' is a property of the meal, written into both catalogues by
+// tag-quick-meals.mjs, because reading it out of the localised time string
+// only ever recognised the German wording.
+const tags = ['high-protein', 'pescetarian', 'vegan', 'vegetarian', 'quick'];
 const idPrefixes = { home: 'home', supermarket: 'market', 'eating-out': 'out' };
 
 // Same source the app uses, so a term added for one language cannot drift.
@@ -85,6 +88,10 @@ for (const [language, catalog] of Object.entries(catalogs)) {
     }
     if (!Array.isArray(item.tags) || item.tags.length < 1 || item.tags.some((tag) => !tags.includes(tag))) {
       fail(`${item.id}: invalid tags`);
+    }
+    // The first tag is the diet class; every meal has exactly one.
+    if (item.tags.filter((tag) => tag !== 'quick').length !== 1) {
+      fail(`${item.id}: needs exactly one dietary tag`);
     }
   }
 

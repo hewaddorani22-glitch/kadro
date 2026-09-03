@@ -56,21 +56,18 @@ function matchesDietaryConstraints(entry: CatalogEntry, preferences: string[]) {
   return true;
 }
 
-function isQuick(entry: CatalogEntry) {
-  if (/direkt|ohne kochen|mikrowelle/i.test(entry.time)) return true;
-  const minutes = Number(entry.time.match(/\d+/)?.[0] ?? 99);
-  return minutes <= 20;
-}
-
 function score(entry: CatalogEntry, remaining: Nutrition, preferences: string[]) {
   const calorieTarget = Math.min(550, Math.max(380, remaining.calories * 0.38));
   const proteinTarget = Math.min(45, Math.max(28, remaining.protein * 0.48));
   const macroDistance = Math.abs(entry.calories - calorieTarget) / 80
     + Math.abs(entry.protein - proteinTarget) / 12
     + Math.max(0, entry.fat - remaining.fat * 0.35) / 10;
-  const preferenceBonus = preferences.some((preference) => entry.tags.includes(preference)) ? -1.5 : 0;
-  const quickBonus = preferences.includes('quick') && isQuick(entry) ? -1.2 : 0;
-  return macroDistance + preferenceBonus + quickBonus;
+  // One bonus per preference the meal actually satisfies, so choosing two
+  // things you care about outranks a meal that only happens to fit one.
+  // 'quick' is a tag now rather than a phrase parsed out of the localised time
+  // string, which only ever matched German.
+  const matched = preferences.filter((preference) => entry.tags.includes(preference)).length;
+  return macroDistance - matched * 1.5;
 }
 
 /** The dish name in the reader's language, for screens that only have an id. */

@@ -11,7 +11,8 @@
     "fat": 12,
     "fiber": 7,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -26,7 +27,8 @@
     "fat": 16,
     "fiber": 11,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -41,7 +43,8 @@
     "fat": 11,
     "fiber": 5,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -116,7 +119,8 @@
     "fat": 12,
     "fiber": 7,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -146,7 +150,8 @@
     "fat": 14,
     "fiber": 4,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -176,7 +181,8 @@
     "fat": 9,
     "fiber": 5,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -221,7 +227,8 @@
     "fat": 7,
     "fiber": 5,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -296,7 +303,8 @@
     "fat": 25,
     "fiber": 9,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -386,7 +394,8 @@
     "fat": 19,
     "fiber": 4,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -431,7 +440,8 @@
     "fat": 14,
     "fiber": 4,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -446,7 +456,8 @@
     "fat": 12,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -536,7 +547,8 @@
     "fat": 11,
     "fiber": 4,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -581,7 +593,8 @@
     "fat": 17,
     "fiber": 10,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -611,7 +624,8 @@
     "fat": 15,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -626,7 +640,8 @@
     "fat": 12,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -641,7 +656,8 @@
     "fat": 17,
     "fiber": 14,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -791,7 +807,8 @@
     "fat": 12,
     "fiber": 11,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -866,7 +883,8 @@
     "fat": 14,
     "fiber": 12,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -881,7 +899,8 @@
     "fat": 22,
     "fiber": 4,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -896,7 +915,8 @@
     "fat": 18,
     "fiber": 7,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -911,7 +931,8 @@
     "fat": 10,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -971,7 +992,8 @@
     "fat": 11,
     "fiber": 11,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1016,7 +1038,8 @@
     "fat": 9,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1031,7 +1054,8 @@
     "fat": 12,
     "fiber": 7,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1046,7 +1070,8 @@
     "fat": 10,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1061,7 +1086,8 @@
     "fat": 12,
     "fiber": 9,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1076,7 +1102,8 @@
     "fat": 17,
     "fiber": 7,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1091,7 +1118,8 @@
     "fat": 16,
     "fiber": 13,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1106,7 +1134,8 @@
     "fat": 10,
     "fiber": 12,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1121,7 +1150,8 @@
     "fat": 15,
     "fiber": 10,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1136,7 +1166,8 @@
     "fat": 11,
     "fiber": 7,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1151,7 +1182,8 @@
     "fat": 14,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1166,7 +1198,8 @@
     "fat": 18,
     "fiber": 12,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1181,7 +1214,8 @@
     "fat": 13,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1196,7 +1230,8 @@
     "fat": 19,
     "fiber": 13,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1211,7 +1246,8 @@
     "fat": 10,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1226,7 +1262,8 @@
     "fat": 12,
     "fiber": 7,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1241,7 +1278,8 @@
     "fat": 14,
     "fiber": 8,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1256,7 +1294,8 @@
     "fat": 9,
     "fiber": 10,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1271,7 +1310,8 @@
     "fat": 13,
     "fiber": 9,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1286,7 +1326,8 @@
     "fat": 12,
     "fiber": 9,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1301,7 +1342,8 @@
     "fat": 13,
     "fiber": 8,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1316,7 +1358,8 @@
     "fat": 21,
     "fiber": 10,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1331,7 +1374,8 @@
     "fat": 11,
     "fiber": 8,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1346,7 +1390,8 @@
     "fat": 16,
     "fiber": 15,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1361,7 +1406,8 @@
     "fat": 13,
     "fiber": 8,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1376,7 +1422,8 @@
     "fat": 10,
     "fiber": 9,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1391,7 +1438,8 @@
     "fat": 13,
     "fiber": 14,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1406,7 +1454,8 @@
     "fat": 15,
     "fiber": 8,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1421,7 +1470,8 @@
     "fat": 17,
     "fiber": 12,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1436,7 +1486,8 @@
     "fat": 14,
     "fiber": 8,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1451,7 +1502,8 @@
     "fat": 10,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1466,7 +1518,8 @@
     "fat": 11,
     "fiber": 8,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1481,7 +1534,8 @@
     "fat": 9,
     "fiber": 9,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1496,7 +1550,8 @@
     "fat": 12,
     "fiber": 9,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1511,7 +1566,8 @@
     "fat": 15,
     "fiber": 15,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1526,7 +1582,8 @@
     "fat": 12,
     "fiber": 8,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1541,7 +1598,8 @@
     "fat": 18,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1556,7 +1614,8 @@
     "fat": 17,
     "fiber": 7,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1571,7 +1630,8 @@
     "fat": 15,
     "fiber": 12,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1586,7 +1646,8 @@
     "fat": 13,
     "fiber": 13,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1601,7 +1662,8 @@
     "fat": 9,
     "fiber": 9,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1616,7 +1678,8 @@
     "fat": 12,
     "fiber": 8,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1631,7 +1694,8 @@
     "fat": 15,
     "fiber": 14,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1646,7 +1710,8 @@
     "fat": 13,
     "fiber": 16,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1661,7 +1726,8 @@
     "fat": 13,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1676,7 +1742,8 @@
     "fat": 15,
     "fiber": 12,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1691,7 +1758,8 @@
     "fat": 17,
     "fiber": 8,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1706,7 +1774,8 @@
     "fat": 15,
     "fiber": 13,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1721,7 +1790,8 @@
     "fat": 14,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1736,7 +1806,8 @@
     "fat": 13,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1751,7 +1822,8 @@
     "fat": 9,
     "fiber": 7,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1766,7 +1838,8 @@
     "fat": 13,
     "fiber": 8,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1781,7 +1854,8 @@
     "fat": 16,
     "fiber": 15,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1796,7 +1870,8 @@
     "fat": 14,
     "fiber": 8,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1811,7 +1886,8 @@
     "fat": 12,
     "fiber": 10,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1826,7 +1902,8 @@
     "fat": 18,
     "fiber": 13,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1841,7 +1918,8 @@
     "fat": 16,
     "fiber": 10,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1856,7 +1934,8 @@
     "fat": 13,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1871,7 +1950,8 @@
     "fat": 12,
     "fiber": 10,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1886,7 +1966,8 @@
     "fat": 13,
     "fiber": 9,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1901,7 +1982,8 @@
     "fat": 13,
     "fiber": 12,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1916,7 +1998,8 @@
     "fat": 17,
     "fiber": 8,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1931,7 +2014,8 @@
     "fat": 10,
     "fiber": 9,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -1946,7 +2030,8 @@
     "fat": 19,
     "fiber": 8,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -1961,7 +2046,8 @@
     "fat": 14,
     "fiber": 15,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -1976,7 +2062,8 @@
     "fat": 14,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -1991,7 +2078,8 @@
     "fat": 16,
     "fiber": 13,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -2006,7 +2094,8 @@
     "fat": 12,
     "fiber": 8,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -2066,7 +2155,8 @@
     "fat": 17,
     "fiber": 8,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -2096,7 +2186,8 @@
     "fat": 18,
     "fiber": 9,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -2141,7 +2232,8 @@
     "fat": 17,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -2171,7 +2263,8 @@
     "fat": 10,
     "fiber": 10,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -2216,7 +2309,8 @@
     "fat": 12,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -2276,7 +2370,8 @@
     "fat": 16,
     "fiber": 10,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -2291,7 +2386,8 @@
     "fat": 12,
     "fiber": 16,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -2306,7 +2402,8 @@
     "fat": 13,
     "fiber": 9,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -2336,7 +2433,8 @@
     "fat": 15,
     "fiber": 12,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -2366,7 +2464,8 @@
     "fat": 19,
     "fiber": 10,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -2381,7 +2480,8 @@
     "fat": 13,
     "fiber": 16,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -2396,7 +2496,8 @@
     "fat": 14,
     "fiber": 8,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -2411,7 +2512,8 @@
     "fat": 20,
     "fiber": 8,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -2441,7 +2543,8 @@
     "fat": 17,
     "fiber": 14,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -2486,7 +2589,8 @@
     "fat": 14,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -2561,7 +2665,8 @@
     "fat": 14,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -2651,7 +2756,8 @@
     "fat": 19,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -2666,7 +2772,8 @@
     "fat": 13,
     "fiber": 11,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -2711,7 +2818,8 @@
     "fat": 14,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -2726,7 +2834,8 @@
     "fat": 13,
     "fiber": 14,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -2741,7 +2850,8 @@
     "fat": 16,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -2786,7 +2896,8 @@
     "fat": 14,
     "fiber": 9,
     "tags": [
-      "pescetarian"
+      "pescetarian",
+      "quick"
     ]
   },
   {
@@ -2846,7 +2957,8 @@
     "fat": 16,
     "fiber": 13,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   },
   {
@@ -2891,7 +3003,8 @@
     "fat": 20,
     "fiber": 8,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -2906,7 +3019,8 @@
     "fat": 11,
     "fiber": 9,
     "tags": [
-      "vegetarian"
+      "vegetarian",
+      "quick"
     ]
   },
   {
@@ -2951,7 +3065,8 @@
     "fat": 13,
     "fiber": 9,
     "tags": [
-      "high-protein"
+      "high-protein",
+      "quick"
     ]
   },
   {
@@ -2996,7 +3111,8 @@
     "fat": 15,
     "fiber": 15,
     "tags": [
-      "vegan"
+      "vegan",
+      "quick"
     ]
   }
 ]

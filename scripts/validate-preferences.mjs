@@ -123,6 +123,18 @@ const { outputText } = ts.transpileModule(
 );
 const { recommendMeals } = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(outputText)}`);
 
+/** The same module again, answering as an English reader. */
+const englishText = ts.transpileModule(
+  `const dietaryTerms = ${JSON.stringify(terms)};\n`
+  + `const ingredientDiet = ${JSON.stringify(diet)};\n`
+  + `const recipeStore = ${JSON.stringify(recipes)};\n`
+  + `const catalogDe = ${JSON.stringify(catalogs.de)};\n`
+  + `const catalogEn = ${JSON.stringify(catalogs.en)};\n`
+  + module.replace("const getLanguage = () => 'de';", "const getLanguage = () => 'en';"),
+  { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } },
+).outputText;
+const english = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(englishText)}`);
+
 const byId = Object.fromEntries(catalogs.de.map((meal) => [meal.id, meal]));
 const forbidden = {
   vegetarian: (meal) => {
@@ -171,6 +183,71 @@ for (const context of ['home', 'supermarket', 'eating-out']) {
     }
   }
 }
+// --- The two languages must answer identically -----------------------------
+/**
+ * Quickness used to be read out of the localised time string with a
+ * German-only word list, so "Ohne Kochen" counted and "No cooking" did not:
+ * the same person with the same data was handed different meals depending on
+ * their phone's language. Nothing but the words may differ.
+ */
+let compared = 0;
+for (const context of ['home', 'supermarket', 'eating-out']) {
+  // A coarse grid proves nothing: a weak bonus can fail to reorder the top
+  // three at three sample points and still be language-dependent.
+  for (let calories = 400; calories <= 2600; calories += 100) {
+    for (const preferences of combinations) {
+      compared += 1;
+      const remaining = { calories, protein: Math.round(calories * 0.09), carbs: Math.round(calories * 0.11), fat: Math.round(calories * 0.03) };
+      const germanIds = recommendMeals(context, remaining, preferences).map((meal) => meal.id);
+      const englishIds = english.recommendMeals(context, remaining, preferences).map((meal) => meal.id);
+      if (germanIds.join() !== englishIds.join()) {
+        problems.push(`${context} / ${calories} kcal / [${preferences}]: German offers ${germanIds}, English offers ${englishIds}`);
+      }
+    }
+  }
+}
+
+// --- A preference must visibly change what is offered ----------------------
+/**
+ * A bonus too small to move the top three is a preference the user chose and
+ * the app ignored.
+ */
+const pick = (preferences, context = 'home') => {
+  const ids = [];
+  for (const calories of [2000, 1500, 1000, 700]) {
+    const remaining = { calories, protein: Math.round(calories * 0.09), carbs: 0, fat: 60 };
+    ids.push(...recommendMeals(context, remaining, preferences).map((meal) => meal.id));
+  }
+  return ids.map((id) => byId[id]);
+};
+{
+  const baseline = pick([]);
+  const quick = pick(['quick']);
+  const quickShare = (meals) => meals.filter((meal) => meal.tags.includes('quick')).length / meals.length;
+  if (quickShare(quick) <= quickShare(baseline)) {
+    problems.push(`choosing "quick" did not raise the share of quick meals (${quickShare(baseline)} to ${quickShare(quick)})`);
+  }
+  if (quickShare(quick) < 0.9) {
+    problems.push(`choosing "quick" still leaves ${Math.round((1 - quickShare(quick)) * 100)}% slow meals in the top three`);
+  }
+
+  const protein = (meals) => meals.reduce((total, meal) => total + meal.protein, 0) / meals.length;
+  const highProtein = pick(['high-protein']);
+  if (protein(highProtein) <= protein(baseline) + 1) {
+    problems.push(`choosing "high-protein" raised average protein by less than 1 g (${protein(baseline).toFixed(1)} to ${protein(highProtein).toFixed(1)})`);
+  }
+
+  // Every context must have something to offer for every preference.
+  for (const context of ['home', 'supermarket', 'eating-out']) {
+    for (const preference of ['quick', 'high-protein', 'vegetarian']) {
+      const offered = pick([preference], context);
+      if (!offered.some((meal) => meal.tags.includes(preference))) {
+        problems.push(`${context}: choosing "${preference}" offers nothing tagged ${preference}`);
+      }
+    }
+  }
+}
+
 // A filter that answers "nothing" is technically safe and practically useless.
 if (empty) problems.push(`${empty} preference and context combinations returned no suggestion at all`);
 if (checked < 400) problems.push(`only ${checked} suggestions were checked, which is too few to mean anything`);
@@ -180,4 +257,4 @@ if (problems.length) {
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
-console.log(`Preferences honoured: ${Object.keys(ingredients).length} ingredients classified, and ${checked} suggestions from the real recommender broke none of them.`);
+console.log(`Preferences honoured: ${Object.keys(ingredients).length} ingredients classified, ${checked} suggestions from the real recommender broke none of them, and ${compared} German and English answers matched exactly.`);
