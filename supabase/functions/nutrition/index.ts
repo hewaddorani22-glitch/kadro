@@ -12,6 +12,7 @@ import {
   rankFoodMatches,
   requestedLanguage,
   searchTermVariants,
+  usdaPortions,
   validateAnalysisInput,
 } from '../_shared/nutrition.mjs';
 import { resolveBlsFacts, searchBlsReferences } from '../_shared/bls-reference.mjs';
@@ -305,6 +306,7 @@ async function searchFoods(query: string, language: string): Promise<Result> {
         name: meal.nameDe,
         per100g: meal.per100g,
         defaultGrams: meal.defaultGrams,
+        portions: [{ label: language === 'de' ? '1 Portion' : '1 portion', grams: meal.defaultGrams }],
         source: { provider: 'bls', referenceId: meal.code, label: `BLS 4.0 ${meal.code}` },
       });
     }
@@ -336,6 +338,7 @@ async function searchFoods(query: string, language: string): Promise<Result> {
         fiber: Math.round(Number(facts.fiber) || 0),
       },
       defaultGrams: 100,
+      portions: usdaPortions(entry),
       source: { provider: 'usda', referenceId: String(entry.fdcId), label: `USDA FDC ${entry.fdcId}` },
     });
   }

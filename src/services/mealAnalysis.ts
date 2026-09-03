@@ -267,6 +267,8 @@ export type FoodSearchResult = {
   name: string;
   per100g: Nutrition;
   defaultGrams: number;
+  /** Named household portions ("1 banana", "1 slice"), when the source has any. */
+  portions?: { label: string; grams: number }[];
   source: MealItem['source'];
 };
 

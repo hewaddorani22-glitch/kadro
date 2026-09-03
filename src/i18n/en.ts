@@ -262,6 +262,8 @@ export const en: typeof de = {
     errProviderBody: 'Try again or describe the meal briefly in your own words.',
   },
   confirm: {
+    subtitleSingle: 'One food. Set the amount and Kandro does the rest.',
+    amountQuestion: 'How much was it?',
     photoSearchTitle: 'From the database',
     photoSearchText: 'Reference values per 100 g. Adjust the amount below.',
     photoSearchAlt: 'Chosen from the food database, no photo',
@@ -319,6 +321,13 @@ export const en: typeof de = {
     reminderText: 'Two calm messages a day. No streaks, no nagging, off any time in settings.',
     reminderAccept: 'Yes, remind me',
     reminderDismiss: 'Not needed',
+  },
+  portion: {
+    amount: 'Amount',
+    grams: 'Grams',
+    add: 'Add',
+    invalid: 'Enter an amount',
+    decimalMark: '.',
   },
   plan: {
     dayDoneTitle: 'That is enough for today',

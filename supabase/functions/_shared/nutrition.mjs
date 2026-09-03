@@ -467,3 +467,47 @@ export function buildAccuracyWarnings(detection, items) {
   }
   return warnings;
 }
+
+/**
+ * Named portions for one USDA row, so the app can offer "1 banana" instead of
+ * making someone guess that a banana weighs 126 g.
+ *
+ * Two shapes come back from the search endpoint: `foodMeasures` on the
+ * reference data types (Survey/SR Legacy), and `servingSize` plus
+ * `householdServingFullText` on Branded rows. "Quantity not specified" is
+ * USDA's placeholder, not a portion anybody recognises, and cup and inch
+ * measures are volume dressed as weight — neither belongs in a picker.
+ */
+const PORTION_NOISE = /\bquantity not specified\b|\bcup\b|\blinear inch\b|\bnlea serving\b/i;
+
+export function usdaPortions(entry) {
+  const out = [];
+  const seen = new Set();
+  const push = (label, grams) => {
+    // Branded rows shout their household text ("1 CONTAINER"); a portion
+    // picker reads better without the shouting.
+    const raw = String(label ?? '').trim();
+    const name = raw === raw.toUpperCase() ? raw.toLowerCase() : raw;
+    const weight = Math.round(Number(grams));
+    if (!name || !Number.isFinite(weight) || weight < 1 || weight > 2000) return;
+    if (PORTION_NOISE.test(name)) return;
+    const key = name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ label: name, grams: weight });
+  };
+
+  if (entry && typeof entry === 'object') {
+    const servingUnit = String(entry.servingSizeUnit ?? '').toLowerCase();
+    // ml is only grams for water; treating a drink as 1 g/ml is close enough
+    // for a portion picker and far better than offering nothing.
+    if (servingUnit === 'g' || servingUnit === 'ml') {
+      push(entry.householdServingFullText || '1 serving', entry.servingSize);
+    }
+    const measures = Array.isArray(entry.foodMeasures) ? entry.foodMeasures : [];
+    for (const measure of [...measures].sort((a, b) => (a?.rank ?? 99) - (b?.rank ?? 99))) {
+      push(measure?.disseminationText, measure?.gramWeight);
+    }
+  }
+  return out.slice(0, 4);
+}

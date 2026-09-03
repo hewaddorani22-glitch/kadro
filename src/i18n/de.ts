@@ -263,6 +263,8 @@ export const de = {
     errProviderBody: 'Versuch es noch einmal oder beschreibe die Mahlzeit kurz in eigenen Worten.',
   },
   confirm: {
+    subtitleSingle: 'Ein Lebensmittel. Stell die Menge ein, den Rest rechnet Kandro.',
+    amountQuestion: 'Wie viel war es?',
     photoSearchTitle: 'Aus der Datenbank',
     photoSearchText: 'Geprüfte Nährwerte pro 100 g. Passe die Menge unten an.',
     photoSearchAlt: 'Aus der Lebensmitteldatenbank ausgewählt, kein Foto',
@@ -320,6 +322,13 @@ export const de = {
     reminderText: 'Zwei ruhige Nachrichten am Tag. Keine Serien, keine Mahnungen, in den Einstellungen jederzeit aus.',
     reminderAccept: 'Ja, erinnere mich',
     reminderDismiss: 'Nicht nötig',
+  },
+  portion: {
+    amount: 'Menge',
+    grams: 'Gramm',
+    add: 'Hinzufügen',
+    invalid: 'Bitte eine Menge eingeben',
+    decimalMark: ',',
   },
   plan: {
     dayDoneTitle: 'Für heute reicht es',

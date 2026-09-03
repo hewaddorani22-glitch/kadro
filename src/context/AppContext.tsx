@@ -99,6 +99,7 @@ type AppContextValue = {
   analyzeCurrentPhoto: (forceDemo?: boolean) => Promise<void>;
   resumeLatestAnalysis: () => Promise<boolean>;
   adjustItem: (id: string, direction: -1 | 1) => void;
+  setItemAmount: (id: string, grams: number) => void;
   setMealPortion: (factor: PortionFactor) => void;
   toggleItem: (id: string) => void;
   resetScan: () => void;
@@ -592,6 +593,18 @@ export function AppProvider({ children }: PropsWithChildren) {
     );
   };
 
+  /**
+   * Typing the amount instead of stepping to it in tens: a 330 ml can is
+   * thirty-three taps away from the 10 g default, which is not an edit anyone
+   * makes twice.
+   */
+  const setItemAmount = (id: string, grams: number) => {
+    const amount = Math.round(grams);
+    if (!Number.isFinite(amount) || amount < 1 || amount > 5000) return;
+    setMealPortionState(null);
+    setDetectedItems((current) => current.map((item) => (item.id === id ? scaleItem(item, amount) : item)));
+  };
+
   const setMealPortion = (factor: PortionFactor) => {
     setMealPortionState(factor);
     setDetectedItems((current) =>
@@ -797,6 +810,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       analyzeCurrentPhoto,
       resumeLatestAnalysis,
       adjustItem,
+      setItemAmount,
       setMealPortion,
       toggleItem,
       resetScan,

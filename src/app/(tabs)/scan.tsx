@@ -7,9 +7,10 @@ import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, Scrol
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
-import { FoodSearchResult, MealAnalysisError, searchFoods } from '@/services/mealAnalysis';
+import { PortionSheet } from '@/components/PortionSheet';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { FoodSearchResult, MealAnalysisError, searchFoods } from '@/services/mealAnalysis';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 
@@ -34,7 +35,7 @@ export default function ScanScreen() {
   const [searchResults, setSearchResults] = useState<FoodSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [searchGrams, setSearchGrams] = useState('100');
+  const [pendingFood, setPendingFood] = useState<FoodSearchResult | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestSearch = useRef('');
   const [barcodeBusy, setBarcodeBusy] = useState(false);
@@ -161,9 +162,19 @@ export default function ScanScreen() {
     }, 350);
   };
 
+  /**
+   * Picking a food no longer logs it: it opens the amount sheet. Deciding
+   * "how much" before knowing "of what" was the wrong order, and grams was
+   * the only unit on offer.
+   */
   const addSearchResult = (result: FoodSearchResult) => {
-    const grams = Number(searchGrams.replace(',', '.'));
-    applySearchResult(result, Number.isFinite(grams) && grams > 0 ? Math.round(grams) : result.defaultGrams);
+    setPendingFood(result);
+  };
+
+  const confirmPortion = (grams: number) => {
+    if (!pendingFood) return;
+    applySearchResult(pendingFood, grams);
+    setPendingFood(null);
     setShowSearch(false);
     setMode('photo');
     router.push('/confirm');
@@ -313,18 +324,6 @@ export default function ScanScreen() {
               style={styles.searchInput}
               value={searchQuery}
             />
-            <View style={styles.searchAmountRow}>
-              <Text style={styles.searchAmountLabel}>{t.scan.searchAmount}</Text>
-              <TextInput
-                accessibilityLabel={t.scan.searchAmount}
-                keyboardType="number-pad"
-                maxLength={4}
-                onChangeText={setSearchGrams}
-                style={styles.searchGrams}
-                value={searchGrams}
-              />
-              <Text style={styles.searchAmountLabel}>g</Text>
-            </View>
             <ScrollView keyboardShouldPersistTaps="handled" style={styles.searchResults}>
               {searching ? <Text style={styles.searchStatus}>{t.scan.searchSearching}</Text> : null}
               {!searching && searchError ? (
@@ -354,6 +353,19 @@ export default function ScanScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      <PortionSheet
+        onCancel={() => setPendingFood(null)}
+        onConfirm={confirmPortion}
+        target={pendingFood ? {
+          name: pendingFood.name,
+          per100g: pendingFood.per100g,
+          defaultGrams: pendingFood.defaultGrams,
+          portions: pendingFood.portions,
+          sourceLabel: pendingFood.source.label,
+        } : null}
+        visible={!!pendingFood}
+      />
 
       <Modal animationType="fade" onRequestClose={() => { setShowDescription(false); setMode('photo'); }} transparent visible={showDescription}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
@@ -445,9 +457,6 @@ const styles = StyleSheet.create({
   freePill: { borderRadius: radii.pill, backgroundColor: colors.accentSoft, paddingHorizontal: 10, paddingVertical: 4 },
   freePillText: { color: colors.accentDeep, fontSize: 11, fontWeight: '800', letterSpacing: 0.4 },
   searchInput: { minHeight: 52, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 17, paddingHorizontal: 16 },
-  searchAmountRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  searchAmountLabel: { color: colors.muted, fontSize: 14, fontWeight: '600' },
-  searchGrams: { minWidth: 78, minHeight: 44, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 17, fontWeight: '700', paddingHorizontal: 12, textAlign: 'center' },
   searchResults: { flexGrow: 0 },
   searchError: { color: colors.attention, fontSize: 14, lineHeight: 21, paddingVertical: 12 },
   searchStatus: { color: colors.muted, fontSize: 14, lineHeight: 21, paddingVertical: 12 },

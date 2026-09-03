@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { mealPhotoPlaceholder } from '@/utils/format';
+import { PortionSheet } from '@/components/PortionSheet';
 import { Card, ConfidenceBadge, MealPhoto, PrimaryButton, Screen } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -15,8 +16,12 @@ import { formatNumber } from '@/utils/format';
 
 export default function ConfirmScreen() {
   const router = useRouter();
-  const { adjustItem, analysisMessage, detectedItems, mealPortion, photoUri, scanMode, scannedMeal, setMealPortion, toggleItem } = useApp();
+  const { adjustItem, analysisMessage, detectedItems, mealPortion, photoUri, scanMode, scannedMeal, setItemAmount, setMealPortion, toggleItem } = useApp();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [amountFor, setAmountFor] = useState<string | null>(null);
+  // A barcode or a search hit is one food, and for one food the honest
+  // question is "how many grams", not "0.7x of what we guessed".
+  const singleItem = detectedItems.length === 1 ? detectedItems[0] : null;
   const { locale, t } = useLanguage();
 
   const confirm = () => {
@@ -47,7 +52,7 @@ export default function ConfirmScreen() {
           <Text style={styles.title}>{t.confirm.heading}</Text>
           <ConfidenceBadge uncertain={scannedMeal.confidence === 'medium'} />
         </View>
-        <Text style={styles.subtitle}>{t.confirm.subtitle}</Text>
+        <Text style={styles.subtitle}>{singleItem ? t.confirm.subtitleSingle : t.confirm.subtitle}</Text>
       </View>
 
       {analysisMessage ? (
@@ -77,6 +82,26 @@ export default function ConfirmScreen() {
         ))}
       </View>
 
+      {singleItem ? (
+        <Card style={styles.portionCard}>
+          <View style={styles.portionHeading}>
+            <View>
+              <Text style={styles.portionTitle}>{t.confirm.amountQuestion}</Text>
+              <Text style={styles.portionSubtitle}>{singleItem.name}</Text>
+            </View>
+            <Ionicons color={colors.accentDeep} name="resize-outline" size={22} />
+          </View>
+          <Pressable
+            accessibilityLabel={t.confirm.amountQuestion}
+            accessibilityRole="button"
+            onPress={() => setAmountFor(singleItem.id)}
+            style={styles.amountField}
+          >
+            <Text style={styles.amountFieldValue}>{singleItem.amountG} g</Text>
+            <Ionicons color={colors.muted} name="create-outline" size={20} />
+          </Pressable>
+        </Card>
+      ) : (
       <Card style={styles.portionCard}>
         <View style={styles.portionHeading}>
           <View>
@@ -111,6 +136,32 @@ export default function ConfirmScreen() {
           <Ionicons color={colors.muted} name={detailsOpen ? 'chevron-up' : 'chevron-down'} size={18} />
         </Pressable>
       </Card>
+      )}
+
+      <PortionSheet
+        onCancel={() => setAmountFor(null)}
+        onConfirm={(grams) => {
+          if (amountFor) setItemAmount(amountFor, grams);
+          setAmountFor(null);
+        }}
+        target={(() => {
+          const item = detectedItems.find((entry) => entry.id === amountFor);
+          if (!item || item.baseAmountG < 1) return null;
+          const per100 = (value: number) => Math.round((value / item.baseAmountG) * 100);
+          return {
+            name: item.name,
+            per100g: {
+              calories: per100(item.calories / item.portionFactor),
+              protein: per100(item.protein / item.portionFactor),
+              carbs: per100(item.carbs / item.portionFactor),
+              fat: per100(item.fat / item.portionFactor),
+            },
+            defaultGrams: item.amountG,
+            sourceLabel: item.source.label,
+          };
+        })()}
+        visible={amountFor !== null}
+      />
 
       {detailsOpen ? (
         <Card style={styles.listCard}>
@@ -182,6 +233,8 @@ const styles = StyleSheet.create({
   detectedChipTextOff: { color: colors.muted, textDecorationLine: 'line-through' },
   listCard: { padding: 8 },
   portionCard: { gap: 16 },
+  amountField: { minHeight: 60, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.neutralSoft, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  amountFieldValue: { color: colors.text, fontSize: 24, fontWeight: '700' },
   portionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   portionTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
   portionSubtitle: { color: colors.muted, fontSize: 11, marginTop: 4 },
