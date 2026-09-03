@@ -245,6 +245,13 @@ verify_jwt = true
 [functions.nutrition]
 verify_jwt = true
 
+# The waitlist is called by the website, which has no session, so the platform
+# cannot check anything here. Everything that keeps it from being abused is in
+# the function: a single allowed origin, one row per address, an hourly cap per
+# network, and a reply that never reveals whether an address is already listed.
+[functions.waitlist]
+verify_jwt = false
+
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true

@@ -90,6 +90,15 @@ export const legalDe: LegalCopySet = {
           'Der KI-Datenweg ist auf OpenRouter und ZDR-fähige Microsoft-Azure-Endpunkte ohne Fallback begrenzt. Analyseanfragen sind mit „store: false“, untersagter Datensammlung und Zero Data Retention konfiguriert: Inhalte werden nicht zum Training verwendet und beim KI-Anbieter nicht dauerhaft gespeichert. Fotos werden ausschließlich für die Dauer der Analyse verarbeitet. OpenRouter und USDA FoodData Central verarbeiten Daten in den USA; USDA erhält nur normalisierte Lebensmittelbegriffe, keine Fotos, Account-ID oder Körperdaten.',
         ],
       },
+      {
+        title: '7. Warteliste auf getkandro.com',
+        paragraphs: [
+          'Wer sich auf der Website für die Benachrichtigung zum Start einträgt, gibt eine E-Mail-Adresse an. Wir speichern sie zusammen mit der gewählten Sprache, dem Zeitpunkt der Anmeldung und dem Zeitpunkt der Bestätigung. Rechtsgrundlage ist deine Einwilligung, Art. 6 Abs. 1 lit. a DSGVO.',
+          'Die Anmeldung läuft im Double-Opt-in: Nach dem Absenden erhältst du eine Bestätigungsmail, und erst der Klick darin trägt dich ein. Ohne diesen Klick verwenden wir die Adresse nicht. Zur Abwehr automatisierter Massenanmeldungen speichern wir zusätzlich einen gesalzenen Hashwert der IP-Adresse, nicht die IP-Adresse selbst.',
+          'Die Adresse wird ausschließlich für die Benachrichtigung zum Start und für damit unmittelbar zusammenhängende Nachrichten verwendet, nicht für laufenden Newsletter-Versand. Jede Mail enthält einen Abmeldelink; nach der Abmeldung oder spätestens sechs Monate nach dem Start löschen wir den Eintrag. Für den Versand setzen wir Resend ein, gespeichert werden die Einträge bei Supabase in der EU.',
+          'Der Discord-Server ist ein Angebot von Discord. Wer beitritt, tut dies gegenüber Discord; wir erhalten dabei keine Daten von dir und haben auf die Verarbeitung durch Discord keinen Einfluss.',
+        ],
+      },
     ],
   },
   terms: {

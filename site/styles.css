@@ -229,3 +229,71 @@ nav.site a.lang {
   padding: 4px 11px;
   font-size: 13px;
 }
+
+/* Waiting-list sign-up. Discord sits above the form on purpose: joining a
+   server hands over nothing, while an address is personal data with a consent
+   trail behind it. The cheaper ask goes first. */
+.join {
+  margin-top: 34px;
+  padding: 24px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  background: var(--accent-tint);
+}
+.join h2 { margin-top: 0; }
+.cta.discord {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: #5865F2;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+.signup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+.signup input {
+  flex: 1 1 220px;
+  min-height: 48px;
+  padding: 0 14px;
+  font: inherit;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+.signup button {
+  min-height: 48px;
+  padding: 0 20px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--accent);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.signup button[disabled] { opacity: 0.55; cursor: default; }
+.form-status { margin-top: 10px; font-size: 14px; color: var(--muted); min-height: 20px; }
+.form-status.ok { color: var(--accent-deep); font-weight: 600; }
+.form-status.bad { color: #8A4B2A; }
+
+/* Visible to a screen reader, not to the layout. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

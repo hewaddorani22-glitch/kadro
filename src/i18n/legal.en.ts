@@ -72,6 +72,15 @@ export const legalEn: LegalCopySet = {
           'The AI data path is restricted to OpenRouter and ZDR-capable Microsoft Azure endpoints without fallback. Requests are configured with “store: false”, data collection denied and Zero Data Retention: content is not used for training and is not stored permanently by the AI provider. Photos are processed solely for the duration of the analysis. OpenRouter and USDA FoodData Central process data in the United States; USDA receives normalized food terms only, not photos, account IDs or body data.',
         ],
       },
+      {
+        title: '7. Waiting list on getkandro.com',
+        paragraphs: [
+          'Anyone signing up on the website to be told about the launch gives an email address. We store it together with the chosen language, the time of sign-up and the time of confirmation. The legal basis is your consent, Art. 6(1)(a) GDPR.',
+          'Sign-up is double opt-in: after submitting you receive a confirmation mail, and only the click in it adds you. Without that click we do not use the address. To keep automated bulk sign-ups out we also store a salted hash of the IP address, not the address itself.',
+          'The address is used only for the launch notice and messages directly related to it, not for an ongoing newsletter. Every mail carries an unsubscribe link; we delete the entry once you unsubscribe, and at the latest six months after launch. Sending is done through Resend; the entries are stored at Supabase in the EU.',
+          'The Discord server is an offering of Discord. Joining it is something you do towards Discord; we receive no data from you in the process and have no influence over how Discord handles it.',
+        ],
+      },
     ],
   },
   terms: {

@@ -65,3 +65,37 @@ curl -sI https://getkandro.com/privacy | head -1
 Muss `HTTP/2 200` liefern. Dasselbe gilt für `/support`, `/terms`, `/sources`
 und die englischen Seiten unter `/en/`, bevor die URLs in App Store Connect
 eingetragen werden.
+
+## Warteliste vor dem Start
+
+Anmeldungen laufen über die Edge Function `waitlist` und landen in der Tabelle
+`public.waitlist` bei Supabase in der EU. Kein E-Mail-Dienstleister hält die
+Liste — nur den Versand.
+
+**Damit das Formular überhaupt erscheint**, brauchen die Function-Secrets im
+Supabase-Dashboard (Edge Functions → waitlist → Secrets) drei Werte:
+
+| Secret | Woher |
+|---|---|
+| `RESEND_API_KEY` | resend.com, kostenlos: 3.000 Mails/Monat, 100/Tag. Vorher `getkandro.com` dort verifizieren (drei DNS-Einträge). |
+| `WAITLIST_FROM` | Die verifizierte Absenderadresse, z. B. `Kandro <hallo@getkandro.com>` |
+| `WAITLIST_IP_SALT` | Beliebige lange Zufallszeichenkette |
+
+Solange sie fehlen, antwortet `/status` mit `accepting: false`, das Formular
+bleibt unsichtbar und nur der Discord-Button steht da. Das ist Absicht: eine
+Adresse, der man keine Bestätigung schicken kann, darf man auch nicht sammeln.
+
+Der Discord-Invite steht in `site/community.js`. Solange er leer ist, bleibt
+auch dieser Button verborgen.
+
+### Die Liste beim Start abrufen
+
+```sql
+select email, language, confirmed_at
+from public.waitlist
+where confirmed_at is not null and unsubscribed_at is null
+order by confirmed_at;
+```
+
+Nur bestätigte Adressen anschreiben. Unbestätigte sind nach § 7 UWG kein
+gültiges Einverständnis, und genau dafür gibt es die beiden Zeitstempel.
