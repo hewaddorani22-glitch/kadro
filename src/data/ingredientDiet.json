@@ -1,0 +1,11 @@
+{
+  "comment": "What each ingredient means for a dietary preference, stated per ingredient rather than guessed from its name. Guessing was wrong in both directions: 'coconut-milk-light' matched a dairy word list and would have excluded a vegan soup, while yoghurt hidden inside a recipe whose description never mentioned it slipped past the lactose filter entirely. 'diet' is the strictest preference the ingredient still satisfies; 'lactose' is separate because butter and cheese are vegetarian but not lactose-free, and because someone avoiding lactose is not avoiding eggs.",
+  "diet": {
+    "meat": ["chicken-breast", "turkey-breast", "turkey-mince", "beef-lean", "beef-mince-lean"],
+    "fish": ["salmon", "cod", "pollock", "tuna-canned", "prawns"],
+    "vegetarian": ["egg", "skyr", "yoghurt-plain", "cottage-cheese", "cream-cheese-light", "feta", "ricotta", "parmesan", "milk-lowfat", "quark-lowfat", "halloumi", "pesto", "gnocchi"],
+    "vegan": ["tofu", "tempeh", "seitan", "rice-white-cooked", "rice-basmati-cooked", "rice-risotto-dry", "pasta-wholegrain-cooked", "pasta-cooked", "rice-noodles-cooked", "couscous-cooked", "bulgur-cooked", "quinoa-cooked", "oats-dry", "semolina-dry", "potato-cooked", "sweet-potato-cooked", "bread-wholegrain", "bread-rye", "flatbread", "lasagne-sheets-dry", "lentils-cooked", "lentils-red-dry", "chickpeas-cooked", "black-beans-cooked", "kidney-beans-cooked", "white-beans-cooked", "peas-cooked", "broccoli-cooked", "spinach-cooked", "spinach-raw", "tomato-raw", "tomato-passata", "bell-pepper", "courgette", "aubergine-cooked", "carrot", "onion", "leek", "mushrooms", "cucumber", "rocket", "lettuce", "red-cabbage", "pak-choi", "green-beans-cooked", "sweetcorn", "mixed-stirfry-veg", "salsa", "olives", "banana", "berries-mixed", "plums", "apple", "lemon-juice", "olive-oil", "rapeseed-oil", "almonds", "peanut-butter", "tahini", "coconut-milk-light", "soy-sauce", "mustard"]
+  },
+  "lactose": ["skyr", "yoghurt-plain", "cottage-cheese", "cream-cheese-light", "feta", "ricotta", "parmesan", "milk-lowfat", "quark-lowfat", "halloumi", "pesto"],
+  "pork": []
+}

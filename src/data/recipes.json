@@ -656,22 +656,22 @@
       },
       {
         "key": "red-cabbage",
-        "grams": 120
+        "grams": 90
       },
       {
-        "key": "yoghurt-plain",
-        "grams": 45
+        "key": "tahini",
+        "grams": 15
       },
       {
         "key": "olive-oil",
-        "grams": 8
+        "grams": 3
       }
     ],
     "nutrition": {
-      "calories": 510,
+      "calories": 517,
       "protein": 42,
-      "carbs": 60,
-      "fat": 11,
+      "carbs": 58,
+      "fat": 13,
       "fiber": 7
     }
   },

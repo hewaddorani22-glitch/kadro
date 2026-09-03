@@ -1,4 +1,6 @@
 import dietaryTerms from '@/data/dietaryTerms.json';
+import ingredientDiet from '@/data/ingredientDiet.json';
+import recipeStore from '@/data/recipes.json';
 import catalogDe from '@/data/mealCatalog.de.json';
 import catalogEn from '@/data/mealCatalog.en.json';
 import { getDictionary, getLanguage } from '@/i18n/active';
@@ -14,12 +16,39 @@ type CatalogEntry = Omit<MealSuggestion, 'contexts' | 'preferences' | 'source'> 
  * same 200 meals and must filter identically. A German-only word list silently
  * stopped excluding pork and dairy the moment the app also spoke English.
  */
+const recipes = recipeStore as Record<string, { ingredients: { key: string; grams: number }[] }>;
 const porkWords = new RegExp(dietaryTerms.pork.join('|'), 'i');
 const lactoseWords = new RegExp(dietaryTerms.lactose.join('|'), 'i');
 /** "without cheese" names an absence; matching it would hide a safe meal. */
 const negated = /\b(?:ohne|without|no)\s+\S+/gi;
 
+const diet = ingredientDiet as {
+  diet: { meat: string[]; fish: string[]; vegetarian: string[]; vegan: string[] };
+  lactose: string[];
+  pork: string[];
+};
+const lactoseIngredients = new Set(diet.lactose);
+const porkIngredients = new Set(diet.pork);
+const meatIngredients = new Set([...diet.diet.meat, ...diet.diet.fish]);
+
+/**
+ * The ingredient list, when there is one, beats the description.
+ *
+ * Reading the prose was all there was before recipes existed, and it let four
+ * dishes through whose descriptions never mentioned the yoghurt, parmesan or
+ * cream cheese their recipes contain — a lactose-free reader was offered all
+ * four. Where a recipe exists it is what the person will actually cook, so it
+ * is what gets checked; the prose stays the answer for bought food.
+ */
 function matchesDietaryConstraints(entry: CatalogEntry, preferences: string[]) {
+  const recipe = recipes[entry.id];
+  if (recipe) {
+    const keys = recipe.ingredients.map((item) => item.key);
+    if (preferences.includes('vegetarian') && keys.some((key) => meatIngredients.has(key))) return false;
+    if (preferences.includes('pork-free') && keys.some((key) => porkIngredients.has(key))) return false;
+    if (preferences.includes('lactose-free') && keys.some((key) => lactoseIngredients.has(key))) return false;
+    return true;
+  }
   const copy = `${entry.title} ${entry.detail}`.replace(negated, ' ');
   if (preferences.includes('vegetarian') && !entry.tags.some((tag) => tag === 'vegetarian' || tag === 'vegan')) return false;
   if (preferences.includes('pork-free') && porkWords.test(copy)) return false;
