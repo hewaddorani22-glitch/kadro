@@ -25,7 +25,7 @@ async function walk(dir, extension) {
 
 // Umlauts alone are not enough — "Monatlich" and "Dein Tagesstand" have none.
 // These function words are frequent in our own copy and are not English.
-const germanWords = /\b(?:aber|auch|dein|deine|deinen|deiner|dich|dir|ein|eine|einen|für|ist|jederzeit|kannst|keine|mahlzeit|mahlzeiten|mit|monatlich|nicht|noch|nur|oder|sich|sind|über|und|von|werden|wird|wurde|richtwert|richtwerte|typischer|typische|katalog|zubereitung|tagesstand|mahlzeit)\b/i;
+const germanWords = /\b(?:aber|auch|dein|deine|deinen|deiner|dich|dir|ein|eine|einen|für|ist|jederzeit|kannst|keine|mahlzeit|mahlzeiten|mit|monatlich|nicht|noch|nur|oder|sich|sind|über|und|von|werden|wird|wurde|richtwert|richtwerte|typischer|typische|katalog|zubereitung|tagesstand|mahlzeit|bitte|erneut|teller|ganzen|schiefgelaufen|gespeicherten)\b/i;
 
 // --- No German text outside the dictionaries -------------------------------
 // Services count too. Checking only the screens is what let a German push
@@ -75,6 +75,24 @@ for (const file of sources) {
       failures.push(
         `hardcoded interface text "${text}" at ${relative(projectRoot, file)}:${index + 1} — it must come from the dictionary`,
       );
+    }
+  });
+}
+
+// --- No screen may hardcode a price or a currency-formatted number ---------
+// The paywall's preview prices stayed "€39,99 / Jahr" for English readers,
+// with a German decimal comma and a German period name, long after the rest
+// of the screen was translated.
+for (const file of sources) {
+  const source = await readFile(file, 'utf8');
+  source.split('\n').forEach((line, index) => {
+    const values = [...line.matchAll(/'((?:[^'\\]|\\.)*)'|`([^`]*)`/g)].map((m) => m[1] ?? m[2]);
+    for (const value of values) {
+      if (/[€$£]\s?\d|\d[.,]\d\d\s?[€$£]/.test(value)) {
+        failures.push(
+          `hardcoded price "${value}" at ${relative(projectRoot, file)}:${index + 1} — prices belong in the dictionary`,
+        );
+      }
     }
   });
 }

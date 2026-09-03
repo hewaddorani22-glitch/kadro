@@ -21,7 +21,9 @@ function bucket(calories: number) {
 }
 
 function keyOf(meal: Meal) {
-  return `${meal.title.trim().toLocaleLowerCase('de-DE')}|${bucket(meal.calories)}`;
+  // Invariant: this is a grouping key, so it must not shift with the
+  // interface language or the same meal would stop matching itself.
+  return `${meal.title.trim().toLowerCase()}|${bucket(meal.calories)}`;
 }
 
 /**

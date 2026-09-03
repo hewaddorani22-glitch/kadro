@@ -408,6 +408,7 @@ export const en: typeof de = {
     version: 'Kandro · Version 1.0.0',
   },
   errors: {
+    retakeWholePlate: 'Please photograph the whole plate again.',
     crashTitle: 'Something went wrong.',
     crashBody: 'Your saved meals are safe. Try loading the view again.',
     crashRetry: 'Try again',
@@ -516,6 +517,8 @@ export const en: typeof de = {
     confirmYes: 'Yes, remove it',
   },
   paywall: {
+    previewYearly: '€39.99',
+    previewMonthly: '€9.99',
     close: 'Close paywall',
     restore: 'Restore',
     blockedHeadline: (count: number) => `Your ${count} meals are logged.`,

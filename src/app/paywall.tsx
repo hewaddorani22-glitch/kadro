@@ -196,7 +196,7 @@ export default function PaywallScreen() {
             disabled={Boolean(snapshot?.configured && !yearly)}
             label={t.paywall.yearly}
             onPress={() => setSelected('yearly')}
-            price={yearly?.price ?? (snapshot?.configured ? t.paywall.unavailable : '€39,99 / Jahr')}
+            price={yearly?.price ?? (snapshot?.configured ? t.paywall.unavailable : t.billing.pricePerPeriod(t.paywall.previewYearly, true))}
             selected={selected === 'yearly'}
           />
           <PlanCard
@@ -204,7 +204,7 @@ export default function PaywallScreen() {
             disabled={Boolean(snapshot?.configured && !monthly)}
             label={t.paywall.monthly}
             onPress={() => setSelected('monthly')}
-            price={monthly?.price ?? (snapshot?.configured ? t.paywall.unavailable : '€9,99 / Monat')}
+            price={monthly?.price ?? (snapshot?.configured ? t.paywall.unavailable : t.billing.pricePerPeriod(t.paywall.previewMonthly, false))}
             selected={selected === 'monthly'}
           />
         </View>

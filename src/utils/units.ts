@@ -69,7 +69,14 @@ export function poundsToKg(pounds: number) {
 
 /** Decimal separator follows the language, so 84.2 is not shown as 84,2 in English. */
 function decimal(value: number, digits: number, locale: string) {
-  return value.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  if (!Number.isFinite(value)) return '0';
+  try {
+    return value.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  } catch {
+    // Hermes hands Intl to the platform; a locale it rejects must not take a
+    // screen down over a weight label.
+    return value.toFixed(digits);
+  }
 }
 
 export function formatWeight(kg: number, system: UnitSystem, locale = getLocale(), digits = 1) {

@@ -10,7 +10,7 @@ import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { Meal } from '@/types/nutrition';
 import { useLanguage } from '@/i18n/LanguageProvider';
-import { formatNumber, mealTypeIcon, mealTypeLabel } from '@/utils/format';
+import { formatDateParts, formatNumber, mealTypeIcon, mealTypeLabel } from '@/utils/format';
 
 export default function TodayScreen() {
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function TodayScreen() {
   const [repeating, setRepeating] = useState<string | null>(null);
   const [openMeal, setOpenMeal] = useState<Meal | null>(null);
   const { locale, t } = useLanguage();
-  const dateLabel = new Intl.DateTimeFormat(locale, { weekday: 'short', day: 'numeric', month: 'long' }).format(new Date());
+  const dateLabel = formatDateParts(new Date(), { weekday: 'short', day: 'numeric', month: 'long' }, locale);
   // The greeting was hard-coded to "Guten Morgen", so the app said good morning
   // at 22:00.
   const hour = new Date().getHours();

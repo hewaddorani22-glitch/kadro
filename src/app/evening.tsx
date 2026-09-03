@@ -14,7 +14,7 @@ import {
   setEveningReminderEnabled,
 } from '@/services/reminders';
 import { useLanguage } from '@/i18n/LanguageProvider';
-import { formatNumber, mealTypeLabel } from '@/utils/format';
+import { formatDateParts, formatNumber, mealTypeLabel } from '@/utils/format';
 
 export default function EveningScreen() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export default function EveningScreen() {
     };
   }, []);
 
-  const dateLabel = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
+  const dateLabel = formatDateParts(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }, locale);
   const over = Math.max(0, consumed.calories - targets.calories);
   const under = Math.max(0, targets.calories - consumed.calories);
   const logged = meals.length > 0;

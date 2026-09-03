@@ -1,5 +1,6 @@
 import { getDictionary } from '@/i18n/active';
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor } from '@/types/nutrition';
+import { formatClockTime } from '@/utils/format';
 
 export const DEFAULT_TARGETS: DailyTargets = {
   calories: 2230,
@@ -92,7 +93,7 @@ export function createScannedMeal(items: MealItem[], title = getDictionary().err
     id,
     title,
     type: hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack',
-    time: new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(now),
+    time: formatClockTime(now),
     confidence: items.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
     items,
     origin: 'scan',
@@ -137,7 +138,7 @@ export function createPlannedMeal(suggestion: MealSuggestion, portion: PortionFa
     id,
     title: suggestion.title,
     type: hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack',
-    time: new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(now),
+    time: formatClockTime(now),
     confidence: 'medium',
     items: [item],
     origin: 'plan',

@@ -413,6 +413,7 @@ export const de = {
    * or an inline error, so they belong in the dictionary like any other copy.
    */
   errors: {
+    retakeWholePlate: 'Bitte fotografiere den ganzen Teller erneut.',
     crashTitle: 'Etwas ist schiefgelaufen.',
     crashBody: 'Deine gespeicherten Mahlzeiten bleiben erhalten. Versuche die Ansicht noch einmal zu laden.',
     crashRetry: 'Erneut versuchen',
@@ -525,6 +526,8 @@ export const de = {
     confirmYes: 'Ja, entfernen',
   },
   paywall: {
+    previewYearly: '39,99 €',
+    previewMonthly: '9,99 €',
     close: 'Paywall schließen',
     restore: 'Wiederherstellen',
     blockedHeadline: (count: number) => `Deine ${count} Mahlzeiten sind erfasst.`,

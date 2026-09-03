@@ -7,7 +7,7 @@ import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, Scrol
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
-import { FoodSearchResult, searchFoods } from '@/services/mealAnalysis';
+import { FoodSearchResult, MealAnalysisError, searchFoods } from '@/services/mealAnalysis';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
@@ -33,6 +33,7 @@ export default function ScanScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<FoodSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [searchGrams, setSearchGrams] = useState('100');
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestSearch = useRef('');
@@ -138,6 +139,7 @@ export default function ScanScreen() {
       return;
     }
     setSearching(true);
+    setSearchError(null);
     searchTimer.current = setTimeout(() => {
       const request = term;
       latestSearch.current = request;
@@ -147,9 +149,13 @@ export default function ScanScreen() {
           setSearchResults(results);
           setSearching(false);
         })
-        .catch(() => {
+        .catch((error: unknown) => {
           if (latestSearch.current !== request) return;
           setSearchResults([]);
+          // Swallowing this showed "nothing found" for a network failure and
+          // for a withdrawn consent alike, which tells the user the food does
+          // not exist when the truth is that we never asked.
+          setSearchError(error instanceof MealAnalysisError ? error.message : t.errors.gatewayProviderError);
           setSearching(false);
         });
     }, 350);
@@ -321,10 +327,13 @@ export default function ScanScreen() {
             </View>
             <ScrollView keyboardShouldPersistTaps="handled" style={styles.searchResults}>
               {searching ? <Text style={styles.searchStatus}>{t.scan.searchSearching}</Text> : null}
-              {!searching && searchQuery.trim().length >= 2 && !searchResults.length ? (
+              {!searching && searchError ? (
+                <Text accessibilityLiveRegion="polite" style={styles.searchError}>{searchError}</Text>
+              ) : null}
+              {!searching && !searchError && searchQuery.trim().length >= 2 && !searchResults.length ? (
                 <Text style={styles.searchStatus}>{t.scan.searchEmpty}</Text>
               ) : null}
-              {!searching && t.scan.searchHintEnglish && searchQuery.trim().length >= 2 && searchResults.length < 3 ? (
+              {!searching && !searchError && t.scan.searchHintEnglish && searchQuery.trim().length >= 2 && searchResults.length < 3 ? (
                 <Text style={styles.searchStatus}>{t.scan.searchHintEnglish}</Text>
               ) : null}
               {searchResults.map((result) => (
@@ -440,6 +449,7 @@ const styles = StyleSheet.create({
   searchAmountLabel: { color: colors.muted, fontSize: 14, fontWeight: '600' },
   searchGrams: { minWidth: 78, minHeight: 44, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 17, fontWeight: '700', paddingHorizontal: 12, textAlign: 'center' },
   searchResults: { flexGrow: 0 },
+  searchError: { color: colors.attention, fontSize: 14, lineHeight: 21, paddingVertical: 12 },
   searchStatus: { color: colors.muted, fontSize: 14, lineHeight: 21, paddingVertical: 12 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.border },
   searchRowCopy: { flex: 1, gap: 3 },

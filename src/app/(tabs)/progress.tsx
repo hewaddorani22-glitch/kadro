@@ -10,6 +10,7 @@ import { useLanguage } from '@/i18n/LanguageProvider';
 import { proteinConsistency } from '@/services/consistency';
 import { localDateKey } from '@/utils/date';
 import { formatWeight, kgToStoneParts, parseStoneInput, parseWeightInput, weightInputUnit, weightInputValue } from '@/utils/units';
+import { formatDateParts } from '@/utils/format';
 
 
 
@@ -145,8 +146,8 @@ export default function ProgressScreen() {
         <WeightChart entries={visibleWeights} />
         {visibleWeights.length > 1 ? (
           <View style={styles.chartLabels}>
-            <Text style={styles.chartLabel}>{new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(`${visibleWeights[0].date}T12:00:00`))}</Text>
-            <Text style={styles.chartLabel}>{new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(`${visibleWeights.at(-1)?.date}T12:00:00`))}</Text>
+            <Text style={styles.chartLabel}>{formatDateParts(visibleWeights[0].date, { day: 'numeric', month: 'short' }, locale)}</Text>
+            <Text style={styles.chartLabel}>{formatDateParts(visibleWeights.at(-1)?.date ?? '', { day: 'numeric', month: 'short' }, locale)}</Text>
           </View>
         ) : null}
         <PrimaryButton icon="add" label={t.progress.logWeight} onPress={openWeightEntry} variant="secondary" />

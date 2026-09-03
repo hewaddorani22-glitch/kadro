@@ -36,8 +36,9 @@ import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor,
 import { localDateKey } from '@/utils/date';
 import { getDictionary } from '@/i18n/active';
 import type { UnitSystem } from '@/utils/units';
-import { hasCurrentWellnessConsent, recordWellnessConsent, withdrawWellnessConsent as withdrawStoredWellnessConsent } from '@/services/consent';
+import { forgetLocalWellnessConsent, hasCurrentWellnessConsent, recordWellnessConsent, withdrawWellnessConsent as withdrawStoredWellnessConsent } from '@/services/consent';
 import { setEveningReminderEnabled } from '@/services/reminders';
+import { formatClockTime } from '@/utils/format';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
 type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search';
@@ -493,7 +494,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     try {
       if ((activeScanMode === 'live' || activeScanMode === 'queued') && !input) {
         const originalUri = photoUriRef.current ?? photoUri;
-        if (!originalUri) throw new MealAnalysisError('unclear-image', 'Bitte fotografiere den ganzen Teller erneut.');
+        if (!originalUri) throw new MealAnalysisError('unclear-image', getDictionary().errors.retakeWholePlate);
         const prepared = await prepareMealPhoto(originalUri);
         input = prepared;
         photoUriRef.current = prepared.previewUri;
@@ -521,6 +522,13 @@ export function AppProvider({ children }: PropsWithChildren) {
         setPendingAnalysisCount(await removeQueuedAnalysis(scanId));
       }
     } catch (error) {
+      // The gateway is the authority here. If it says there is no consent,
+      // the local record is stale — keeping it would leave the user looking at
+      // "Consent is active" with only a "Withdraw" button and no way back.
+      if (error instanceof MealAnalysisError && error.kind === 'consent-required') {
+        await forgetLocalWellnessConsent();
+        setWellnessConsentGranted(false);
+      }
       const failure = error instanceof MealAnalysisError
         ? error
         : new MealAnalysisError('provider-error', getDictionary().errors.analysisFailed);
@@ -682,7 +690,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       ...candidate.source,
       id: `repeat-${candidate.key.replace(/[^a-z0-9]+/gi, '-')}-${now.getTime()}`,
       type: hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack',
-      time: new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(now),
+      time: formatClockTime(now),
       date: localDateKey(now),
       savedAt: now.toISOString(),
     };

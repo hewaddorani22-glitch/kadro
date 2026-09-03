@@ -137,7 +137,11 @@ export function SectionTitle({ children, action }: PropsWithChildren<{ action?: 
 }
 
 export function ProgressBar({ value, color = colors.accentDeep }: { value: number; color?: string }) {
-  const percentage = Math.round(Math.min(1, Math.max(0, value)) * 100);
+  // A target of zero makes callers hand us 0/0 or x/0. NaN survives min and
+  // max and would reach the style as width: "NaN%"; an exceeded target is a
+  // full bar, not an empty one.
+  const safeValue = Number.isFinite(value) ? value : (value > 0 ? 1 : 0);
+  const percentage = Math.round(Math.min(1, Math.max(0, safeValue)) * 100);
   return (
     <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percentage }} style={styles.progressTrack}>
       <View style={[styles.progressFill, { width: `${percentage}%`, backgroundColor: color }]} />

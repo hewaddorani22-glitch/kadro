@@ -3,6 +3,7 @@ import { localDateKey } from '@/utils/date';
 
 import { ensureSupabaseUser, isSupabaseConfigured, supabase } from './supabaseClient';
 import { isUnitSystem } from '@/utils/units';
+import { formatClockTime } from '@/utils/format';
 
 export type CloudProfile = {
   userId: string;
@@ -96,7 +97,7 @@ function mapMeal(row: MealRow): Meal {
     id: row.id,
     title: row.title,
     type: row.meal_type,
-    time: new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(eatenAt),
+    time: formatClockTime(eatenAt),
     date: row.meal_date,
     savedAt: row.saved_at,
     calories: row.calories,

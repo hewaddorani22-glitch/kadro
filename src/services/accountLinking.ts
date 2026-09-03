@@ -30,7 +30,8 @@ function requireClient() {
 }
 
 function normalizeEmail(email: string) {
-  const normalized = email.trim().toLocaleLowerCase('de-DE');
+  // Invariant, not locale-aware: an address is not German text.
+  const normalized = email.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new Error(getDictionary().errors.invalidEmail);
   return normalized;
 }
