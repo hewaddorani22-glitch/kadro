@@ -275,7 +275,15 @@ export default function OnboardingScreen() {
                       <View style={styles.choiceTextBlock}>
                         <Text style={styles.choiceTitle}>{weeklyRateLabel(draftProfile.goal, rate, t.common, unitSystem)}</Text>
                         <Text style={styles.choiceDetail}>
-                          {rate === 0.25 ? t.onboarding.rateCalm : t.onboarding.rateBrisk} · {draftProfile.goal === 'lose' ? '−' : '+'}{applied} {t.onboarding.perDay}
+                          {/*
+                            Building muscle and losing weight are not the same
+                            trade-off: a faster deficit costs adherence, a
+                            faster surplus costs body composition.
+                          */}
+                          {draftProfile.goal === 'gain'
+                            ? (rate === 0.25 ? t.onboarding.rateCalmGain : t.onboarding.rateBriskGain)
+                            : (rate === 0.25 ? t.onboarding.rateCalm : t.onboarding.rateBrisk)}
+                          {' · '}{draftProfile.goal === 'lose' ? '−' : '+'}{applied} {t.onboarding.perDay}
                         </Text>
                       </View>
                       <Ionicons color={active ? colors.accentDeep : colors.border} name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
@@ -603,7 +611,7 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
         <View style={styles.limitRow}>
           <Ionicons color={colors.attention} name="information-circle-outline" size={16} />
           <Text style={styles.limitText}>
-            {profile.goal === 'gain' ? t.onboarding.rateLimitedGain : t.onboarding.rateLimited}
+            {t.onboarding.rateLimited}
           </Text>
         </View>
       ) : null}

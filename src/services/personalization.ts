@@ -26,23 +26,31 @@ const activityMultipliers: Record<ActivityLevel, number> = {
  * converts to a daily offset by (rate * 7700) / 7 = rate * 1100.
  *
  * The old model used a flat -350 / 0 / +250 for everyone, which gave a 55 kg
- * woman and a 95 kg man the same deficit. Building muscle uses a gentler
- * surplus than the same rate of loss, because surplus beyond roughly 300 kcal
- * mostly becomes fat rather than muscle.
+ * woman and a 95 kg man the same deficit.
+ *
+ * A surplus is deliberately not capped, while a deficit still is. Eating too
+ * little is a health question; eating 550 kcal above maintenance is not — it
+ * only shifts how much of the gain is muscle versus fat, and that is the
+ * user's call to make. Capping it at a flat 350 meant somebody who picked
+ * 0.5 kg a week was quietly given 0.32, a number that matches nothing they
+ * were offered.
  */
 const KCAL_PER_KG = 7700;
 
 function dailyGoalOffset(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
   if (goal === 'maintain') return 0;
   const daily = (weeklyRateKg * KCAL_PER_KG) / 7;
-  return goal === 'lose' ? -daily : Math.min(350, daily);
+  return goal === 'lose' ? -daily : daily;
 }
 
-/** The pace the calorie target actually applies after Kandro's safety caps. */
+/**
+ * The pace the calorie target actually applies.
+ *
+ * Only the deficit floor can move it now, and that is reported separately by
+ * isRateLimited — so for a surplus this is simply the rate the user picked.
+ */
 export function effectiveWeeklyRate(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
-  if (goal !== 'gain') return weeklyRateKg;
-  const appliedDaily = dailyGoalOffset(goal, weeklyRateKg);
-  return Math.round(((appliedDaily * 7) / KCAL_PER_KG) * 100) / 100;
+  return weeklyRateKg;
 }
 
 type PaceLabels = { paceHold: string; paceLose: (rate: string) => string; paceGain: (rate: string) => string };
@@ -90,7 +98,15 @@ export function calculateDailyTargets(profile: UserProfile): DailyTargets {
   // budget could not cover it, which is where the mismatch came from.
   const carbs = Math.min(550, Math.max(0, roundTo((calories - protein * 4 - fat * 9) / 4, 5)));
 
-  return { calories, protein, carbs, fat };
+  // A large surplus can exhaust the carb ceiling and leave energy unassigned:
+  // 3720 kcal against 550 g of carbs left 250 kcal that appeared nowhere. Fat
+  // absorbs the remainder, then protein — both still bounded.
+  const unassigned = calories - (protein * 4 + carbs * 4 + fat * 9);
+  const fatTop = Math.min(140, fat + Math.max(0, roundTo(unassigned / 9, 5)));
+  const stillUnassigned = calories - (protein * 4 + carbs * 4 + fatTop * 9);
+  const proteinTop = Math.min(260, protein + Math.max(0, roundTo(stillUnassigned / 4, 5)));
+
+  return { calories, protein: proteinTop, carbs, fat: fatTop };
 }
 
 type GoalLabels = { goalLose: string; goalMaintain: string; goalGain: string };
@@ -120,8 +136,8 @@ export function estimatedPace(
 }
 
 /** True when the safety floor overrode the requested rate. */
+/** True when the safety floor overrode the requested rate. Only a deficit can. */
 export function isRateLimited(profile: UserProfile) {
-  if (profile.goal === 'gain') return effectiveWeeklyRate(profile.goal, profile.weeklyRateKg) < profile.weeklyRateKg;
   if (profile.goal !== 'lose') return false;
   const restingEstimate = 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age - 78;
   const maintenance = restingEstimate * activityMultipliers[profile.activityLevel];
