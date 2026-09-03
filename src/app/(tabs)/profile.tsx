@@ -266,7 +266,20 @@ function ToggleRow({ detail, disabled, icon, label, onValueChange, value }: { de
         <Text style={styles.rowLabel}>{label}</Text>
         <Text style={styles.rowDetail}>{detail}</Text>
       </View>
-      <Switch disabled={disabled} ios_backgroundColor={colors.border} onValueChange={onValueChange} thumbColor={colors.surface} trackColor={{ false: colors.border, true: colors.accentDeep }} value={value} />
+      {/*
+        Without a label VoiceOver announces only "switch, off" — the row's
+        text sits in a sibling view and is not read as part of the control.
+      */}
+      <Switch
+        accessibilityHint={detail}
+        accessibilityLabel={label}
+        disabled={disabled}
+        ios_backgroundColor={colors.border}
+        onValueChange={onValueChange}
+        thumbColor={colors.surface}
+        trackColor={{ false: colors.border, true: colors.accentDeep }}
+        value={value}
+      />
     </View>
   );
 }
