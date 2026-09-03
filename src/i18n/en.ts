@@ -53,6 +53,7 @@ export const en: typeof de = {
     scan: 'Scan a meal',
   },
   today: {
+    addTo: (slot: string) => `Add to ${slot}`,
     dayComplete: 'Your day is full',
     dayCompleteText: 'You have reached your target for today. If you eat more, log it — Kandro keeps counting.',
     dayOver: 'Over for today',

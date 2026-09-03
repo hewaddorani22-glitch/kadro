@@ -54,6 +54,7 @@ export const de = {
     scan: 'Mahlzeit scannen',
   },
   today: {
+    addTo: (slot: string) => `Zu ${slot} hinzufügen`,
     dayComplete: 'Dein Tag ist voll',
     dayCompleteText: 'Du hast dein Tagesziel erreicht. Wenn du noch etwas isst, erfasse es ruhig – Kandro rechnet weiter mit.',
     dayOver: 'Heute schon darüber',

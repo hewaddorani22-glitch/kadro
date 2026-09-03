@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CalorieRing } from '@/components/CalorieRing';
@@ -14,7 +14,7 @@ import { formatDateParts, formatNumber, mealTypeIcon, mealTypeLabel } from '@/ut
 
 export default function TodayScreen() {
   const router = useRouter();
-  const { consumed, hasLoggedScan, logRepeatMeal, meals, pendingAnalysisCount, remaining, repeatMeals, resetScan, resumeLatestAnalysis, targets, userName } = useApp();
+  const { consumed, hasLoggedScan, logRepeatMeal, meals, pendingAnalysisCount, remaining, repeatMeals, resetScan, resumeLatestAnalysis, setPlannedMealType, targets, userName } = useApp();
   const [repeating, setRepeating] = useState<string | null>(null);
   const [openMeal, setOpenMeal] = useState<Meal | null>(null);
   const { locale, t } = useLanguage();
@@ -33,10 +33,24 @@ export default function TodayScreen() {
   const proteinCenter = Math.round(Math.min(45, Math.max(28, remaining.protein * 0.48)) / 5) * 5;
   const proteinRange = `${Math.max(20, proteinCenter - 5)}–${proteinCenter + 5}`;
 
-  const startScan = () => {
+  const startScan = (slot?: Meal['type']) => {
     resetScan();
+    // resetScan clears any previous choice, so the slot is set after it.
+    if (slot) setPlannedMealType(slot);
     router.push('/(tabs)/scan');
   };
+
+  /**
+   * Four slots, always all four, in the order a day happens.
+   *
+   * A flat list left "add a meal" as one button at the bottom and made the
+   * app guess from the clock which meal it was — a late breakfast filed as
+   * lunch, and no way to say otherwise before logging.
+   */
+  const slots = useMemo(() => (['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const).map((type) => {
+    const entries = meals.filter((meal) => meal.type === type);
+    return { type, entries, calories: entries.reduce((total, meal) => total + meal.calories, 0) };
+  }), [meals]);
 
   const resumePending = async () => {
     if (await resumeLatestAnalysis()) router.push('/analyzing');
@@ -177,45 +191,50 @@ export default function TodayScreen() {
 
       <View style={styles.sectionBlock}>
         <SectionTitle>{t.today.heading}</SectionTitle>
-        <Card style={styles.timelineCard}>
-          {meals.map((meal, index) => (
-            <View key={meal.id}>
+        {slots.map((slot) => (
+          <Card key={slot.type} style={styles.slotCard}>
+            <View style={styles.slotHeader}>
+              <View style={styles.mealIcon}>
+                <Ionicons color={colors.text} name={mealTypeIcon(slot.type)} size={20} />
+              </View>
+              <Text style={styles.slotTitle}>{mealTypeLabel(slot.type, t.common)}</Text>
+              <Text style={styles.slotCalories}>
+                {slot.calories ? `${formatNumber(slot.calories, locale)} kcal` : ''}
+              </Text>
               <Pressable
-                accessibilityHint={t.common.mealHint}
-                accessibilityLabel={t.common.mealLabel(mealTypeLabel(meal.type, t.common), meal.title, meal.calories)}
+                accessibilityLabel={t.today.addTo(mealTypeLabel(slot.type, t.common))}
                 accessibilityRole="button"
-                onPress={() => setOpenMeal(meal)}
-                style={({ pressed }) => [styles.mealRow, pressed && styles.mealRowPressed]}
+                hitSlop={8}
+                onPress={() => startScan(slot.type)}
+                style={styles.slotAdd}
               >
-                <View style={styles.mealIcon}>
-                  <Ionicons color={colors.text} name={mealTypeIcon(meal.type)} size={20} />
-                </View>
-                <View style={styles.mealInfo}>
-                  <View style={styles.mealMetaRow}>
-                    <Text style={styles.mealType}>{mealTypeLabel(meal.type, t.common)}</Text>
-                    {/* The time lived in the data all along and was never shown, so
-                        three meals logged in one evening looked identical. */}
+                <Ionicons color={colors.text} name="add" size={20} />
+              </Pressable>
+            </View>
+            {slot.entries.map((meal) => (
+              <View key={meal.id}>
+                <View style={styles.rowDivider} />
+                <Pressable
+                  accessibilityHint={t.common.mealHint}
+                  accessibilityLabel={t.common.mealLabel(mealTypeLabel(meal.type, t.common), meal.title, meal.calories)}
+                  accessibilityRole="button"
+                  onPress={() => setOpenMeal(meal)}
+                  style={({ pressed }) => [styles.mealRow, pressed && styles.mealRowPressed]}
+                >
+                  <View style={styles.mealInfo}>
+                    <Text numberOfLines={1} style={styles.mealName}>{meal.title}</Text>
                     <Text style={styles.mealTime}>{meal.time}</Text>
                   </View>
-                  <Text numberOfLines={1} style={styles.mealName}>{meal.title}</Text>
-                </View>
-                <View style={styles.mealNumbers}>
-                  <Text style={styles.mealCalories}>~{meal.calories}</Text>
-                  <Text style={styles.mealUnit}>kcal</Text>
-                </View>
-                <Ionicons color={colors.muted} name="chevron-forward" size={16} />
-              </Pressable>
-              {index < meals.length - 1 ? <View style={styles.rowDivider} /> : null}
-            </View>
-          ))}
-          <Pressable onPress={startScan} style={styles.addMealRow}>
-            <View style={styles.addIcon}>
-              <Ionicons color={colors.text} name="add" size={20} />
-            </View>
-            <Text style={styles.addMealText}>{hasLoggedScan ? t.today.scanAnother : t.today.scanFirst}</Text>
-            <Ionicons color={colors.muted} name="chevron-forward" size={18} />
-          </Pressable>
-        </Card>
+                  <View style={styles.mealNumbers}>
+                    <Text style={styles.mealCalories}>~{meal.calories}</Text>
+                    <Text style={styles.mealUnit}>kcal</Text>
+                  </View>
+                  <Ionicons color={colors.muted} name="chevron-forward" size={16} />
+                </Pressable>
+              </View>
+            ))}
+          </Card>
+        ))}
       </View>
 
       {eveningReady ? (
@@ -264,6 +283,11 @@ const styles = StyleSheet.create({
   targetValue: { color: colors.text, fontSize: 18, fontWeight: '700' },
   targetDivider: { width: 1, height: 42, backgroundColor: colors.accent, marginHorizontal: 14 },
   sectionBlock: { gap: 14 },
+  slotCard: { padding: 6, gap: 0 },
+  slotHeader: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 8 },
+  slotTitle: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '700' },
+  slotCalories: { color: colors.muted, fontSize: 13, fontWeight: '600' },
+  slotAdd: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   timelineCard: { padding: 8 },
   mealRow: { minHeight: 72, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 12 },
   mealRowPressed: { backgroundColor: colors.background },

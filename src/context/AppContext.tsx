@@ -111,6 +111,9 @@ type AppContextValue = {
   deleteLoggedMeal: (id: string) => Promise<void>;
   adjustLoggedMealPortion: (id: string, factor: PortionFactor) => Promise<void>;
   setLoggedMealType: (id: string, type: Meal['type']) => Promise<void>;
+  /** Slot chosen before scanning, so a late breakfast is not filed as lunch. */
+  plannedMealType: Meal['type'] | null;
+  setPlannedMealType: (type: Meal['type'] | null) => void;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -155,6 +158,8 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [scanMode, setScanMode] = useState<ScanMode>('demo');
   const photoUriRef = useRef<string | null>(null);
   const scanModeRef = useRef<ScanMode>('demo');
+  const [plannedMealType, setPlannedMealTypeState] = useState<Meal['type'] | null>(null);
+  const plannedMealTypeRef = useRef<Meal['type'] | null>(null);
   const [queuedInput, setQueuedInput] = useState<MealAnalysisInput | null>(null);
   const [descriptionInput, setDescriptionInput] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
@@ -622,6 +627,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     deleteTemporaryPhoto(photoUri);
     photoUriRef.current = null;
     scanModeRef.current = 'demo';
+    plannedMealTypeRef.current = null;
+    setPlannedMealTypeState(null);
     setDetectedItems(DETECTED_ITEMS);
     setMealTitle(getDictionary().errors.demoMealTitle);
     setPhotoUri(null);
@@ -673,6 +680,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     const costsAnalysis = !FREE_ANALYSIS_MODES.has(scanModeRef.current);
     const persistedMeal: Meal = {
       ...scannedMeal,
+      // The clock guesses the slot; tapping "+" next to breakfast states it.
+      ...(plannedMealTypeRef.current ? { type: plannedMealTypeRef.current } : {}),
       ...nutritionFromItems(detectedItems),
       origin: costsAnalysis ? 'scan' : 'plan',
       date: localDateKey(now),
@@ -696,7 +705,12 @@ export function AppProvider({ children }: PropsWithChildren) {
   const logPlannedMeal = useCallback(async (suggestion: MealSuggestion, portion: PortionFactor) => {
     const now = new Date();
     const planned = createPlannedMeal(suggestion, portion, `plan-${suggestion.id}-${now.getTime()}`);
-    const persisted: Meal = { ...planned, date: localDateKey(now), savedAt: now.toISOString() };
+    const persisted: Meal = {
+      ...planned,
+      ...(plannedMealTypeRef.current ? { type: plannedMealTypeRef.current } : {}),
+      date: localDateKey(now),
+      savedAt: now.toISOString(),
+    };
     await saveSyncedMeal(persisted);
     setMeals((current) => [...current, persisted]);
     setMealHistory((current) => [...current, persisted]);
@@ -709,13 +723,18 @@ export function AppProvider({ children }: PropsWithChildren) {
    * Logs a meal the user has eaten before. Costs no analysis call, so like a
    * planned meal it never spends part of the free allowance.
    */
+  const setPlannedMealType = useCallback((type: Meal['type'] | null) => {
+    plannedMealTypeRef.current = type;
+    setPlannedMealTypeState(type);
+  }, []);
+
   const logRepeatMeal = useCallback(async (candidate: RepeatCandidate) => {
     const now = new Date();
     const hour = now.getHours();
     const repeated: Meal = {
       ...candidate.source,
       id: `repeat-${candidate.key.replace(/[^a-z0-9]+/gi, '-')}-${now.getTime()}`,
-      type: hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack',
+      type: plannedMealTypeRef.current ?? (hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack'),
       time: formatClockTime(now),
       date: localDateKey(now),
       savedAt: now.toISOString(),
@@ -772,6 +791,8 @@ export function AppProvider({ children }: PropsWithChildren) {
   const value = useMemo<AppContextValue>(
     () => ({
       setUnitSystem,
+      plannedMealType,
+      setPlannedMealType,
       userName,
       profile,
       hydrationReady,
@@ -823,7 +844,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       adjustLoggedMealPortion,
       setLoggedMealType,
     }),
-    [addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, setUnitSystem, setLoggedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
+    [addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
