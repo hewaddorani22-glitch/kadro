@@ -186,7 +186,7 @@ export const de = {
     searchHint: 'Gib ein Lebensmittel ein – kostet keine Analyse.',
     searchPlaceholder: 'z. B. Haferflocken, Reis, Hähnchenbrust',
     searchEmpty: 'Nichts gefunden. Versuch einen einfacheren Begriff oder beschreib die Mahlzeit.',
-    searchHintEnglish: 'Die Nährwertdatenbank ist englisch. Mit englischen Begriffen findest du deutlich mehr.',
+    searchHintEnglish: 'Deutsche Begriffe werden übersetzt. Bei sehr seltenen Lebensmitteln hilft manchmal der englische Name.',
     searchSearching: 'Wird gesucht …',
     searchPer100: 'pro 100 g',
     searchAmount: 'Wie viel?',

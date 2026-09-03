@@ -362,7 +362,7 @@ export default function ScanScreen() {
               {!searching && !searchError && searchQuery.trim().length >= 2 && !searchResults.length ? (
                 <Text style={styles.searchStatus}>{t.scan.searchEmpty}</Text>
               ) : null}
-              {!searching && !searchError && t.scan.searchHintEnglish && searchQuery.trim().length >= 2 && searchResults.length < 3 ? (
+              {!searching && !searchError && t.scan.searchHintEnglish && searchQuery.trim().length >= 2 && !searchResults.length ? (
                 <Text style={styles.searchStatus}>{t.scan.searchHintEnglish}</Text>
               ) : null}
               {searchResults.map((result) => (

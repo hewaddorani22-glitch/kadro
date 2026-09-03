@@ -15,6 +15,7 @@ import {
   usdaPortions,
   validateAnalysisInput,
 } from '../_shared/nutrition.mjs';
+import { translateGermanQuery } from '../_shared/german-food-terms.mjs';
 import { resolveBlsFacts, searchBlsReferences } from '../_shared/bls-reference.mjs';
 import {
   descriptionDetectionPrompt,
@@ -343,7 +344,73 @@ async function searchFoods(query: string, language: string): Promise<Result> {
     });
   }
 
+  // Open Food Facts covers what a reference database never will: regional
+  // products, store brands, and dishes like Labskaus that exist as a packaged
+  // product long before they exist as a USDA entry. It is indexed in German
+  // too, so it also answers the queries the translation above misses.
+  if (results.length < 12) {
+    try {
+      for (const product of await searchOpenFoodFacts(term)) {
+        results.push(product);
+      }
+    } catch {
+      // An extra source going down is not a failed search.
+    }
+  }
+
   return { status: 200, body: { query: term, results: results.slice(0, 15) } };
+}
+
+/**
+ * Full-text product search.
+ *
+ * The classic /cgi/search.pl endpoint answers anonymous callers with a 503 and
+ * a sign-in page; the Search-a-licious service does not, and it takes a
+ * fields list so the response stays small.
+ */
+async function searchOpenFoodFacts(term: string): Promise<unknown[]> {
+  const fields = 'code,product_name,product_name_de,product_name_en,brands,nutriments,serving_quantity,serving_size';
+  const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(term)}&page_size=10&fields=${fields}`;
+  const response = await fetch(url, {
+    headers: { 'User-Agent': 'Kandro/1.0 (https://getkandro.com; hewaddorani22@gmail.com)' },
+    signal: AbortSignal.timeout(4000),
+  });
+  if (!response.ok) throw new Error(`off_${response.status}`);
+  const payload = await response.json();
+  const hits = Array.isArray(payload?.hits) ? payload.hits : [];
+
+  const out: unknown[] = [];
+  for (const hit of hits) {
+    // deno-lint-ignore no-explicit-any
+    const product = hit as any;
+    const values = product?.nutriments || {};
+    const calories = Number(values['energy-kcal_100g']);
+    // A product without energy is a product the app cannot log. Half the
+    // catalogue is like this, and offering it would be offering a dead end.
+    if (!Number.isFinite(calories)) continue;
+    const name = String(product.product_name || product.product_name_de || product.product_name_en || '').trim();
+    if (!name) continue;
+    const brand = Array.isArray(product.brands) ? product.brands[0] : product.brands;
+    const serving = Number(product.serving_quantity);
+    out.push({
+      id: `off-${product.code}`,
+      name: brand && !name.toLowerCase().includes(String(brand).toLowerCase()) ? `${name} (${brand})` : name,
+      per100g: {
+        calories: Math.round(calories),
+        protein: Math.round(Number(values.proteins_100g) || 0),
+        carbs: Math.round(Number(values.carbohydrates_100g) || 0),
+        fat: Math.round(Number(values.fat_100g) || 0),
+        fiber: Math.round(Number(values.fiber_100g) || 0),
+      },
+      defaultGrams: 100,
+      portions: Number.isFinite(serving) && serving >= 1 && serving <= 2000
+        ? [{ label: String(product.serving_size || '1 serving').trim().slice(0, 40), grams: Math.round(serving) }]
+        : [],
+      source: { provider: 'open-food-facts', referenceId: String(product.code), label: `Open Food Facts ${product.code}` },
+    });
+    if (out.length >= 5) break;
+  }
+  return out;
 }
 
 async function usdaRows(query: string): Promise<unknown[]> {
@@ -366,9 +433,15 @@ async function usdaRows(query: string): Promise<unknown[]> {
  * merged rows are then ranked against what the user actually typed.
  */
 async function searchUsdaFoods(term: string): Promise<unknown[]> {
-  const probes = [term, ...searchTermVariants(term)];
-  const hasPreparation = /\b(?:raw|cooked|boiled|grilled|fried|baked|roasted|steamed)\b/.test(term);
-  if (!hasPreparation) probes.push(`${term} cooked`);
+  // A German word reaches an English database as nothing at all: "banane"
+  // returned an empty list and a hint telling the user to translate it
+  // themselves. Everything below this line works in English, ranking
+  // included: scoring "Bananas, raw" against "banane" compares two languages
+  // and lands on whatever USDA happened to return first.
+  const english = translateGermanQuery(term) ?? term;
+  const probes = [english, ...searchTermVariants(english)];
+  const hasPreparation = /\b(?:raw|cooked|boiled|grilled|fried|baked|roasted|steamed)\b/.test(english);
+  if (!hasPreparation) probes.push(`${english} cooked`);
 
   const rows: unknown[] = [];
   const seen = new Set<string>();
@@ -383,7 +456,7 @@ async function searchUsdaFoods(term: string): Promise<unknown[]> {
     // Two probes are enough; each one is a round trip the user is waiting on.
     if (probes.indexOf(probe) >= 1) break;
   }
-  return rankFoodMatches(rows, term, 12);
+  return rankFoodMatches(rows, english, 12);
 }
 
 /** Picks the product name in the reader's language, falling back sensibly. */

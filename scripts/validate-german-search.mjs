@@ -1,0 +1,61 @@
+#!/usr/bin/env node
+/**
+ * "banane" used to return nothing at all, with a hint asking the user to
+ * translate the word themselves. Two things fix that — a German food
+ * vocabulary in front of USDA, and Open Food Facts for everything a reference
+ * database will never carry — and both are easy to break silently.
+ */
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const gateway = readFileSync(new URL('../supabase/functions/nutrition/index.ts', import.meta.url), 'utf8');
+const { GERMAN_FOOD_TERMS, translateGermanQuery } = await import('../supabase/functions/_shared/german-food-terms.mjs');
+
+// --- The vocabulary ---------------------------------------------------------
+assert.ok(Object.keys(GERMAN_FOOD_TERMS).length >= 300,
+  'a vocabulary this short will miss what people actually type');
+
+for (const [german, english] of Object.entries(GERMAN_FOOD_TERMS)) {
+  assert.ok(/^[a-zäöüß]+$/.test(german), `"${german}" is not a lookup-shaped key`);
+  assert.ok(/^[a-z][a-z ]*$/.test(english), `"${german}" maps to "${english}", which is not plain English`);
+}
+
+// --- Translation ------------------------------------------------------------
+assert.equal(translateGermanQuery('banane'), 'banana');
+assert.equal(translateGermanQuery('Banane'), 'banana', 'a capitalised word is the same word');
+assert.equal(translateGermanQuery('hähnchenbrust gegrillt'), 'chicken breast grilled');
+assert.equal(translateGermanQuery('magerquark'), 'quark cheese');
+assert.equal(translateGermanQuery('vollkornbrot'), 'whole wheat bread');
+assert.equal(translateGermanQuery('süßkartoffel'), 'sweet potato', 'umlauts and ß must survive the lookup');
+
+// English and brand names must pass through untouched, not half-translated.
+assert.equal(translateGermanQuery('chicken breast'), null);
+assert.equal(translateGermanQuery('nutella'), null, 'a word that is the same in both languages needs no rewrite');
+assert.equal(translateGermanQuery('haribo goldbären'), null, 'an unknown brand must reach the database as typed');
+assert.equal(translateGermanQuery(''), null);
+assert.equal(translateGermanQuery(null), null);
+
+// A partly recognised phrase keeps the words it cannot translate.
+assert.equal(translateGermanQuery('apfel strudel'), 'apple strudel');
+
+// --- The gateway uses it in English, ranking included ------------------------
+const usda = gateway.slice(gateway.indexOf('async function searchUsdaFoods'), gateway.indexOf('function localizedProductName'));
+assert.match(usda, /const english = translateGermanQuery\(term\) \?\? term;/,
+  'the USDA probe must run on the translated term');
+assert.match(usda, /rankFoodMatches\(rows, english, \d+\)/,
+  'ranking a German query against English descriptions scores two languages against each other');
+assert.ok(!/searchTermVariants\(term\)/.test(usda),
+  'the probe variants must be built from the English term, not the raw one');
+
+// --- Open Food Facts --------------------------------------------------------
+const off = gateway.slice(gateway.indexOf('async function searchOpenFoodFacts'), gateway.indexOf('async function usdaRows'));
+assert.match(off, /search\.openfoodfacts\.org\/search/,
+  'the classic search endpoint answers anonymous callers with a sign-in page');
+assert.match(off, /User-Agent/, 'Open Food Facts throttles callers that do not identify themselves');
+assert.match(off, /AbortSignal\.timeout\(/, 'a slow extra source must not hold up the whole search');
+assert.match(off, /if \(!Number\.isFinite\(calories\)\) continue;/,
+  'a product without energy cannot be logged and must not be offered');
+assert.match(gateway, /try \{\s*\n\s*for \(const product of await searchOpenFoodFacts\(term\)\)/,
+  'Open Food Facts going down must not fail the whole search');
+
+console.log(`German search: ${Object.keys(GERMAN_FOOD_TERMS).length} food terms translated, Open Food Facts wired in as a fallback source.`);
