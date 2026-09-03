@@ -43,6 +43,13 @@ import { formatClockTime } from '@/utils/format';
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
 type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search';
 
+/**
+ * Inputs that never reach the model, and therefore never spend one of the
+ * three free meals. Search is the reason this exists: it is a database lookup
+ * the sheet openly labels as free.
+ */
+const FREE_ANALYSIS_MODES = new Set<ScanMode>(['demo', 'search']);
+
 function telemetryScanSource(mode: ScanMode) {
   if (mode === 'live') return 'camera' as const;
   if (mode === 'queued') return 'queued_retry' as const;
@@ -646,9 +653,15 @@ export function AppProvider({ children }: PropsWithChildren) {
   const logScannedMeal = useCallback(async () => {
     const alreadyLogged = mealHistory.some((meal) => meal.id === scannedMeal.id);
     const now = new Date();
+    // The free allowance is derived from how many meals carry origin 'scan',
+    // so the origin has to be honest about whether an analysis actually ran.
+    // A food picked from search is a chosen known value, like a planned meal,
+    // and the sheet promises it is free.
+    const costsAnalysis = !FREE_ANALYSIS_MODES.has(scanModeRef.current);
     const persistedMeal: Meal = {
       ...scannedMeal,
       ...nutritionFromItems(detectedItems),
+      origin: costsAnalysis ? 'scan' : 'plan',
       date: localDateKey(now),
       savedAt: now.toISOString(),
     };
@@ -657,7 +670,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setMealHistory((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
     // Corrections re-save the same scan id; only a genuinely new meal spends
     // part of the free allowance.
-    if (!alreadyLogged) {
+    if (!alreadyLogged && costsAnalysis) {
       setLifetimeScanCount(await saveLifetimeScanCount((await loadLifetimeScanCount()) + 1));
     }
   }, [detectedItems, mealHistory, scannedMeal]);

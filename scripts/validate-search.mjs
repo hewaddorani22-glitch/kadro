@@ -40,6 +40,35 @@ assert.match(runFn, /clearTimeout\(searchTimer\.current\)/, 'a pending search mu
 assert.match(runFn, /latestSearch\.current !== request/, 'stale responses must be discarded');
 assert.match(runFn, /term\.length < 2/, 'a one-letter query must not be sent');
 
+// --- Logging a searched food must not spend a free meal --------------------
+// The sheet says "Free". The result screen logs the meal on arrival, and that
+// is where the allowance is charged, so the exemption has to live there too.
+assert.match(context, /FREE_ANALYSIS_MODES/, 'the free inputs must be named somewhere');
+const modes = context.match(/FREE_ANALYSIS_MODES = new Set<ScanMode>\(\[([^\]]*)\]\)/);
+assert.ok(modes, 'could not read the free input list');
+for (const mode of ['search', 'demo']) {
+  assert.ok(modes[1].includes(`'${mode}'`), `${mode} must not spend a free meal`);
+}
+for (const mode of ['live', 'description', 'barcode']) {
+  assert.ok(!modes[1].includes(`'${mode}'`), `${mode} costs an analysis and must be charged`);
+}
+const logging = context.slice(context.indexOf('const logScannedMeal'), context.indexOf('const logPlannedMeal'));
+assert.match(
+  logging,
+  /!alreadyLogged && costsAnalysis/,
+  'the allowance must only be charged for an input that reached the model',
+);
+// The allowance is also derived from how many stored meals carry origin
+// 'scan', so incrementing a counter is not enough on its own.
+assert.match(
+  logging,
+  /origin: costsAnalysis \? 'scan' : 'plan'/,
+  'a searched food must not be stored as a scan, or the count re-inflates from history',
+);
+assert.match(context, /origin === 'scan'/, 'the scan count is derived from the stored origin');
+// The database only accepts these two values.
+assert.ok(!/origin: 'search'/.test(context), "the meals table constrains origin to 'scan' and 'plan'");
+
 // --- The result must carry its source --------------------------------------
 const mealFn = service.slice(service.indexOf('export function mealFromSearch'));
 assert.match(mealFn, /source: result\.source/, 'a logged food must keep the reference it came from');
