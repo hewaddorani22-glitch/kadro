@@ -76,10 +76,19 @@ export function calculateDailyTargets(profile: UserProfile): DailyTargets {
   // no responsible app should show.
   const floor = Math.max(1_300, maintenance * 0.7);
   const calories = Math.min(4_000, Math.max(floor, roundTo(maintenance + offset, 10)));
+  // Protein and fat come from body weight, but the day's energy has to be able
+  // to pay for them. Scaling protein from *total* weight meant that a heavy
+  // person on a deficit was given macros that added up to far more than their
+  // calorie target: 1320 kcal shown, 1845 kcal once the three were summed. The
+  // 35% ceilings are what make the three numbers describe the same day.
   const proteinFactor = profile.goal === 'maintain' ? 1.6 : 1.8;
-  const protein = Math.min(260, Math.max(70, roundTo(profile.weightKg * proteinFactor, 5)));
-  const fat = Math.min(140, Math.max(45, roundTo(profile.weightKg * 0.8, 5)));
-  const carbs = Math.min(550, Math.max(80, roundTo((calories - protein * 4 - fat * 9) / 4, 5)));
+  const proteinCeiling = Math.min(260, Math.floor((calories * 0.35) / 4));
+  const protein = Math.max(70, Math.min(proteinCeiling, roundTo(profile.weightKg * proteinFactor, 5)));
+  const fatCeiling = Math.max(45, Math.floor((calories * 0.35) / 9));
+  const fat = Math.max(45, Math.min(140, fatCeiling, roundTo(profile.weightKg * 0.8, 5)));
+  // Carbs take what is left. The old 80 g floor was applied even when the
+  // budget could not cover it, which is where the mismatch came from.
+  const carbs = Math.min(550, Math.max(0, roundTo((calories - protein * 4 - fat * 9) / 4, 5)));
 
   return { calories, protein, carbs, fat };
 }
