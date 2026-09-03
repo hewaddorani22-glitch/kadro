@@ -25,6 +25,9 @@ export default function TodayScreen() {
   const daypart = hour < 11 ? t.today.goodMorning : hour < 18 ? t.today.goodDay : t.today.goodEvening;
   const eveningReady = hour >= 18;
   const greeting = userName.trim() ? `${daypart}, ${userName}` : daypart;
+  // Below a snack there is nothing useful left to suggest.
+  const dayIsDone = remaining.calories < 150;
+  const overBudget = consumed.calories > targets.calories;
   const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
   const calorieRange = `${Math.max(300, calorieCenter - 50)}–${calorieCenter + 50}`;
   const proteinCenter = Math.round(Math.min(45, Math.max(28, remaining.protein * 0.48)) / 5) * 5;
@@ -98,28 +101,48 @@ export default function TodayScreen() {
         <MacroCard current={consumed.fat} icon="water-outline" label={t.common.fat} target={targets.fat} />
       </View>
 
-      <Card style={styles.nextCard}>
-        <View style={styles.nextHeader}>
-          <IconCircle name="navigate" size={48} />
-          <View style={styles.nextHeading}>
-            <Eyebrow>{t.today.nextMove}</Eyebrow>
-            <Text style={styles.mealMoment}>{hasLoggedScan ? t.today.nextMeal : t.today.firstMeal}</Text>
+      {/*
+        Once the budget is spent, pushing three more meal ideas is advice that
+        contradicts the number directly above it. The card still lets someone
+        log what they eat — people do eat more, and hiding the button would
+        just mean the day goes unrecorded.
+      */}
+      {dayIsDone ? (
+        <Card style={styles.nextCard}>
+          <View style={styles.nextHeader}>
+            <IconCircle name={overBudget ? 'information-circle' : 'checkmark'} size={48} tone={overBudget ? 'neutral' : 'accent'} />
+            <View style={styles.nextHeading}>
+              <Eyebrow>{t.today.nextMove}</Eyebrow>
+              <Text style={styles.mealMoment}>{overBudget ? t.today.dayOver : t.today.dayComplete}</Text>
+            </View>
           </View>
-          <Ionicons color={colors.text} name="arrow-forward" size={22} />
-        </View>
-        <View style={styles.targetRow}>
-          <View style={styles.targetBlock}>
-            <Text style={styles.targetLabel}>{t.today.targetRange}</Text>
-            <Text style={styles.targetValue}>{calorieRange} kcal</Text>
+          <Text style={styles.dayDoneText}>{overBudget ? t.today.dayOverText : t.today.dayCompleteText}</Text>
+          <PrimaryButton icon="add" label={t.today.logAnyway} onPress={() => router.push('/(tabs)/scan')} variant="ghost" />
+        </Card>
+      ) : (
+        <Card style={styles.nextCard}>
+          <View style={styles.nextHeader}>
+            <IconCircle name="navigate" size={48} />
+            <View style={styles.nextHeading}>
+              <Eyebrow>{t.today.nextMove}</Eyebrow>
+              <Text style={styles.mealMoment}>{hasLoggedScan ? t.today.nextMeal : t.today.firstMeal}</Text>
+            </View>
+            <Ionicons color={colors.text} name="arrow-forward" size={22} />
           </View>
-          <View style={styles.targetDivider} />
-          <View style={styles.targetBlock}>
-            <Text style={styles.targetLabel}>{t.today.proteinLabel}</Text>
-            <Text style={styles.targetValue}>{proteinRange} g</Text>
+          <View style={styles.targetRow}>
+            <View style={styles.targetBlock}>
+              <Text style={styles.targetLabel}>{t.today.targetRange}</Text>
+              <Text style={styles.targetValue}>{calorieRange} kcal</Text>
+            </View>
+            <View style={styles.targetDivider} />
+            <View style={styles.targetBlock}>
+              <Text style={styles.targetLabel}>{t.today.proteinLabel}</Text>
+              <Text style={styles.targetValue}>{proteinRange} g</Text>
+            </View>
           </View>
-        </View>
-        <PrimaryButton icon="arrow-forward" label={t.today.showIdeas} onPress={() => router.push('/(tabs)/plan')} variant="secondary" />
-      </Card>
+          <PrimaryButton icon="arrow-forward" label={t.today.showIdeas} onPress={() => router.push('/(tabs)/plan')} variant="secondary" />
+        </Card>
+      )}
 
       {repeatMeals.length ? (
         <View style={styles.sectionBlock}>
@@ -230,6 +253,7 @@ const styles = StyleSheet.create({
   onTrack: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 4 },
   consumed: { color: colors.muted, fontSize: 12, textAlign: 'center', fontVariant: ['tabular-nums'] },
   macroRow: { flexDirection: 'row', gap: 9 },
+  dayDoneText: { color: colors.muted, fontSize: 14, lineHeight: 21 },
   nextCard: { backgroundColor: colors.accentSoft, borderColor: colors.accent, gap: 18 },
   nextHeader: { flexDirection: 'row', alignItems: 'center', gap: 13 },
   nextHeading: { flex: 1, gap: 4 },

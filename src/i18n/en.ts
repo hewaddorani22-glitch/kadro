@@ -53,6 +53,11 @@ export const en: typeof de = {
     scan: 'Scan a meal',
   },
   today: {
+    dayComplete: 'Your day is full',
+    dayCompleteText: 'You have reached your target for today. If you eat more, log it — Kandro keeps counting.',
+    dayOver: 'Over for today',
+    dayOverText: 'No drama. Tomorrow the day re-plans itself. Anything else you eat, you can still log.',
+    logAnyway: 'Log it anyway',
     goodMorning: 'Good morning',
     goodDay: 'Good afternoon',
     goodEvening: 'Good evening',
@@ -316,6 +321,9 @@ export const en: typeof de = {
     reminderDismiss: 'Not needed',
   },
   plan: {
+    dayDoneTitle: 'That is enough for today',
+    dayDoneText: 'You have hit your target for today. New ideas come back tomorrow — or just log whatever else you eat.',
+    backToToday: 'Back to Today',
     eyebrow: 'Kandro',
     title: 'What fits right now?',
     subtitle: 'Pick your situation. Kandro tunes the suggestions to how your day has actually gone.',

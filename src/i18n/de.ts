@@ -54,6 +54,11 @@ export const de = {
     scan: 'Mahlzeit scannen',
   },
   today: {
+    dayComplete: 'Dein Tag ist voll',
+    dayCompleteText: 'Du hast dein Tagesziel erreicht. Wenn du noch etwas isst, erfasse es ruhig – Kandro rechnet weiter mit.',
+    dayOver: 'Heute schon darüber',
+    dayOverText: 'Kein Drama. Morgen stellt sich der Tag neu auf. Was du noch isst, kannst du weiter erfassen.',
+    logAnyway: 'Trotzdem erfassen',
     goodMorning: 'Guten Morgen',
     goodDay: 'Guten Tag',
     goodEvening: 'Guten Abend',
@@ -317,6 +322,9 @@ export const de = {
     reminderDismiss: 'Nicht nötig',
   },
   plan: {
+    dayDoneTitle: 'Für heute reicht es',
+    dayDoneText: 'Dein Tagesziel ist erreicht. Neue Vorschläge gibt es morgen wieder – oder erfasse einfach, was du noch isst.',
+    backToToday: 'Zurück zu Heute',
     eyebrow: 'Kandro',
     title: 'Was passt jetzt?',
     subtitle: 'Wähle deine Situation. Kandro richtet die Vorschläge an deinem tatsächlichen Tag aus.',

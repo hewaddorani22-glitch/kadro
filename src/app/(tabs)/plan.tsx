@@ -40,7 +40,13 @@ export default function PlanScreen() {
     }
   }, [params.context]);
 
-  const suggestions = useMemo(() => (selected ? recommendMeals(selected, remaining, profile.preferences) : []), [profile.preferences, remaining, selected]);
+  // Nothing left to spend means nothing sensible to suggest; a "300–400 kcal"
+  // idea under a "0 kcal left" line is advice arguing with its own headline.
+  const dayIsDone = remaining.calories < 150;
+  const suggestions = useMemo(
+    () => (selected && !dayIsDone ? recommendMeals(selected, remaining, profile.preferences) : []),
+    [dayIsDone, profile.preferences, remaining, selected],
+  );
   const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
   const proteinCenter = Math.round(Math.min(45, Math.max(28, remaining.protein * 0.48)) / 5) * 5;
 
@@ -157,6 +163,16 @@ export default function PlanScreen() {
             </Pressable>
           ) : null}
 
+          {dayIsDone ? (
+            <Card style={styles.dayDone}>
+              <IconCircle name="checkmark" size={48} tone="accent" />
+              <Text style={styles.dayDoneTitle}>{t.plan.dayDoneTitle}</Text>
+              <Text style={styles.dayDoneText}>{t.plan.dayDoneText}</Text>
+              <PrimaryButton icon="arrow-back" label={t.plan.backToToday} onPress={() => router.push('/(tabs)/today')} variant="secondary" />
+            </Card>
+          ) : null}
+
+          {dayIsDone ? null : (
           <View style={styles.resultsHeading}>
             <View>
               <Text style={styles.resultsTitle}>{t.plan.optionsTitle}</Text>
@@ -164,6 +180,7 @@ export default function PlanScreen() {
             </View>
             <Ionicons color={colors.accentDeep} name="checkmark-done" size={24} />
           </View>
+          )}
 
           {suggestions.map((suggestion, index) => {
             const isChosen = chosen === suggestion.id;
@@ -228,9 +245,11 @@ export default function PlanScreen() {
             );
           })}
 
-          <Text style={styles.catalogNote}>
-            {t.plan.catalogNote}
-          </Text>
+          {dayIsDone ? null : (
+            <Text style={styles.catalogNote}>
+              {t.plan.catalogNote}
+            </Text>
+          )}
 
           {hasLoggedScan && params.fromScan !== '1' && subscriptionStatus !== 'active' ? (
             <Pressable accessibilityRole="button" onPress={() => router.push('/paywall')} style={styles.proBanner}>
@@ -279,6 +298,9 @@ const styles = StyleSheet.create({
   contextDetail: { color: colors.muted, fontSize: 13 },
   chevron: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   chevronActive: { backgroundColor: colors.accent },
+  dayDone: { alignItems: 'center', gap: 12 },
+  dayDoneTitle: { color: colors.text, fontSize: 19, fontWeight: '700' },
+  dayDoneText: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center' },
   results: { gap: 13 },
   resultsHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
   resultsTitle: { color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
