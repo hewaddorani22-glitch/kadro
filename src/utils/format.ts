@@ -1,3 +1,4 @@
+import type { MealPhotoPlaceholder } from '@/components/ui';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { getDictionary, getLocale } from '@/i18n/active';
@@ -79,4 +80,18 @@ export function formatDateParts(
   } catch {
     return date.toISOString().slice(0, 10);
   }
+}
+
+/**
+ * Which frame the confirm and result screens show when there is no photo.
+ *
+ * This used to be inlined at three call sites with a chain that ended in
+ * 'demo', so a food chosen from search was presented as the example meal,
+ * stock photo and all.
+ */
+export function mealPhotoPlaceholder(scanMode: string): MealPhotoPlaceholder {
+  if (scanMode === 'barcode') return 'barcode';
+  if (scanMode === 'description') return 'description';
+  if (scanMode === 'search') return 'search';
+  return 'demo';
 }

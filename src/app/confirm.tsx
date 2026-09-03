@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { mealPhotoPlaceholder } from '@/utils/format';
 import { Card, ConfidenceBadge, MealPhoto, PrimaryButton, Screen } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -39,7 +40,7 @@ export default function ConfirmScreen() {
         <View style={styles.iconButtonSpacer} />
       </View>
 
-      <MealPhoto height={230} placeholder={scanMode === 'barcode' ? 'barcode' : scanMode === 'description' ? 'description' : 'demo'} uri={photoUri} />
+      <MealPhoto height={230} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
 
       <View style={styles.heading}>
         <View style={styles.headingRow}>

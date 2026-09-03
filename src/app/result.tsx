@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
+import { mealPhotoPlaceholder } from '@/utils/format';
 import { Card, ConfidenceBadge, Eyebrow, MealPhoto, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -43,6 +44,7 @@ export default function ResultScreen() {
   const remainingProgress = useRef(new Animated.Value(0)).current;
   const recommendationReveal = useRef(new Animated.Value(0)).current;
   const savedOnArrival = useRef(false);
+  const revealDone = useRef(false);
   const [offerReminder, setOfferReminder] = useState(false);
   const [reminderBusy, setReminderBusy] = useState(false);
   const { locale, t } = useLanguage();
@@ -57,12 +59,24 @@ export default function ResultScreen() {
     });
   }, [isCurrentScanLogged, logScannedMeal]);
 
+  // The numbers the reveal counts towards, read through refs so that logging
+  // the meal — which changes `projected` a moment after arrival — cannot tear
+  // the animation down and restart it from zero. It used to take 2.4 seconds
+  // to show the figure, and sometimes never got there at all.
+  const targetsRef = useRef({ calories: 0, startingRemaining: 0, projected: 0 });
+  targetsRef.current = {
+    calories: scannedMeal.calories,
+    startingRemaining,
+    projected: projected.calories,
+  };
+
   useEffect(() => {
     const mealListener = mealProgress.addListener(({ value }) => {
-      setDisplayedCalories(Math.round(scannedMeal.calories * value));
+      setDisplayedCalories(Math.round(targetsRef.current.calories * value));
     });
     const remainingListener = remainingProgress.addListener(({ value }) => {
-      setDisplayedRemaining(Math.round(startingRemaining + (projected.calories - startingRemaining) * value));
+      const { startingRemaining: from, projected: to } = targetsRef.current;
+      setDisplayedRemaining(Math.round(from + (to - from) * value));
     });
     let cancelled = false;
 
@@ -72,6 +86,7 @@ export default function ResultScreen() {
         mealProgress.setValue(1);
         remainingProgress.setValue(1);
         recommendationReveal.setValue(1);
+        revealDone.current = true;
         return;
       }
 
@@ -95,7 +110,9 @@ export default function ResultScreen() {
           toValue: 1,
           useNativeDriver: false,
         }),
-      ]).start();
+      ]).start(() => {
+        revealDone.current = true;
+      });
     });
 
     return () => {
@@ -106,7 +123,18 @@ export default function ResultScreen() {
       remainingProgress.stopAnimation();
       recommendationReveal.stopAnimation();
     };
-  }, [mealProgress, projected.calories, recommendationReveal, remainingProgress, scannedMeal.calories, startingRemaining]);
+    // Deliberately mount-only: these are stable Animated refs, and every other
+    // input is read live from targetsRef.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mealProgress, recommendationReveal, remainingProgress]);
+
+  // Once the reveal has finished the listener stops firing, so a later
+  // correction to the meal would keep showing the old figure.
+  useEffect(() => {
+    if (!revealDone.current) return;
+    setDisplayedCalories(scannedMeal.calories);
+    setDisplayedRemaining(projected.calories);
+  }, [projected.calories, scannedMeal.calories]);
 
   // The single best moment to ask: a meal just landed, the day visibly moved,
   // and nothing has gone wrong yet. Asked once ever, never repeated.
@@ -171,7 +199,7 @@ export default function ResultScreen() {
         </Pressable>
       </View>
 
-      <MealPhoto height={270} placeholder={scanMode === 'barcode' ? 'barcode' : scanMode === 'description' ? 'description' : 'demo'} uri={photoUri} />
+      <MealPhoto height={270} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
 
       <View style={styles.resultHeading}>
         <View style={styles.titleRow}>

@@ -195,18 +195,27 @@ export function ConfidenceBadge({ uncertain = false }: { uncertain?: boolean }) 
   );
 }
 
-export function MealPhoto({ uri, height = 250, placeholder = 'demo', style }: { uri?: string | null; height?: number; placeholder?: 'demo' | 'description' | 'barcode'; style?: StyleProp<ViewStyle> }) {
+export type MealPhotoPlaceholder = 'demo' | 'description' | 'barcode' | 'search';
+
+export function MealPhoto({ uri, height = 250, placeholder = 'demo', style }: { uri?: string | null; height?: number; placeholder?: MealPhotoPlaceholder; style?: StyleProp<ViewStyle> }) {
   const { t } = useLanguage();
   const source: ImageSourcePropType = uri ? { uri } : require('../../assets/meal-bowl.jpg');
   if (!uri && placeholder !== 'demo') {
-    const barcode = placeholder === 'barcode';
+    // Anything that is not a photo gets its own frame. Falling back to the
+    // stock bowl labelled EXAMPLE told the user their searched food was a
+    // demo — and every input that is not the camera reaches this branch.
+    const copy = {
+      barcode: { icon: 'barcode-outline', alt: t.confirm.photoBarcodeAlt, title: t.confirm.photoBarcodeTitle, text: t.confirm.photoBarcodeText },
+      description: { icon: 'create-outline', alt: t.confirm.photoDescribeAlt, title: t.confirm.photoDescribeTitle, text: t.confirm.photoDescribeText },
+      search: { icon: 'search-outline', alt: t.confirm.photoSearchAlt, title: t.confirm.photoSearchTitle, text: t.confirm.photoSearchText },
+    }[placeholder];
     return (
-      <View accessibilityLabel={barcode ? t.confirm.photoBarcodeAlt : t.confirm.photoDescribeAlt} accessible style={[styles.photoFrame, styles.photoPlaceholder, { height }, style]}>
+      <View accessibilityLabel={copy.alt} accessible style={[styles.photoFrame, styles.photoPlaceholder, { height }, style]}>
         <View style={styles.photoPlaceholderIcon}>
-          <Ionicons color={colors.text} name={barcode ? 'barcode-outline' : 'create-outline'} size={36} />
+          <Ionicons color={colors.text} name={copy.icon as keyof typeof Ionicons.glyphMap} size={36} />
         </View>
-        <Text style={styles.photoPlaceholderTitle}>{barcode ? t.confirm.photoBarcodeTitle : t.confirm.photoDescribeTitle}</Text>
-        <Text style={styles.photoPlaceholderText}>{barcode ? t.confirm.photoBarcodeText : t.confirm.photoDescribeText}</Text>
+        <Text style={styles.photoPlaceholderTitle}>{copy.title}</Text>
+        <Text style={styles.photoPlaceholderText}>{copy.text}</Text>
       </View>
     );
   }

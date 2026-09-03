@@ -247,6 +247,9 @@ export const en: typeof de = {
     errProviderBody: 'Try again or describe the meal briefly in your own words.',
   },
   confirm: {
+    photoSearchTitle: 'From the database',
+    photoSearchText: 'Reference values per 100 g. Adjust the amount below.',
+    photoSearchAlt: 'Chosen from the food database, no photo',
     title: 'Confirm meal',
     heading: 'Does this look right?',
     subtitle: 'Confirm the ingredients and pick the portion size with one tap.',

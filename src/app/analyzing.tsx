@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { mealPhotoPlaceholder } from '@/utils/format';
 import { MealPhoto, PrimaryButton } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -101,7 +102,7 @@ export default function AnalyzingScreen() {
         style={styles.scroll}
       >
         <View style={styles.photoWrap}>
-          <MealPhoto height={photoHeight} placeholder={scanMode === 'barcode' ? 'barcode' : scanMode === 'description' ? 'description' : 'demo'} uri={photoUri} />
+          <MealPhoto height={photoHeight} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
           {!failed ? <View style={styles.scanLine} /> : null}
           <View style={styles.analyzingPill}>
             <View style={[styles.liveDot, failed && styles.warningDot]} />

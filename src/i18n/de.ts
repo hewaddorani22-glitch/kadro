@@ -248,6 +248,9 @@ export const de = {
     errProviderBody: 'Versuch es noch einmal oder beschreibe die Mahlzeit kurz in eigenen Worten.',
   },
   confirm: {
+    photoSearchTitle: 'Aus der Datenbank',
+    photoSearchText: 'Geprüfte Nährwerte pro 100 g. Passe die Menge unten an.',
+    photoSearchAlt: 'Aus der Lebensmitteldatenbank ausgewählt, kein Foto',
     title: 'Mahlzeit bestätigen',
     heading: 'Passt das?',
     subtitle: 'Bestätige die Zutaten und wähle mit einem Tap die passende Portionsgröße.',
