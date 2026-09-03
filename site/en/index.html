@@ -1,145 +1,37 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" href="../styles.css">
-<link rel="icon" href="../icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="../icon.svg">
-<meta name="theme-color" content="#F5F3EE">
-<title>Kandro — How your day is set up</title>
-<meta name="description" content="Kandro photographs your meal, recalculates the rest of the day and tells you what the next meal should look like.">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Kandro">
-<meta property="og:title" content="Kandro — How your day is set up">
-<meta property="og:description" content="Not a calorie counter, a decision system. After every meal your day is set up again.">
-<meta property="og:url" content="https://getkandro.com/en/">
-<meta property="og:image" content="https://getkandro.com/social.png">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Kandro — How your day is set up">
-<meta name="twitter:card" content="summary_large_image">
-<meta property="og:locale" content="en_GB">
-<link rel="canonical" href="https://getkandro.com/en/">
-<link rel="alternate" hreflang="en" href="https://getkandro.com/en/">
-<link rel="alternate" hreflang="de" href="https://getkandro.com/">
-<link rel="alternate" hreflang="x-default" href="https://getkandro.com/">
-<script>
-/* Records a choice, and nothing else.
- *
- * This page never redirects: it is the English address, and someone who asked
- * for it has already answered the question. It only has to remember that
- * answer, or the next visit to the root would send a reader who chose English
- * back to German for the rest of their life.
- */
-(function () {
-  try {
-    var asked = new URLSearchParams(location.search).get('lang');
-    if (asked === 'de' || asked === 'en') localStorage.setItem('kandro-lang', asked);
-  } catch (error) {
-    /* Private mode; the reader is on the page they asked for either way. */
-  }
-})();
-</script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../styles.css"><link rel="icon" href="../icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="../icon.svg"><meta name="theme-color" content="#14150F">
+<title>Kandro — Build muscle. Get lean. Stop guessing.</title>
+<meta name="description" content="Kandro shows what fits after every meal — protein, calories and real meal ideas that adapt to your day.">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Kandro"><meta property="og:title" content="Kandro — Build muscle. Get lean. Stop guessing."><meta property="og:description" content="Log what you ate. Kandro tells you what to eat next for your goal."><meta property="og:url" content="https://getkandro.com/en/"><meta property="og:image" content="https://getkandro.com/social.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="Kandro — your next meal, worked out"><meta name="twitter:card" content="summary_large_image"><meta property="og:locale" content="en_US">
+<link rel="canonical" href="https://getkandro.com/en/"><link rel="alternate" hreflang="en" href="https://getkandro.com/en/"><link rel="alternate" hreflang="de" href="https://getkandro.com/"><link rel="alternate" hreflang="x-default" href="https://getkandro.com/">
+<script>(function () { try { var asked = new URLSearchParams(location.search).get('lang'); if (asked === 'de' || asked === 'en') localStorage.setItem('kandro-lang', asked); } catch (error) {} })();</script>
 </head>
-<body>
-<header class="site"><div class="wrap wide"><a class="brand" href="./"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="support/">Support</a><a href="privacy/">Privacy</a><a href="terms/">Terms</a><a href="sources/">Data sources</a><a href="../impressum/">Imprint</a><a class="lang" href="../?lang=de" hreflang="de">Deutsch</a></nav></div></header>
-<main><div class="wrap wide">
+<body class="landing">
+<header class="site"><div class="wrap nav-wrap"><a class="brand" href="./" aria-label="Kandro home"><svg width="34" height="34" viewBox="0 0 64 64" aria-hidden="true"><path d="M47.56 16.44A22 22 0 1 1 16.44 16.44" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site" aria-label="Main navigation"><a href="#how-it-works">How it works</a><a href="#why-kandro">Why Kandro</a><a data-discord href="#" hidden rel="noopener" target="_blank">Discord</a><a class="lang" href="../?lang=de" hreflang="de">DE</a></nav></div></header>
+<main>
+<section class="hero-section"><div class="hero-glow" aria-hidden="true"></div><div class="wrap hero-grid">
+  <div class="hero-copy reveal"><div class="status"><span></span>Early access · iPhone</div><h1>Build muscle.<br><em>Get lean.</em><br>Stop guessing.</h1><p class="lead">Kandro turns every meal into your next right move — with protein, calories and meal ideas that adapt to the day you actually have.</p><div class="signup-block hero-signup"><form class="signup" data-waitlist hidden><label class="sr-only" for="waitlist-email">Email address</label><input autocomplete="email" id="waitlist-email" inputmode="email" name="email" placeholder="you@email.com" required type="email"><button type="submit">Get early access <span aria-hidden="true">→</span></button></form><p class="form-status" data-waitlist-status aria-live="polite"></p></div><div class="hero-actions"><a class="text-link" data-discord href="#" hidden rel="noopener" target="_blank"><span class="discord-dot" aria-hidden="true"></span>Or join the Kandro community on Discord</a></div><p class="microcopy">Free to join · No spam · Unsubscribe anytime</p></div>
+  <div class="hero-visual reveal delay-1" aria-label="Kandro day overview"><div class="visual-orbit orbit-one">140 g <small>protein target</small></div><div class="visual-orbit orbit-two">2,095 <small>kcal left</small></div><div class="app-shot hero-shot"><img src="../assets/protein-day.webp" width="540" height="800" alt="Kandro showing calories, protein and the next meal" fetchpriority="high"></div><div class="goal-chip"><span>YOUR DAY</span><strong>Still on track</strong></div></div>
+</div><div class="wrap outcome-strip reveal"><div><strong>Hit your protein</strong><span>without catching up at bedtime</span></div><div><strong>Control calories</strong><span>without weighing every ingredient</span></div><div><strong>Know the next meal</strong><span>without rewriting the plan</span></div></div></section>
 
-  <section class="hero">
-    <div>
-      <p class="status">Coming soon to the App Store</p>
-      <h1>How your day is set up.</h1>
-      <p class="lead">Kandro is not a calorie counter, it is a decision system. After every meal the app recalculates the rest of your day and tells you straight away what the next plate should look like.</p>
-    <section class="join" id="waitlist">
-      <h2>Be there before it starts</h2>
-      <p>Kandro is in review with Apple. Sign up and you will be the first to know when it reaches the App Store — with something in it for the early ones.</p>
-      <a class="cta discord" data-discord href="#" hidden rel="noopener" target="_blank">Join the Discord</a>
-      <form class="signup" data-waitlist hidden>
-        <label class="sr-only" for="waitlist-email">Email address</label>
-        <input autocomplete="email" id="waitlist-email" inputmode="email" name="email" placeholder="you@mail.com" required type="email">
-        <button type="submit">Notify me</button>
-      </form>
-      <p class="form-status" data-waitlist-status></p>
-      <p class="small">Double opt-in: you get a mail with a link, and only the click adds you. For the launch notice only, unsubscribe any time. More in the <a href="privacy/">privacy policy</a>.</p>
-    </section>
-      <p class="small">Photo, description or barcode. Three meals free, then you decide.</p>
-    </div>
+<section class="dark-band" id="why-kandro"><div class="wrap dark-grid"><div class="dark-copy reveal"><p class="eyebrow light">Your goal stays. Your day moves.</p><h2>Progress does not need a perfect day.</h2><p>A big lunch is not failure. Kandro recalculates what is left and turns it into a dinner that genuinely fits.</p></div><div class="score-stack reveal delay-1" aria-label="Example of a recalculated day"><div class="score-card"><span>After lunch</span><strong>1,040 kcal</strong><small>still available</small></div><div class="score-card accent"><span>Next focus</span><strong>45 g protein</strong><small>with 3 matching meals</small></div></div></div></section>
 
-    <div>
-      <div class="phone" role="img" aria-label="The Today screen of Kandro: 1,240 kilocalories left of 1,950, with protein, carbohydrate and fat readouts and a suggestion for the next meal.">
-        <div class="phone-screen">
-          <div class="phone-top"><span class="phone-date">Tue, 1 September</span><span class="phone-avatar">H</span></div>
-          <p class="phone-greet">Good afternoon, Hewad</p>
+<section class="story-section" id="how-it-works"><div class="wrap section-heading reveal"><p class="eyebrow">From eating to the next move</p><h2>Track less.<br>Decide better.</h2><p>No fixed menu that collapses after one unplanned meal. Kandro works with the day you actually have.</p></div><div class="wrap story-list">
+  <article class="story reveal"><div class="story-copy"><span class="story-number">01</span><p class="eyebrow">As fast as you eat</p><h3>“Two bananas.” Not “252 grams.”</h3><p>Use a photo, barcode, search or a short description. Enter pieces, portions or grams — whichever you actually know.</p><ul class="proof-list"><li>Four ways to log</li><li>Correct the portion before saving</li><li>Search and barcode without an AI charge</li></ul></div><div class="story-media"><img src="../assets/log-food.webp" width="540" height="800" loading="lazy" decoding="async" alt="Kandro food search with simple portion controls"></div></article>
+  <article class="story reverse reveal"><div class="story-copy"><span class="story-number">02</span><p class="eyebrow">Protein built around your goal</p><h3>Do not just see what happened. Know what is missing.</h3><p>Kandro works out your daily range from your goal, body and activity — then keeps protein, carbs and fat in view until bedtime.</p><div class="inline-metrics"><span><b>86 g</b> hit</span><span><b>54 g</b> to go</span></div></div><div class="story-media"><img src="../assets/protein-day.webp" width="540" height="800" loading="lazy" decoding="async" alt="Daily overview with protein, calories and the next target"></div></article>
+  <article class="story reveal"><div class="story-copy"><span class="story-number">03</span><p class="eyebrow">It re-plans. You don't.</p><h3>Big lunch? Dinner already knows.</h3><p>Every meal changes the rest of the day. Get three concrete options that match your remaining calories and protein.</p><ul class="proof-list"><li>At home, from the shop or on the go</li><li>Matched to your time and preferences</li><li>No punishment — just a new next move</li></ul></div><div class="story-media"><img src="../assets/adaptive-plan.webp" width="540" height="760" loading="lazy" decoding="async" alt="Three recalculated meal options in Kandro"></div></article>
+  <article class="story reverse reveal"><div class="story-copy"><span class="story-number">04</span><p class="eyebrow">From target to plate</p><h3>It does not stop at “eat 45 g protein.”</h3><p>Every suggestion opens into a cookable recipe with ingredients, weights and method. Its nutrition is the sum of those actual ingredients.</p><p class="data-note">Reference data from USDA FoodData Central, Open Food Facts and reviewed German dishes.</p></div><div class="story-media"><img src="../assets/recipe.webp" width="540" height="800" loading="lazy" decoding="async" alt="Kandro recipe with ingredients, weights and method"></div></article>
+</div></section>
 
-          <div class="ring-card">
-            <div class="label">Your day so far</div>
-            <div class="state">Still on plan</div>
-            <div class="ring">
-              <svg width="150" height="150" viewBox="0 0 150 150" aria-hidden="true">
-                <circle cx="75" cy="75" r="66" fill="none" stroke="#F0EFE9" stroke-width="12"/>
-                <circle cx="75" cy="75" r="66" fill="none" stroke="#3F5233" stroke-width="12"
-                        stroke-linecap="round" stroke-dasharray="414.7"
-                        stroke-dashoffset="263.7" transform="rotate(-90 75 75)"/>
-              </svg>
-              <div class="ring-inner">
-                <div class="ring-value">1,240</div>
-                <div class="ring-unit">kcal left</div>
-                <div class="ring-pill">● On plan</div>
-              </div>
-            </div>
-            <div class="ring-foot">710 eaten · 1,950 target</div>
-          </div>
+<section class="not-another"><div class="wrap compare-grid"><div class="reveal"><p class="eyebrow">Not another calorie counter</p><h2>The number is not the goal. The next good move is.</h2></div><div class="comparison reveal delay-1"><div><span>Other trackers</span><p>“You have 1,040 calories left.”</p></div><div class="comparison-good"><span>Kandro</span><p>“Dinner can be 500–600 calories with 40–50 g protein. Here are three dishes.”</p></div></div></div></section>
+<section class="trust-section"><div class="wrap trust-grid"><div class="reveal"><p class="eyebrow">Built honestly</p><h2>An estimate where it is estimated. Control where it counts.</h2></div><div class="trust-points reveal delay-1"><p><strong>You confirm first.</strong> Change detected ingredients and portions before anything is saved.</p><p><strong>Your photo does not stay.</strong> The original is discarded after analysis.</p><p><strong>No account to start.</strong> You only need an email when you want to secure your history.</p></div></div></section>
 
-          <div class="macros">
-            <div class="macro"><div class="k">Protein</div><div class="v">48</div><div class="t">of 140g</div><div class="bar"><i style="width:34%"></i></div></div>
-            <div class="macro"><div class="k">Carbs</div><div class="v">76</div><div class="t">of 215g</div><div class="bar"><i style="width:35%"></i></div></div>
-            <div class="macro"><div class="k">Fat</div><div class="v">24</div><div class="t">of 60g</div><div class="bar"><i style="width:40%"></i></div></div>
-          </div>
-
-          <div class="next">
-            <div class="k">Your next move</div>
-            <div class="v">Next meal</div>
-            <div class="r">~420–520 kcal · ~40–50 g protein</div>
-          </div>
-        </div>
-      </div>
-      <p class="caption">The day so far, after one meal has been logged.</p>
-    </div>
-  </section>
-
-  <h2>How it works</h2>
-  <ol class="steps">
-    <li class="step"><span class="n">1</span><div><h3>Log the meal</h3><p>Photo, a short description or a barcode. Whatever is fastest for you right now.</p></div></li>
-    <li class="step"><span class="n">2</span><div><h3>Confirm the ingredients</h3><p>You see what was detected and fix the portion and the ingredients with one tap.</p></div></li>
-    <li class="step"><span class="n">3</span><div><h3>The day sets itself up again</h3><p>Calories and protein for the rest of the day are recalculated — with three concrete suggestions for home, the shop or eating out.</p></div></li>
-  </ol>
-
-  <h2>Honest numbers, not false precision</h2>
-  <p>Nutrition values from a photo are estimates, and Kandro says so. Values carry a tilde and a confidence level, uncertain ingredients are flagged, and you correct every portion before anything is saved.</p>
-  <div class="card tint">
-    <p style="margin:0"><strong>Where the numbers come from:</strong> for typical German dishes Kandro uses reviewed reference values from the Bundeslebensmittelschlüssel 4.0 of the Max Rubner-Institut. Individual ingredients are matched against USDA FoodData Central, packaged products through Open Food Facts.</p>
-  </div>
-  <p class="small">What a photo fundamentally cannot see is oil, butter and sauce. That is exactly why correcting a portion is one tap and not a hidden setting.</p>
-
-  <h2>Your data stays yours</h2>
-  <ul class="plain">
-    <li>The original photo is discarded after the analysis and never stored.</li>
-    <li>No account needed to start. You only need an email once you want to secure your history.</li>
-    <li>You delete your account and all data directly in the app, without emailing anyone.</li>
-    <li>Anonymous usage analytics are off by default.</li>
-  </ul>
-  <p class="small">Details in the <a href="privacy/">privacy notice</a>.</p>
-
-  <h2>What Kandro is not</h2>
-  <p>Kandro is a general wellness and planning tool. It does not diagnose, does not treat any condition and does not replace medical or dietetic advice. If you have health complaints, are pregnant, have an eating disorder or follow a medically prescribed diet, please seek qualified advice.</p>
-
-  <h2>Questions?</h2>
-  <p>Write to me directly: <a href="mailto:hewaddorani22@gmail.com">hewaddorani22@gmail.com</a></p>
-
-</div></main>
-<script src="../community.js"></script>
-<script src="../waitlist.js"></script>
-<footer class="site"><div class="wrap wide"><span class="small">© 2026 Hewad Dorani · Essen</span><span class="small"><a href="support/">Support</a> · <a href="privacy/">Privacy</a> · <a href="terms/">Terms</a> · <a href="sources/">Data sources</a> · <a href="../impressum/">Imprint</a></span></div></footer>
-</body>
-</html>
+<section class="final-cta" id="waitlist"><div class="final-orb" aria-hidden="true"></div><div class="wrap final-inner reveal"><p class="eyebrow light">Coming to the App Store</p><h2>Your next bit of progress starts with your next meal.</h2><p>Join the list and be the first to know when Kandro is ready.</p><div class="signup-block"><form class="signup signup-dark" data-waitlist hidden><label class="sr-only" for="waitlist-email-bottom">Email address</label><input autocomplete="email" id="waitlist-email-bottom" inputmode="email" name="email" placeholder="you@email.com" required type="email"><button type="submit">Get early access <span aria-hidden="true">→</span></button></form><p class="form-status" data-waitlist-status aria-live="polite"></p></div><a class="discord-button" data-discord href="#" hidden rel="noopener" target="_blank">Join the Discord</a><p class="consent">Double opt-in: only the click in the confirmation email adds you. Launch notice only, unsubscribe anytime. <a href="privacy/">Privacy</a></p></div></section>
+<section class="wellness-note"><div class="wrap"><p>Kandro is a general wellness and planning tool, not medical or dietetic advice.</p></div></section>
+</main>
+<footer class="site"><div class="wrap footer-grid"><a class="brand footer-brand" href="./"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M47.56 16.44A22 22 0 1 1 16.44 16.44" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><div class="footer-links"><a href="support/">Support</a><a href="privacy/">Privacy</a><a href="terms/">Terms</a><a href="sources/">Data sources</a><a href="../impressum/">Imprint</a></div><span class="small">© 2026 Hewad Dorani · Essen</span></div></footer>
+<script src="../community.js"></script><script src="../waitlist.js"></script><script src="../experience.js"></script>
+</body></html>

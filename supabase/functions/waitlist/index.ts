@@ -118,7 +118,10 @@ async function handle(request: Request): Promise<Response> {
     const body = await request.json().catch(() => null);
     const email = normalizeEmail((body as { email?: unknown } | null)?.email);
     if (!email) return json({ code: 'invalid_email' }, 400);
-    const language = (body as { language?: string } | null)?.language === 'en' ? 'en' : 'de';
+    // Unknown or missing language defaults to English. The website sends an
+    // explicit `de` only from the German document, so an integration that
+    // forgets the field can never surprise an international reader in German.
+    const language = (body as { language?: string } | null)?.language === 'de' ? 'de' : 'en';
     const source = String((body as { source?: unknown } | null)?.source ?? '').slice(0, 40) || null;
 
     const ipHash = await hashIp(request);

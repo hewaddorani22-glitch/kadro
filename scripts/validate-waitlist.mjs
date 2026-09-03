@@ -72,20 +72,21 @@ for (const [language, file, needles] of [
 const script = read('site/waitlist.js');
 // Shown either way, but inert until an address can actually be confirmed: a
 // blank gap where a sign-up should be reads as a broken page.
-assert.match(script, /input\.disabled = true;\s*\n\s*button\.disabled = true;/,
+assert.match(script, /control\.input\.disabled = true;\s*\n\s*control\.button\.disabled = true;/,
   'the form stays live when the endpoint cannot send a confirmation');
 assert.ok(!/payload\.accepting\) form\.hidden = false/.test(script),
   'the form is only drawn when accepting, so it is simply missing beforehand');
 // The status line lives beside the form, so that it can still speak while the
 // form is hidden. Looking for it inside the form found nothing, and every
 // message the script tried to show threw instead.
-assert.match(script, /var status = document\.querySelector\('\[data-waitlist-status\]'\)/,
-  'the status line is looked up inside the form it sits beside');
+assert.match(script, /var status = block\.querySelector\('\[data-waitlist-status\]'\)/,
+  'each form cannot find the status line inside its own signup block');
 for (const page of ['site/index.html', 'site/en/index.html']) {
   const html = read(page);
-  const form = html.slice(html.indexOf('<form class="signup"'), html.indexOf('</form>'));
-  if (form.includes('data-waitlist-status')) {
-    problems.push(`${page}: the status line is inside the form, so it disappears with it`);
+  for (const form of html.matchAll(/<form class="signup[^>]*>[\s\S]*?<\/form>/g)) {
+    if (form[0].includes('data-waitlist-status')) {
+      problems.push(`${page}: a status line is inside the form, so it disappears with it`);
+    }
   }
 }
 for (const page of ['site/index.html', 'site/en/index.html']) {
@@ -96,6 +97,10 @@ for (const page of ['site/index.html', 'site/en/index.html']) {
   if (!/data-discord/.test(html)) problems.push(`${page}: no Discord link`);
   if (!/privacy|Datenschutz/.test(html)) problems.push(`${page}: the form does not link the privacy policy`);
 }
+assert.match(fn, /language[^\n]*=== 'de' \? 'de' : 'en'/,
+  'missing language no longer defaults safely to English');
+assert.match(script, /document\.documentElement\.lang === 'de' \? 'de' : 'en'/,
+  'the website does not derive the email language from the delivered document');
 // The form and the Discord button are hidden with the hidden attribute, and
 // both carry a display rule that would otherwise beat the browser's own rule
 // for it — leaving them on screen while the script believed they were gone.

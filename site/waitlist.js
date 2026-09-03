@@ -1,94 +1,79 @@
-/*
- * Waitlist sign-up for the landing page.
- *
- * The form is drawn only after the endpoint says it can actually send a
- * confirmation mail: without a sender there is no way to complete a double
- * opt-in, and an address collected that way is one you are never allowed to
- * write to. Discord needs none of this and is always offered.
- */
 (function () {
   var ENDPOINT = 'https://omtmxqzwxvthycyfkggv.supabase.co/functions/v1/waitlist';
-  var form = document.querySelector('[data-waitlist]');
-  if (!form) return;
+  var forms = document.querySelectorAll('[data-waitlist]');
+  if (!forms.length) return;
 
-  var language = document.documentElement.lang === 'en' ? 'en' : 'de';
-  // From the document, not the form: the status line sits beside the form so
-  // it still has somewhere to say "sign-ups open shortly" while the form
-  // itself is hidden. Scoping the lookup to the form found nothing, and every
-  // message the script tried to show threw instead.
-  var status = document.querySelector('[data-waitlist-status]');
-  var input = form.querySelector('input[type=email]');
-  var button = form.querySelector('button');
-  var say = function (message, tone) {
-    status.textContent = message;
-    status.className = 'form-status' + (tone ? ' ' + tone : '');
-  };
-
-  var text = language === 'en'
+  var language = document.documentElement.lang === 'de' ? 'de' : 'en';
+  var text = language === 'de'
     ? {
-      sending: 'Sending…',
-      sent: 'Check your inbox — one click and you are on the list.',
-      invalid: 'That does not look like an email address.',
-      many: 'That is a lot of sign-ups from one connection. Try again later.',
-      failed: 'That did not work. Try again in a moment.',
-      closed: 'Sign-ups open shortly.',
-      closedDiscord: 'Sign-ups open shortly. Join the Discord in the meantime.',
+      sending: 'Wird gesendet …', sent: 'Fast geschafft — bestätige jetzt den Link in deinem Postfach.',
+      invalid: 'Bitte prüfe deine E-Mail-Adresse.', many: 'Zu viele Versuche aus diesem Netzwerk. Bitte später erneut versuchen.',
+      failed: 'Das hat gerade nicht geklappt. Versuch es bitte gleich noch einmal.', closed: 'Die Anmeldung öffnet in Kürze.',
+      closedDiscord: 'Die Anmeldung öffnet in Kürze. Komm solange auf den Discord.'
     }
     : {
-      sending: 'Wird gesendet …',
-      sent: 'Schau in dein Postfach – ein Klick, und du stehst auf der Liste.',
-      invalid: 'Das sieht nicht nach einer E-Mail-Adresse aus.',
-      many: 'Das sind viele Anmeldungen aus einem Anschluss. Versuch es später.',
-      failed: 'Das hat nicht geklappt. Versuch es gleich noch einmal.',
-      closed: 'Die Anmeldung öffnet in Kürze.',
-      closedDiscord: 'Die Anmeldung öffnet in Kürze. Komm solange auf den Discord.',
+      sending: 'Sending…', sent: 'Almost there — confirm the link in your inbox.',
+      invalid: 'Please check your email address.', many: 'Too many attempts from this network. Please try again later.',
+      failed: 'That did not work just now. Please try again in a moment.', closed: 'Sign-ups open shortly.',
+      closedDiscord: 'Sign-ups open shortly. Join the Discord in the meantime.'
     };
 
-  // Only points at Discord when there is a Discord button to point at: the
-  // invite and the sender are configured independently, and a sentence sending
-  // people to a button that is not there is worse than a shorter sentence.
-  var closedMessage = function () {
-    return window.KANDRO_DISCORD ? text.closedDiscord : text.closed;
+  var closedMessage = function () { return window.KANDRO_DISCORD ? text.closedDiscord : text.closed; };
+
+  var controls = [];
+  for (var index = 0; index < forms.length; index += 1) {
+    var form = forms[index];
+    var block = form.closest('.signup-block') || form.parentElement;
+    var status = block.querySelector('[data-waitlist-status]');
+    var input = form.querySelector('input[type=email]');
+    var button = form.querySelector('button');
+    controls.push({ form: form, status: status, input: input, button: button });
+  }
+
+  var say = function (control, message, tone) {
+    control.status.textContent = message;
+    control.status.className = 'form-status' + (tone ? ' ' + tone : '');
   };
 
   fetch(ENDPOINT + '/status')
     .then(function (response) { return response.json(); })
     .then(function (payload) {
-      form.hidden = false;
-      if (payload && payload.accepting) return;
-      // Visible but inert: an empty space where a sign-up should be looks
-      // broken, and the reason it cannot take an address yet is worth saying.
-      input.disabled = true;
-      button.disabled = true;
-      say(closedMessage());
+      for (var index = 0; index < controls.length; index += 1) {
+        var control = controls[index];
+        control.form.hidden = false;
+        if (payload && payload.accepting) continue;
+        control.input.disabled = true;
+        control.button.disabled = true;
+        say(control, closedMessage());
+      }
     })
-    .catch(function () { /* Discord stays; the form simply does not appear. */ });
+    .catch(function () {});
 
-  form.addEventListener('submit', function (event) {
-    event.preventDefault();
-    button.disabled = true;
-    say(text.sending);
-    fetch(ENDPOINT + '/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: input.value,
-        language: language,
-        source: new URLSearchParams(location.search).get('ref') || 'site',
-      }),
-    })
-      .then(function (response) {
-        if (response.ok) {
-          form.reset();
-          say(text.sent, 'ok');
-          return;
-        }
-        if (response.status === 400) say(text.invalid, 'bad');
-        else if (response.status === 429) say(text.many, 'bad');
-        else if (response.status === 503) say(closedMessage());
-        else say(text.failed, 'bad');
+  var subscribe = function (control) {
+    control.form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      if (!control.form.reportValidity()) return;
+      control.button.disabled = true;
+      say(control, text.sending);
+      fetch(ENDPOINT + '/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: control.input.value,
+          language: language,
+          source: new URLSearchParams(location.search).get('ref') || 'site',
+        }),
       })
-      .catch(function () { say(text.failed, 'bad'); })
-      .finally(function () { button.disabled = false; });
-  });
+        .then(function (response) {
+          if (response.ok) { control.form.reset(); say(control, text.sent, 'ok'); return; }
+          if (response.status === 400) say(control, text.invalid, 'bad');
+          else if (response.status === 429) say(control, text.many, 'bad');
+          else if (response.status === 503) say(control, closedMessage());
+          else say(control, text.failed, 'bad');
+        })
+        .catch(function () { say(control, text.failed, 'bad'); })
+        .finally(function () { control.button.disabled = false; });
+    });
+  };
+  for (var item = 0; item < controls.length; item += 1) subscribe(controls[item]);
 })();
