@@ -70,8 +70,12 @@ for (const [language, file, needles] of [
 
 // --- The page cannot ask for what it cannot confirm ------------------------
 const script = read('site/waitlist.js');
-assert.match(script, /payload\.accepting\) form\.hidden = false/,
-  'the form is drawn before the endpoint says it can send anything');
+// Shown either way, but inert until an address can actually be confirmed: a
+// blank gap where a sign-up should be reads as a broken page.
+assert.match(script, /input\.disabled = true;\s*\n\s*button\.disabled = true;/,
+  'the form stays live when the endpoint cannot send a confirmation');
+assert.ok(!/payload\.accepting\) form\.hidden = false/.test(script),
+  'the form is only drawn when accepting, so it is simply missing beforehand');
 // The status line lives beside the form, so that it can still speak while the
 // form is hidden. Looking for it inside the form found nothing, and every
 // message the script tried to show threw instead.

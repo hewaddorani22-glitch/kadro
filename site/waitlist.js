@@ -54,8 +54,13 @@
   fetch(ENDPOINT + '/status')
     .then(function (response) { return response.json(); })
     .then(function (payload) {
-      if (payload && payload.accepting) form.hidden = false;
-      else say(closedMessage());
+      form.hidden = false;
+      if (payload && payload.accepting) return;
+      // Visible but inert: an empty space where a sign-up should be looks
+      // broken, and the reason it cannot take an address yet is worth saying.
+      input.disabled = true;
+      button.disabled = true;
+      say(closedMessage());
     })
     .catch(function () { /* Discord stays; the form simply does not appear. */ });
 
