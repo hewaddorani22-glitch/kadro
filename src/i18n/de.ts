@@ -86,6 +86,14 @@ export const de = {
     pendingHint: 'Tippen und in ein paar Sekunden fertig machen',
   },
   onboarding: {
+    targetStep: {
+      resting: 'Grundumsatz aus Alter, Größe und Gewicht',
+      activity: 'Mit deiner Aktivität hochgerechnet',
+      goal: 'Angepasst an dein Tempo',
+      floor: 'Auf die Sicherheitsgrenze angehoben',
+      cap: 'Auf die Obergrenze begrenzt',
+      protein: 'Protein auf dein Gewicht abgestimmt',
+    },
     saveChanges: 'Änderungen speichern',
     rateSubtitleGain: 'Langsamer heißt, dass mehr davon Muskel wird und weniger Fett.',
     sexTitle: 'Was passt biologisch zu dir?',

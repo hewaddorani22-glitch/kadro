@@ -134,6 +134,50 @@ export function calculateDailyTargets(profile: UserProfile): DailyTargets {
   return { calories, protein: proteinTop, carbs, fat: fatTop };
 }
 
+export type TargetStep = {
+  id: 'resting' | 'activity' | 'goal' | 'floor' | 'cap' | 'protein';
+  /** The number this step arrives at, already rounded for display. */
+  value: number;
+  unit: 'kcal' | 'g';
+};
+
+/**
+ * The same arithmetic as calculateDailyTargets, exposed step by step.
+ *
+ * The onboarding used to pause for a second and a half under the word
+ * "building", which is a loading bar pretending to be thought. These are the
+ * actual intermediate values, so the wait shows the calculation instead of
+ * standing in for it. It deliberately re-derives rather than instrumenting the
+ * real function: a display concern must not be able to change a target.
+ */
+export function explainTargets(profile: UserProfile): TargetStep[] {
+  // Derived from maintenanceCalories rather than restating Mifflin-St Jeor:
+  // a second copy of the formula is a second thing to keep in step, and the
+  // safety floor is calculated from the first one.
+  const maintenance = maintenanceCalories(profile);
+  const resting = maintenance / activityMultipliers[profile.activityLevel];
+  const offset = dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
+  const targets = calculateDailyTargets(profile);
+  // Rounded to ten like the target itself, so the chain ends on exactly the
+  // number the next screen shows rather than four kilocalories beside it.
+  const steps: TargetStep[] = [
+    { id: 'resting', value: roundTo(resting, 10), unit: 'kcal' },
+    { id: 'activity', value: roundTo(maintenance, 10), unit: 'kcal' },
+  ];
+  if (profile.goal !== 'maintain') {
+    steps.push({ id: 'goal', value: roundTo(maintenance + offset, 10), unit: 'kcal' });
+  }
+  // Only when a bound actually moved the number. Comparing against the
+  // unrounded value called a 4 kcal rounding "raised to the safety floor",
+  // and the 4000 kcal ceiling was not shown at all, so the chain ended on a
+  // number the next screen contradicted.
+  const requested = roundTo(maintenance + offset, 10);
+  if (targets.calories > requested) steps.push({ id: 'floor', value: targets.calories, unit: 'kcal' });
+  if (targets.calories < requested) steps.push({ id: 'cap', value: targets.calories, unit: 'kcal' });
+  steps.push({ id: 'protein', value: targets.protein, unit: 'g' });
+  return steps;
+}
+
 type GoalLabels = { goalLose: string; goalMaintain: string; goalGain: string };
 type ActivityLabels = { activityLow: string; activityLight: string; activityHigh: string };
 

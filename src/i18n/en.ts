@@ -85,6 +85,14 @@ export const en: typeof de = {
     pendingHint: 'Tap to finish it in a few seconds',
   },
   onboarding: {
+    targetStep: {
+      resting: 'Resting energy from age, height and weight',
+      activity: 'Scaled by how active you are',
+      goal: 'Adjusted for your pace',
+      floor: 'Raised to the safety floor',
+      cap: 'Limited to the upper bound',
+      protein: 'Protein matched to your weight',
+    },
     saveChanges: 'Save changes',
     rateSubtitleGain: 'Slower means more of it becomes muscle and less of it becomes fat.',
     sexTitle: 'What fits you biologically?',

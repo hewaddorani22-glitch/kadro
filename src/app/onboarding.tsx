@@ -9,8 +9,10 @@ import { KandroMark } from '@/components/KandroMark';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { colors, radii, spacing } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { BIOLOGICAL_SEXES, calculateDailyTargets, estimatedPace, isRateLimited, weeklyRateLabel } from '@/services/personalization';
+import { BIOLOGICAL_SEXES, calculateDailyTargets, estimatedPace, explainTargets, isRateLimited, weeklyRateLabel } from '@/services/personalization';
 import { trackEvent } from '@/services/telemetry';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { formatNumber } from '@/utils/format';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
 import {
@@ -34,6 +36,8 @@ const STEPS = ['goal', 'rate', 'name', 'sex', 'age', 'height', 'weight', 'activi
 // The same questions, minus the first-run theatre: someone changing from
 // losing weight to building muscle has already seen the plan being built.
 const EDIT_STEPS = STEPS.filter((id) => id !== 'building');
+/** Long enough to read the four or five lines, short enough not to be a wait. */
+const BUILDING_MS = 2600;
 type StepId = (typeof STEPS)[number];
 
 type Dict = ReturnType<typeof useLanguage>['t'];
@@ -178,7 +182,7 @@ export default function OnboardingScreen() {
   // loading bar: it never blocks and always resolves.
   useEffect(() => {
     if (step !== 'building') return;
-    const timer = setTimeout(() => setStepIndex((current) => Math.min(steps.length - 1, current + 1)), 1500);
+    const timer = setTimeout(() => setStepIndex((current) => Math.min(steps.length - 1, current + 1)), BUILDING_MS);
     return () => clearTimeout(timer);
   }, [step, steps]);
 
@@ -436,7 +440,7 @@ export default function OnboardingScreen() {
               </View>
             ) : null}
 
-            {step === 'building' ? <BuildingState goal={goalChoices[['lose', 'maintain', 'gain'].indexOf(goal)].label} /> : null}
+            {step === 'building' ? <BuildingState goal={goalChoices[['lose', 'maintain', 'gain'].indexOf(goal)].label} profile={draftProfile} /> : null}
             {step === 'plan' ? <StartingPlan limited={isRateLimited(draftProfile)} profile={draftProfile} targets={startingTargets} /> : null}
           </View>
         </ScrollView>
@@ -614,8 +618,30 @@ function StepperButton({ icon, label, onPressIn, onPressOut }: { icon: 'add' | '
   );
 }
 
-function BuildingState({ goal }: { goal: string }) {
-  const { t } = useLanguage();
+/**
+ * The wait, showing the actual arithmetic.
+ *
+ * This was a sparkle and a second and a half of nothing, which is a loading
+ * bar pretending to be thought. The lines are the real intermediate values —
+ * resting energy, the activity multiplier, the goal's deficit or surplus, the
+ * safety floor when it bites — arriving one at a time, so the pause is the
+ * calculation rather than a stand-in for it.
+ */
+function BuildingState({ goal, profile }: { goal: string; profile: UserProfile }) {
+  const { locale, t } = useLanguage();
+  const reduceMotion = useReducedMotion();
+  const steps = useMemo(() => explainTargets(profile), [profile]);
+  const [shown, setShown] = useState(reduceMotion ? steps.length : 0);
+
+  useEffect(() => {
+    if (reduceMotion) return;
+    // BUILDING_MS split across the lines, so the last one lands just before
+    // the screen moves on rather than after it.
+    const gap = Math.floor((BUILDING_MS - 250) / steps.length);
+    const timers = steps.map((_, index) => setTimeout(() => setShown(index + 1), gap * index + 120));
+    return () => timers.forEach(clearTimeout);
+  }, [reduceMotion, steps]);
+
   return (
     <View style={styles.buildingCard}>
       <View style={styles.orbit}>
@@ -625,6 +651,21 @@ function BuildingState({ goal }: { goal: string }) {
       </View>
       <Text style={styles.buildingTitle}>{t.onboarding.buildingHeadline}</Text>
       <Text style={styles.buildingText}>{t.onboarding.buildingBody(goal)}</Text>
+      <View
+        accessibilityLabel={t.onboarding.buildingHeadline}
+        accessibilityLiveRegion="polite"
+        style={styles.buildingSteps}
+      >
+        {steps.map((step, index) => (
+          <View key={step.id} style={[styles.buildingStep, index >= shown && styles.buildingStepHidden]}>
+            <Ionicons color={colors.accentDeep} name="checkmark-circle" size={17} />
+            <Text style={styles.buildingStepLabel}>{t.onboarding.targetStep[step.id]}</Text>
+            <Text style={styles.buildingStepValue}>
+              {formatNumber(step.value, locale)} {step.unit}
+            </Text>
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -722,6 +763,11 @@ const styles = StyleSheet.create({
   buildingCard: { alignItems: 'center', gap: spacing.md },
   orbit: { width: 100, height: 100, borderRadius: 50, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neutralSoft },
   orbitInner: { width: 62, height: 62, borderRadius: 31, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
+  buildingSteps: { alignSelf: 'stretch', marginTop: 16, gap: 9 },
+  buildingStep: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  buildingStepHidden: { opacity: 0 },
+  buildingStepLabel: { flex: 1, color: colors.muted, fontSize: 13 },
+  buildingStepValue: { color: colors.text, fontSize: 14, fontWeight: '700' },
   buildingTitle: { color: colors.text, fontSize: 20, fontWeight: '700', textAlign: 'center' },
   buildingText: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center' },
   startingCard: { borderRadius: radii.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 24, alignItems: 'center' },

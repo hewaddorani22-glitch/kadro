@@ -26,7 +26,8 @@ const source = (await readFile(resolve(projectRoot, 'src/services/personalizatio
 const { outputText } = ts.transpileModule(source, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 });
-const { calculateDailyTargets } = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(outputText)}`);
+const personalization = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(outputText)}`);
+const { calculateDailyTargets, explainTargets } = personalization;
 
 const ACTIVITY = { low: 1.2, light: 1.375, high: 1.6 };
 let checked = 0;
@@ -142,3 +143,49 @@ assert.equal(
 assert.match(raw, /export function maintenanceCalories/, 'the shared estimate must be named');
 
 console.log(`Validated ${checked} target profiles: macros always describe the calorie figure, protein stays under 40% of energy, and the estimate tracks weight, age and activity.`);
+
+// --- The onboarding animation must show the real arithmetic ----------------
+/**
+ * The building step shows intermediate values one at a time. If its last
+ * calorie line disagreed with the plan on the very next screen, the animation
+ * would be theatre — which is exactly what it replaced.
+ */
+{
+  let checked = 0;
+  const grid = [];
+  for (const weightKg of [45, 60, 75, 95, 130, 160])
+  for (const heightCm of [150, 170, 190])
+  for (const age of [18, 35, 60, 80])
+  for (const activityLevel of ['low', 'light', 'high'])
+  for (const goal of ['lose', 'maintain', 'gain'])
+  for (const sex of ['female', 'male', 'unspecified'])
+  for (const weeklyRateKg of [0.25, 0.5]) {
+    grid.push({ age, heightCm, weightKg, activityLevel, goal, weeklyRateKg, sex, displayName: '', preferences: [], completedAt: null, unitSystem: 'metric' });
+  }
+  for (const profile of grid) {
+    const steps = explainTargets(profile);
+    const targets = calculateDailyTargets(profile);
+    const calorieSteps = steps.filter((step) => step.unit === 'kcal');
+    assert.ok(calorieSteps.length >= 2, 'the chain needs at least resting energy and activity');
+    assert.equal(
+      calorieSteps.at(-1).value,
+      targets.calories,
+      `${JSON.stringify(profile)}: the chain ends on ${calorieSteps.at(-1).value} but the plan shows ${targets.calories}`,
+    );
+    const protein = steps.find((step) => step.id === 'protein');
+    assert.equal(protein?.value, targets.protein, 'the protein line disagrees with the plan');
+    // Every step is a number a person could read.
+    for (const step of steps) {
+      assert.ok(Number.isFinite(step.value) && step.value > 0, `${step.id} is not a readable number`);
+    }
+    // A bound may only be announced when it actually moved the number.
+    const requested = steps.find((step) => step.id === 'goal') ?? calorieSteps[1];
+    const floor = steps.find((step) => step.id === 'floor');
+    const cap = steps.find((step) => step.id === 'cap');
+    if (floor) assert.ok(floor.value > requested.value, 'a rounding was announced as the safety floor');
+    if (cap) assert.ok(cap.value < requested.value, 'a rounding was announced as the upper bound');
+    assert.ok(!(floor && cap), 'the target cannot be both raised and capped');
+    checked += 1;
+  }
+  console.log(`Checked the onboarding calculation chain against ${checked} profiles.`);
+}
