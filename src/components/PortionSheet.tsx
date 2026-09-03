@@ -47,7 +47,11 @@ export function PortionSheet({
   // Re-key on the food so a second search does not inherit the first one's
   // count: "2" pieces of yoghurt is not "2" of the next thing.
   const signature = `${target?.name ?? ''}:${target?.defaultGrams ?? 0}`;
-  const [seen, setSeen] = useState(signature);
+  // A sentinel no signature can equal, so the first target is initialised by
+  // the same branch as every later one. Seeding this with the current
+  // signature meant a sheet that mounted with a food already chosen opened
+  // with an empty amount field.
+  const [seen, setSeen] = useState('\u0000');
   if (seen !== signature) {
     setSeen(signature);
     setUnitIndex(portions.length ? 0 : -1);

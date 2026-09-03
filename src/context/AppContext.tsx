@@ -670,18 +670,42 @@ export function AppProvider({ children }: PropsWithChildren) {
     setWellnessConsentGranted(false);
   }, []);
 
+  const setPlannedMealType = useCallback((type: Meal['type'] | null) => {
+    plannedMealTypeRef.current = type;
+    setPlannedMealTypeState(type);
+  }, []);
+
+  /**
+   * The slot belongs to the meal it was chosen for and to no other.
+   *
+   * Only resetScan cleared it, so tapping "+" beside breakfast and then
+   * abandoning the scan left the choice standing: a dinner logged from the
+   * plan tab hours later was filed as breakfast.
+   */
+  const consumePlannedMealType = useCallback(() => {
+    const type = plannedMealTypeRef.current;
+    plannedMealTypeRef.current = null;
+    setPlannedMealTypeState(null);
+    return type;
+  }, []);
+
   const logScannedMeal = useCallback(async () => {
-    const alreadyLogged = mealHistory.some((meal) => meal.id === scannedMeal.id);
+    const existing = mealHistory.find((meal) => meal.id === scannedMeal.id);
+    const alreadyLogged = Boolean(existing);
     const now = new Date();
     // The free allowance is derived from how many meals carry origin 'scan',
     // so the origin has to be honest about whether an analysis actually ran.
     // A food picked from search is a chosen known value, like a planned meal,
     // and the sheet promises it is free.
     const costsAnalysis = !FREE_ANALYSIS_MODES.has(scanModeRef.current);
+    // The clock guesses the slot; tapping "+" next to breakfast states it. A
+    // correction re-saves the same id, and the choice is spent by then, so the
+    // meal that was filed under breakfast kept its own slot rather than
+    // snapping back to whatever the clock says now.
+    const slot = consumePlannedMealType() ?? existing?.type;
     const persistedMeal: Meal = {
       ...scannedMeal,
-      // The clock guesses the slot; tapping "+" next to breakfast states it.
-      ...(plannedMealTypeRef.current ? { type: plannedMealTypeRef.current } : {}),
+      ...(slot ? { type: slot } : {}),
       ...nutritionFromItems(detectedItems),
       origin: costsAnalysis ? 'scan' : 'plan',
       date: localDateKey(now),
@@ -705,9 +729,10 @@ export function AppProvider({ children }: PropsWithChildren) {
   const logPlannedMeal = useCallback(async (suggestion: MealSuggestion, portion: PortionFactor) => {
     const now = new Date();
     const planned = createPlannedMeal(suggestion, portion, `plan-${suggestion.id}-${now.getTime()}`);
+    const slot = consumePlannedMealType();
     const persisted: Meal = {
       ...planned,
-      ...(plannedMealTypeRef.current ? { type: plannedMealTypeRef.current } : {}),
+      ...(slot ? { type: slot } : {}),
       date: localDateKey(now),
       savedAt: now.toISOString(),
     };
@@ -723,18 +748,13 @@ export function AppProvider({ children }: PropsWithChildren) {
    * Logs a meal the user has eaten before. Costs no analysis call, so like a
    * planned meal it never spends part of the free allowance.
    */
-  const setPlannedMealType = useCallback((type: Meal['type'] | null) => {
-    plannedMealTypeRef.current = type;
-    setPlannedMealTypeState(type);
-  }, []);
-
   const logRepeatMeal = useCallback(async (candidate: RepeatCandidate) => {
     const now = new Date();
     const hour = now.getHours();
     const repeated: Meal = {
       ...candidate.source,
       id: `repeat-${candidate.key.replace(/[^a-z0-9]+/gi, '-')}-${now.getTime()}`,
-      type: plannedMealTypeRef.current ?? (hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack'),
+      type: consumePlannedMealType() ?? (hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack'),
       time: formatClockTime(now),
       date: localDateKey(now),
       savedAt: now.toISOString(),

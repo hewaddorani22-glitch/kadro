@@ -39,21 +39,35 @@ for (const [language, source] of Object.entries(dictionaries)) {
 
 // A stated slot must win over the clock in both logging paths.
 const guess = /hour < 11 \? 'Breakfast' : hour < 15 \? 'Lunch' : hour < 21 \? 'Dinner' : 'Snack'/;
-for (const [label, slice] of [
-  ['logScannedMeal', context.slice(context.indexOf('const logScannedMeal'), context.indexOf('const logPlannedMeal'))],
-  ['logPlannedMeal', context.slice(context.indexOf('const logPlannedMeal'), context.indexOf('const repeatMeals'))],
-  ['logRepeatMeal', context.slice(context.indexOf('const logRepeatMeal'), context.indexOf('const deleteLoggedMeal'))],
-]) {
-  if (!/plannedMealTypeRef\.current/.test(slice)) {
-    problems.push(`AppContext: ${label} ignores the slot the user chose`);
-  }
-}
 if (!guess.test(context)) {
   problems.push('AppContext: the clock fallback is gone, so an unstated slot has no answer');
 }
 const reset = context.slice(context.indexOf('const resetScan'), context.indexOf('const resetScan') + 900);
 if (!/plannedMealTypeRef\.current = null;/.test(reset)) {
   problems.push('AppContext: resetScan leaves the old slot behind, so the next scan inherits it');
+}
+// The slot must be spent by the meal it was chosen for. Leaving it standing
+// filed a dinner logged hours later under the breakfast someone had tapped
+// and then abandoned.
+if (!/const consumePlannedMealType = useCallback\(\(\) => \{[\s\S]{0,220}plannedMealTypeRef\.current = null;/.test(context)) {
+  problems.push('AppContext: nothing clears the slot when it is used');
+}
+// A correction re-saves the same scan id after the choice has been spent, so
+// the slot has to come from the meal already on file or the meal snaps back to
+// whatever the clock says now — losing a stated slot and a manual correction
+// alike.
+if (!/consumePlannedMealType\(\) \?\? existing\?\.type/.test(context)) {
+  problems.push('AppContext: a correction would move a meal out of its slot');
+}
+
+for (const [label, slice] of [
+  ['logScannedMeal', context.slice(context.indexOf('const logScannedMeal'), context.indexOf('const logPlannedMeal'))],
+  ['logPlannedMeal', context.slice(context.indexOf('const logPlannedMeal'), context.indexOf('const logRepeatMeal'))],
+  ['logRepeatMeal', context.slice(context.indexOf('const logRepeatMeal'), context.indexOf('const deleteLoggedMeal'))],
+]) {
+  if (!/consumePlannedMealType\(\)/.test(slice)) {
+    problems.push(`AppContext: ${label} reads the slot without spending it`);
+  }
 }
 
 if (problems.length) {
