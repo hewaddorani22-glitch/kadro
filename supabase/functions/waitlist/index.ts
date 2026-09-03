@@ -4,7 +4,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.58.0';
  * Pre-launch waitlist for getkandro.com.
  *
  * Public on purpose — it is called by the website, which has no session — so
- * everything that keeps it from being abused lives in here: a fixed origin, a
+ * everything that keeps it from being abused lives in here: a narrow origin allowlist, a
  * per-address row, a per-network hourly cap, and a reply that never says
  * whether an address is already on the list.
  *
@@ -15,16 +15,28 @@ import { createClient } from 'npm:@supabase/supabase-js@2.58.0';
 
 const SITE = 'https://getkandro.com';
 
-const corsHeaders = {
-  // Not '*': this endpoint writes, and the only caller is the site.
-  'Access-Control-Allow-Origin': SITE,
-  'Access-Control-Allow-Headers': 'apikey, content-type, x-client-info',
-  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-  'Vary': 'Origin',
+// The two loopback origins let the owner test the real form from the local
+// preview. Remote websites cannot claim a loopback Origin in a browser.
+const ALLOWED_ORIGINS = new Set([
+  SITE,
+  'http://127.0.0.1:4173',
+  'http://localhost:4173',
+]);
+
+const corsHeadersFor = (request: Request) => {
+  const origin = request.headers.get('Origin') ?? '';
+  return {
+    // Never '*': this endpoint writes. Unknown origins receive the production
+    // origin and therefore fail the browser's CORS check.
+    'Access-Control-Allow-Origin': ALLOWED_ORIGINS.has(origin) ? origin : SITE,
+    'Access-Control-Allow-Headers': 'apikey, content-type, x-client-info',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Vary': 'Origin',
+  };
 };
 
-const json = (body: unknown, status = 200) =>
-  Response.json(body, { status, headers: corsHeaders });
+const json = (request: Request, body: unknown, status = 200) =>
+  Response.json(body, { status, headers: corsHeadersFor(request) });
 
 const resendKey = Deno.env.get('RESEND_API_KEY') ?? '';
 const mailFrom = Deno.env.get('WAITLIST_FROM') ?? '';
@@ -100,7 +112,7 @@ const db = createClient(
 );
 
 async function handle(request: Request): Promise<Response> {
-  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeadersFor(request) });
 
   const url = new URL(request.url);
   const route = url.pathname.replace(/^\/functions\/v1/, '').replace(/^\/waitlist/, '').replace(/\/+$/, '') || '/';
@@ -109,15 +121,15 @@ async function handle(request: Request): Promise<Response> {
   // no way to confirm an address, so collecting one would be collecting
   // something that can never legally be used.
   if (route === '/status') {
-    return json({ accepting: Boolean(resendKey && mailFrom) });
+    return json(request, { accepting: Boolean(resendKey && mailFrom) });
   }
 
   if (route === '/subscribe' && request.method === 'POST') {
-    if (!resendKey || !mailFrom) return json({ code: 'not_accepting' }, 503);
+    if (!resendKey || !mailFrom) return json(request, { code: 'not_accepting' }, 503);
 
     const body = await request.json().catch(() => null);
     const email = normalizeEmail((body as { email?: unknown } | null)?.email);
-    if (!email) return json({ code: 'invalid_email' }, 400);
+    if (!email) return json(request, { code: 'invalid_email' }, 400);
     // Unknown or missing language defaults to English. The website sends an
     // explicit `de` only from the German document, so an integration that
     // forgets the field can never surprise an international reader in German.
@@ -132,7 +144,7 @@ async function handle(request: Request): Promise<Response> {
         .select('id', { count: 'exact', head: true })
         .eq('ip_hash', ipHash)
         .gte('signed_up_at', hourAgo);
-      if ((count ?? 0) >= HOURLY_LIMIT) return json({ code: 'too_many' }, 429);
+      if ((count ?? 0) >= HOURLY_LIMIT) return json(request, { code: 'too_many' }, 429);
     }
 
     const token = makeToken();
@@ -143,23 +155,23 @@ async function handle(request: Request): Promise<Response> {
       { email, language, source, token, ip_hash: ipHash, signed_up_at: new Date().toISOString(), unsubscribed_at: null },
       { onConflict: 'email' },
     );
-    if (error) return json({ code: 'store_failed' }, 500);
+    if (error) return json(request, { code: 'store_failed' }, 500);
 
     try {
       await sendConfirmation(email, language, token);
     } catch {
-      return json({ code: 'send_failed' }, 502);
+      return json(request, { code: 'send_failed' }, 502);
     }
 
     // Always the same answer, confirmed or not: whether an address is already
     // on the list is not something a stranger gets to find out.
-    return json({ status: 'check_your_mail' });
+    return json(request, { status: 'check_your_mail' });
   }
 
   if (route === '/confirm' && request.method === 'POST') {
     const body = await request.json().catch(() => null);
     const token = String((body as { token?: unknown } | null)?.token ?? '').trim();
-    if (!/^[a-f0-9]{48}$/.test(token)) return json({ code: 'invalid_token' }, 400);
+    if (!/^[a-f0-9]{48}$/.test(token)) return json(request, { code: 'invalid_token' }, 400);
 
     const { data, error } = await db
       .from('waitlist')
@@ -167,30 +179,30 @@ async function handle(request: Request): Promise<Response> {
       .eq('token', token)
       .select('language')
       .maybeSingle();
-    if (error) return json({ code: 'confirm_failed' }, 500);
-    if (!data) return json({ code: 'invalid_token' }, 404);
-    return json({ status: 'confirmed', language: data.language });
+    if (error) return json(request, { code: 'confirm_failed' }, 500);
+    if (!data) return json(request, { code: 'invalid_token' }, 404);
+    return json(request, { status: 'confirmed', language: data.language });
   }
 
   if (route === '/unsubscribe' && request.method === 'POST') {
     const body = await request.json().catch(() => null);
     const token = String((body as { token?: unknown } | null)?.token ?? '').trim();
-    if (!/^[a-f0-9]{48}$/.test(token)) return json({ code: 'invalid_token' }, 400);
+    if (!/^[a-f0-9]{48}$/.test(token)) return json(request, { code: 'invalid_token' }, 400);
     const { error } = await db
       .from('waitlist')
       .update({ unsubscribed_at: new Date().toISOString(), confirmed_at: null })
       .eq('token', token);
-    if (error) return json({ code: 'unsubscribe_failed' }, 500);
+    if (error) return json(request, { code: 'unsubscribe_failed' }, 500);
     // No 404: telling a stranger which tokens exist is the same leak as
     // telling them which addresses do.
-    return json({ status: 'unsubscribed' });
+    return json(request, { status: 'unsubscribed' });
   }
 
-  return json({ code: 'not_found' }, 404);
+  return json(request, { code: 'not_found' }, 404);
 }
 
 export default {
   fetch(request: Request) {
-    return handle(request).catch(() => json({ code: 'unavailable' }, 500));
+    return handle(request).catch(() => json(request, { code: 'unavailable' }, 500));
   },
 };

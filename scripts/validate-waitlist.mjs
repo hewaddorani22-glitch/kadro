@@ -29,11 +29,15 @@ assert.match(fn, /SUPABASE_SERVICE_ROLE_KEY/, 'the function cannot reach its own
 // --- Public, and therefore defended in code --------------------------------
 assert.match(config, /\[functions\.waitlist\]\s*\nverify_jwt = false/,
   'the website has no session, so the platform cannot check one');
-assert.match(fn, /'Access-Control-Allow-Origin': SITE/,
-  'a write endpoint open to every origin is a write endpoint for every origin');
+assert.match(fn, /const ALLOWED_ORIGINS = new Set\(\[\s*SITE,/,
+  'the write endpoint has no explicit origin allowlist');
+assert.match(fn, /'http:\/\/127\.0\.0\.1:4173'/,
+  'the real form cannot be tested from the local preview');
+assert.match(fn, /ALLOWED_ORIGINS\.has\(origin\) \? origin : SITE/,
+  'unknown origins are reflected instead of being rejected by CORS');
 assert.ok(!/Access-Control-Allow-Origin': '\*'/.test(fn), 'the origin is wide open');
 assert.match(fn, /HOURLY_LIMIT/, 'nothing stops a script signing up all night');
-assert.match(fn, /count \?\? 0\) >= HOURLY_LIMIT\) return json\(\{ code: 'too_many' \}, 429\)/,
+assert.match(fn, /count \?\? 0\) >= HOURLY_LIMIT\) return json\(request, \{ code: 'too_many' \}, 429\)/,
   'the hourly cap is measured but not enforced');
 
 // --- Double opt-in ---------------------------------------------------------
@@ -45,11 +49,11 @@ assert.match(fn, /sendConfirmation\(email, language, token\)/,
 // A sign-up must never be usable before the click.
 assert.ok(!/confirmed_at: new Date\(\)\.toISOString\(\)[\s\S]{0,400}upsert/.test(fn),
   'a sign-up confirms itself, which is single opt-in wearing a costume');
-assert.match(fn, /if \(!resendKey \|\| !mailFrom\) return json\(\{ code: 'not_accepting' \}, 503\)/,
+assert.match(fn, /if \(!resendKey \|\| !mailFrom\) return json\(request, \{ code: 'not_accepting' \}, 503\)/,
   'addresses are collected even when no confirmation can be sent');
 
 // --- What the endpoint gives away ------------------------------------------
-assert.match(fn, /return json\(\{ status: 'check_your_mail' \}\)/,
+assert.match(fn, /return json\(request, \{ status: 'check_your_mail' \}\)/,
   'the answer differs for a known address, which turns the form into a lookup');
 assert.ok(!/already_subscribed|exists/.test(fn),
   'the endpoint tells a stranger whether an address is on the list');
