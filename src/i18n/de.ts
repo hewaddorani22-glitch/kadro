@@ -86,6 +86,7 @@ export const de = {
     pendingHint: 'Tippen und in ein paar Sekunden fertig machen',
   },
   onboarding: {
+    proteinUnit: 'Gramm Protein',
     targetStep: {
       resting: 'Grundumsatz aus Alter, Größe und Gewicht',
       activity: 'Mit deiner Aktivität hochgerechnet',
@@ -128,7 +129,7 @@ export const de = {
     preferencesTitle: 'Wie möchtest du essen?',
     preferencesSubtitle: 'Wähle alles, was zu dir passt – oder nichts davon.',
     buildingTitle: 'Wir stellen deinen Tag auf',
-    buildingSubtitle: 'Einen Moment.',
+    buildingSubtitle: 'Wir rechnen deine Angaben durch.',
     planTitle: 'Dein Startplan',
     planSubtitle: 'Flexibel ab dem ersten Bissen. Jede Mahlzeit stellt den Tag neu auf.',
     years: 'Jahre',

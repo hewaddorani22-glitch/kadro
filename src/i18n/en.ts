@@ -85,6 +85,7 @@ export const en: typeof de = {
     pendingHint: 'Tap to finish it in a few seconds',
   },
   onboarding: {
+    proteinUnit: 'grams of protein',
     targetStep: {
       resting: 'Resting energy from age, height and weight',
       activity: 'Scaled by how active you are',
@@ -127,7 +128,7 @@ export const en: typeof de = {
     preferencesTitle: 'How do you like to eat?',
     preferencesSubtitle: 'Pick anything that fits — or none of it.',
     buildingTitle: 'Setting up your day',
-    buildingSubtitle: 'One moment.',
+    buildingSubtitle: 'Working through what you told us.',
     planTitle: 'Your starting plan',
     planSubtitle: 'Flexible from the first bite. Every meal re-plans the day.',
     years: 'years',
