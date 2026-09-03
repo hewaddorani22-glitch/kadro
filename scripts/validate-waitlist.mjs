@@ -92,9 +92,21 @@ for (const page of ['site/index.html', 'site/en/index.html']) {
   if (!/data-discord/.test(html)) problems.push(`${page}: no Discord link`);
   if (!/privacy|Datenschutz/.test(html)) problems.push(`${page}: the form does not link the privacy policy`);
 }
+// The form and the Discord button are hidden with the hidden attribute, and
+// both carry a display rule that would otherwise beat the browser's own rule
+// for it — leaving them on screen while the script believed they were gone.
+assert.match(read('site/styles.css'), /\[hidden\] \{ display: none !important; \}/,
+  'a display rule can beat [hidden], so hiding the form does not hide it');
+
 const community = read('site/community.js');
 assert.match(community, /if \(!window\.KANDRO_DISCORD\) return;/,
   'an empty invite would render a dead join button');
+// Once an invite is set it has to be one Discord recognises: a typo here
+// renders a confident button that goes nowhere.
+const invite = community.match(/window\.KANDRO_DISCORD = '([^']*)'/)?.[1] ?? '';
+if (invite && !/^https:\/\/(discord\.gg|discord\.com\/invite)\/[A-Za-z0-9]+$/.test(invite)) {
+  problems.push(`"${invite}" is not a Discord invite URL`);
+}
 assert.match(community, /document\.readyState === 'loading'/,
   'a cached script arriving after parsing would leave the button hidden for good');
 // The invite and the sender are configured independently, so the closed

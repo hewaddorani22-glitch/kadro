@@ -25,9 +25,54 @@
 <link rel="alternate" hreflang="de" href="https://getkandro.com/">
 <link rel="alternate" hreflang="en" href="https://getkandro.com/en/">
 <link rel="alternate" hreflang="x-default" href="https://getkandro.com/">
+<script>
+/* Sends a reader to the version they can read.
+ *
+ * Only this page decides, and only once: every other page exists in both
+ * languages under its own address, and a page that redirects on the way back
+ * is a page you cannot leave. An explicit choice — the switch in the header,
+ * which links here as ?lang=de — is remembered and always wins, because a
+ * browser's language list says what someone set their device to, which is not
+ * always what they want to read.
+ */
+(function () {
+  /* Storage is the part that can fail: private mode throws on it. Detection
+     must survive that, or every reader in a private window gets German. */
+  var remember = function (value) {
+    try { localStorage.setItem('kandro-lang', value); } catch (error) { /* fine */ }
+  };
+  var remembered = function () {
+    try { return localStorage.getItem('kandro-lang'); } catch (error) { return null; }
+  };
+  var toEnglish = function (keepQuery) {
+    location.replace('en/' + (keepQuery ? location.search : '') + location.hash);
+  };
+
+  var asked = new URLSearchParams(location.search).get('lang');
+  if (asked === 'de' || asked === 'en') {
+    remember(asked);
+    if (asked === 'en') toEnglish(false);
+    return;
+  }
+
+  var stored = remembered();
+  if (stored === 'de') return;
+  if (stored === 'en') { toEnglish(false); return; }
+
+  var list = navigator.languages && navigator.languages.length
+    ? navigator.languages
+    : [navigator.language || ''];
+  var first = String(list[0] || '').toLowerCase();
+  /* de, de-DE, de-AT, de-CH all stay; anything else reads better in English.
+     The dash matters: "den" is not German. */
+  var german = first === 'de' || first.slice(0, 3) === 'de-';
+  if (!first || german) return;
+  toEnglish(true);
+})();
+</script>
 </head>
 <body>
-<header class="site"><div class="wrap wide"><a class="brand" href="./"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="support/">Support</a><a href="privacy/">Datenschutz</a><a href="terms/">Bedingungen</a><a href="sources/">Datenquellen</a><a href="impressum/">Impressum</a><a class="lang" href="en/" hreflang="en">English</a></nav></div></header>
+<header class="site"><div class="wrap wide"><a class="brand" href="./"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="support/">Support</a><a href="privacy/">Datenschutz</a><a href="terms/">Bedingungen</a><a href="sources/">Datenquellen</a><a href="impressum/">Impressum</a><a class="lang" href="en/?lang=en" hreflang="en">English</a></nav></div></header>
 <main><div class="wrap wide">
 
   <section class="hero">
@@ -35,6 +80,18 @@
       <p class="status">Erscheint bald im App Store</p>
       <h1>Die Aufstellung deines Tages.</h1>
       <p class="lead">Kandro ist kein Kalorienzähler, sondern ein Entscheidungssystem. Nach jeder Mahlzeit rechnet die App den Rest des Tages neu und sagt dir direkt, wie der nächste Teller aussehen sollte.</p>
+    <section class="join" id="warteliste">
+      <h2>Sei dabei, bevor es losgeht</h2>
+      <p>Kandro liegt bei Apple in der Prüfung. Trag dich ein, und du erfährst als Erstes, wenn die App im App Store steht – mit einem Vorteil für die frühen Nutzer.</p>
+      <a class="cta discord" data-discord href="#" hidden rel="noopener" target="_blank">Discord beitreten</a>
+      <form class="signup" data-waitlist hidden>
+        <label class="sr-only" for="waitlist-email">E-Mail-Adresse</label>
+        <input autocomplete="email" id="waitlist-email" inputmode="email" name="email" placeholder="deine@mail.de" required type="email">
+        <button type="submit">Benachrichtige mich</button>
+      </form>
+      <p class="form-status" data-waitlist-status></p>
+      <p class="small">Doppelte Bestätigung: du bekommst eine Mail mit einem Link, und erst der Klick trägt dich ein. Nur zur Benachrichtigung zum Start, jederzeit abbestellbar. Mehr im <a href="privacy/">Datenschutz</a>.</p>
+    </section>
       <p class="small">Foto, Beschreibung oder Barcode. Drei Mahlzeiten kostenlos, danach entscheidest du.</p>
     </div>
 
@@ -105,19 +162,6 @@
 
   <h2>Was Kandro nicht ist</h2>
   <p>Kandro ist ein allgemeines Wellness- und Planungstool. Es stellt keine Diagnose, behandelt keine Erkrankung und ersetzt keine medizinische oder ernährungstherapeutische Beratung. Bei Beschwerden, Schwangerschaft, Essstörungen oder einem medizinisch angeordneten Ernährungsplan hole bitte qualifizierten Rat ein.</p>
-
-  <section class="join" id="warteliste">
-    <h2>Sei dabei, bevor es losgeht</h2>
-    <p>Kandro liegt bei Apple in der Prüfung. Trag dich ein, und du erfährst als Erstes, wenn die App im App Store steht – mit einem Vorteil für die frühen Nutzer.</p>
-    <a class="cta discord" data-discord href="#" hidden rel="noopener" target="_blank">Discord beitreten</a>
-    <form class="signup" data-waitlist hidden>
-      <label class="sr-only" for="waitlist-email">E-Mail-Adresse</label>
-      <input autocomplete="email" id="waitlist-email" inputmode="email" name="email" placeholder="deine@mail.de" required type="email">
-      <button type="submit">Benachrichtige mich</button>
-    </form>
-    <p class="form-status" data-waitlist-status></p>
-    <p class="small">Doppelte Bestätigung: du bekommst eine Mail mit einem Link, und erst der Klick trägt dich ein. Nur zur Benachrichtigung zum Start, jederzeit abbestellbar. Mehr im <a href="privacy/">Datenschutz</a>.</p>
-  </section>
 
   <h2>Fragen?</h2>
   <p>Schreib mir direkt: <a href="mailto:hewaddorani22@gmail.com">hewaddorani22@gmail.com</a></p>

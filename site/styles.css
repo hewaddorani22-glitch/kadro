@@ -230,6 +230,12 @@ nav.site a.lang {
   font-size: 13px;
 }
 
+/* The browser hides [hidden] with a user-agent rule, which any author rule
+   that sets display beats. The sign-up form is display:flex, so it stayed on
+   screen while the script believed it had hidden it — collecting addresses the
+   endpoint was refusing. */
+[hidden] { display: none !important; }
+
 /* Waiting-list sign-up. Discord sits above the form on purpose: joining a
    server hands over nothing, while an address is personal data with a consent
    trail behind it. The cheaper ask goes first. */

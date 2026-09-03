@@ -6,7 +6,7 @@
  * Create the invite in Discord (Server Settings, Invites, no expiry, no use
  * limit) and paste it here; both language versions pick it up.
  */
-window.KANDRO_DISCORD = '';
+window.KANDRO_DISCORD = 'https://discord.gg/D6KCXWtuUd';
 
 function showDiscordLinks() {
   if (!window.KANDRO_DISCORD) return;

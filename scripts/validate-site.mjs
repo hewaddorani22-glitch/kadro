@@ -37,8 +37,13 @@ for (const page of pages) {
   for (const match of html.matchAll(/(?:href|src)="([^"]+)"/g)) {
     const target = match[1];
     if (/^(https?:|mailto:|tel:|#|data:)/.test(target)) continue;
-    const resolved = resolve(dirname(page), target);
-    const candidate = target.endsWith('/') || !target.split('/').pop().includes('.')
+    // A query or a fragment is not part of the path. The language switch links
+    // to "en/?lang=en", which is a perfectly good link the checker called a
+    // missing file.
+    const path = target.split(/[?#]/)[0];
+    if (!path) continue;
+    const resolved = resolve(dirname(page), path);
+    const candidate = path.endsWith('/') || !path.split('/').pop().includes('.')
       ? join(resolved, 'index.html')
       : resolved;
     if (!await exists(candidate)) {

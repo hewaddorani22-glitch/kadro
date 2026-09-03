@@ -24,9 +24,26 @@
 <link rel="alternate" hreflang="en" href="https://getkandro.com/en/">
 <link rel="alternate" hreflang="de" href="https://getkandro.com/">
 <link rel="alternate" hreflang="x-default" href="https://getkandro.com/">
+<script>
+/* Records a choice, and nothing else.
+ *
+ * This page never redirects: it is the English address, and someone who asked
+ * for it has already answered the question. It only has to remember that
+ * answer, or the next visit to the root would send a reader who chose English
+ * back to German for the rest of their life.
+ */
+(function () {
+  try {
+    var asked = new URLSearchParams(location.search).get('lang');
+    if (asked === 'de' || asked === 'en') localStorage.setItem('kandro-lang', asked);
+  } catch (error) {
+    /* Private mode; the reader is on the page they asked for either way. */
+  }
+})();
+</script>
 </head>
 <body>
-<header class="site"><div class="wrap wide"><a class="brand" href="./"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="support/">Support</a><a href="privacy/">Privacy</a><a href="terms/">Terms</a><a href="sources/">Data sources</a><a href="../impressum/">Imprint</a><a class="lang" href="../" hreflang="de">Deutsch</a></nav></div></header>
+<header class="site"><div class="wrap wide"><a class="brand" href="./"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="support/">Support</a><a href="privacy/">Privacy</a><a href="terms/">Terms</a><a href="sources/">Data sources</a><a href="../impressum/">Imprint</a><a class="lang" href="../?lang=de" hreflang="de">Deutsch</a></nav></div></header>
 <main><div class="wrap wide">
 
   <section class="hero">
@@ -34,6 +51,18 @@
       <p class="status">Coming soon to the App Store</p>
       <h1>How your day is set up.</h1>
       <p class="lead">Kandro is not a calorie counter, it is a decision system. After every meal the app recalculates the rest of your day and tells you straight away what the next plate should look like.</p>
+    <section class="join" id="waitlist">
+      <h2>Be there before it starts</h2>
+      <p>Kandro is in review with Apple. Sign up and you will be the first to know when it reaches the App Store — with something in it for the early ones.</p>
+      <a class="cta discord" data-discord href="#" hidden rel="noopener" target="_blank">Join the Discord</a>
+      <form class="signup" data-waitlist hidden>
+        <label class="sr-only" for="waitlist-email">Email address</label>
+        <input autocomplete="email" id="waitlist-email" inputmode="email" name="email" placeholder="you@mail.com" required type="email">
+        <button type="submit">Notify me</button>
+      </form>
+      <p class="form-status" data-waitlist-status></p>
+      <p class="small">Double opt-in: you get a mail with a link, and only the click adds you. For the launch notice only, unsubscribe any time. More in the <a href="privacy/">privacy policy</a>.</p>
+    </section>
       <p class="small">Photo, description or barcode. Three meals free, then you decide.</p>
     </div>
 
@@ -104,19 +133,6 @@
 
   <h2>What Kandro is not</h2>
   <p>Kandro is a general wellness and planning tool. It does not diagnose, does not treat any condition and does not replace medical or dietetic advice. If you have health complaints, are pregnant, have an eating disorder or follow a medically prescribed diet, please seek qualified advice.</p>
-
-  <section class="join" id="waitlist">
-    <h2>Be there before it starts</h2>
-    <p>Kandro is in review with Apple. Sign up and you will be the first to know when it reaches the App Store — with something in it for the early ones.</p>
-    <a class="cta discord" data-discord href="#" hidden rel="noopener" target="_blank">Join the Discord</a>
-    <form class="signup" data-waitlist hidden>
-      <label class="sr-only" for="waitlist-email">Email address</label>
-      <input autocomplete="email" id="waitlist-email" inputmode="email" name="email" placeholder="you@mail.com" required type="email">
-      <button type="submit">Notify me</button>
-    </form>
-    <p class="form-status" data-waitlist-status></p>
-    <p class="small">Double opt-in: you get a mail with a link, and only the click adds you. For the launch notice only, unsubscribe any time. More in the <a href="privacy/">privacy policy</a>.</p>
-  </section>
 
   <h2>Questions?</h2>
   <p>Write to me directly: <a href="mailto:hewaddorani22@gmail.com">hewaddorani22@gmail.com</a></p>
