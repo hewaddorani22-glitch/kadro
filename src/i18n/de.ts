@@ -180,6 +180,7 @@ export const de = {
     error: 'Die Einstellung konnte nicht gespeichert werden. Prüfe deine Verbindung und versuche es erneut.',
   },
   scan: {
+    cameraStarting: 'Kamera startet …',
     modeSearch: 'Suchen',
     searchTitle: 'Lebensmittel suchen',
     searchHint: 'Gib ein Lebensmittel ein – kostet keine Analyse.',

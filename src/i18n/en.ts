@@ -179,6 +179,7 @@ export const en: typeof de = {
     error: 'The setting could not be saved. Check your connection and try again.',
   },
   scan: {
+    cameraStarting: 'Starting the camera …',
     modeSearch: 'Search',
     searchTitle: 'Search for a food',
     searchHint: 'Type a food — this costs no analysis.',

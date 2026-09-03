@@ -3,7 +3,7 @@ import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-ca
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
@@ -42,10 +42,27 @@ export default function ScanScreen() {
   const cameraRef = useRef<CameraView>(null);
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
-  const cameraActive = pathname.endsWith('/scan') && mode !== 'description' && permission?.granted === true;
+  // The sheets cover the whole screen, so a camera running behind one is a
+  // preview nobody can see holding a device nobody else can use.
+  const cameraActive = pathname.endsWith('/scan')
+    && mode !== 'description'
+    && mode !== 'search'
+    && permission?.granted === true;
 
+  /**
+   * onCameraReady fires once per mounted camera. Resetting the flag whenever
+   * `mode` changed cleared it on a FOTO → BARCODE → FOTO switch, which does
+   * not remount anything, so the callback never came back and the shutter
+   * answered "camera not ready" until the tab was left and re-entered. Only a
+   * teardown may clear it.
+   */
   useEffect(() => {
-    setCameraReady(false);
+    if (!cameraActive) setCameraReady(false);
+  }, [cameraActive]);
+
+  // A barcode already handed off must not re-fire, but a new mode or a fresh
+  // camera starts a new chance to scan one.
+  useEffect(() => {
     setBarcodeBusy(false);
   }, [cameraActive, mode]);
 
@@ -93,10 +110,14 @@ export default function ScanScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
-      if (!permission?.granted || !cameraReady || !cameraRef.current) {
+      if (!permission?.granted || !cameraRef.current) {
         Alert.alert(t.scan.notReadyTitle, t.scan.notReadyBody);
         return;
       }
+      // Deliberately not gated on `cameraReady`. Some devices never send
+      // onCameraReady, and refusing on a flag that may never arrive turns the
+      // shutter into a dead button; asking the camera and handling the failure
+      // costs one retry at worst.
       const result = await cameraRef.current.takePictureAsync({ quality: 0.9 });
       if (!result?.uri) throw new Error('missing camera uri');
       setCapturedPhoto(result.uri);
@@ -207,15 +228,24 @@ export default function ScanScreen() {
   return (
     <View style={styles.container}>
       {cameraActive ? (
-        <CameraView
-          active={Platform.OS === 'ios' ? cameraActive : undefined}
-          barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
-          facing="back"
-          onCameraReady={() => setCameraReady(true)}
-          onBarcodeScanned={mode === 'barcode' ? handleBarcode : undefined}
-          ref={cameraRef}
-          style={StyleSheet.absoluteFill}
-        />
+        <>
+          <CameraView
+            active={Platform.OS === 'ios' ? cameraActive : undefined}
+            barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
+            facing="back"
+            onCameraReady={() => setCameraReady(true)}
+            onBarcodeScanned={mode === 'barcode' ? handleBarcode : undefined}
+            ref={cameraRef}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* A black rectangle reads as a broken camera; say it is starting. */}
+          {cameraReady ? null : (
+            <View pointerEvents="none" style={styles.cameraStarting}>
+              <ActivityIndicator color={colors.white} />
+              <Text style={styles.cameraStartingText}>{t.scan.cameraStarting}</Text>
+            </View>
+          )}
+        </>
       ) : (
         <View style={styles.fallback}>
           <View style={styles.fallbackOrb}>
@@ -413,6 +443,8 @@ const styles = StyleSheet.create({
   fallbackText: { color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 8 },
   permissionButton: { marginTop: 18, minHeight: 44, borderRadius: radii.pill, paddingHorizontal: 16, backgroundColor: colors.accent, flexDirection: 'row', alignItems: 'center', gap: 8 },
   permissionText: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  cameraStarting: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  cameraStartingText: { color: 'rgba(255,255,255,0.72)', fontSize: 13, fontWeight: '600' },
   permissionStatus: { color: 'rgba(255,255,255,0.58)', fontSize: 12, marginTop: 16 },
   scrimTop: { pointerEvents: 'none', position: 'absolute', left: 0, right: 0, top: 0, height: 160, backgroundColor: 'rgba(0,0,0,0.36)' },
   scrimBottom: { pointerEvents: 'none', position: 'absolute', left: 0, right: 0, bottom: 0, height: 250, backgroundColor: 'rgba(0,0,0,0.48)' },

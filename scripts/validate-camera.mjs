@@ -1,0 +1,57 @@
+#!/usr/bin/env node
+/**
+ * The scan screen's camera had one failure that looked like bad luck and was
+ * not: switching FOTO -> BARCODE -> FOTO cleared the "camera ready" flag
+ * without remounting the camera, so onCameraReady never fired again and the
+ * shutter answered "not ready" for the rest of the visit. These checks keep
+ * the lifetime of that flag tied to the camera's own lifetime.
+ */
+import { readFileSync } from 'node:fs';
+
+const problems = [];
+const scan = readFileSync(new URL('../src/app/(tabs)/scan.tsx', import.meta.url), 'utf8');
+
+// The reset effect must depend on the camera's existence only.
+const resetMatch = scan.match(/if \(!cameraActive\) setCameraReady\(false\);\s*\n\s*\}, \[([^\]]*)\]\);/);
+if (!resetMatch) {
+  problems.push('the camera-ready flag is no longer cleared only on teardown');
+} else if (resetMatch[1].includes('mode')) {
+  problems.push('clearing camera-ready on a mode change strands it: a mode change does not remount the camera');
+}
+
+// setCameraReady(true) must come from the camera itself.
+if (!/onCameraReady=\{\(\) => setCameraReady\(true\)\}/.test(scan)) {
+  problems.push('nothing sets the camera-ready flag back to true');
+}
+
+// The shutter must not refuse on a flag that may never arrive.
+const capture = scan.slice(scan.indexOf('const capture = async'), scan.indexOf('const runDemo'));
+if (/!cameraReady/.test(capture)) {
+  problems.push('capture refuses on cameraReady; some devices never send onCameraReady');
+}
+if (!/takePictureAsync/.test(capture)) {
+  problems.push('capture no longer takes a picture');
+}
+
+// A camera running behind a full-screen sheet holds the device for nothing.
+const active = scan.slice(scan.indexOf('const cameraActive ='), scan.indexOf('useEffect', scan.indexOf('const cameraActive =')));
+for (const mode of ["'description'", "'search'"]) {
+  if (!active.includes(`mode !== ${mode}`)) {
+    problems.push(`the camera keeps running behind the ${mode} sheet`);
+  }
+}
+if (!active.includes("pathname.endsWith('/scan')")) {
+  problems.push('the camera is not torn down when the scan screen is left');
+}
+
+// A handed-off barcode must be able to fire again on a fresh camera.
+if (!/setBarcodeBusy\(false\);\s*\n\s*\}, \[cameraActive, mode\]\);/.test(scan)) {
+  problems.push('the barcode lock is not released when the camera or mode changes');
+}
+
+if (problems.length) {
+  console.error('Camera lifecycle check failed:');
+  for (const problem of problems) console.error(`  - ${problem}`);
+  process.exit(1);
+}
+console.log('Camera lifecycle: ready-flag tied to the camera, shutter never dead, no preview behind sheets.');
