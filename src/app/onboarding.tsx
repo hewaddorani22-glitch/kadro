@@ -169,6 +169,7 @@ export default function OnboardingScreen() {
   };
 
   const skipStep = () => {
+    void Haptics.selectionAsync();
     setSkippedAnything(true);
     if (step === 'name') setDisplayName('');
     if (step === 'preferences') setPreferences([]);
@@ -214,9 +215,11 @@ export default function OnboardingScreen() {
       await grantWellnessConsent();
       await completeOnboarding(draftProfile);
       trackEvent('onboarding completed', { completion: skippedAnything ? 'skipped' : 'finished' });
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowConsent(false);
       router.replace('/(tabs)/scan');
     } catch {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setConsentError(t.onboarding.consentError);
     } finally {
       setConsentBusy(false);

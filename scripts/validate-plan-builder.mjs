@@ -92,4 +92,16 @@ assert.match(onboarding, /step !== 'plan'\) return;\s*\n\s*void Haptics\.notific
 assert.match(read('src/components/PlanBuilder.tsx'), /Haptics\.impactAsync/,
   'the figures land without a tick');
 
+// Every place in the onboarding where a finger does something.
+for (const [label, pattern] of [
+  ['skipping a step', /const skipStep = \(\) => \{\s*\n\s*void Haptics\.selectionAsync\(\);/],
+  ['choosing an answer', /const selectAndAdvance = [^;]*?\{\s*\n\s*void Haptics\.selectionAsync\(\);/s],
+  ['going back', /const goBack = \(\) => \{\s*\n\s*void Haptics\.selectionAsync\(\);/],
+  ['switching units', /onChange\(system\);/],
+  ['accepting consent', /NotificationFeedbackType\.Success/],
+  ['consent failing', /NotificationFeedbackType\.Error/],
+]) {
+  assert.match(onboarding, pattern, `${label} gives no feedback`);
+}
+
 console.log('Plan builder: the count reaches every value and ends on the target, and the taps are felt.');
