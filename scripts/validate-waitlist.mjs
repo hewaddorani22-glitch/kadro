@@ -97,6 +97,10 @@ assert.match(community, /if \(!window\.KANDRO_DISCORD\) return;/,
   'an empty invite would render a dead join button');
 assert.match(community, /document\.readyState === 'loading'/,
   'a cached script arriving after parsing would leave the button hidden for good');
+// The invite and the sender are configured independently, so the closed
+// message must not send people to a button that is not there.
+assert.match(script, /window\.KANDRO_DISCORD \? text\.closedDiscord : text\.closed/,
+  'the closed message points at Discord whether or not the button exists');
 
 if (problems.length) {
   console.error('Waitlist check failed:');

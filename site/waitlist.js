@@ -31,7 +31,8 @@
       invalid: 'That does not look like an email address.',
       many: 'That is a lot of sign-ups from one connection. Try again later.',
       failed: 'That did not work. Try again in a moment.',
-      closed: 'Sign-ups open shortly. Join the Discord in the meantime.',
+      closed: 'Sign-ups open shortly.',
+      closedDiscord: 'Sign-ups open shortly. Join the Discord in the meantime.',
     }
     : {
       sending: 'Wird gesendet …',
@@ -39,14 +40,22 @@
       invalid: 'Das sieht nicht nach einer E-Mail-Adresse aus.',
       many: 'Das sind viele Anmeldungen aus einem Anschluss. Versuch es später.',
       failed: 'Das hat nicht geklappt. Versuch es gleich noch einmal.',
-      closed: 'Die Anmeldung öffnet in Kürze. Komm solange auf den Discord.',
+      closed: 'Die Anmeldung öffnet in Kürze.',
+      closedDiscord: 'Die Anmeldung öffnet in Kürze. Komm solange auf den Discord.',
     };
+
+  // Only points at Discord when there is a Discord button to point at: the
+  // invite and the sender are configured independently, and a sentence sending
+  // people to a button that is not there is worse than a shorter sentence.
+  var closedMessage = function () {
+    return window.KANDRO_DISCORD ? text.closedDiscord : text.closed;
+  };
 
   fetch(ENDPOINT + '/status')
     .then(function (response) { return response.json(); })
     .then(function (payload) {
       if (payload && payload.accepting) form.hidden = false;
-      else say(text.closed);
+      else say(closedMessage());
     })
     .catch(function () { /* Discord stays; the form simply does not appear. */ });
 
@@ -71,7 +80,7 @@
         }
         if (response.status === 400) say(text.invalid, 'bad');
         else if (response.status === 429) say(text.many, 'bad');
-        else if (response.status === 503) say(text.closed);
+        else if (response.status === 503) say(closedMessage());
         else say(text.failed, 'bad');
       })
       .catch(function () { say(text.failed, 'bad'); })
