@@ -92,6 +92,18 @@ export function formatWeight(kg: number, system: UnitSystem, locale = getLocale(
     : `${stone} st ${restRounded} lb`;
 }
 
+/**
+ * A change in weight, which is not the same shape as a weight.
+ *
+ * Stone is how a Brit states their weight, not how they state a difference:
+ * "0 st 1 lb" is nobody's way of saying they lost a pound. Differences are
+ * always kilograms or pounds.
+ */
+export function formatWeightDelta(kg: number, system: UnitSystem, locale = getLocale()) {
+  if (usesMetricWeight(system)) return `${decimal(kg, 1, locale)} kg`;
+  return `${decimal(kgToPounds(kg), 1, locale)} lb`;
+}
+
 /** Just the number, for an input field that shows its unit separately. */
 export function weightInputValue(kg: number, system: UnitSystem, locale = getLocale()) {
   return usesMetricWeight(system)

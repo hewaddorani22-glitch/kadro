@@ -9,7 +9,7 @@ import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { proteinConsistency } from '@/services/consistency';
 import { localDateKey } from '@/utils/date';
-import { formatWeight, kgToStoneParts, parseStoneInput, parseWeightInput, weightInputUnit, weightInputValue } from '@/utils/units';
+import { formatWeight, formatWeightDelta, kgToStoneParts, parseStoneInput, parseWeightInput, weightInputUnit, weightInputValue } from '@/utils/units';
 import { formatDateParts } from '@/utils/format';
 
 
@@ -137,7 +137,7 @@ export default function ProgressScreen() {
           {visibleWeights.length > 1 ? (
             <View style={[styles.changePill, weightChange > 0 && styles.changePillAttention]}>
               <Ionicons color={weightChange > 0 ? colors.attention : colors.success} name={weightChange > 0 ? 'arrow-up' : weightChange < 0 ? 'arrow-down' : 'remove'} size={15} />
-              <Text style={[styles.changeText, weightChange > 0 && styles.changeTextAttention]}>{formatWeight(Math.abs(weightChange), units, locale)}</Text>
+              <Text style={[styles.changeText, weightChange > 0 && styles.changeTextAttention]}>{formatWeightDelta(Math.abs(weightChange), units, locale)}</Text>
             </View>
           ) : (
             <View style={styles.firstPill}><Text style={styles.firstPillText}>{t.progress.firstValue}</Text></View>

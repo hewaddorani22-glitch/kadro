@@ -91,6 +91,21 @@ assert.ok(Math.abs(units.parseStoneInput('13', '3') - 84) <= 0.15, 'the stone ro
 assert.equal(units.parseStoneInput('13', '14'), null, 'fourteen pounds is another stone, not a valid entry');
 assert.equal(units.parseStoneInput('13', '-1'), null);
 
+// --- A change in weight is not a weight ------------------------------------
+// "0 st 1 lb" is nobody's way of saying they lost a pound.
+assert.equal(units.formatWeightDelta(0.6, 'metric', 'en-GB'), '0.6 kg');
+assert.equal(units.formatWeightDelta(0.6, 'us', 'en-GB'), '1.3 lb');
+assert.equal(units.formatWeightDelta(0.6, 'uk', 'en-GB'), '1.3 lb', 'a UK difference must be pounds, not stone');
+for (const kg of [0.1, 0.6, 3, 12]) {
+  assert.ok(!units.formatWeightDelta(kg, 'uk', 'en-GB').includes('st'), `${kg} kg rendered as stone`);
+}
+const progressScreen = await read('src/app/(tabs)/progress.tsx');
+assert.match(
+  progressScreen,
+  /formatWeightDelta\(Math\.abs\(weightChange\)/,
+  'the change pill must use the difference formatter',
+);
+
 // --- Weekly rate ------------------------------------------------------------
 assert.equal(units.formatWeeklyRate(0.5, 'metric', 'en-GB'), '0.5 kg');
 assert.equal(units.formatWeeklyRate(0.5, 'us', 'en-GB'), '1 lb');
