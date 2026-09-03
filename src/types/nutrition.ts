@@ -59,6 +59,13 @@ export type PortionFactor = 0.7 | 1 | 1.4;
 
 export type NutritionGoal = 'lose' | 'maintain' | 'gain';
 
+/**
+ * Only what the energy formula needs. Mifflin-St Jeor has a male and a female
+ * constant and nothing in between; 'unspecified' keeps the midpoint Kandro
+ * used before anyone was asked, for people who would rather not say.
+ */
+export type BiologicalSex = 'female' | 'male' | 'unspecified';
+
 export type ActivityLevel = 'low' | 'light' | 'high';
 
 /** Target change in body weight per week, in kilograms. */
@@ -75,6 +82,8 @@ export type UserProfile = {
   weeklyRateKg: WeeklyRateKg;
   /** Display only: height and weight are always stored in cm and kg. */
   unitSystem: UnitSystem;
+  /** Feeds the resting-energy estimate; 'unspecified' is always allowed. */
+  sex: BiologicalSex;
   preferences: string[];
   completedAt: string | null;
 };

@@ -1,4 +1,4 @@
-import { ActivityLevel, DailyTargets, NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
+import { BiologicalSex, ActivityLevel, DailyTargets, NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
 import { getDictionary } from '@/i18n/active';
 import { UnitSystem, formatWeeklyRate } from '@/utils/units';
 
@@ -11,6 +11,7 @@ export const DEFAULT_PROFILE: UserProfile = {
   activityLevel: 'light',
   weeklyRateKg: 0.5,
   unitSystem: 'metric',
+  sex: 'unspecified',
   preferences: ['high-protein'],
   completedAt: null,
 };
@@ -36,6 +37,18 @@ const activityMultipliers: Record<ActivityLevel, number> = {
  * were offered.
  */
 const KCAL_PER_KG = 7700;
+
+export const BIOLOGICAL_SEXES: BiologicalSex[] = ['female', 'male', 'unspecified'];
+
+export function isBiologicalSex(value: unknown): value is BiologicalSex {
+  return BIOLOGICAL_SEXES.includes(value as BiologicalSex);
+}
+
+const SEX_CONSTANT: Record<BiologicalSex, number> = {
+  male: 5,
+  female: -161,
+  unspecified: -78,
+};
 
 function dailyGoalOffset(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
   if (goal === 'maintain') return 0;
@@ -73,11 +86,23 @@ function roundTo(value: number, step: number) {
   return Math.round(value / step) * step;
 }
 
+/**
+ * Mifflin-St Jeor times an activity factor. The constant is +5 for men and
+ * -161 for women; the midpoint of -78 applies when someone would rather not
+ * say. Skipping the question cost about 115 kcal a day in a fixed direction —
+ * a fifth of a 0.5 kg weekly goal, always the same way for the same person.
+ *
+ * One function, because the target and the safety floor have to agree on what
+ * maintenance means.
+ */
+export function maintenanceCalories(profile: UserProfile) {
+  const resting = 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age
+    + SEX_CONSTANT[profile.sex ?? 'unspecified'];
+  return resting * activityMultipliers[profile.activityLevel];
+}
+
 export function calculateDailyTargets(profile: UserProfile): DailyTargets {
-  // Gender-neutral midpoint of Mifflin-St Jeor. Kandro deliberately presents this
-  // as a wellness estimate because onboarding does not collect sex or body fat.
-  const restingEstimate = 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age - 78;
-  const maintenance = restingEstimate * activityMultipliers[profile.activityLevel];
+  const maintenance = maintenanceCalories(profile);
   const offset = dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
   // Never cut below 1300 kcal and never below 70% of maintenance, whichever is
   // higher. A fast rate on a light person would otherwise produce a target that
@@ -139,8 +164,7 @@ export function estimatedPace(
 /** True when the safety floor overrode the requested rate. Only a deficit can. */
 export function isRateLimited(profile: UserProfile) {
   if (profile.goal !== 'lose') return false;
-  const restingEstimate = 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age - 78;
-  const maintenance = restingEstimate * activityMultipliers[profile.activityLevel];
+  const maintenance = maintenanceCalories(profile);
   const requested = maintenance + dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
   return requested < Math.max(1_300, maintenance * 0.7);
 }

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { PendingAnalysis } from '@/services/contracts';
-import { DEFAULT_PROFILE } from '@/services/personalization';
+import { DEFAULT_PROFILE, isBiologicalSex } from '@/services/personalization';
 import { Meal, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 import { defaultUnitSystem, isUnitSystem } from '@/utils/units';
@@ -151,6 +151,7 @@ export async function loadProfile(): Promise<UserProfile> {
     // A profile written before units existed follows the device, so an
     // American upgrading the app is not suddenly asked to think in kilograms.
     unitSystem: isUnitSystem(stored.unitSystem) ? stored.unitSystem : defaultUnitSystem(),
+    sex: isBiologicalSex(stored.sex) ? stored.sex : 'unspecified',
     preferences: Array.isArray(stored.preferences) ? stored.preferences.filter((item): item is string => typeof item === 'string') : [],
   };
 }

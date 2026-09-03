@@ -40,8 +40,9 @@ for (let weightKg = 45; weightKg <= 160; weightKg += 5) {
   if (bmi < 17 || bmi > 45) continue;
   for (const activityLevel of ['low', 'light', 'high'])
   for (const goal of ['lose', 'maintain', 'gain'])
+  for (const sex of ['female', 'male', 'unspecified'])
   for (const weeklyRateKg of [0.25, 0.5]) {
-    const profile = { age, heightCm, weightKg, activityLevel, goal, weeklyRateKg, displayName: '', preferences: [], completedAt: null, unitSystem: 'metric' };
+    const profile = { age, heightCm, weightKg, activityLevel, goal, weeklyRateKg, sex, displayName: '', preferences: [], completedAt: null, unitSystem: 'metric' };
     const t = calculateDailyTargets(profile);
     checked += 1;
 
@@ -106,13 +107,38 @@ const sedentary = calculateDailyTargets({ ...base, activityLevel: 'low', age: 30
 const active = calculateDailyTargets({ ...base, activityLevel: 'high', age: 30, heightCm: 175, weightKg: 75 });
 assert.ok(active.calories > sedentary.calories, 'activity must raise the estimate');
 
-// --- The known limitation must stay documented -----------------------------
-const raw = await readFile(resolve(projectRoot, 'src/services/personalization.ts'), 'utf8');
-assert.match(raw, /- 78/, 'the sex-neutral Mifflin-St Jeor constant must not change silently');
-assert.match(
-  raw,
-  /does not collect sex/i,
-  'the reason the estimate is sex-neutral has to stay written down next to the formula',
+// --- Sex must move the estimate by the published amount ---------------------
+// Mifflin-St Jeor uses +5 for men and -161 for women. Skipping the question
+// cost about 115 kcal a day in a fixed direction, which is why it is asked.
+const person = { age: 24, heightCm: 182, weightKg: 84, activityLevel: 'light', goal: 'maintain', weeklyRateKg: 0.5, displayName: '', preferences: [], completedAt: null, unitSystem: 'metric' };
+const male = calculateDailyTargets({ ...person, sex: 'male' });
+const female = calculateDailyTargets({ ...person, sex: 'female' });
+const midpoint = calculateDailyTargets({ ...person, sex: 'unspecified' });
+const spread = male.calories - female.calories;
+assert.ok(
+  Math.abs(spread - 166 * ACTIVITY.light) < 20,
+  `the male and female estimates should differ by 166 kcal of BMR, got ${spread} of TDEE`,
 );
+assert.ok(
+  midpoint.calories > female.calories && midpoint.calories < male.calories,
+  'declining to answer must land between the two, not on one of them',
+);
+// Nobody has to answer, and not answering must still produce a usable plan.
+assert.ok(Number.isFinite(midpoint.calories) && midpoint.calories > 1_300);
+const missing = calculateDailyTargets({ ...person, sex: undefined });
+assert.equal(missing.calories, midpoint.calories, 'a profile saved before the question existed must keep the midpoint');
+
+const raw = await readFile(resolve(projectRoot, 'src/services/personalization.ts'), 'utf8');
+assert.match(raw, /male: 5,/, 'the male Mifflin-St Jeor constant must not change silently');
+assert.match(raw, /female: -161,/, 'the female Mifflin-St Jeor constant must not change silently');
+assert.match(raw, /unspecified: -78,/, 'declining must stay the midpoint of the two');
+// The target and the safety floor have to agree on what maintenance means.
+// They were two copies of the formula, and only one learned about sex.
+assert.equal(
+  (raw.match(/10 \* profile\.weightKg/g) ?? []).length,
+  1,
+  'the resting estimate must exist once, or the safety floor will drift from the target',
+);
+assert.match(raw, /export function maintenanceCalories/, 'the shared estimate must be named');
 
 console.log(`Validated ${checked} target profiles: macros always describe the calorie figure, protein stays under 40% of energy, and the estimate tracks weight, age and activity.`);

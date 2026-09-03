@@ -9,7 +9,7 @@ import { KandroMark } from '@/components/KandroMark';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { colors, radii, spacing } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { calculateDailyTargets, estimatedPace, isRateLimited, weeklyRateLabel } from '@/services/personalization';
+import { BIOLOGICAL_SEXES, calculateDailyTargets, estimatedPace, isRateLimited, weeklyRateLabel } from '@/services/personalization';
 import { trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
@@ -25,11 +25,12 @@ import {
   usesMetricHeight,
   usesMetricWeight,
 } from '@/utils/units';
+import type { BiologicalSex } from '@/types/nutrition';
 
 type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap };
 
 
-const STEPS = ['goal', 'rate', 'name', 'age', 'height', 'weight', 'activity', 'preferences', 'building', 'plan'] as const;
+const STEPS = ['goal', 'rate', 'name', 'sex', 'age', 'height', 'weight', 'activity', 'preferences', 'building', 'plan'] as const;
 type StepId = (typeof STEPS)[number];
 
 type Dict = ReturnType<typeof useLanguage>['t'];
@@ -39,6 +40,18 @@ function goalChoicesFor(t: Dict): Choice[] {
     { label: t.onboarding.goalLose, detail: t.onboarding.goalLoseDetail, icon: 'trending-down' },
     { label: t.onboarding.goalMaintain, detail: t.onboarding.goalMaintainDetail, icon: 'remove' },
     { label: t.onboarding.goalGain, detail: t.onboarding.goalGainDetail, icon: 'trending-up' },
+  ];
+}
+
+/**
+ * Asked because it is worth about 115 kcal a day, and offered with a real
+ * third option: nobody has to answer to use the app.
+ */
+function sexChoicesFor(t: Dict): Choice[] {
+  return [
+    { label: t.onboarding.sexFemale, detail: t.onboarding.sexFemaleDetail, icon: 'female' },
+    { label: t.onboarding.sexMale, detail: t.onboarding.sexMaleDetail, icon: 'male' },
+    { label: t.onboarding.sexUnspecified, detail: t.onboarding.sexUnspecifiedDetail, icon: 'help' },
   ];
 }
 
@@ -65,6 +78,7 @@ function copyFor(t: Dict): Record<StepId, { title: string; subtitle: string }> {
     goal: { title: t.onboarding.goalTitle, subtitle: t.onboarding.goalSubtitle },
     rate: { title: t.onboarding.rateTitle, subtitle: t.onboarding.rateSubtitle },
     name: { title: t.onboarding.nameTitle, subtitle: t.onboarding.nameSubtitle },
+    sex: { title: t.onboarding.sexTitle, subtitle: t.onboarding.sexSubtitle },
     age: { title: t.onboarding.ageTitle, subtitle: t.onboarding.ageSubtitle },
     height: { title: t.onboarding.heightTitle, subtitle: t.onboarding.heightSubtitle },
     weight: { title: t.onboarding.weightTitle, subtitle: t.onboarding.weightSubtitle },
@@ -85,11 +99,13 @@ export default function OnboardingScreen() {
   const { locale, t } = useLanguage();
   const copy = copyFor(t);
   const goalChoices = goalChoicesFor(t);
+  const sexChoices = sexChoicesFor(t);
   const activityChoices = activityChoicesFor(t);
   const preferenceChoices = preferenceChoicesFor(t);
   const [stepIndex, setStepIndex] = useState(0);
   const [goal, setGoal] = useState<NutritionGoal>('lose');
   const [displayName, setDisplayName] = useState('');
+  const [sex, setSex] = useState<BiologicalSex>('unspecified');
   // Guessed from the device so most people never touch it, but visible and
   // switchable right on the step where it matters.
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(defaultUnitSystem);
@@ -162,6 +178,7 @@ export default function OnboardingScreen() {
 
   const draftProfile = useMemo<UserProfile>(() => ({
     displayName: displayName.trim(),
+    sex,
     unitSystem,
     goal,
     age,
@@ -171,7 +188,7 @@ export default function OnboardingScreen() {
     weeklyRateKg: weeklyRate,
     preferences,
     completedAt: null,
-  }), [activity, age, displayName, goal, height, preferences, unitSystem, weeklyRate, weight]);
+  }), [activity, age, displayName, goal, height, preferences, sex, unitSystem, weeklyRate, weight]);
   const startingTargets = useMemo(() => calculateDailyTargets(draftProfile), [draftProfile]);
 
   const acceptConsent = async () => {
@@ -239,7 +256,10 @@ export default function OnboardingScreen() {
               <View style={styles.brandMark}><KandroMark size={42} /></View>
             ) : null}
             <Text accessibilityRole="header" style={styles.title}>{copy[step].title}</Text>
-            <Text style={styles.subtitle}>{copy[step].subtitle}</Text>
+            <Text style={styles.subtitle}>
+              {/* The rate question means something different for each goal. */}
+              {step === 'rate' && goal === 'gain' ? t.onboarding.rateSubtitleGain : copy[step].subtitle}
+            </Text>
           </View>
 
           <View style={styles.body}>
@@ -312,6 +332,14 @@ export default function OnboardingScreen() {
               </View>
             ) : null}
 
+            {step === 'sex' ? (
+              <ChoiceList
+                choices={sexChoices}
+                onSelect={(value) => selectAndAdvance(() => setSex(value))}
+                selected={sex}
+                values={BIOLOGICAL_SEXES}
+              />
+            ) : null}
             {step === 'age' ? (
               <NumberStep max={80} min={18} onChange={setAge} step={1} unit={t.onboarding.years} value={age} />
             ) : null}
