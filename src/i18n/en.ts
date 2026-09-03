@@ -331,6 +331,16 @@ export const en: typeof de = {
     invalid: 'Enter an amount',
     decimalMark: '.',
   },
+  recipe: {
+    title: 'Recipe',
+    forServings: (count: number) => (count === 1 ? 'For 1 serving' : `For ${count} servings`),
+    ingredients: 'Ingredients',
+    steps: 'Method',
+    note: 'The nutrition above is summed from exactly these amounts, sourced from USDA FoodData Central and Open Food Facts. Seasoning is to taste.',
+    open: 'View recipe',
+    missingTitle: 'No recipe for this one',
+    missingText: 'This dish is something you buy rather than cook, so there is nothing to follow.',
+  },
   plan: {
     dayDoneTitle: 'That is enough for today',
     dayDoneText: 'You have hit your target for today. New ideas come back tomorrow — or just log whatever else you eat.',

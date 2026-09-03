@@ -5,11 +5,11 @@
     "title": "Herb chicken plate",
     "detail": "Chicken, potatoes, vegetables and yoghurt",
     "time": "20 min",
-    "calories": 520,
-    "protein": 46,
-    "carbs": 48,
-    "fat": 14,
-    "fiber": 8,
+    "calories": 502,
+    "protein": 48,
+    "carbs": 50,
+    "fat": 12,
+    "fiber": 7,
     "tags": [
       "high-protein"
     ]
@@ -20,11 +20,11 @@
     "title": "Egg taco bowl",
     "detail": "Eggs, black beans, salsa and rice",
     "time": "15 min",
-    "calories": 485,
-    "protein": 40,
-    "carbs": 52,
-    "fat": 11,
-    "fiber": 10,
+    "calories": 500,
+    "protein": 31,
+    "carbs": 56,
+    "fat": 16,
+    "fiber": 11,
     "tags": [
       "vegetarian"
     ]
@@ -35,11 +35,11 @@
     "title": "Tuna pasta salad",
     "detail": "Tuna, pasta, tomatoes and rocket",
     "time": "18 min",
-    "calories": 505,
+    "calories": 507,
     "protein": 43,
-    "carbs": 57,
-    "fat": 10,
-    "fiber": 7,
+    "carbs": 56,
+    "fat": 11,
+    "fiber": 5,
     "tags": [
       "high-protein"
     ]
@@ -50,11 +50,11 @@
     "title": "Lentil bolognese",
     "detail": "Red lentils, wholegrain pasta and parmesan",
     "time": "25 min",
-    "calories": 535,
-    "protein": 32,
-    "carbs": 72,
-    "fat": 12,
-    "fiber": 15,
+    "calories": 518,
+    "protein": 28,
+    "carbs": 78,
+    "fat": 13,
+    "fiber": 11,
     "tags": [
       "vegetarian"
     ]
@@ -65,10 +65,10 @@
     "title": "Baked salmon with broccoli",
     "detail": "Salmon, broccoli and baby potatoes",
     "time": "28 min",
-    "calories": 545,
-    "protein": 42,
-    "carbs": 39,
-    "fat": 23,
+    "calories": 548,
+    "protein": 39,
+    "carbs": 40,
+    "fat": 26,
     "fiber": 8,
     "tags": [
       "pescetarian"
@@ -80,11 +80,11 @@
     "title": "Tofu peanut stir-fry",
     "detail": "Tofu, stir-fry vegetables, rice and a light peanut sauce",
     "time": "22 min",
-    "calories": 510,
+    "calories": 504,
     "protein": 31,
-    "carbs": 56,
+    "carbs": 57,
     "fat": 19,
-    "fiber": 9,
+    "fiber": 8,
     "tags": [
       "vegan"
     ]
@@ -95,11 +95,11 @@
     "title": "Turkey chilli",
     "detail": "Turkey mince, kidney beans, sweetcorn and tomato",
     "time": "30 min",
-    "calories": 495,
-    "protein": 47,
-    "carbs": 49,
-    "fat": 11,
-    "fiber": 13,
+    "calories": 489,
+    "protein": 46,
+    "carbs": 50,
+    "fat": 13,
+    "fiber": 12,
     "tags": [
       "high-protein"
     ]
@@ -110,11 +110,11 @@
     "title": "Skyr pancakes",
     "detail": "Oats, skyr, egg and berries",
     "time": "16 min",
-    "calories": 455,
-    "protein": 38,
-    "carbs": 55,
-    "fat": 9,
-    "fiber": 8,
+    "calories": 470,
+    "protein": 37,
+    "carbs": 52,
+    "fat": 12,
+    "fiber": 7,
     "tags": [
       "vegetarian"
     ]
@@ -125,11 +125,11 @@
     "title": "Chickpea curry",
     "detail": "Chickpeas, spinach, tomato and basmati rice",
     "time": "24 min",
-    "calories": 540,
-    "protein": 25,
-    "carbs": 78,
-    "fat": 14,
-    "fiber": 14,
+    "calories": 521,
+    "protein": 23,
+    "carbs": 83,
+    "fat": 13,
+    "fiber": 18,
     "tags": [
       "vegan"
     ]
@@ -142,9 +142,9 @@
     "time": "20 min",
     "calories": 550,
     "protein": 45,
-    "carbs": 58,
-    "fat": 15,
-    "fiber": 7,
+    "carbs": 59,
+    "fat": 14,
+    "fiber": 4,
     "tags": [
       "high-protein"
     ]
@@ -155,11 +155,11 @@
     "title": "Baked potato with cottage cheese",
     "detail": "Potato, cottage cheese, cucumber and herbs",
     "time": "30 min",
-    "calories": 470,
-    "protein": 35,
-    "carbs": 61,
-    "fat": 9,
-    "fiber": 8,
+    "calories": 479,
+    "protein": 33,
+    "carbs": 60,
+    "fat": 12,
+    "fiber": 5,
     "tags": [
       "vegetarian"
     ]
@@ -170,11 +170,11 @@
     "title": "Prawn couscous bowl",
     "detail": "Prawns, couscous, tomato and lemon",
     "time": "18 min",
-    "calories": 490,
-    "protein": 41,
-    "carbs": 58,
-    "fat": 10,
-    "fiber": 7,
+    "calories": 483,
+    "protein": 42,
+    "carbs": 59,
+    "fat": 9,
+    "fiber": 5,
     "tags": [
       "pescetarian"
     ]
@@ -185,11 +185,11 @@
     "title": "Tempeh sweet potato bowl",
     "detail": "Tempeh, sweet potato, red cabbage and tahini",
     "time": "26 min",
-    "calories": 530,
+    "calories": 527,
     "protein": 30,
     "carbs": 64,
-    "fat": 18,
-    "fiber": 12,
+    "fat": 20,
+    "fiber": 10,
     "tags": [
       "vegan"
     ]
@@ -204,7 +204,7 @@
     "protein": 48,
     "carbs": 42,
     "fat": 17,
-    "fiber": 8,
+    "fiber": 7,
     "tags": [
       "high-protein"
     ]
@@ -213,13 +213,13 @@
     "id": "home-15",
     "context": "home",
     "title": "Quark semolina bowl",
-    "detail": "Low-fat quark, semolina, banana and cinnamon",
+    "detail": "Low-fat quark, semolina, banana and almonds",
     "time": "12 min",
-    "calories": 460,
+    "calories": 461,
     "protein": 36,
     "carbs": 66,
-    "fat": 6,
-    "fiber": 6,
+    "fat": 7,
+    "fiber": 5,
     "tags": [
       "vegetarian"
     ]
@@ -230,11 +230,11 @@
     "title": "Lemon chicken orzo",
     "detail": "Chicken, orzo, courgette and lemon",
     "time": "22 min",
-    "calories": 525,
-    "protein": 45,
-    "carbs": 59,
-    "fat": 12,
-    "fiber": 7,
+    "calories": 518,
+    "protein": 46,
+    "carbs": 61,
+    "fat": 9,
+    "fiber": 4,
     "tags": [
       "high-protein"
     ]
@@ -245,11 +245,11 @@
     "title": "Cod with potatoes and spinach",
     "detail": "Cod, boiled potatoes, leaf spinach and mustard yoghurt",
     "time": "25 min",
-    "calories": 475,
+    "calories": 478,
     "protein": 42,
     "carbs": 48,
-    "fat": 13,
-    "fiber": 8,
+    "fat": 14,
+    "fiber": 6,
     "tags": [
       "pescetarian"
     ]
@@ -260,11 +260,11 @@
     "title": "Bean and quinoa chilli",
     "detail": "Black beans, quinoa, sweetcorn and peppers",
     "time": "28 min",
-    "calories": 520,
-    "protein": 26,
-    "carbs": 78,
+    "calories": 511,
+    "protein": 24,
+    "carbs": 81,
     "fat": 12,
-    "fiber": 16,
+    "fiber": 22,
     "tags": [
       "vegan"
     ]
@@ -275,11 +275,11 @@
     "title": "Turkey meatballs with couscous",
     "detail": "Turkey meatballs, couscous, tomato sauce and herbs",
     "time": "27 min",
-    "calories": 535,
-    "protein": 46,
-    "carbs": 60,
-    "fat": 13,
-    "fiber": 8,
+    "calories": 559,
+    "protein": 41,
+    "carbs": 58,
+    "fat": 19,
+    "fiber": 5,
     "tags": [
       "high-protein"
     ]
@@ -290,11 +290,11 @@
     "title": "Spinach feta frittata",
     "detail": "Eggs, spinach, feta and wholegrain bread",
     "time": "20 min",
-    "calories": 485,
-    "protein": 34,
-    "carbs": 38,
-    "fat": 22,
-    "fiber": 7,
+    "calories": 493,
+    "protein": 30,
+    "carbs": 39,
+    "fat": 25,
+    "fiber": 9,
     "tags": [
       "vegetarian"
     ]
@@ -308,8 +308,8 @@
     "calories": 510,
     "protein": 42,
     "carbs": 60,
-    "fat": 12,
-    "fiber": 10,
+    "fat": 11,
+    "fiber": 7,
     "tags": [
       "vegan"
     ]
@@ -324,7 +324,7 @@
     "protein": 45,
     "carbs": 48,
     "fat": 20,
-    "fiber": 8,
+    "fiber": 5,
     "tags": [
       "high-protein"
     ]
@@ -335,11 +335,11 @@
     "title": "Salmon spinach pasta",
     "detail": "Salmon, wholegrain pasta, spinach and lemon sauce",
     "time": "24 min",
-    "calories": 545,
-    "protein": 41,
+    "calories": 540,
+    "protein": 39,
     "carbs": 57,
-    "fat": 17,
-    "fiber": 8,
+    "fat": 20,
+    "fiber": 10,
     "tags": [
       "pescetarian"
     ]
@@ -350,11 +350,11 @@
     "title": "White bean stew",
     "detail": "White beans, carrots, leek and rye bread",
     "time": "30 min",
-    "calories": 480,
-    "protein": 25,
-    "carbs": 70,
-    "fat": 11,
-    "fiber": 17,
+    "calories": 469,
+    "protein": 22,
+    "carbs": 75,
+    "fat": 10,
+    "fiber": 16,
     "tags": [
       "vegan"
     ]
@@ -365,11 +365,11 @@
     "title": "Pepper chicken with bulgur",
     "detail": "Chicken, bulgur, peppers and herb yoghurt",
     "time": "23 min",
-    "calories": 515,
-    "protein": 46,
+    "calories": 510,
+    "protein": 47,
     "carbs": 55,
-    "fat": 12,
-    "fiber": 9,
+    "fat": 13,
+    "fiber": 13,
     "tags": [
       "high-protein"
     ]
@@ -380,11 +380,11 @@
     "title": "Cottage cheese omelette",
     "detail": "Eggs, cottage cheese, mushrooms and rye toast",
     "time": "15 min",
-    "calories": 450,
-    "protein": 39,
-    "carbs": 34,
-    "fat": 17,
-    "fiber": 6,
+    "calories": 449,
+    "protein": 37,
+    "carbs": 33,
+    "fat": 19,
+    "fiber": 4,
     "tags": [
       "vegetarian"
     ]
@@ -395,11 +395,11 @@
     "title": "Red lentil coconut soup",
     "detail": "Red lentils, light coconut milk, carrots and flatbread",
     "time": "26 min",
-    "calories": 500,
-    "protein": 24,
-    "carbs": 69,
-    "fat": 14,
-    "fiber": 15,
+    "calories": 493,
+    "protein": 21,
+    "carbs": 71,
+    "fat": 15,
+    "fiber": 10,
     "tags": [
       "vegan"
     ]
@@ -410,10 +410,10 @@
     "title": "Turkey pesto pasta",
     "detail": "Turkey breast, wholegrain pasta, green pesto and tomatoes",
     "time": "21 min",
-    "calories": 540,
-    "protein": 46,
-    "carbs": 58,
-    "fat": 14,
+    "calories": 531,
+    "protein": 47,
+    "carbs": 60,
+    "fat": 13,
     "fiber": 8,
     "tags": [
       "high-protein"
@@ -425,11 +425,11 @@
     "title": "Prawn rice noodle stir-fry",
     "detail": "Prawns, rice noodles, pak choi and lime",
     "time": "19 min",
-    "calories": 505,
-    "protein": 39,
-    "carbs": 61,
-    "fat": 12,
-    "fiber": 7,
+    "calories": 514,
+    "protein": 38,
+    "carbs": 59,
+    "fat": 14,
+    "fiber": 4,
     "tags": [
       "pescetarian"
     ]
@@ -440,11 +440,11 @@
     "title": "Quark berry porridge",
     "detail": "Low-fat quark, oats, berries and nut butter",
     "time": "10 min",
-    "calories": 465,
+    "calories": 467,
     "protein": 38,
-    "carbs": 56,
-    "fat": 10,
-    "fiber": 9,
+    "carbs": 55,
+    "fat": 12,
+    "fiber": 8,
     "tags": [
       "vegetarian"
     ]
@@ -455,10 +455,10 @@
     "title": "Pepper chicken with quinoa",
     "detail": "Chicken, quinoa, peppers and herbs",
     "time": "22 min",
-    "calories": 520,
+    "calories": 515,
     "protein": 45,
-    "carbs": 56,
-    "fat": 13,
+    "carbs": 57,
+    "fat": 12,
     "fiber": 9,
     "tags": [
       "high-protein"
@@ -470,11 +470,11 @@
     "title": "Turkey spinach gnocchi",
     "detail": "Turkey breast, gnocchi, spinach and a light cream cheese sauce",
     "time": "24 min",
-    "calories": 535,
-    "protein": 44,
-    "carbs": 61,
-    "fat": 13,
-    "fiber": 7,
+    "calories": 544,
+    "protein": 42,
+    "carbs": 48,
+    "fat": 21,
+    "fiber": 6,
     "tags": [
       "high-protein"
     ]
@@ -485,11 +485,11 @@
     "title": "Beef couscous pan",
     "detail": "Lean beef, couscous, aubergine and tomato",
     "time": "23 min",
-    "calories": 540,
+    "calories": 538,
     "protein": 43,
     "carbs": 60,
-    "fat": 14,
-    "fiber": 10,
+    "fat": 13,
+    "fiber": 7,
     "tags": [
       "high-protein"
     ]
@@ -500,10 +500,10 @@
     "title": "Cod with pea mash",
     "detail": "Cod, potato and pea mash, and carrots",
     "time": "26 min",
-    "calories": 480,
-    "protein": 40,
-    "carbs": 54,
-    "fat": 12,
+    "calories": 469,
+    "protein": 41,
+    "carbs": 56,
+    "fat": 9,
     "fiber": 10,
     "tags": [
       "pescetarian"
@@ -515,11 +515,11 @@
     "title": "Prawn tomato risotto",
     "detail": "Prawns, risotto rice, tomatoes and courgette",
     "time": "28 min",
-    "calories": 525,
-    "protein": 38,
-    "carbs": 65,
-    "fat": 12,
-    "fiber": 7,
+    "calories": 510,
+    "protein": 39,
+    "carbs": 68,
+    "fat": 10,
+    "fiber": 4,
     "tags": [
       "pescetarian"
     ]
@@ -530,11 +530,11 @@
     "title": "Tuna egg rice bowl",
     "detail": "Tuna, egg, rice, cucumber and spring onion",
     "time": "16 min",
-    "calories": 500,
-    "protein": 41,
-    "carbs": 53,
-    "fat": 14,
-    "fiber": 7,
+    "calories": 495,
+    "protein": 42,
+    "carbs": 54,
+    "fat": 11,
+    "fiber": 4,
     "tags": [
       "pescetarian"
     ]
@@ -545,11 +545,11 @@
     "title": "Tofu lentil bolognese",
     "detail": "Tofu, red lentils, wholegrain spaghetti and tomato",
     "time": "27 min",
-    "calories": 515,
-    "protein": 32,
-    "carbs": 70,
+    "calories": 499,
+    "protein": 33,
+    "carbs": 73,
     "fat": 12,
-    "fiber": 16,
+    "fiber": 12,
     "tags": [
       "vegan"
     ]
@@ -560,11 +560,11 @@
     "title": "Chickpea spinach pasta",
     "detail": "Chickpeas, wholegrain pasta, spinach and tomato",
     "time": "21 min",
-    "calories": 505,
-    "protein": 25,
-    "carbs": 72,
-    "fat": 13,
-    "fiber": 15,
+    "calories": 494,
+    "protein": 24,
+    "carbs": 77,
+    "fat": 14,
+    "fiber": 19,
     "tags": [
       "vegan"
     ]
@@ -575,11 +575,11 @@
     "title": "Tempeh broccoli noodles",
     "detail": "Tempeh, wholegrain pasta, broccoli and soy sauce",
     "time": "20 min",
-    "calories": 520,
-    "protein": 31,
-    "carbs": 62,
+    "calories": 500,
+    "protein": 34,
+    "carbs": 64,
     "fat": 17,
-    "fiber": 11,
+    "fiber": 10,
     "tags": [
       "vegan"
     ]
@@ -590,11 +590,11 @@
     "title": "Lentil shepherd's pie",
     "detail": "Lentils, peas, carrots and a potato topping",
     "time": "35 min",
-    "calories": 500,
-    "protein": 24,
-    "carbs": 71,
+    "calories": 494,
+    "protein": 22,
+    "carbs": 75,
     "fat": 13,
-    "fiber": 16,
+    "fiber": 21,
     "tags": [
       "vegan"
     ]
@@ -606,10 +606,10 @@
     "detail": "Cottage cheese, wholegrain pasta, courgette and tomato",
     "time": "20 min",
     "calories": 485,
-    "protein": 35,
+    "protein": 34,
     "carbs": 58,
-    "fat": 12,
-    "fiber": 9,
+    "fat": 15,
+    "fiber": 8,
     "tags": [
       "vegetarian"
     ]
@@ -620,10 +620,10 @@
     "title": "Skyr berry waffles",
     "detail": "Skyr, oat flour, egg and berry compote",
     "time": "18 min",
-    "calories": 460,
-    "protein": 37,
-    "carbs": 56,
-    "fat": 9,
+    "calories": 472,
+    "protein": 36,
+    "carbs": 54,
+    "fat": 12,
     "fiber": 8,
     "tags": [
       "vegetarian"
@@ -635,11 +635,11 @@
     "title": "Egg and lentil salad",
     "detail": "Eggs, green lentils, cucumber, tomato and rye bread",
     "time": "17 min",
-    "calories": 475,
-    "protein": 32,
+    "calories": 476,
+    "protein": 31,
     "carbs": 50,
     "fat": 17,
-    "fiber": 13,
+    "fiber": 14,
     "tags": [
       "vegetarian"
     ]
@@ -650,11 +650,11 @@
     "title": "Halloumi couscous bowl",
     "detail": "Halloumi, couscous, roast vegetables and a herb dip",
     "time": "24 min",
-    "calories": 535,
-    "protein": 30,
+    "calories": 542,
+    "protein": 26,
     "carbs": 64,
-    "fat": 18,
-    "fiber": 10,
+    "fat": 21,
+    "fiber": 6,
     "tags": [
       "vegetarian"
     ]
@@ -665,11 +665,11 @@
     "title": "Ricotta spinach cannelloni",
     "detail": "Cannelloni, ricotta, spinach and tomato sauce",
     "time": "35 min",
-    "calories": 525,
+    "calories": 523,
     "protein": 33,
-    "carbs": 63,
-    "fat": 16,
-    "fiber": 9,
+    "carbs": 64,
+    "fat": 17,
+    "fiber": 7,
     "tags": [
       "vegetarian"
     ]
@@ -684,7 +684,7 @@
     "protein": 45,
     "carbs": 50,
     "fat": 12,
-    "fiber": 14,
+    "fiber": 16,
     "tags": [
       "high-protein"
     ]
@@ -695,11 +695,11 @@
     "title": "Turkey sweet potato pan",
     "detail": "Turkey breast, sweet potato, green beans and peppers",
     "time": "25 min",
-    "calories": 530,
-    "protein": 46,
-    "carbs": 57,
-    "fat": 13,
-    "fiber": 11,
+    "calories": 521,
+    "protein": 48,
+    "carbs": 58,
+    "fat": 12,
+    "fiber": 12,
     "tags": [
       "high-protein"
     ]
@@ -710,11 +710,11 @@
     "title": "Beef and bean burrito bowl",
     "detail": "Lean beef, beans, rice, salsa and salad",
     "time": "22 min",
-    "calories": 545,
-    "protein": 44,
-    "carbs": 65,
-    "fat": 12,
-    "fiber": 14,
+    "calories": 526,
+    "protein": 46,
+    "carbs": 69,
+    "fat": 6,
+    "fiber": 11,
     "tags": [
       "high-protein"
     ]
@@ -725,11 +725,11 @@
     "title": "Chicken mushroom rice pan",
     "detail": "Chicken, rice, mushrooms and peas",
     "time": "21 min",
-    "calories": 510,
+    "calories": 513,
     "protein": 46,
-    "carbs": 54,
+    "carbs": 53,
     "fat": 12,
-    "fiber": 8,
+    "fiber": 4,
     "tags": [
       "high-protein"
     ]
@@ -740,11 +740,11 @@
     "title": "Turkey courgette patties",
     "detail": "Turkey patties, courgette, potato wedges and a yoghurt dip",
     "time": "28 min",
-    "calories": 500,
-    "protein": 45,
-    "carbs": 49,
-    "fat": 14,
-    "fiber": 9,
+    "calories": 508,
+    "protein": 43,
+    "carbs": 48,
+    "fat": 17,
+    "fiber": 5,
     "tags": [
       "high-protein"
     ]
@@ -755,11 +755,11 @@
     "title": "Pollock with tomato rice",
     "detail": "Pollock, rice, tomatoes, olives and herbs",
     "time": "24 min",
-    "calories": 495,
+    "calories": 494,
     "protein": 42,
     "carbs": 55,
     "fat": 12,
-    "fiber": 8,
+    "fiber": 3,
     "tags": [
       "pescetarian"
     ]
@@ -770,11 +770,11 @@
     "title": "Salmon potato soup",
     "detail": "Salmon, potatoes, leek and a light milk broth",
     "time": "30 min",
-    "calories": 520,
-    "protein": 39,
-    "carbs": 50,
-    "fat": 18,
-    "fiber": 8,
+    "calories": 535,
+    "protein": 35,
+    "carbs": 49,
+    "fat": 22,
+    "fiber": 4,
     "tags": [
       "pescetarian"
     ]
@@ -785,11 +785,11 @@
     "title": "Tuna bean pasta",
     "detail": "Tuna, white beans, wholegrain pasta and tomatoes",
     "time": "19 min",
-    "calories": 505,
-    "protein": 40,
-    "carbs": 58,
-    "fat": 13,
-    "fiber": 13,
+    "calories": 496,
+    "protein": 41,
+    "carbs": 60,
+    "fat": 12,
+    "fiber": 11,
     "tags": [
       "pescetarian"
     ]
@@ -800,11 +800,11 @@
     "title": "Prawn pea risotto",
     "detail": "Prawns, risotto rice, peas and lemon",
     "time": "27 min",
-    "calories": 530,
+    "calories": 535,
     "protein": 38,
-    "carbs": 66,
-    "fat": 13,
-    "fiber": 9,
+    "carbs": 64,
+    "fat": 14,
+    "fiber": 6,
     "tags": [
       "pescetarian"
     ]
@@ -815,11 +815,11 @@
     "title": "Tofu chickpea curry",
     "detail": "Tofu, chickpeas, spinach and basmati rice",
     "time": "25 min",
-    "calories": 515,
-    "protein": 27,
-    "carbs": 72,
+    "calories": 505,
+    "protein": 28,
+    "carbs": 73,
     "fat": 13,
-    "fiber": 15,
+    "fiber": 12,
     "tags": [
       "vegan"
     ]
@@ -830,11 +830,11 @@
     "title": "Seitan mushroom goulash",
     "detail": "Seitan, mushrooms, peppers and potatoes",
     "time": "28 min",
-    "calories": 510,
-    "protein": 40,
-    "carbs": 58,
-    "fat": 13,
-    "fiber": 11,
+    "calories": 493,
+    "protein": 41,
+    "carbs": 61,
+    "fat": 11,
+    "fiber": 8,
     "tags": [
       "vegan"
     ]
@@ -845,11 +845,11 @@
     "title": "Bean stuffed peppers",
     "detail": "Kidney beans, rice, sweetcorn and tomato in peppers",
     "time": "35 min",
-    "calories": 490,
-    "protein": 25,
-    "carbs": 68,
-    "fat": 13,
-    "fiber": 16,
+    "calories": 469,
+    "protein": 19,
+    "carbs": 76,
+    "fat": 12,
+    "fiber": 14,
     "tags": [
       "vegan"
     ]
@@ -860,11 +860,11 @@
     "title": "Pea and tofu pasta",
     "detail": "Tofu, peas, wholegrain pasta and lemon sauce",
     "time": "20 min",
-    "calories": 500,
+    "calories": 486,
     "protein": 31,
-    "carbs": 64,
-    "fat": 13,
-    "fiber": 13,
+    "carbs": 67,
+    "fat": 14,
+    "fiber": 12,
     "tags": [
       "vegan"
     ]
@@ -875,11 +875,11 @@
     "title": "Cottage cheese tomato gnocchi",
     "detail": "Cottage cheese, gnocchi, cherry tomatoes and rocket",
     "time": "18 min",
-    "calories": 500,
-    "protein": 36,
-    "carbs": 59,
-    "fat": 13,
-    "fiber": 8,
+    "calories": 511,
+    "protein": 34,
+    "carbs": 45,
+    "fat": 22,
+    "fiber": 4,
     "tags": [
       "vegetarian"
     ]
@@ -890,11 +890,11 @@
     "title": "Egg potato spinach pan",
     "detail": "Eggs, potatoes, spinach and cottage cheese",
     "time": "20 min",
-    "calories": 485,
+    "calories": 488,
     "protein": 34,
     "carbs": 50,
-    "fat": 17,
-    "fiber": 9,
+    "fat": 18,
+    "fiber": 7,
     "tags": [
       "vegetarian"
     ]
@@ -905,11 +905,11 @@
     "title": "Quark plum oats",
     "detail": "Low-fat quark, oats, plums and almonds",
     "time": "10 min",
-    "calories": 455,
+    "calories": 453,
     "protein": 36,
     "carbs": 57,
-    "fat": 8,
-    "fiber": 9,
+    "fat": 10,
+    "fiber": 8,
     "tags": [
       "vegetarian"
     ]
@@ -920,11 +920,11 @@
     "title": "Lentil and egg bowl",
     "detail": "Green lentils, eggs, roast vegetables and a yoghurt dip",
     "time": "24 min",
-    "calories": 480,
-    "protein": 32,
-    "carbs": 55,
+    "calories": 473,
+    "protein": 34,
+    "carbs": 54,
     "fat": 15,
-    "fiber": 15,
+    "fiber": 19,
     "tags": [
       "vegetarian"
     ]
@@ -935,11 +935,11 @@
     "title": "Chicken potato stew",
     "detail": "Chicken, potatoes, carrots and peas",
     "time": "32 min",
-    "calories": 520,
-    "protein": 47,
+    "calories": 519,
+    "protein": 48,
     "carbs": 53,
-    "fat": 13,
-    "fiber": 11,
+    "fat": 12,
+    "fiber": 9,
     "tags": [
       "high-protein"
     ]
@@ -950,11 +950,11 @@
     "title": "Turkey rice peppers",
     "detail": "Peppers stuffed with turkey mince, rice, beans and tomato",
     "time": "35 min",
-    "calories": 525,
-    "protein": 46,
-    "carbs": 58,
-    "fat": 12,
-    "fiber": 12,
+    "calories": 526,
+    "protein": 44,
+    "carbs": 59,
+    "fat": 14,
+    "fiber": 9,
     "tags": [
       "high-protein"
     ]
@@ -965,11 +965,11 @@
     "title": "Beef broccoli noodles",
     "detail": "Lean beef, wholegrain pasta, broccoli and soy sauce",
     "time": "20 min",
-    "calories": 535,
-    "protein": 44,
-    "carbs": 61,
-    "fat": 13,
-    "fiber": 10,
+    "calories": 517,
+    "protein": 47,
+    "carbs": 62,
+    "fat": 11,
+    "fiber": 11,
     "tags": [
       "high-protein"
     ]
@@ -980,11 +980,11 @@
     "title": "Salmon quinoa patties",
     "detail": "Salmon quinoa patties, cucumber salad and a yoghurt dip",
     "time": "28 min",
-    "calories": 530,
-    "protein": 40,
-    "carbs": 57,
-    "fat": 16,
-    "fiber": 9,
+    "calories": 554,
+    "protein": 34,
+    "carbs": 52,
+    "fat": 23,
+    "fiber": 6,
     "tags": [
       "pescetarian"
     ]
@@ -995,11 +995,11 @@
     "title": "Tofu vegetable lasagne",
     "detail": "Tofu, lasagne sheets, courgette and tomato sauce",
     "time": "38 min",
-    "calories": 520,
-    "protein": 32,
-    "carbs": 61,
-    "fat": 17,
-    "fiber": 12,
+    "calories": 518,
+    "protein": 31,
+    "carbs": 62,
+    "fat": 19,
+    "fiber": 7,
     "tags": [
       "vegan"
     ]

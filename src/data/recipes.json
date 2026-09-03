@@ -1,0 +1,2162 @@
+{
+  "home-01": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "chicken-breast",
+        "grams": 125
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 185
+      },
+      {
+        "key": "broccoli-cooked",
+        "grams": 105
+      },
+      {
+        "key": "yoghurt-plain",
+        "grams": 75
+      },
+      {
+        "key": "olive-oil",
+        "grams": 6
+      }
+    ],
+    "nutrition": {
+      "calories": 502,
+      "protein": 48,
+      "carbs": 50,
+      "fat": 12,
+      "fiber": 7
+    }
+  },
+  "home-02": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "egg",
+        "grams": 145
+      },
+      {
+        "key": "black-beans-cooked",
+        "grams": 110
+      },
+      {
+        "key": "rice-white-cooked",
+        "grams": 85
+      },
+      {
+        "key": "salsa",
+        "grams": 35
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 35
+      }
+    ],
+    "nutrition": {
+      "calories": 500,
+      "protein": 31,
+      "carbs": 56,
+      "fat": 16,
+      "fiber": 11
+    }
+  },
+  "home-03": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "tuna-canned",
+        "grams": 165
+      },
+      {
+        "key": "pasta-cooked",
+        "grams": 165
+      },
+      {
+        "key": "tomato-raw",
+        "grams": 125
+      },
+      {
+        "key": "rocket",
+        "grams": 25
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 507,
+      "protein": 43,
+      "carbs": 56,
+      "fat": 11,
+      "fiber": 5
+    }
+  },
+  "home-04": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "lentils-red-dry",
+        "grams": 40
+      },
+      {
+        "key": "pasta-wholegrain-cooked",
+        "grams": 135
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 85
+      },
+      {
+        "key": "parmesan",
+        "grams": 30
+      },
+      {
+        "key": "olive-oil",
+        "grams": 2
+      }
+    ],
+    "nutrition": {
+      "calories": 518,
+      "protein": 28,
+      "carbs": 78,
+      "fat": 13,
+      "fiber": 11
+    }
+  },
+  "home-05": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "salmon",
+        "grams": 150
+      },
+      {
+        "key": "broccoli-cooked",
+        "grams": 155
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 140
+      },
+      {
+        "key": "olive-oil",
+        "grams": 7
+      },
+      {
+        "key": "lemon-juice",
+        "grams": 10
+      }
+    ],
+    "nutrition": {
+      "calories": 548,
+      "protein": 39,
+      "carbs": 40,
+      "fat": 26,
+      "fiber": 8
+    }
+  },
+  "home-06": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "tofu",
+        "grams": 225
+      },
+      {
+        "key": "mixed-stirfry-veg",
+        "grams": 110
+      },
+      {
+        "key": "rice-white-cooked",
+        "grams": 110
+      },
+      {
+        "key": "peanut-butter",
+        "grams": 18
+      },
+      {
+        "key": "soy-sauce",
+        "grams": 12
+      }
+    ],
+    "nutrition": {
+      "calories": 504,
+      "protein": 31,
+      "carbs": 57,
+      "fat": 19,
+      "fiber": 8
+    }
+  },
+  "home-07": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "turkey-mince",
+        "grams": 115
+      },
+      {
+        "key": "kidney-beans-cooked",
+        "grams": 130
+      },
+      {
+        "key": "sweetcorn",
+        "grams": 50
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 110
+      },
+      {
+        "key": "onion",
+        "grams": 40
+      }
+    ],
+    "nutrition": {
+      "calories": 489,
+      "protein": 46,
+      "carbs": 50,
+      "fat": 13,
+      "fiber": 12
+    }
+  },
+  "home-08": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "oats-dry",
+        "grams": 55
+      },
+      {
+        "key": "skyr",
+        "grams": 270
+      },
+      {
+        "key": "egg",
+        "grams": 30
+      },
+      {
+        "key": "berries-mixed",
+        "grams": 70
+      },
+      {
+        "key": "rapeseed-oil",
+        "grams": 5
+      }
+    ],
+    "nutrition": {
+      "calories": 470,
+      "protein": 37,
+      "carbs": 52,
+      "fat": 12,
+      "fiber": 7
+    }
+  },
+  "home-09": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "chickpeas-cooked",
+        "grams": 155
+      },
+      {
+        "key": "spinach-cooked",
+        "grams": 180
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 65
+      },
+      {
+        "key": "rice-basmati-cooked",
+        "grams": 100
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 521,
+      "protein": 23,
+      "carbs": 83,
+      "fat": 13,
+      "fiber": 18
+    }
+  },
+  "home-10": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "beef-lean",
+        "grams": 105
+      },
+      {
+        "key": "rice-white-cooked",
+        "grams": 175
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 105
+      },
+      {
+        "key": "courgette",
+        "grams": 95
+      },
+      {
+        "key": "rapeseed-oil",
+        "grams": 7
+      }
+    ],
+    "nutrition": {
+      "calories": 550,
+      "protein": 45,
+      "carbs": 59,
+      "fat": 14,
+      "fiber": 4
+    }
+  },
+  "home-11": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "potato-cooked",
+        "grams": 225
+      },
+      {
+        "key": "cottage-cheese",
+        "grams": 255
+      },
+      {
+        "key": "cucumber",
+        "grams": 125
+      },
+      {
+        "key": "rapeseed-oil",
+        "grams": 6
+      }
+    ],
+    "nutrition": {
+      "calories": 479,
+      "protein": 33,
+      "carbs": 60,
+      "fat": 12,
+      "fiber": 5
+    }
+  },
+  "home-12": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "prawns",
+        "grams": 135
+      },
+      {
+        "key": "couscous-cooked",
+        "grams": 225
+      },
+      {
+        "key": "tomato-raw",
+        "grams": 120
+      },
+      {
+        "key": "lemon-juice",
+        "grams": 25
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 483,
+      "protein": 42,
+      "carbs": 59,
+      "fat": 9,
+      "fiber": 5
+    }
+  },
+  "home-13": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "tempeh",
+        "grams": 115
+      },
+      {
+        "key": "sweet-potato-cooked",
+        "grams": 230
+      },
+      {
+        "key": "red-cabbage",
+        "grams": 110
+      },
+      {
+        "key": "tahini",
+        "grams": 3
+      },
+      {
+        "key": "olive-oil",
+        "grams": 5
+      }
+    ],
+    "nutrition": {
+      "calories": 527,
+      "protein": 30,
+      "carbs": 64,
+      "fat": 20,
+      "fiber": 10
+    }
+  },
+  "home-14": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "egg",
+        "grams": 90
+      },
+      {
+        "key": "chicken-breast",
+        "grams": 85
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 175
+      },
+      {
+        "key": "bread-wholegrain",
+        "grams": 60
+      },
+      {
+        "key": "olive-oil",
+        "grams": 2
+      }
+    ],
+    "nutrition": {
+      "calories": 515,
+      "protein": 48,
+      "carbs": 42,
+      "fat": 17,
+      "fiber": 7
+    }
+  },
+  "home-15": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "quark-lowfat",
+        "grams": 210
+      },
+      {
+        "key": "semolina-dry",
+        "grams": 35
+      },
+      {
+        "key": "banana",
+        "grams": 110
+      },
+      {
+        "key": "milk-lowfat",
+        "grams": 95
+      },
+      {
+        "key": "almonds",
+        "grams": 10
+      }
+    ],
+    "nutrition": {
+      "calories": 461,
+      "protein": 36,
+      "carbs": 66,
+      "fat": 7,
+      "fiber": 5
+    }
+  },
+  "home-16": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "chicken-breast",
+        "grams": 110
+      },
+      {
+        "key": "pasta-cooked",
+        "grams": 185
+      },
+      {
+        "key": "courgette",
+        "grams": 90
+      },
+      {
+        "key": "lemon-juice",
+        "grams": 20
+      },
+      {
+        "key": "olive-oil",
+        "grams": 3
+      }
+    ],
+    "nutrition": {
+      "calories": 518,
+      "protein": 46,
+      "carbs": 61,
+      "fat": 9,
+      "fiber": 4
+    }
+  },
+  "home-17": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "cod",
+        "grams": 145
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 205
+      },
+      {
+        "key": "spinach-cooked",
+        "grams": 90
+      },
+      {
+        "key": "yoghurt-plain",
+        "grams": 40
+      },
+      {
+        "key": "mustard",
+        "grams": 10
+      },
+      {
+        "key": "olive-oil",
+        "grams": 11
+      }
+    ],
+    "nutrition": {
+      "calories": 478,
+      "protein": 42,
+      "carbs": 48,
+      "fat": 14,
+      "fiber": 6
+    }
+  },
+  "home-18": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "black-beans-cooked",
+        "grams": 185
+      },
+      {
+        "key": "quinoa-cooked",
+        "grams": 125
+      },
+      {
+        "key": "sweetcorn",
+        "grams": 50
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 50
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 511,
+      "protein": 24,
+      "carbs": 81,
+      "fat": 12,
+      "fiber": 22
+    }
+  },
+  "home-19": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "turkey-mince",
+        "grams": 110
+      },
+      {
+        "key": "couscous-cooked",
+        "grams": 190
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 115
+      },
+      {
+        "key": "onion",
+        "grams": 20
+      },
+      {
+        "key": "olive-oil",
+        "grams": 6
+      },
+      {
+        "key": "yoghurt-plain",
+        "grams": 30
+      }
+    ],
+    "nutrition": {
+      "calories": 559,
+      "protein": 41,
+      "carbs": 58,
+      "fat": 19,
+      "fiber": 5
+    }
+  },
+  "home-20": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "egg",
+        "grams": 90
+      },
+      {
+        "key": "spinach-cooked",
+        "grams": 195
+      },
+      {
+        "key": "feta",
+        "grams": 30
+      },
+      {
+        "key": "bread-wholegrain",
+        "grams": 70
+      },
+      {
+        "key": "olive-oil",
+        "grams": 6
+      }
+    ],
+    "nutrition": {
+      "calories": 493,
+      "protein": 30,
+      "carbs": 39,
+      "fat": 25,
+      "fiber": 9
+    }
+  },
+  "home-21": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "seitan",
+        "grams": 160
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 230
+      },
+      {
+        "key": "red-cabbage",
+        "grams": 120
+      },
+      {
+        "key": "yoghurt-plain",
+        "grams": 45
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 510,
+      "protein": 42,
+      "carbs": 60,
+      "fat": 11,
+      "fiber": 7
+    }
+  },
+  "home-22": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "beef-mince-lean",
+        "grams": 120
+      },
+      {
+        "key": "courgette",
+        "grams": 140
+      },
+      {
+        "key": "lasagne-sheets-dry",
+        "grams": 40
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 140
+      },
+      {
+        "key": "parmesan",
+        "grams": 5
+      },
+      {
+        "key": "olive-oil",
+        "grams": 6
+      }
+    ],
+    "nutrition": {
+      "calories": 550,
+      "protein": 45,
+      "carbs": 48,
+      "fat": 20,
+      "fiber": 5
+    }
+  },
+  "home-23": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "salmon",
+        "grams": 105
+      },
+      {
+        "key": "pasta-wholegrain-cooked",
+        "grams": 165
+      },
+      {
+        "key": "spinach-cooked",
+        "grams": 150
+      },
+      {
+        "key": "cream-cheese-light",
+        "grams": 20
+      },
+      {
+        "key": "lemon-juice",
+        "grams": 10
+      }
+    ],
+    "nutrition": {
+      "calories": 540,
+      "protein": 39,
+      "carbs": 57,
+      "fat": 20,
+      "fiber": 10
+    }
+  },
+  "home-24": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "white-beans-cooked",
+        "grams": 175
+      },
+      {
+        "key": "carrot",
+        "grams": 55
+      },
+      {
+        "key": "leek",
+        "grams": 45
+      },
+      {
+        "key": "bread-rye",
+        "grams": 40
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 469,
+      "protein": 22,
+      "carbs": 75,
+      "fat": 10,
+      "fiber": 16
+    }
+  },
+  "home-25": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "chicken-breast",
+        "grams": 115
+      },
+      {
+        "key": "bulgur-cooked",
+        "grams": 240
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 120
+      },
+      {
+        "key": "yoghurt-plain",
+        "grams": 45
+      },
+      {
+        "key": "olive-oil",
+        "grams": 7
+      }
+    ],
+    "nutrition": {
+      "calories": 510,
+      "protein": 47,
+      "carbs": 55,
+      "fat": 13,
+      "fiber": 13
+    }
+  },
+  "home-26": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "egg",
+        "grams": 70
+      },
+      {
+        "key": "cottage-cheese",
+        "grams": 180
+      },
+      {
+        "key": "mushrooms",
+        "grams": 150
+      },
+      {
+        "key": "bread-rye",
+        "grams": 40
+      },
+      {
+        "key": "olive-oil",
+        "grams": 6
+      }
+    ],
+    "nutrition": {
+      "calories": 449,
+      "protein": 37,
+      "carbs": 33,
+      "fat": 19,
+      "fiber": 4
+    }
+  },
+  "home-27": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "lentils-red-dry",
+        "grams": 65
+      },
+      {
+        "key": "coconut-milk-light",
+        "grams": 40
+      },
+      {
+        "key": "carrot",
+        "grams": 70
+      },
+      {
+        "key": "flatbread",
+        "grams": 40
+      },
+      {
+        "key": "olive-oil",
+        "grams": 5
+      }
+    ],
+    "nutrition": {
+      "calories": 493,
+      "protein": 21,
+      "carbs": 71,
+      "fat": 15,
+      "fiber": 10
+    }
+  },
+  "home-28": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "turkey-breast",
+        "grams": 110
+      },
+      {
+        "key": "pasta-wholegrain-cooked",
+        "grams": 185
+      },
+      {
+        "key": "pesto",
+        "grams": 20
+      },
+      {
+        "key": "tomato-raw",
+        "grams": 55
+      }
+    ],
+    "nutrition": {
+      "calories": 531,
+      "protein": 47,
+      "carbs": 60,
+      "fat": 13,
+      "fiber": 8
+    }
+  },
+  "home-29": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "prawns",
+        "grams": 130
+      },
+      {
+        "key": "rice-noodles-cooked",
+        "grams": 225
+      },
+      {
+        "key": "pak-choi",
+        "grams": 210
+      },
+      {
+        "key": "lemon-juice",
+        "grams": 10
+      },
+      {
+        "key": "rapeseed-oil",
+        "grams": 13
+      }
+    ],
+    "nutrition": {
+      "calories": 514,
+      "protein": 38,
+      "carbs": 59,
+      "fat": 14,
+      "fiber": 4
+    }
+  },
+  "home-30": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "quark-lowfat",
+        "grams": 225
+      },
+      {
+        "key": "oats-dry",
+        "grams": 50
+      },
+      {
+        "key": "berries-mixed",
+        "grams": 110
+      },
+      {
+        "key": "peanut-butter",
+        "grams": 15
+      }
+    ],
+    "nutrition": {
+      "calories": 467,
+      "protein": 38,
+      "carbs": 55,
+      "fat": 12,
+      "fiber": 8
+    }
+  },
+  "home-31": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "chicken-breast",
+        "grams": 110
+      },
+      {
+        "key": "quinoa-cooked",
+        "grams": 225
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 135
+      },
+      {
+        "key": "olive-oil",
+        "grams": 3
+      },
+      {
+        "key": "lemon-juice",
+        "grams": 10
+      }
+    ],
+    "nutrition": {
+      "calories": 515,
+      "protein": 45,
+      "carbs": 57,
+      "fat": 12,
+      "fiber": 9
+    }
+  },
+  "home-32": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "turkey-breast",
+        "grams": 100
+      },
+      {
+        "key": "gnocchi",
+        "grams": 235
+      },
+      {
+        "key": "spinach-cooked",
+        "grams": 165
+      },
+      {
+        "key": "cream-cheese-light",
+        "grams": 20
+      }
+    ],
+    "nutrition": {
+      "calories": 544,
+      "protein": 42,
+      "carbs": 48,
+      "fat": 21,
+      "fiber": 6
+    }
+  },
+  "home-33": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "beef-lean",
+        "grams": 95
+      },
+      {
+        "key": "couscous-cooked",
+        "grams": 190
+      },
+      {
+        "key": "aubergine-cooked",
+        "grams": 130
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 55
+      },
+      {
+        "key": "olive-oil",
+        "grams": 7
+      }
+    ],
+    "nutrition": {
+      "calories": 538,
+      "protein": 43,
+      "carbs": 60,
+      "fat": 13,
+      "fiber": 7
+    }
+  },
+  "home-34": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "cod",
+        "grams": 145
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 180
+      },
+      {
+        "key": "peas-cooked",
+        "grams": 80
+      },
+      {
+        "key": "carrot",
+        "grams": 75
+      },
+      {
+        "key": "olive-oil",
+        "grams": 7
+      }
+    ],
+    "nutrition": {
+      "calories": 469,
+      "protein": 41,
+      "carbs": 56,
+      "fat": 9,
+      "fiber": 10
+    }
+  },
+  "home-35": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "prawns",
+        "grams": 130
+      },
+      {
+        "key": "rice-risotto-dry",
+        "grams": 70
+      },
+      {
+        "key": "tomato-raw",
+        "grams": 155
+      },
+      {
+        "key": "courgette",
+        "grams": 190
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 510,
+      "protein": 39,
+      "carbs": 68,
+      "fat": 10,
+      "fiber": 4
+    }
+  },
+  "home-36": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "tuna-canned",
+        "grams": 125
+      },
+      {
+        "key": "egg",
+        "grams": 90
+      },
+      {
+        "key": "rice-white-cooked",
+        "grams": 140
+      },
+      {
+        "key": "cucumber",
+        "grams": 125
+      },
+      {
+        "key": "onion",
+        "grams": 35
+      },
+      {
+        "key": "peas-cooked",
+        "grams": 35
+      }
+    ],
+    "nutrition": {
+      "calories": 495,
+      "protein": 42,
+      "carbs": 54,
+      "fat": 11,
+      "fiber": 4
+    }
+  },
+  "home-37": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "tofu",
+        "grams": 180
+      },
+      {
+        "key": "lentils-red-dry",
+        "grams": 30
+      },
+      {
+        "key": "pasta-wholegrain-cooked",
+        "grams": 140
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 70
+      },
+      {
+        "key": "olive-oil",
+        "grams": 2
+      }
+    ],
+    "nutrition": {
+      "calories": 499,
+      "protein": 33,
+      "carbs": 73,
+      "fat": 12,
+      "fiber": 12
+    }
+  },
+  "home-38": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "chickpeas-cooked",
+        "grams": 130
+      },
+      {
+        "key": "pasta-wholegrain-cooked",
+        "grams": 100
+      },
+      {
+        "key": "spinach-cooked",
+        "grams": 165
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 60
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 494,
+      "protein": 24,
+      "carbs": 77,
+      "fat": 14,
+      "fiber": 19
+    }
+  },
+  "home-39": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "tempeh",
+        "grams": 100
+      },
+      {
+        "key": "pasta-wholegrain-cooked",
+        "grams": 160
+      },
+      {
+        "key": "broccoli-cooked",
+        "grams": 100
+      },
+      {
+        "key": "soy-sauce",
+        "grams": 15
+      },
+      {
+        "key": "rapeseed-oil",
+        "grams": 3
+      }
+    ],
+    "nutrition": {
+      "calories": 500,
+      "protein": 34,
+      "carbs": 64,
+      "fat": 17,
+      "fiber": 10
+    }
+  },
+  "home-40": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "lentils-cooked",
+        "grams": 190
+      },
+      {
+        "key": "peas-cooked",
+        "grams": 45
+      },
+      {
+        "key": "carrot",
+        "grams": 50
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 125
+      },
+      {
+        "key": "olive-oil",
+        "grams": 12
+      }
+    ],
+    "nutrition": {
+      "calories": 494,
+      "protein": 22,
+      "carbs": 75,
+      "fat": 13,
+      "fiber": 21
+    }
+  },
+  "home-41": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "cottage-cheese",
+        "grams": 215
+      },
+      {
+        "key": "pasta-wholegrain-cooked",
+        "grams": 140
+      },
+      {
+        "key": "courgette",
+        "grams": 115
+      },
+      {
+        "key": "tomato-raw",
+        "grams": 80
+      },
+      {
+        "key": "olive-oil",
+        "grams": 7
+      }
+    ],
+    "nutrition": {
+      "calories": 485,
+      "protein": 34,
+      "carbs": 58,
+      "fat": 15,
+      "fiber": 8
+    }
+  },
+  "home-42": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "skyr",
+        "grams": 260
+      },
+      {
+        "key": "oats-dry",
+        "grams": 55
+      },
+      {
+        "key": "egg",
+        "grams": 30
+      },
+      {
+        "key": "berries-mixed",
+        "grams": 90
+      },
+      {
+        "key": "rapeseed-oil",
+        "grams": 5
+      }
+    ],
+    "nutrition": {
+      "calories": 472,
+      "protein": 36,
+      "carbs": 54,
+      "fat": 12,
+      "fiber": 8
+    }
+  },
+  "home-43": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "egg",
+        "grams": 115
+      },
+      {
+        "key": "lentils-cooked",
+        "grams": 140
+      },
+      {
+        "key": "cucumber",
+        "grams": 50
+      },
+      {
+        "key": "tomato-raw",
+        "grams": 60
+      },
+      {
+        "key": "bread-rye",
+        "grams": 35
+      },
+      {
+        "key": "olive-oil",
+        "grams": 3
+      }
+    ],
+    "nutrition": {
+      "calories": 476,
+      "protein": 31,
+      "carbs": 50,
+      "fat": 17,
+      "fiber": 14
+    }
+  },
+  "home-44": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "halloumi",
+        "grams": 50
+      },
+      {
+        "key": "couscous-cooked",
+        "grams": 195
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 115
+      },
+      {
+        "key": "courgette",
+        "grams": 135
+      },
+      {
+        "key": "yoghurt-plain",
+        "grams": 90
+      },
+      {
+        "key": "olive-oil",
+        "grams": 6
+      }
+    ],
+    "nutrition": {
+      "calories": 542,
+      "protein": 26,
+      "carbs": 64,
+      "fat": 21,
+      "fiber": 6
+    }
+  },
+  "home-45": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "lasagne-sheets-dry",
+        "grams": 50
+      },
+      {
+        "key": "ricotta",
+        "grams": 140
+      },
+      {
+        "key": "spinach-cooked",
+        "grams": 130
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 135
+      },
+      {
+        "key": "parmesan",
+        "grams": 15
+      }
+    ],
+    "nutrition": {
+      "calories": 523,
+      "protein": 33,
+      "carbs": 64,
+      "fat": 17,
+      "fiber": 7
+    }
+  },
+  "home-46": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "chicken-breast",
+        "grams": 90
+      },
+      {
+        "key": "lentils-cooked",
+        "grams": 140
+      },
+      {
+        "key": "carrot",
+        "grams": 95
+      },
+      {
+        "key": "bread-wholegrain",
+        "grams": 30
+      },
+      {
+        "key": "olive-oil",
+        "grams": 7
+      }
+    ],
+    "nutrition": {
+      "calories": 490,
+      "protein": 45,
+      "carbs": 50,
+      "fat": 12,
+      "fiber": 16
+    }
+  },
+  "home-47": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "turkey-breast",
+        "grams": 135
+      },
+      {
+        "key": "sweet-potato-cooked",
+        "grams": 220
+      },
+      {
+        "key": "green-beans-cooked",
+        "grams": 95
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 80
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 521,
+      "protein": 48,
+      "carbs": 58,
+      "fat": 12,
+      "fiber": 12
+    }
+  },
+  "home-48": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "beef-lean",
+        "grams": 90
+      },
+      {
+        "key": "black-beans-cooked",
+        "grams": 100
+      },
+      {
+        "key": "rice-white-cooked",
+        "grams": 145
+      },
+      {
+        "key": "salsa",
+        "grams": 35
+      },
+      {
+        "key": "lettuce",
+        "grams": 55
+      }
+    ],
+    "nutrition": {
+      "calories": 526,
+      "protein": 46,
+      "carbs": 69,
+      "fat": 6,
+      "fiber": 11
+    }
+  },
+  "home-49": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "chicken-breast",
+        "grams": 120
+      },
+      {
+        "key": "rice-white-cooked",
+        "grams": 150
+      },
+      {
+        "key": "mushrooms",
+        "grams": 75
+      },
+      {
+        "key": "peas-cooked",
+        "grams": 50
+      },
+      {
+        "key": "olive-oil",
+        "grams": 7
+      }
+    ],
+    "nutrition": {
+      "calories": 513,
+      "protein": 46,
+      "carbs": 53,
+      "fat": 12,
+      "fiber": 4
+    }
+  },
+  "home-50": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "turkey-mince",
+        "grams": 130
+      },
+      {
+        "key": "courgette",
+        "grams": 155
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 200
+      },
+      {
+        "key": "yoghurt-plain",
+        "grams": 45
+      },
+      {
+        "key": "rapeseed-oil",
+        "grams": 2
+      }
+    ],
+    "nutrition": {
+      "calories": 508,
+      "protein": 43,
+      "carbs": 48,
+      "fat": 17,
+      "fiber": 5
+    }
+  },
+  "home-51": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "pollock",
+        "grams": 185
+      },
+      {
+        "key": "rice-white-cooked",
+        "grams": 165
+      },
+      {
+        "key": "tomato-raw",
+        "grams": 190
+      },
+      {
+        "key": "olives",
+        "grams": 20
+      },
+      {
+        "key": "olive-oil",
+        "grams": 7
+      }
+    ],
+    "nutrition": {
+      "calories": 494,
+      "protein": 42,
+      "carbs": 55,
+      "fat": 12,
+      "fiber": 3
+    }
+  },
+  "home-52": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "salmon",
+        "grams": 115
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 165
+      },
+      {
+        "key": "leek",
+        "grams": 50
+      },
+      {
+        "key": "milk-lowfat",
+        "grams": 170
+      },
+      {
+        "key": "olive-oil",
+        "grams": 6
+      }
+    ],
+    "nutrition": {
+      "calories": 535,
+      "protein": 35,
+      "carbs": 49,
+      "fat": 22,
+      "fiber": 4
+    }
+  },
+  "home-53": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "tuna-canned",
+        "grams": 125
+      },
+      {
+        "key": "white-beans-cooked",
+        "grams": 100
+      },
+      {
+        "key": "pasta-wholegrain-cooked",
+        "grams": 110
+      },
+      {
+        "key": "tomato-raw",
+        "grams": 55
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 496,
+      "protein": 41,
+      "carbs": 60,
+      "fat": 12,
+      "fiber": 11
+    }
+  },
+  "home-54": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "prawns",
+        "grams": 120
+      },
+      {
+        "key": "rice-risotto-dry",
+        "grams": 60
+      },
+      {
+        "key": "peas-cooked",
+        "grams": 100
+      },
+      {
+        "key": "lemon-juice",
+        "grams": 12
+      },
+      {
+        "key": "olive-oil",
+        "grams": 13
+      }
+    ],
+    "nutrition": {
+      "calories": 535,
+      "protein": 38,
+      "carbs": 64,
+      "fat": 14,
+      "fiber": 6
+    }
+  },
+  "home-55": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "tofu",
+        "grams": 145
+      },
+      {
+        "key": "chickpeas-cooked",
+        "grams": 115
+      },
+      {
+        "key": "spinach-cooked",
+        "grams": 60
+      },
+      {
+        "key": "rice-basmati-cooked",
+        "grams": 125
+      },
+      {
+        "key": "olive-oil",
+        "grams": 3
+      }
+    ],
+    "nutrition": {
+      "calories": 505,
+      "protein": 28,
+      "carbs": 73,
+      "fat": 13,
+      "fiber": 12
+    }
+  },
+  "home-56": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "seitan",
+        "grams": 155
+      },
+      {
+        "key": "mushrooms",
+        "grams": 80
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 135
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 235
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 493,
+      "protein": 41,
+      "carbs": 61,
+      "fat": 11,
+      "fiber": 8
+    }
+  },
+  "home-57": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "kidney-beans-cooked",
+        "grams": 155
+      },
+      {
+        "key": "rice-white-cooked",
+        "grams": 85
+      },
+      {
+        "key": "sweetcorn",
+        "grams": 40
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 60
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 90
+      },
+      {
+        "key": "olive-oil",
+        "grams": 10
+      }
+    ],
+    "nutrition": {
+      "calories": 469,
+      "protein": 19,
+      "carbs": 76,
+      "fat": 12,
+      "fiber": 14
+    }
+  },
+  "home-58": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "tofu",
+        "grams": 195
+      },
+      {
+        "key": "peas-cooked",
+        "grams": 70
+      },
+      {
+        "key": "pasta-wholegrain-cooked",
+        "grams": 165
+      },
+      {
+        "key": "lemon-juice",
+        "grams": 12
+      },
+      {
+        "key": "olive-oil",
+        "grams": 3
+      }
+    ],
+    "nutrition": {
+      "calories": 486,
+      "protein": 31,
+      "carbs": 67,
+      "fat": 14,
+      "fiber": 12
+    }
+  },
+  "home-59": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "cottage-cheese",
+        "grams": 255
+      },
+      {
+        "key": "gnocchi",
+        "grams": 150
+      },
+      {
+        "key": "tomato-raw",
+        "grams": 165
+      },
+      {
+        "key": "rocket",
+        "grams": 45
+      },
+      {
+        "key": "olive-oil",
+        "grams": 6
+      }
+    ],
+    "nutrition": {
+      "calories": 511,
+      "protein": 34,
+      "carbs": 45,
+      "fat": 22,
+      "fiber": 4
+    }
+  },
+  "home-60": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "egg",
+        "grams": 120
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 195
+      },
+      {
+        "key": "spinach-cooked",
+        "grams": 125
+      },
+      {
+        "key": "cottage-cheese",
+        "grams": 105
+      },
+      {
+        "key": "olive-oil",
+        "grams": 2
+      }
+    ],
+    "nutrition": {
+      "calories": 488,
+      "protein": 34,
+      "carbs": 50,
+      "fat": 18,
+      "fiber": 7
+    }
+  },
+  "home-61": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "quark-lowfat",
+        "grams": 215
+      },
+      {
+        "key": "oats-dry",
+        "grams": 50
+      },
+      {
+        "key": "plums",
+        "grams": 100
+      },
+      {
+        "key": "almonds",
+        "grams": 13
+      }
+    ],
+    "nutrition": {
+      "calories": 453,
+      "protein": 36,
+      "carbs": 57,
+      "fat": 10,
+      "fiber": 8
+    }
+  },
+  "home-62": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "lentils-cooked",
+        "grams": 185
+      },
+      {
+        "key": "egg",
+        "grams": 90
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 150
+      },
+      {
+        "key": "courgette",
+        "grams": 110
+      },
+      {
+        "key": "yoghurt-plain",
+        "grams": 55
+      },
+      {
+        "key": "olive-oil",
+        "grams": 3
+      }
+    ],
+    "nutrition": {
+      "calories": 473,
+      "protein": 34,
+      "carbs": 54,
+      "fat": 15,
+      "fiber": 19
+    }
+  },
+  "home-63": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "chicken-breast",
+        "grams": 130
+      },
+      {
+        "key": "potato-cooked",
+        "grams": 185
+      },
+      {
+        "key": "carrot",
+        "grams": 65
+      },
+      {
+        "key": "peas-cooked",
+        "grams": 65
+      },
+      {
+        "key": "olive-oil",
+        "grams": 7
+      }
+    ],
+    "nutrition": {
+      "calories": 519,
+      "protein": 48,
+      "carbs": 53,
+      "fat": 12,
+      "fiber": 9
+    }
+  },
+  "home-64": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "turkey-mince",
+        "grams": 120
+      },
+      {
+        "key": "rice-white-cooked",
+        "grams": 100
+      },
+      {
+        "key": "kidney-beans-cooked",
+        "grams": 75
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 65
+      },
+      {
+        "key": "bell-pepper",
+        "grams": 125
+      }
+    ],
+    "nutrition": {
+      "calories": 526,
+      "protein": 44,
+      "carbs": 59,
+      "fat": 14,
+      "fiber": 9
+    }
+  },
+  "home-65": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "beef-lean",
+        "grams": 90
+      },
+      {
+        "key": "pasta-wholegrain-cooked",
+        "grams": 180
+      },
+      {
+        "key": "broccoli-cooked",
+        "grams": 105
+      },
+      {
+        "key": "soy-sauce",
+        "grams": 15
+      },
+      {
+        "key": "rapeseed-oil",
+        "grams": 2
+      }
+    ],
+    "nutrition": {
+      "calories": 517,
+      "protein": 47,
+      "carbs": 62,
+      "fat": 11,
+      "fiber": 11
+    }
+  },
+  "home-66": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "salmon",
+        "grams": 70
+      },
+      {
+        "key": "quinoa-cooked",
+        "grams": 185
+      },
+      {
+        "key": "egg",
+        "grams": 30
+      },
+      {
+        "key": "cucumber",
+        "grams": 150
+      },
+      {
+        "key": "yoghurt-plain",
+        "grams": 105
+      },
+      {
+        "key": "olive-oil",
+        "grams": 6
+      }
+    ],
+    "nutrition": {
+      "calories": 554,
+      "protein": 34,
+      "carbs": 52,
+      "fat": 23,
+      "fiber": 6
+    }
+  },
+  "home-67": {
+    "servings": 1,
+    "ingredients": [
+      {
+        "key": "tofu",
+        "grams": 225
+      },
+      {
+        "key": "lasagne-sheets-dry",
+        "grams": 60
+      },
+      {
+        "key": "courgette",
+        "grams": 90
+      },
+      {
+        "key": "tomato-passata",
+        "grams": 90
+      },
+      {
+        "key": "olive-oil",
+        "grams": 8
+      }
+    ],
+    "nutrition": {
+      "calories": 518,
+      "protein": 31,
+      "carbs": 62,
+      "fat": 19,
+      "fiber": 7
+    }
+  }
+}

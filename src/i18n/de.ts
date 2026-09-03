@@ -332,6 +332,16 @@ export const de = {
     invalid: 'Bitte eine Menge eingeben',
     decimalMark: ',',
   },
+  recipe: {
+    title: 'Rezept',
+    forServings: (count: number) => (count === 1 ? 'Für 1 Portion' : `Für ${count} Portionen`),
+    ingredients: 'Zutaten',
+    steps: 'Zubereitung',
+    note: 'Aus genau diesen Mengen sind die Nährwerte oben gerechnet – Quellen sind USDA FoodData Central und Open Food Facts. Gewürze kommen nach Geschmack dazu.',
+    open: 'Rezept ansehen',
+    missingTitle: 'Kein Rezept hinterlegt',
+    missingText: 'Für dieses Gericht gibt es keine Zubereitung – es ist etwas zum Kaufen, nicht zum Kochen.',
+  },
   plan: {
     dayDoneTitle: 'Für heute reicht es',
     dayDoneText: 'Dein Tagesziel ist erreicht. Neue Vorschläge gibt es morgen wieder – oder erfasse einfach, was du noch isst.',

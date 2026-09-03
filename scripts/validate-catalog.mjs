@@ -25,7 +25,9 @@ const numericRanges = {
   protein: [18, 65],
   carbs: [20, 100],
   fat: [5, 30],
-  fiber: [4, 25],
+  // Three, not four: a tomato risotto and a fish-with-rice plate genuinely
+  // land there once the fibre is summed from sourced ingredients.
+  fiber: [3, 25],
 };
 
 function rank(catalog, context, remaining, preference) {

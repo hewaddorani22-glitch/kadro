@@ -1,204 +1,3002 @@
 [
-  {"id":"home-01","context":"home","title":"Kräuter-Hähnchen-Teller","detail":"Hähnchen, Kartoffeln, Gemüse und Joghurt","time":"20 Min.","calories":520,"protein":46,"carbs":48,"fat":14,"fiber":8,"tags":["high-protein"]},
-  {"id":"home-02","context":"home","title":"Eier-Taco-Bowl","detail":"Eier, schwarze Bohnen, Salsa und Reis","time":"15 Min.","calories":485,"protein":40,"carbs":52,"fat":11,"fiber":10,"tags":["vegetarian"]},
-  {"id":"home-03","context":"home","title":"Thunfisch-Nudelsalat","detail":"Thunfisch, Nudeln, Tomaten und Rucola","time":"18 Min.","calories":505,"protein":43,"carbs":57,"fat":10,"fiber":7,"tags":["high-protein"]},
-  {"id":"home-04","context":"home","title":"Linsen-Bolognese","detail":"Rote Linsen, Vollkornnudeln und Parmesan","time":"25 Min.","calories":535,"protein":32,"carbs":72,"fat":12,"fiber":15,"tags":["vegetarian"]},
-  {"id":"home-05","context":"home","title":"Ofenlachs mit Brokkoli","detail":"Lachs, Brokkoli und kleine Kartoffeln","time":"28 Min.","calories":545,"protein":42,"carbs":39,"fat":23,"fiber":8,"tags":["pescetarian"]},
-  {"id":"home-06","context":"home","title":"Tofu-Erdnuss-Pfanne","detail":"Tofu, Wokgemüse, Reis und leichte Erdnusssauce","time":"22 Min.","calories":510,"protein":31,"carbs":56,"fat":19,"fiber":9,"tags":["vegan"]},
-  {"id":"home-07","context":"home","title":"Puten-Chili","detail":"Putenhack, Kidneybohnen, Mais und Tomate","time":"30 Min.","calories":495,"protein":47,"carbs":49,"fat":11,"fiber":13,"tags":["high-protein"]},
-  {"id":"home-08","context":"home","title":"Skyr-Pancakes","detail":"Haferflocken, Skyr, Ei und Beeren","time":"16 Min.","calories":455,"protein":38,"carbs":55,"fat":9,"fiber":8,"tags":["vegetarian"]},
-  {"id":"home-09","context":"home","title":"Kichererbsen-Curry","detail":"Kichererbsen, Spinat, Tomate und Basmatireis","time":"24 Min.","calories":540,"protein":25,"carbs":78,"fat":14,"fiber":14,"tags":["vegan"]},
-  {"id":"home-10","context":"home","title":"Rind-Reis-Gemüse-Pfanne","detail":"Mageres Rind, Reis, Paprika und Zucchini","time":"20 Min.","calories":550,"protein":45,"carbs":58,"fat":15,"fiber":7,"tags":["high-protein"]},
-  {"id":"home-11","context":"home","title":"Hüttenkäse-Ofenkartoffel","detail":"Kartoffel, Hüttenkäse, Gurke und Kräuter","time":"30 Min.","calories":470,"protein":35,"carbs":61,"fat":9,"fiber":8,"tags":["vegetarian"]},
-  {"id":"home-12","context":"home","title":"Garnelen-Couscous-Bowl","detail":"Garnelen, Couscous, Tomate und Zitrone","time":"18 Min.","calories":490,"protein":41,"carbs":58,"fat":10,"fiber":7,"tags":["pescetarian"]},
-  {"id":"home-13","context":"home","title":"Tempeh-Süßkartoffel-Bowl","detail":"Tempeh, Süßkartoffel, Rotkohl und Tahini","time":"26 Min.","calories":530,"protein":30,"carbs":64,"fat":18,"fiber":12,"tags":["vegan"]},
-  {"id":"home-14","context":"home","title":"Hähnchen-Shakshuka","detail":"Eier, Hähnchen, Tomaten und Vollkornbrot","time":"23 Min.","calories":515,"protein":48,"carbs":42,"fat":17,"fiber":8,"tags":["high-protein"]},
-  {"id":"home-15","context":"home","title":"Quark-Grieß-Bowl","detail":"Magerquark, Weichweizengrieß, Banane und Zimt","time":"12 Min.","calories":460,"protein":36,"carbs":66,"fat":6,"fiber":6,"tags":["vegetarian"]},
-  {"id":"home-16","context":"home","title":"Zitronen-Hähnchen-Orzo","detail":"Hähnchen, Orzo, Zucchini und Zitrone","time":"22 Min.","calories":525,"protein":45,"carbs":59,"fat":12,"fiber":7,"tags":["high-protein"]},
-  {"id":"home-17","context":"home","title":"Kabeljau-Kartoffel-Spinat-Teller","detail":"Kabeljau, Salzkartoffeln, Blattspinat und Senfjoghurt","time":"25 Min.","calories":475,"protein":42,"carbs":48,"fat":13,"fiber":8,"tags":["pescetarian"]},
-  {"id":"home-18","context":"home","title":"Bohnen-Quinoa-Chili","detail":"Schwarze Bohnen, Quinoa, Mais und Paprika","time":"28 Min.","calories":520,"protein":26,"carbs":78,"fat":12,"fiber":16,"tags":["vegan"]},
-  {"id":"home-19","context":"home","title":"Putenbällchen mit Couscous","detail":"Putenbällchen, Couscous, Tomatensauce und Kräuter","time":"27 Min.","calories":535,"protein":46,"carbs":60,"fat":13,"fiber":8,"tags":["high-protein"]},
-  {"id":"home-20","context":"home","title":"Spinat-Feta-Frittata","detail":"Eier, Spinat, Feta und Vollkornbrot","time":"20 Min.","calories":485,"protein":34,"carbs":38,"fat":22,"fiber":7,"tags":["vegetarian"]},
-  {"id":"home-21","context":"home","title":"Seitan-Gyros-Bowl","detail":"Seitan, Ofenkartoffeln, Krautsalat und veganer Dip","time":"25 Min.","calories":510,"protein":42,"carbs":60,"fat":12,"fiber":10,"tags":["vegan"]},
-  {"id":"home-22","context":"home","title":"Zucchini-Hack-Lasagne","detail":"Mageres Rinderhack, Zucchini, Lasagneplatten und Tomate","time":"35 Min.","calories":550,"protein":45,"carbs":48,"fat":20,"fiber":8,"tags":["high-protein"]},
-  {"id":"home-23","context":"home","title":"Lachs-Spinat-Pasta","detail":"Lachs, Vollkornnudeln, Spinat und Zitronensauce","time":"24 Min.","calories":545,"protein":41,"carbs":57,"fat":17,"fiber":8,"tags":["pescetarian"]},
-  {"id":"home-24","context":"home","title":"Weiße-Bohnen-Eintopf","detail":"Weiße Bohnen, Karotten, Lauch und Roggenbrot","time":"30 Min.","calories":480,"protein":25,"carbs":70,"fat":11,"fiber":17,"tags":["vegan"]},
-  {"id":"home-25","context":"home","title":"Paprika-Hähnchen mit Bulgur","detail":"Hähnchen, Bulgur, Paprika und Kräuterjoghurt","time":"23 Min.","calories":515,"protein":46,"carbs":55,"fat":12,"fiber":9,"tags":["high-protein"]},
-  {"id":"home-26","context":"home","title":"Hüttenkäse-Omelett","detail":"Eier, Hüttenkäse, Pilze und Roggentoast","time":"15 Min.","calories":450,"protein":39,"carbs":34,"fat":17,"fiber":6,"tags":["vegetarian"]},
-  {"id":"home-27","context":"home","title":"Rote-Linsen-Kokos-Suppe","detail":"Rote Linsen, leichte Kokosmilch, Karotten und Fladenbrot","time":"26 Min.","calories":500,"protein":24,"carbs":69,"fat":14,"fiber":15,"tags":["vegan"]},
-  {"id":"home-28","context":"home","title":"Puten-Pesto-Pasta","detail":"Putenbrust, Vollkornnudeln, grünes Pesto und Tomaten","time":"21 Min.","calories":540,"protein":46,"carbs":58,"fat":14,"fiber":8,"tags":["high-protein"]},
-  {"id":"home-29","context":"home","title":"Garnelen-Reisnudel-Pfanne","detail":"Garnelen, Reisnudeln, Pak Choi und Limette","time":"19 Min.","calories":505,"protein":39,"carbs":61,"fat":12,"fiber":7,"tags":["pescetarian"]},
-  {"id":"home-30","context":"home","title":"Quark-Beeren-Porridge","detail":"Magerquark, Haferflocken, Beeren und Nussmus","time":"10 Min.","calories":465,"protein":38,"carbs":56,"fat":10,"fiber":9,"tags":["vegetarian"]},
-  {"id":"home-31","context":"home","title":"Paprika-Hähnchen mit Quinoa","detail":"Hähnchen, Quinoa, Paprika und Kräuter","time":"22 Min.","calories":520,"protein":45,"carbs":56,"fat":13,"fiber":9,"tags":["high-protein"]},
-  {"id":"home-32","context":"home","title":"Puten-Spinat-Gnocchi","detail":"Putenbrust, Gnocchi, Spinat und leichte Frischkäsesauce","time":"24 Min.","calories":535,"protein":44,"carbs":61,"fat":13,"fiber":7,"tags":["high-protein"]},
-  {"id":"home-33","context":"home","title":"Rind-Couscous-Pfanne","detail":"Mageres Rind, Couscous, Aubergine und Tomate","time":"23 Min.","calories":540,"protein":43,"carbs":60,"fat":14,"fiber":10,"tags":["high-protein"]},
-  {"id":"home-34","context":"home","title":"Kabeljau mit Erbsenstampf","detail":"Kabeljau, Kartoffel-Erbsen-Stampf und Karotten","time":"26 Min.","calories":480,"protein":40,"carbs":54,"fat":12,"fiber":10,"tags":["pescetarian"]},
-  {"id":"home-35","context":"home","title":"Garnelen-Tomaten-Risotto","detail":"Garnelen, Risottoreis, Tomaten und Zucchini","time":"28 Min.","calories":525,"protein":38,"carbs":65,"fat":12,"fiber":7,"tags":["pescetarian"]},
-  {"id":"home-36","context":"home","title":"Thunfisch-Ei-Reis-Bowl","detail":"Thunfisch, Ei, Reis, Gurke und Frühlingszwiebel","time":"16 Min.","calories":500,"protein":41,"carbs":53,"fat":14,"fiber":7,"tags":["pescetarian"]},
-  {"id":"home-37","context":"home","title":"Tofu-Linsen-Bolognese","detail":"Tofu, rote Linsen, Vollkornspaghetti und Tomate","time":"27 Min.","calories":515,"protein":32,"carbs":70,"fat":12,"fiber":16,"tags":["vegan"]},
-  {"id":"home-38","context":"home","title":"Kichererbsen-Spinat-Pasta","detail":"Kichererbsen, Vollkornnudeln, Spinat und Tomate","time":"21 Min.","calories":505,"protein":25,"carbs":72,"fat":13,"fiber":15,"tags":["vegan"]},
-  {"id":"home-39","context":"home","title":"Tempeh-Brokkoli-Nudeln","detail":"Tempeh, Vollkornnudeln, Brokkoli und Sojasauce","time":"20 Min.","calories":520,"protein":31,"carbs":62,"fat":17,"fiber":11,"tags":["vegan"]},
-  {"id":"home-40","context":"home","title":"Linsen-Shepherd’s-Pie","detail":"Linsen, Erbsen, Karotten und Kartoffelhaube","time":"35 Min.","calories":500,"protein":24,"carbs":71,"fat":13,"fiber":16,"tags":["vegan"]},
-  {"id":"home-41","context":"home","title":"Hüttenkäse-Gemüse-Pasta","detail":"Hüttenkäse, Vollkornnudeln, Zucchini und Tomate","time":"20 Min.","calories":485,"protein":35,"carbs":58,"fat":12,"fiber":9,"tags":["vegetarian"]},
-  {"id":"home-42","context":"home","title":"Skyr-Beeren-Waffeln","detail":"Skyr, Hafermehl, Ei und Beerenkompott","time":"18 Min.","calories":460,"protein":37,"carbs":56,"fat":9,"fiber":8,"tags":["vegetarian"]},
-  {"id":"home-43","context":"home","title":"Ei-Linsen-Salat","detail":"Eier, Berglinsen, Gurke, Tomate und Roggenbrot","time":"17 Min.","calories":475,"protein":32,"carbs":50,"fat":17,"fiber":13,"tags":["vegetarian"]},
-  {"id":"home-44","context":"home","title":"Halloumi-Couscous-Bowl","detail":"Halloumi, Couscous, Ofengemüse und Kräuterdip","time":"24 Min.","calories":535,"protein":30,"carbs":64,"fat":18,"fiber":10,"tags":["vegetarian"]},
-  {"id":"home-45","context":"home","title":"Ricotta-Spinat-Cannelloni","detail":"Cannelloni, Ricotta, Spinat und Tomatensauce","time":"35 Min.","calories":525,"protein":33,"carbs":63,"fat":16,"fiber":9,"tags":["vegetarian"]},
-  {"id":"home-46","context":"home","title":"Hähnchen-Linsen-Suppe","detail":"Hähnchen, Linsen, Karotten und Vollkornbrot","time":"30 Min.","calories":490,"protein":45,"carbs":50,"fat":12,"fiber":14,"tags":["high-protein"]},
-  {"id":"home-47","context":"home","title":"Puten-Süßkartoffel-Pfanne","detail":"Putenbrust, Süßkartoffel, grüne Bohnen und Paprika","time":"25 Min.","calories":530,"protein":46,"carbs":57,"fat":13,"fiber":11,"tags":["high-protein"]},
-  {"id":"home-48","context":"home","title":"Rind-Bohnen-Burrito-Bowl","detail":"Mageres Rind, Bohnen, Reis, Salsa und Salat","time":"22 Min.","calories":545,"protein":44,"carbs":65,"fat":12,"fiber":14,"tags":["high-protein"]},
-  {"id":"home-49","context":"home","title":"Hähnchen-Pilz-Reis-Pfanne","detail":"Hähnchen, Reis, Champignons und Erbsen","time":"21 Min.","calories":510,"protein":46,"carbs":54,"fat":12,"fiber":8,"tags":["high-protein"]},
-  {"id":"home-50","context":"home","title":"Puten-Zucchini-Taler","detail":"Putenhack-Taler, Zucchini, Kartoffelspalten und Joghurtdip","time":"28 Min.","calories":500,"protein":45,"carbs":49,"fat":14,"fiber":9,"tags":["high-protein"]},
-  {"id":"home-51","context":"home","title":"Seelachs-Tomaten-Reis","detail":"Seelachs, Reis, Tomaten, Oliven und Kräuter","time":"24 Min.","calories":495,"protein":42,"carbs":55,"fat":12,"fiber":8,"tags":["pescetarian"]},
-  {"id":"home-52","context":"home","title":"Lachs-Kartoffel-Suppe","detail":"Lachs, Kartoffeln, Lauch und leichte Milchbrühe","time":"30 Min.","calories":520,"protein":39,"carbs":50,"fat":18,"fiber":8,"tags":["pescetarian"]},
-  {"id":"home-53","context":"home","title":"Thunfisch-Bohnen-Pasta","detail":"Thunfisch, weiße Bohnen, Vollkornnudeln und Tomaten","time":"19 Min.","calories":505,"protein":40,"carbs":58,"fat":13,"fiber":13,"tags":["pescetarian"]},
-  {"id":"home-54","context":"home","title":"Garnelen-Erbsen-Risotto","detail":"Garnelen, Risottoreis, Erbsen und Zitrone","time":"27 Min.","calories":530,"protein":38,"carbs":66,"fat":13,"fiber":9,"tags":["pescetarian"]},
-  {"id":"home-55","context":"home","title":"Tofu-Kichererbsen-Curry","detail":"Tofu, Kichererbsen, Spinat und Basmatireis","time":"25 Min.","calories":515,"protein":27,"carbs":72,"fat":13,"fiber":15,"tags":["vegan"]},
-  {"id":"home-56","context":"home","title":"Seitan-Pilz-Gulasch","detail":"Seitan, Champignons, Paprika und Kartoffeln","time":"28 Min.","calories":510,"protein":40,"carbs":58,"fat":13,"fiber":11,"tags":["vegan"]},
-  {"id":"home-57","context":"home","title":"Bohnen-Gefüllte Paprika","detail":"Kidneybohnen, Reis, Mais und Tomate in Paprika","time":"35 Min.","calories":490,"protein":25,"carbs":68,"fat":13,"fiber":16,"tags":["vegan"]},
-  {"id":"home-58","context":"home","title":"Erbsen-Tofu-Pasta","detail":"Tofu, Erbsen, Vollkornnudeln und Zitronensauce","time":"20 Min.","calories":500,"protein":31,"carbs":64,"fat":13,"fiber":13,"tags":["vegan"]},
-  {"id":"home-59","context":"home","title":"Hüttenkäse-Tomaten-Gnocchi","detail":"Hüttenkäse, Gnocchi, Kirschtomaten und Rucola","time":"18 Min.","calories":500,"protein":36,"carbs":59,"fat":13,"fiber":8,"tags":["vegetarian"]},
-  {"id":"home-60","context":"home","title":"Ei-Kartoffel-Spinat-Pfanne","detail":"Eier, Kartoffeln, Spinat und Hüttenkäse","time":"20 Min.","calories":485,"protein":34,"carbs":50,"fat":17,"fiber":9,"tags":["vegetarian"]},
-  {"id":"home-61","context":"home","title":"Quark-Pflaumen-Oats","detail":"Magerquark, Haferflocken, Pflaumen und Mandeln","time":"10 Min.","calories":455,"protein":36,"carbs":57,"fat":8,"fiber":9,"tags":["vegetarian"]},
-  {"id":"home-62","context":"home","title":"Linsen-Ei-Bowl","detail":"Berglinsen, Eier, Ofengemüse und Joghurtdip","time":"24 Min.","calories":480,"protein":32,"carbs":55,"fat":15,"fiber":15,"tags":["vegetarian"]},
-  {"id":"home-63","context":"home","title":"Hähnchen-Kartoffel-Eintopf","detail":"Hähnchen, Kartoffeln, Karotten und Erbsen","time":"32 Min.","calories":520,"protein":47,"carbs":53,"fat":13,"fiber":11,"tags":["high-protein"]},
-  {"id":"home-64","context":"home","title":"Puten-Reis-Paprika","detail":"Mit Putenhack, Reis, Bohnen und Tomate gefüllte Paprika","time":"35 Min.","calories":525,"protein":46,"carbs":58,"fat":12,"fiber":12,"tags":["high-protein"]},
-  {"id":"home-65","context":"home","title":"Rind-Brokkoli-Nudeln","detail":"Mageres Rind, Vollkornnudeln, Brokkoli und Sojasauce","time":"20 Min.","calories":535,"protein":44,"carbs":61,"fat":13,"fiber":10,"tags":["high-protein"]},
-  {"id":"home-66","context":"home","title":"Lachs-Quinoa-Bratlinge","detail":"Lachs-Quinoa-Bratlinge, Gurkensalat und Joghurtdip","time":"28 Min.","calories":530,"protein":40,"carbs":57,"fat":16,"fiber":9,"tags":["pescetarian"]},
-  {"id":"home-67","context":"home","title":"Tofu-Gemüse-Lasagne","detail":"Tofu, Lasagneplatten, Zucchini und Tomatensauce","time":"38 Min.","calories":520,"protein":32,"carbs":61,"fat":17,"fiber":12,"tags":["vegan"]},
-
-  {"id":"market-01","context":"supermarket","title":"Proteinreiche Skyr-Bowl","detail":"Skyr, Beeren, Haferflocken und Mandeln","time":"Ohne Kochen","calories":440,"protein":42,"carbs":47,"fat":9,"fiber":8,"tags":["vegetarian"]},
-  {"id":"market-02","context":"supermarket","title":"Hähnchen-Wrap und Skyr","detail":"Frischer Hähnchen-Wrap und Natur-Skyr","time":"Direkt essen","calories":510,"protein":48,"carbs":56,"fat":12,"fiber":7,"tags":["high-protein"]},
-  {"id":"market-03","context":"supermarket","title":"Protein-Sandwich und Obst","detail":"Vollkorn-Hähnchen-Sandwich und Apfel","time":"Direkt essen","calories":485,"protein":39,"carbs":61,"fat":10,"fiber":9,"tags":["high-protein"]},
-  {"id":"market-04","context":"supermarket","title":"Hüttenkäse-Salatbox","detail":"Hüttenkäse, Salatmischung, Tomaten und Vollkornbrötchen","time":"5 Min.","calories":455,"protein":36,"carbs":49,"fat":12,"fiber":9,"tags":["vegetarian"]},
-  {"id":"market-05","context":"supermarket","title":"Räucherlachs-Brotzeit","detail":"Räucherlachs, Roggenbrot, Gurke und Frischkäse light","time":"Direkt essen","calories":500,"protein":38,"carbs":47,"fat":17,"fiber":7,"tags":["pescetarian"]},
-  {"id":"market-06","context":"supermarket","title":"Linsensalat mit Ei","detail":"Fertiger Linsensalat, zwei Eier und Rohkost","time":"Direkt essen","calories":475,"protein":31,"carbs":49,"fat":16,"fiber":13,"tags":["vegetarian"]},
-  {"id":"market-07","context":"supermarket","title":"Thunfisch-Bohnen-Box","detail":"Thunfisch natur, Kidneybohnen, Mais und Salat","time":"5 Min.","calories":450,"protein":44,"carbs":42,"fat":10,"fiber":12,"tags":["pescetarian"]},
-  {"id":"market-08","context":"supermarket","title":"Tofu-Sushi und Edamame","detail":"Gemüse-Sushi, Edamame und Räuchertofu","time":"Direkt essen","calories":525,"protein":29,"carbs":69,"fat":15,"fiber":10,"tags":["vegan"]},
-  {"id":"market-09","context":"supermarket","title":"Quark-Bananen-Becher","detail":"Magerquark, Banane, Walnüsse und Knäckebrot","time":"5 Min.","calories":465,"protein":39,"carbs":54,"fat":11,"fiber":7,"tags":["vegetarian"]},
-  {"id":"market-10","context":"supermarket","title":"Hähnchensalat und Brötchen","detail":"Salatbox mit Hähnchen, Dressing separat und Körnerbrötchen","time":"Direkt essen","calories":490,"protein":42,"carbs":48,"fat":14,"fiber":9,"tags":["high-protein"]},
-  {"id":"market-11","context":"supermarket","title":"Mozzarella-Bohnen-Salat","detail":"Mozzarella light, weiße Bohnen, Tomaten und Rucola","time":"5 Min.","calories":480,"protein":34,"carbs":43,"fat":18,"fiber":12,"tags":["vegetarian"]},
-  {"id":"market-12","context":"supermarket","title":"Kefir-Müsli-Set","detail":"Kefir, Proteinmüsli, Beeren und Kürbiskerne","time":"Ohne Kochen","calories":470,"protein":32,"carbs":56,"fat":13,"fiber":8,"tags":["vegetarian"]},
-  {"id":"market-13","context":"supermarket","title":"Falafel-Taboulé-Box","detail":"Falafel, Taboulé, Hummus und Rohkost","time":"Direkt essen","calories":535,"protein":24,"carbs":67,"fat":19,"fiber":13,"tags":["vegan"]},
-  {"id":"market-14","context":"supermarket","title":"Putenaufschnitt-Brotzeit","detail":"Vollkornbrot, Putenbrust, körniger Frischkäse und Paprika","time":"5 Min.","calories":460,"protein":43,"carbs":50,"fat":10,"fiber":9,"tags":["high-protein"]},
-  {"id":"market-15","context":"supermarket","title":"Garnelen-Reissalat","detail":"Garnelen, fertiger Reissalat und Blattsalat","time":"Direkt essen","calories":505,"protein":37,"carbs":61,"fat":12,"fiber":7,"tags":["pescetarian"]},
-  {"id":"market-16","context":"supermarket","title":"Grillhähnchen-Couscous-Box","detail":"Grillhähnchen ohne Haut, Couscoussalat und Rohkost","time":"Direkt essen","calories":520,"protein":47,"carbs":52,"fat":14,"fiber":8,"tags":["high-protein"]},
-  {"id":"market-17","context":"supermarket","title":"Skyr-Overnight-Oats","detail":"Skyr, Overnight Oats, Heidelbeeren und Chiasamen","time":"Ohne Kochen","calories":450,"protein":37,"carbs":55,"fat":9,"fiber":10,"tags":["vegetarian"]},
-  {"id":"market-18","context":"supermarket","title":"Thunfisch-Knäckebrot-Set","detail":"Thunfisch natur, Roggenknäcke, Salat und Frischkäse light","time":"5 Min.","calories":470,"protein":42,"carbs":47,"fat":13,"fiber":9,"tags":["pescetarian"]},
-  {"id":"market-19","context":"supermarket","title":"Veganer Proteinpudding-Mix","detail":"Proteinpudding, Banane, Haferflocken und Mandeln","time":"Ohne Kochen","calories":455,"protein":30,"carbs":57,"fat":12,"fiber":9,"tags":["vegan"]},
-  {"id":"market-20","context":"supermarket","title":"Puten-Mozzarella-Wrap","detail":"Vollkornwrap, Putenbrust, Mozzarella light und Rucola","time":"Direkt essen","calories":500,"protein":43,"carbs":54,"fat":13,"fiber":8,"tags":["high-protein"]},
-  {"id":"market-21","context":"supermarket","title":"Eier-Hummus-Brotzeit","detail":"Zwei gekochte Eier, Hummus, Vollkornbrot und Rohkost","time":"Direkt essen","calories":480,"protein":30,"carbs":43,"fat":21,"fiber":10,"tags":["vegetarian"]},
-  {"id":"market-22","context":"supermarket","title":"Garnelen-Sushi-Box","detail":"Garnelen-Sushi, Edamame und Gurkensalat","time":"Direkt essen","calories":515,"protein":39,"carbs":64,"fat":11,"fiber":8,"tags":["pescetarian"]},
-  {"id":"market-23","context":"supermarket","title":"Tofu-Bohnensalat-Box","detail":"Räuchertofu, bunter Bohnensalat und Vollkornbrötchen","time":"Direkt essen","calories":490,"protein":31,"carbs":56,"fat":16,"fiber":15,"tags":["vegan"]},
-  {"id":"market-24","context":"supermarket","title":"Hähnchen-Reis-Fertiggericht","detail":"Hähnchen-Reis-Schale mit Gemüse und leichter Sauce","time":"Mikrowelle","calories":535,"protein":48,"carbs":56,"fat":13,"fiber":8,"tags":["high-protein"]},
-  {"id":"market-25","context":"supermarket","title":"Hüttenkäse-Obst-Brotzeit","detail":"Hüttenkäse, Birne, Vollkornbrezel und Kürbiskerne","time":"Ohne Kochen","calories":460,"protein":35,"carbs":58,"fat":10,"fiber":9,"tags":["vegetarian"]},
-  {"id":"market-26","context":"supermarket","title":"Linsensuppe mit Skyr","detail":"Frische Linsensuppe, Natur-Skyr und Roggenbrötchen","time":"Mikrowelle","calories":475,"protein":33,"carbs":56,"fat":13,"fiber":14,"tags":["vegetarian"]},
-  {"id":"market-27","context":"supermarket","title":"Lachs-Poke-Box","detail":"Lachs, Reis, Edamame, Gurke und Sesam","time":"Direkt essen","calories":535,"protein":38,"carbs":61,"fat":15,"fiber":8,"tags":["pescetarian"]},
-  {"id":"market-28","context":"supermarket","title":"Tempeh-Vollkorn-Sandwich","detail":"Tempeh, Vollkornbrot, Krautsalat und Senf","time":"Direkt essen","calories":500,"protein":30,"carbs":58,"fat":17,"fiber":12,"tags":["vegan"]},
-  {"id":"market-29","context":"supermarket","title":"Roastbeef-Brotzeit","detail":"Roastbeef, Roggenbrot, Gewürzgurken und Salat","time":"Direkt essen","calories":495,"protein":42,"carbs":50,"fat":14,"fiber":8,"tags":["high-protein"]},
-  {"id":"market-30","context":"supermarket","title":"Joghurt-Protein-Set","detail":"Griechischer Joghurt light, Proteindrink, Müsli und Beeren","time":"Ohne Kochen","calories":480,"protein":38,"carbs":58,"fat":10,"fiber":8,"tags":["vegetarian"]},
-  {"id":"market-31","context":"supermarket","title":"Hähnchen-Sushi-Set","detail":"Hähnchen-Sushi, Edamame und Gurkensalat","time":"Direkt essen","calories":505,"protein":40,"carbs":62,"fat":11,"fiber":8,"tags":["high-protein"]},
-  {"id":"market-32","context":"supermarket","title":"Skyr-Apfel-Zimt-Müsli","detail":"Skyr, Apfel, Proteinmüsli und Zimt","time":"Ohne Kochen","calories":445,"protein":36,"carbs":55,"fat":9,"fiber":9,"tags":["vegetarian"]},
-  {"id":"market-33","context":"supermarket","title":"Thunfisch-Pasta-Salat","detail":"Thunfisch-Nudelsalat, Blattsalat und Cherrytomaten","time":"Direkt essen","calories":500,"protein":37,"carbs":61,"fat":12,"fiber":9,"tags":["pescetarian"]},
-  {"id":"market-34","context":"supermarket","title":"Hummus-Linsen-Wrap","detail":"Vollkornwrap, Hummus, Linsen und Rohkost","time":"Direkt essen","calories":490,"protein":25,"carbs":65,"fat":15,"fiber":15,"tags":["vegan"]},
-  {"id":"market-35","context":"supermarket","title":"Puten-Protein-Bagel","detail":"Vollkornbagel, Putenbrust, Frischkäse light und Salat","time":"Direkt essen","calories":480,"protein":41,"carbs":51,"fat":12,"fiber":8,"tags":["high-protein"]},
-  {"id":"market-36","context":"supermarket","title":"Ei-Hüttenkäse-Snackbox","detail":"Gekochte Eier, Hüttenkäse, Knäckebrot und Rohkost","time":"Direkt essen","calories":465,"protein":34,"carbs":42,"fat":18,"fiber":8,"tags":["vegetarian"]},
-  {"id":"market-37","context":"supermarket","title":"Lachs-Roggenbrötchen","detail":"Räucherlachs, Roggenbrötchen, Gurke und Frischkäse light","time":"Direkt essen","calories":495,"protein":37,"carbs":48,"fat":17,"fiber":7,"tags":["pescetarian"]},
-  {"id":"market-38","context":"supermarket","title":"Tofu-Reis-Fertigbowl","detail":"Tofu, Reis, Edamame und Asia-Gemüse","time":"Mikrowelle","calories":520,"protein":29,"carbs":68,"fat":15,"fiber":12,"tags":["vegan"]},
-  {"id":"market-39","context":"supermarket","title":"Hähnchen-Chili-Fertiggericht","detail":"Hähnchen-Chili mit Bohnen, Mais und Reis","time":"Mikrowelle","calories":530,"protein":45,"carbs":58,"fat":13,"fiber":13,"tags":["high-protein"]},
-  {"id":"market-40","context":"supermarket","title":"Quark-Kirsch-Oats","detail":"Magerquark, Haferflocken, Kirschen und Mandeln","time":"Ohne Kochen","calories":455,"protein":37,"carbs":56,"fat":9,"fiber":9,"tags":["vegetarian"]},
-  {"id":"market-41","context":"supermarket","title":"Garnelen-Couscous-Salat","detail":"Garnelen, Couscoussalat, Gurke und Zitrone","time":"Direkt essen","calories":510,"protein":38,"carbs":62,"fat":12,"fiber":8,"tags":["pescetarian"]},
-  {"id":"market-42","context":"supermarket","title":"Bohnen-Mais-Salat mit Skyr","detail":"Bohnensalat, Mais, Natur-Skyr und Vollkornbrötchen","time":"Direkt essen","calories":485,"protein":31,"carbs":56,"fat":15,"fiber":14,"tags":["vegetarian"]},
-  {"id":"market-43","context":"supermarket","title":"Veganes Linsen-Curry","detail":"Fertiges Linsen-Curry mit Reis und Blattspinat","time":"Mikrowelle","calories":525,"protein":26,"carbs":76,"fat":13,"fiber":16,"tags":["vegan"]},
-  {"id":"market-44","context":"supermarket","title":"Grillhähnchen-Sandwich","detail":"Vollkorn-Sandwich, Grillhähnchen, Tomate und Salat","time":"Direkt essen","calories":500,"protein":43,"carbs":52,"fat":13,"fiber":9,"tags":["high-protein"]},
-  {"id":"market-45","context":"supermarket","title":"Hüttenkäse-Rote-Bete-Bowl","detail":"Hüttenkäse, Rote Bete, Linsen und Roggenknäcke","time":"5 Min.","calories":470,"protein":34,"carbs":49,"fat":15,"fiber":12,"tags":["vegetarian"]},
-  {"id":"market-46","context":"supermarket","title":"Räucherforellen-Brotzeit","detail":"Räucherforelle, Roggenbrot, Gurke und Meerrettichquark","time":"Direkt essen","calories":500,"protein":39,"carbs":48,"fat":17,"fiber":8,"tags":["pescetarian"]},
-  {"id":"market-47","context":"supermarket","title":"Tempeh-Edamame-Snackbox","detail":"Tempeh, Edamame, Reissalat und Rohkost","time":"Direkt essen","calories":505,"protein":31,"carbs":62,"fat":15,"fiber":13,"tags":["vegan"]},
-  {"id":"market-48","context":"supermarket","title":"Puten-Salat mit Roggenbrot","detail":"Putenbrust-Salatbox, Dressing separat und Roggenbrot","time":"Direkt essen","calories":485,"protein":42,"carbs":48,"fat":14,"fiber":9,"tags":["high-protein"]},
-  {"id":"market-49","context":"supermarket","title":"Rind-Reis-Fertigbowl","detail":"Mageres Rind, Reis, Brokkoli und Paprika","time":"Mikrowelle","calories":535,"protein":44,"carbs":60,"fat":13,"fiber":9,"tags":["high-protein"]},
-  {"id":"market-50","context":"supermarket","title":"Skyr-Protein-Milchreis","detail":"Protein-Milchreis, Skyr, Beeren und Zimt","time":"Ohne Kochen","calories":450,"protein":36,"carbs":55,"fat":9,"fiber":7,"tags":["vegetarian"]},
-  {"id":"market-51","context":"supermarket","title":"Thunfisch-Ei-Sandwich","detail":"Vollkorn-Sandwich mit Thunfisch, Ei und Gurke","time":"Direkt essen","calories":490,"protein":40,"carbs":52,"fat":13,"fiber":8,"tags":["pescetarian"]},
-  {"id":"market-52","context":"supermarket","title":"Falafel-Quinoa-Salat","detail":"Falafel, Quinoa, Hummus und Rohkost","time":"Direkt essen","calories":515,"protein":25,"carbs":68,"fat":16,"fiber":15,"tags":["vegan"]},
-  {"id":"market-53","context":"supermarket","title":"Lachs-Spinat-Pasta-Box","detail":"Lachs, Pasta, Blattspinat und leichte Zitronensauce","time":"Mikrowelle","calories":530,"protein":39,"carbs":62,"fat":14,"fiber":8,"tags":["pescetarian"]},
-  {"id":"market-54","context":"supermarket","title":"Hähnchen-Suppe mit Brot","detail":"Hähnchen-Gemüse-Suppe und Roggenbrötchen","time":"Mikrowelle","calories":475,"protein":38,"carbs":53,"fat":12,"fiber":10,"tags":["high-protein"]},
-  {"id":"market-55","context":"supermarket","title":"Mozzarella-Linsen-Bowl","detail":"Mozzarella light, Linsen, Tomaten und Rucola","time":"Direkt essen","calories":485,"protein":33,"carbs":48,"fat":18,"fiber":13,"tags":["vegetarian"]},
-  {"id":"market-56","context":"supermarket","title":"Tofu-Erdnuss-Nudelbox","detail":"Tofu, Nudeln, Wokgemüse und leichte Erdnusssauce","time":"Mikrowelle","calories":520,"protein":30,"carbs":64,"fat":16,"fiber":10,"tags":["vegan"]},
-  {"id":"market-57","context":"supermarket","title":"Putenbällchen-Tomaten-Box","detail":"Putenbällchen, Tomatensauce, Reis und Gemüse","time":"Mikrowelle","calories":525,"protein":45,"carbs":57,"fat":13,"fiber":9,"tags":["high-protein"]},
-  {"id":"market-58","context":"supermarket","title":"Joghurt-Chia-Frucht-Set","detail":"Griechischer Joghurt light, Chia-Pudding, Obst und Haferflocken","time":"Ohne Kochen","calories":450,"protein":32,"carbs":54,"fat":12,"fiber":10,"tags":["vegetarian"]},
-  {"id":"market-59","context":"supermarket","title":"Garnelen-Vollkorn-Wrap","detail":"Vollkornwrap, Garnelen, Salat und Joghurtsauce","time":"Direkt essen","calories":500,"protein":38,"carbs":58,"fat":13,"fiber":9,"tags":["pescetarian"]},
-  {"id":"market-60","context":"supermarket","title":"Seitan-Senf-Sandwich","detail":"Seitan, Vollkornbrot, Krautsalat und Senf","time":"Direkt essen","calories":495,"protein":35,"carbs":59,"fat":13,"fiber":12,"tags":["vegan"]},
-  {"id":"market-61","context":"supermarket","title":"Hähnchen-Caesar-Box leicht","detail":"Hähnchen, Römersalat, wenig Dressing und Vollkornbrötchen","time":"Direkt essen","calories":510,"protein":44,"carbs":46,"fat":17,"fiber":8,"tags":["high-protein"]},
-  {"id":"market-62","context":"supermarket","title":"Hüttenkäse-Beeren-Crunch","detail":"Hüttenkäse, Beeren, Vollkorncerealien und Mandeln","time":"Ohne Kochen","calories":455,"protein":36,"carbs":52,"fat":10,"fiber":9,"tags":["vegetarian"]},
-  {"id":"market-63","context":"supermarket","title":"Makrelen-Kartoffelsalat leicht","detail":"Räuchermakrele, leichter Kartoffelsalat und Gurke","time":"Direkt essen","calories":520,"protein":38,"carbs":49,"fat":19,"fiber":8,"tags":["pescetarian"]},
-  {"id":"market-64","context":"supermarket","title":"Kichererbsen-Couscous-Becher","detail":"Kichererbsen, Couscous, Grillgemüse und Hummus","time":"Direkt essen","calories":500,"protein":24,"carbs":70,"fat":14,"fiber":15,"tags":["vegan"]},
-  {"id":"market-65","context":"supermarket","title":"Roastbeef-Protein-Wrap","detail":"Vollkornwrap, Roastbeef, Hüttenkäse und Salat","time":"Direkt essen","calories":510,"protein":43,"carbs":53,"fat":14,"fiber":9,"tags":["high-protein"]},
-  {"id":"market-66","context":"supermarket","title":"Ei-Linsen-Snackteller","detail":"Gekochte Eier, Linsensalat, Rohkost und Knäckebrot","time":"Direkt essen","calories":475,"protein":31,"carbs":52,"fat":16,"fiber":13,"tags":["vegetarian"]},
-  {"id":"market-67","context":"supermarket","title":"Lachs-Sushi-Miso-Set","detail":"Lachs-Sushi, Edamame und kleine Misosuppe","time":"Direkt essen","calories":525,"protein":40,"carbs":64,"fat":12,"fiber":8,"tags":["pescetarian"]},
-
-  {"id":"out-01","context":"eating-out","title":"Hähnchen-Pho","detail":"Klare Brühe, extra Hähnchen und Kräuter","time":"Vietnamesisch","calories":500,"protein":41,"carbs":58,"fat":9,"fiber":6,"tags":["high-protein"]},
-  {"id":"out-02","context":"eating-out","title":"Gegrillter Hähnchensalat","detail":"Dressing separat, dazu kleine Kartoffeln","time":"Bistro","calories":470,"protein":45,"carbs":38,"fat":14,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-03","context":"eating-out","title":"Proteinreiches Sushi-Set","detail":"Sashimi, Edamame und sechs Maki","time":"Japanisch","calories":530,"protein":43,"carbs":62,"fat":11,"fiber":7,"tags":["pescetarian"]},
-  {"id":"out-04","context":"eating-out","title":"Döner-Teller leicht","detail":"Hähnchen, viel Salat, wenig Sauce und kleine Reisportion","time":"Imbiss","calories":550,"protein":46,"carbs":51,"fat":17,"fiber":8,"tags":["high-protein"]},
-  {"id":"out-05","context":"eating-out","title":"Falafel-Salat-Bowl","detail":"Falafel, großer Salat, Hummus und Fladenbrotviertel","time":"Orientalisch","calories":520,"protein":23,"carbs":61,"fat":20,"fiber":14,"tags":["vegan"]},
-  {"id":"out-06","context":"eating-out","title":"Poke mit Lachs","detail":"Lachs, halber Reis, Edamame und Gemüse","time":"Poke","calories":545,"protein":39,"carbs":58,"fat":18,"fiber":9,"tags":["pescetarian"]},
-  {"id":"out-07","context":"eating-out","title":"Thai-Basilikum-Hähnchen","detail":"Hähnchen, Wokgemüse und kleine Reisportion","time":"Thai","calories":525,"protein":42,"carbs":57,"fat":14,"fiber":7,"tags":["high-protein"]},
-  {"id":"out-08","context":"eating-out","title":"Linsen-Dal mit Reis","detail":"Linsen-Dal, kleine Reisportion und Gurkensalat","time":"Indisch","calories":535,"protein":25,"carbs":76,"fat":14,"fiber":15,"tags":["vegetarian"]},
-  {"id":"out-09","context":"eating-out","title":"Rührei-Vollkorn-Frühstück","detail":"Rührei, Vollkornbrot, Tomate und Obst","time":"Café","calories":480,"protein":32,"carbs":49,"fat":17,"fiber":8,"tags":["vegetarian"]},
-  {"id":"out-10","context":"eating-out","title":"Rindfleisch-Gemüse-Wok","detail":"Mageres Rind, viel Gemüse und gedämpfter Reis","time":"Asiatisch","calories":540,"protein":43,"carbs":55,"fat":17,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-11","context":"eating-out","title":"Ofenkartoffel mit Quark","detail":"Große Kartoffel, Kräuterquark und Beilagensalat","time":"Kantine","calories":465,"protein":30,"carbs":64,"fat":10,"fiber":10,"tags":["vegetarian"]},
-  {"id":"out-12","context":"eating-out","title":"Garnelen-Tacos","detail":"Drei kleine Tacos, Garnelen, Kraut und Salsa","time":"Mexikanisch","calories":510,"protein":36,"carbs":57,"fat":15,"fiber":8,"tags":["pescetarian"]},
-  {"id":"out-13","context":"eating-out","title":"Tofu-Ramen leicht","detail":"Tofu, Gemüse, Brühe und halbe Nudelportion","time":"Japanisch","calories":490,"protein":28,"carbs":61,"fat":15,"fiber":9,"tags":["vegan"]},
-  {"id":"out-14","context":"eating-out","title":"Puten-Sandwich und Salat","detail":"Vollkorn-Sandwich mit Pute, dazu Beilagensalat","time":"Bäcker","calories":475,"protein":37,"carbs":54,"fat":12,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-15","context":"eating-out","title":"Burrito-Bowl ohne Käse","detail":"Hähnchen, Bohnen, Reis, Salsa und Salat","time":"Mexikanisch","calories":550,"protein":44,"carbs":69,"fat":11,"fiber":13,"tags":["high-protein"]},
-  {"id":"out-16","context":"eating-out","title":"Grilllachs mit Ofenkartoffeln","detail":"Lachs, kleine Ofenkartoffeln und Tagesgemüse","time":"Restaurant","calories":550,"protein":42,"carbs":47,"fat":21,"fiber":8,"tags":["pescetarian"]},
-  {"id":"out-17","context":"eating-out","title":"Hähnchen-Curry leicht","detail":"Hähnchen, Gemüse, leichte Currysauce und kleine Reisportion","time":"Indisch","calories":535,"protein":44,"carbs":59,"fat":14,"fiber":8,"tags":["high-protein"]},
-  {"id":"out-18","context":"eating-out","title":"Puten-Kebab-Teller","detail":"Putenfleisch, großer Salat, wenig Sauce und Bulgur","time":"Imbiss","calories":520,"protein":45,"carbs":48,"fat":16,"fiber":10,"tags":["high-protein"]},
-  {"id":"out-19","context":"eating-out","title":"Veggie-Chili-Ofenkartoffel","detail":"Ofenkartoffel, Bohnen-Chili, Joghurt und Salat","time":"Kantine","calories":505,"protein":26,"carbs":74,"fat":12,"fiber":16,"tags":["vegetarian"]},
-  {"id":"out-20","context":"eating-out","title":"Thunfisch-Salat-Sandwich","detail":"Vollkorn-Sandwich mit Thunfisch, dazu Beilagensalat","time":"Café","calories":485,"protein":39,"carbs":53,"fat":13,"fiber":9,"tags":["pescetarian"]},
-  {"id":"out-21","context":"eating-out","title":"Rindfleisch-Pho","detail":"Klare Brühe, mageres Rind, Reisnudeln und Kräuter","time":"Vietnamesisch","calories":520,"protein":41,"carbs":63,"fat":12,"fiber":7,"tags":["high-protein"]},
-  {"id":"out-22","context":"eating-out","title":"Tofu-Poke-Bowl","detail":"Tofu, halber Reis, Edamame, Gemüse und leichte Sauce","time":"Poke","calories":510,"protein":29,"carbs":65,"fat":15,"fiber":12,"tags":["vegan"]},
-  {"id":"out-23","context":"eating-out","title":"Hähnchen-Souvlaki-Teller","detail":"Hähnchenspieße, Kartoffeln, Bauernsalat und Tzatziki","time":"Griechisch","calories":530,"protein":46,"carbs":51,"fat":16,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-24","context":"eating-out","title":"Shakshuka mit Joghurt","detail":"Eier in Tomatensauce, Joghurt und kleines Fladenbrot","time":"Café","calories":490,"protein":31,"carbs":48,"fat":19,"fiber":10,"tags":["vegetarian"]},
-  {"id":"out-25","context":"eating-out","title":"Linsenpasta mit Gemüse","detail":"Linsenpasta, Tomatensauce, Grillgemüse und Rucola","time":"Kantine","calories":525,"protein":31,"carbs":70,"fat":13,"fiber":16,"tags":["vegan"]},
-  {"id":"out-26","context":"eating-out","title":"Backfisch-Reis-Teller","detail":"Gebackener Weißfisch, Reis, Gemüse und Zitronendip","time":"Kantine","calories":540,"protein":43,"carbs":59,"fat":14,"fiber":8,"tags":["pescetarian"]},
-  {"id":"out-27","context":"eating-out","title":"Rindburger mit Beilagensalat","detail":"Mageres Rindpatty im kleinen Vollkornbun, ohne Käse","time":"Burgerladen","calories":550,"protein":42,"carbs":49,"fat":20,"fiber":8,"tags":["high-protein"]},
-  {"id":"out-28","context":"eating-out","title":"Hähnchen-Ramen mit Gemüse","detail":"Hähnchen, Brühe, viel Gemüse und kleine Nudelportion","time":"Japanisch","calories":525,"protein":43,"carbs":58,"fat":13,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-29","context":"eating-out","title":"Kleiner Falafel-Wrap","detail":"Falafel, Salat, Hummus und viel Rohkost im Fladenbrot","time":"Imbiss","calories":515,"protein":24,"carbs":66,"fat":17,"fiber":14,"tags":["vegan"]},
-  {"id":"out-30","context":"eating-out","title":"Garnelen-Bibimbap","detail":"Garnelen, Reis, Gemüse, Ei und wenig Sesamsauce","time":"Koreanisch","calories":540,"protein":38,"carbs":67,"fat":13,"fiber":10,"tags":["pescetarian"]},
-  {"id":"out-31","context":"eating-out","title":"Hähnchen-Teriyaki-Bowl","detail":"Hähnchen, Reis, Brokkoli und wenig Teriyakisauce","time":"Japanisch","calories":535,"protein":44,"carbs":62,"fat":13,"fiber":8,"tags":["high-protein"]},
-  {"id":"out-32","context":"eating-out","title":"Putenschnitzel natur","detail":"Putensteak, Petersilienkartoffeln und Tagesgemüse","time":"Kantine","calories":520,"protein":46,"carbs":52,"fat":14,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-33","context":"eating-out","title":"Kabeljau-Couscous-Teller","detail":"Gegrillter Kabeljau, Couscous und mediterranes Gemüse","time":"Restaurant","calories":520,"protein":42,"carbs":58,"fat":13,"fiber":9,"tags":["pescetarian"]},
-  {"id":"out-34","context":"eating-out","title":"Lachs-Sushi-Bowl","detail":"Lachs, Reis, Edamame, Gurke und Nori","time":"Japanisch","calories":545,"protein":40,"carbs":65,"fat":14,"fiber":9,"tags":["pescetarian"]},
-  {"id":"out-35","context":"eating-out","title":"Garnelen-Pho","detail":"Klare Brühe, Garnelen, Reisnudeln und Kräuter","time":"Vietnamesisch","calories":500,"protein":38,"carbs":62,"fat":11,"fiber":7,"tags":["pescetarian"]},
-  {"id":"out-36","context":"eating-out","title":"Rind-Burrito-Bowl","detail":"Mageres Rind, Bohnen, Reis, Salsa und Salat","time":"Mexikanisch","calories":550,"protein":44,"carbs":67,"fat":12,"fiber":14,"tags":["high-protein"]},
-  {"id":"out-37","context":"eating-out","title":"Puten-Pide mit Salat","detail":"Kleine Pide mit Putenhack, dazu großer Salat","time":"Imbiss","calories":525,"protein":40,"carbs":60,"fat":14,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-38","context":"eating-out","title":"Chicken Tikka mit Reis","detail":"Hähnchen-Tikka, kleine Reisportion und Gemüse","time":"Indisch","calories":540,"protein":45,"carbs":60,"fat":13,"fiber":8,"tags":["high-protein"]},
-  {"id":"out-39","context":"eating-out","title":"Tofu-Thai-Curry","detail":"Tofu, viel Gemüse, leichte Kokossauce und Reis","time":"Thai","calories":530,"protein":28,"carbs":68,"fat":16,"fiber":12,"tags":["vegan"]},
-  {"id":"out-40","context":"eating-out","title":"Tempeh-Nudel-Bowl","detail":"Tempeh, Reisnudeln, Wokgemüse und Limettensauce","time":"Asiatisch","calories":525,"protein":31,"carbs":66,"fat":15,"fiber":11,"tags":["vegan"]},
-  {"id":"out-41","context":"eating-out","title":"Vegane Bohnen-Burrito-Bowl","detail":"Schwarze Bohnen, Reis, Mais, Salsa und Salat","time":"Mexikanisch","calories":520,"protein":25,"carbs":72,"fat":15,"fiber":17,"tags":["vegan"]},
-  {"id":"out-42","context":"eating-out","title":"Linsensuppe mit Mini-Falafel","detail":"Linsensuppe, drei Falafel und Beilagensalat","time":"Orientalisch","calories":490,"protein":23,"carbs":65,"fat":15,"fiber":16,"tags":["vegan"]},
-  {"id":"out-43","context":"eating-out","title":"Gemüse-Omelett mit Brot","detail":"Omelett, Grillgemüse, Vollkornbrot und Obst","time":"Café","calories":475,"protein":33,"carbs":44,"fat":19,"fiber":8,"tags":["vegetarian"]},
-  {"id":"out-44","context":"eating-out","title":"Kräuterquark-Kartoffel-Teller","detail":"Ofenkartoffeln, Kräuterquark und großer Beilagensalat","time":"Kantine","calories":480,"protein":32,"carbs":60,"fat":13,"fiber":11,"tags":["vegetarian"]},
-  {"id":"out-45","context":"eating-out","title":"Halloumi-Salat-Bowl","detail":"Halloumi, großer Salat, Couscous und Joghurtdip","time":"Bistro","calories":535,"protein":29,"carbs":58,"fat":21,"fiber":11,"tags":["vegetarian"]},
-  {"id":"out-46","context":"eating-out","title":"Kichererbsen-Masala","detail":"Kichererbsen-Masala, kleine Reisportion und Gurkensalat","time":"Indisch","calories":525,"protein":25,"carbs":78,"fat":13,"fiber":16,"tags":["vegan"]},
-  {"id":"out-47","context":"eating-out","title":"Hähnchen-Vollkorn-Sandwich","detail":"Hähnchen-Sandwich mit Salat, dazu Rohkost","time":"Bäcker","calories":490,"protein":41,"carbs":50,"fat":14,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-48","context":"eating-out","title":"Puten-Chili mit Reis","detail":"Putenhack, Bohnen, Tomate und kleine Reisportion","time":"Kantine","calories":520,"protein":44,"carbs":57,"fat":13,"fiber":14,"tags":["high-protein"]},
-  {"id":"out-49","context":"eating-out","title":"Rindergulasch mit Kartoffeln","detail":"Mageres Rindergulasch, Kartoffeln und Karotten","time":"Kantine","calories":540,"protein":43,"carbs":56,"fat":16,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-50","context":"eating-out","title":"Schweinefilet mit Gemüse","detail":"Gegrilltes Schweinefilet, kleine Kartoffeln und Gemüse","time":"Restaurant","calories":525,"protein":46,"carbs":48,"fat":16,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-51","context":"eating-out","title":"Kleine Meeresfrüchte-Paella","detail":"Reis, Garnelen, Muscheln, Erbsen und Paprika","time":"Spanisch","calories":550,"protein":36,"carbs":68,"fat":15,"fiber":9,"tags":["pescetarian"]},
-  {"id":"out-52","context":"eating-out","title":"Thunfisch-Poke-Bowl","detail":"Thunfisch, Reis, Edamame, Gurke und Sesam","time":"Poke","calories":535,"protein":39,"carbs":63,"fat":14,"fiber":9,"tags":["pescetarian"]},
-  {"id":"out-53","context":"eating-out","title":"Grillforelle mit Kartoffelsalat","detail":"Forellenfilet, leichter Kartoffelsalat und Gurke","time":"Restaurant","calories":525,"protein":40,"carbs":51,"fat":18,"fiber":8,"tags":["pescetarian"]},
-  {"id":"out-54","context":"eating-out","title":"Garnelen-Sommerrollen-Set","detail":"Sommerrollen mit Garnelen, kleine Reisportion und Salat","time":"Vietnamesisch","calories":505,"protein":35,"carbs":63,"fat":12,"fiber":9,"tags":["pescetarian"]},
-  {"id":"out-55","context":"eating-out","title":"Tofu-Pho","detail":"Klare Brühe, Tofu, Reisnudeln, Pilze und Kräuter","time":"Vietnamesisch","calories":490,"protein":27,"carbs":65,"fat":14,"fiber":10,"tags":["vegan"]},
-  {"id":"out-56","context":"eating-out","title":"Seitan-Kebab-Teller","detail":"Seitan, Bulgur, viel Salat und wenig Sauce","time":"Imbiss","calories":525,"protein":38,"carbs":57,"fat":16,"fiber":13,"tags":["vegan"]},
-  {"id":"out-57","context":"eating-out","title":"Vegane Gemüse-Ramen","detail":"Tofu, Gemüse, Brühe und kleine Nudelportion","time":"Japanisch","calories":510,"protein":26,"carbs":70,"fat":14,"fiber":12,"tags":["vegan"]},
-  {"id":"out-58","context":"eating-out","title":"Gemüse-Sushi mit Edamame","detail":"Gemüse-Maki, Edamame, Avocado und Misosuppe","time":"Japanisch","calories":495,"protein":27,"carbs":64,"fat":15,"fiber":11,"tags":["vegan"]},
-  {"id":"out-59","context":"eating-out","title":"Pochierte Eier auf Vollkorntoast","detail":"Pochierte Eier, Spinat, Vollkorntoast und Joghurt","time":"Café","calories":500,"protein":32,"carbs":48,"fat":20,"fiber":8,"tags":["vegetarian"]},
-  {"id":"out-60","context":"eating-out","title":"Skyr-Obst-Frühstück","detail":"Skyr, Haferflocken, Obst und Nüsse","time":"Café","calories":455,"protein":34,"carbs":55,"fat":11,"fiber":9,"tags":["vegetarian"]},
-  {"id":"out-61","context":"eating-out","title":"Hähnchen-Fajita-Bowl","detail":"Hähnchen, Paprika, Bohnen, Reis und Salsa","time":"Mexikanisch","calories":530,"protein":45,"carbs":58,"fat":13,"fiber":13,"tags":["high-protein"]},
-  {"id":"out-62","context":"eating-out","title":"Rind-Taco-Salat","detail":"Mageres Rind, Bohnen, Mais, Salat und Tortillastreifen","time":"Mexikanisch","calories":520,"protein":42,"carbs":48,"fat":18,"fiber":13,"tags":["high-protein"]},
-  {"id":"out-63","context":"eating-out","title":"Putenbällchen-Pasta","detail":"Putenbällchen, Pasta, Tomatensauce und Gemüse","time":"Kantine","calories":535,"protein":44,"carbs":61,"fat":13,"fiber":9,"tags":["high-protein"]},
-  {"id":"out-64","context":"eating-out","title":"Kabeljau-Fisch-Tacos","detail":"Drei kleine Tacos, Kabeljau, Kraut und Salsa","time":"Mexikanisch","calories":510,"protein":37,"carbs":59,"fat":14,"fiber":9,"tags":["pescetarian"]},
-  {"id":"out-65","context":"eating-out","title":"Lachs-Salat-Bowl","detail":"Gegrillter Lachs, großer Salat, Kartoffeln und Joghurtdip","time":"Bistro","calories":520,"protein":40,"carbs":49,"fat":18,"fiber":10,"tags":["pescetarian"]},
-  {"id":"out-66","context":"eating-out","title":"Linsenburger mit Salat","detail":"Veganer Linsenburger im kleinen Bun, dazu Beilagensalat","time":"Burgerladen","calories":515,"protein":25,"carbs":69,"fat":15,"fiber":15,"tags":["vegan"]}
+  {
+    "id": "home-01",
+    "context": "home",
+    "title": "Kräuter-Hähnchen-Teller",
+    "detail": "Hähnchen, Kartoffeln, Gemüse und Joghurt",
+    "time": "20 Min.",
+    "calories": 502,
+    "protein": 48,
+    "carbs": 50,
+    "fat": 12,
+    "fiber": 7,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-02",
+    "context": "home",
+    "title": "Eier-Taco-Bowl",
+    "detail": "Eier, schwarze Bohnen, Salsa und Reis",
+    "time": "15 Min.",
+    "calories": 500,
+    "protein": 31,
+    "carbs": 56,
+    "fat": 16,
+    "fiber": 11,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-03",
+    "context": "home",
+    "title": "Thunfisch-Nudelsalat",
+    "detail": "Thunfisch, Nudeln, Tomaten und Rucola",
+    "time": "18 Min.",
+    "calories": 507,
+    "protein": 43,
+    "carbs": 56,
+    "fat": 11,
+    "fiber": 5,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-04",
+    "context": "home",
+    "title": "Linsen-Bolognese",
+    "detail": "Rote Linsen, Vollkornnudeln und Parmesan",
+    "time": "25 Min.",
+    "calories": 518,
+    "protein": 28,
+    "carbs": 78,
+    "fat": 13,
+    "fiber": 11,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-05",
+    "context": "home",
+    "title": "Ofenlachs mit Brokkoli",
+    "detail": "Lachs, Brokkoli und kleine Kartoffeln",
+    "time": "28 Min.",
+    "calories": 548,
+    "protein": 39,
+    "carbs": 40,
+    "fat": 26,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-06",
+    "context": "home",
+    "title": "Tofu-Erdnuss-Pfanne",
+    "detail": "Tofu, Wokgemüse, Reis und leichte Erdnusssauce",
+    "time": "22 Min.",
+    "calories": 504,
+    "protein": 31,
+    "carbs": 57,
+    "fat": 19,
+    "fiber": 8,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-07",
+    "context": "home",
+    "title": "Puten-Chili",
+    "detail": "Putenhack, Kidneybohnen, Mais und Tomate",
+    "time": "30 Min.",
+    "calories": 489,
+    "protein": 46,
+    "carbs": 50,
+    "fat": 13,
+    "fiber": 12,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-08",
+    "context": "home",
+    "title": "Skyr-Pancakes",
+    "detail": "Haferflocken, Skyr, Ei und Beeren",
+    "time": "16 Min.",
+    "calories": 470,
+    "protein": 37,
+    "carbs": 52,
+    "fat": 12,
+    "fiber": 7,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-09",
+    "context": "home",
+    "title": "Kichererbsen-Curry",
+    "detail": "Kichererbsen, Spinat, Tomate und Basmatireis",
+    "time": "24 Min.",
+    "calories": 521,
+    "protein": 23,
+    "carbs": 83,
+    "fat": 13,
+    "fiber": 18,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-10",
+    "context": "home",
+    "title": "Rind-Reis-Gemüse-Pfanne",
+    "detail": "Mageres Rind, Reis, Paprika und Zucchini",
+    "time": "20 Min.",
+    "calories": 550,
+    "protein": 45,
+    "carbs": 59,
+    "fat": 14,
+    "fiber": 4,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-11",
+    "context": "home",
+    "title": "Hüttenkäse-Ofenkartoffel",
+    "detail": "Kartoffel, Hüttenkäse, Gurke und Kräuter",
+    "time": "30 Min.",
+    "calories": 479,
+    "protein": 33,
+    "carbs": 60,
+    "fat": 12,
+    "fiber": 5,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-12",
+    "context": "home",
+    "title": "Garnelen-Couscous-Bowl",
+    "detail": "Garnelen, Couscous, Tomate und Zitrone",
+    "time": "18 Min.",
+    "calories": 483,
+    "protein": 42,
+    "carbs": 59,
+    "fat": 9,
+    "fiber": 5,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-13",
+    "context": "home",
+    "title": "Tempeh-Süßkartoffel-Bowl",
+    "detail": "Tempeh, Süßkartoffel, Rotkohl und Tahini",
+    "time": "26 Min.",
+    "calories": 527,
+    "protein": 30,
+    "carbs": 64,
+    "fat": 20,
+    "fiber": 10,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-14",
+    "context": "home",
+    "title": "Hähnchen-Shakshuka",
+    "detail": "Eier, Hähnchen, Tomaten und Vollkornbrot",
+    "time": "23 Min.",
+    "calories": 515,
+    "protein": 48,
+    "carbs": 42,
+    "fat": 17,
+    "fiber": 7,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-15",
+    "context": "home",
+    "title": "Quark-Grieß-Bowl",
+    "detail": "Magerquark, Weichweizengrieß, Banane und Mandeln",
+    "time": "12 Min.",
+    "calories": 461,
+    "protein": 36,
+    "carbs": 66,
+    "fat": 7,
+    "fiber": 5,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-16",
+    "context": "home",
+    "title": "Zitronen-Hähnchen-Orzo",
+    "detail": "Hähnchen, Orzo, Zucchini und Zitrone",
+    "time": "22 Min.",
+    "calories": 518,
+    "protein": 46,
+    "carbs": 61,
+    "fat": 9,
+    "fiber": 4,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-17",
+    "context": "home",
+    "title": "Kabeljau-Kartoffel-Spinat-Teller",
+    "detail": "Kabeljau, Salzkartoffeln, Blattspinat und Senfjoghurt",
+    "time": "25 Min.",
+    "calories": 478,
+    "protein": 42,
+    "carbs": 48,
+    "fat": 14,
+    "fiber": 6,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-18",
+    "context": "home",
+    "title": "Bohnen-Quinoa-Chili",
+    "detail": "Schwarze Bohnen, Quinoa, Mais und Paprika",
+    "time": "28 Min.",
+    "calories": 511,
+    "protein": 24,
+    "carbs": 81,
+    "fat": 12,
+    "fiber": 22,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-19",
+    "context": "home",
+    "title": "Putenbällchen mit Couscous",
+    "detail": "Putenbällchen, Couscous, Tomatensauce und Kräuter",
+    "time": "27 Min.",
+    "calories": 559,
+    "protein": 41,
+    "carbs": 58,
+    "fat": 19,
+    "fiber": 5,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-20",
+    "context": "home",
+    "title": "Spinat-Feta-Frittata",
+    "detail": "Eier, Spinat, Feta und Vollkornbrot",
+    "time": "20 Min.",
+    "calories": 493,
+    "protein": 30,
+    "carbs": 39,
+    "fat": 25,
+    "fiber": 9,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-21",
+    "context": "home",
+    "title": "Seitan-Gyros-Bowl",
+    "detail": "Seitan, Ofenkartoffeln, Krautsalat und veganer Dip",
+    "time": "25 Min.",
+    "calories": 510,
+    "protein": 42,
+    "carbs": 60,
+    "fat": 11,
+    "fiber": 7,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-22",
+    "context": "home",
+    "title": "Zucchini-Hack-Lasagne",
+    "detail": "Mageres Rinderhack, Zucchini, Lasagneplatten und Tomate",
+    "time": "35 Min.",
+    "calories": 550,
+    "protein": 45,
+    "carbs": 48,
+    "fat": 20,
+    "fiber": 5,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-23",
+    "context": "home",
+    "title": "Lachs-Spinat-Pasta",
+    "detail": "Lachs, Vollkornnudeln, Spinat und Zitronensauce",
+    "time": "24 Min.",
+    "calories": 540,
+    "protein": 39,
+    "carbs": 57,
+    "fat": 20,
+    "fiber": 10,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-24",
+    "context": "home",
+    "title": "Weiße-Bohnen-Eintopf",
+    "detail": "Weiße Bohnen, Karotten, Lauch und Roggenbrot",
+    "time": "30 Min.",
+    "calories": 469,
+    "protein": 22,
+    "carbs": 75,
+    "fat": 10,
+    "fiber": 16,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-25",
+    "context": "home",
+    "title": "Paprika-Hähnchen mit Bulgur",
+    "detail": "Hähnchen, Bulgur, Paprika und Kräuterjoghurt",
+    "time": "23 Min.",
+    "calories": 510,
+    "protein": 47,
+    "carbs": 55,
+    "fat": 13,
+    "fiber": 13,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-26",
+    "context": "home",
+    "title": "Hüttenkäse-Omelett",
+    "detail": "Eier, Hüttenkäse, Pilze und Roggentoast",
+    "time": "15 Min.",
+    "calories": 449,
+    "protein": 37,
+    "carbs": 33,
+    "fat": 19,
+    "fiber": 4,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-27",
+    "context": "home",
+    "title": "Rote-Linsen-Kokos-Suppe",
+    "detail": "Rote Linsen, leichte Kokosmilch, Karotten und Fladenbrot",
+    "time": "26 Min.",
+    "calories": 493,
+    "protein": 21,
+    "carbs": 71,
+    "fat": 15,
+    "fiber": 10,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-28",
+    "context": "home",
+    "title": "Puten-Pesto-Pasta",
+    "detail": "Putenbrust, Vollkornnudeln, grünes Pesto und Tomaten",
+    "time": "21 Min.",
+    "calories": 531,
+    "protein": 47,
+    "carbs": 60,
+    "fat": 13,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-29",
+    "context": "home",
+    "title": "Garnelen-Reisnudel-Pfanne",
+    "detail": "Garnelen, Reisnudeln, Pak Choi und Limette",
+    "time": "19 Min.",
+    "calories": 514,
+    "protein": 38,
+    "carbs": 59,
+    "fat": 14,
+    "fiber": 4,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-30",
+    "context": "home",
+    "title": "Quark-Beeren-Porridge",
+    "detail": "Magerquark, Haferflocken, Beeren und Nussmus",
+    "time": "10 Min.",
+    "calories": 467,
+    "protein": 38,
+    "carbs": 55,
+    "fat": 12,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-31",
+    "context": "home",
+    "title": "Paprika-Hähnchen mit Quinoa",
+    "detail": "Hähnchen, Quinoa, Paprika und Kräuter",
+    "time": "22 Min.",
+    "calories": 515,
+    "protein": 45,
+    "carbs": 57,
+    "fat": 12,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-32",
+    "context": "home",
+    "title": "Puten-Spinat-Gnocchi",
+    "detail": "Putenbrust, Gnocchi, Spinat und leichte Frischkäsesauce",
+    "time": "24 Min.",
+    "calories": 544,
+    "protein": 42,
+    "carbs": 48,
+    "fat": 21,
+    "fiber": 6,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-33",
+    "context": "home",
+    "title": "Rind-Couscous-Pfanne",
+    "detail": "Mageres Rind, Couscous, Aubergine und Tomate",
+    "time": "23 Min.",
+    "calories": 538,
+    "protein": 43,
+    "carbs": 60,
+    "fat": 13,
+    "fiber": 7,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-34",
+    "context": "home",
+    "title": "Kabeljau mit Erbsenstampf",
+    "detail": "Kabeljau, Kartoffel-Erbsen-Stampf und Karotten",
+    "time": "26 Min.",
+    "calories": 469,
+    "protein": 41,
+    "carbs": 56,
+    "fat": 9,
+    "fiber": 10,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-35",
+    "context": "home",
+    "title": "Garnelen-Tomaten-Risotto",
+    "detail": "Garnelen, Risottoreis, Tomaten und Zucchini",
+    "time": "28 Min.",
+    "calories": 510,
+    "protein": 39,
+    "carbs": 68,
+    "fat": 10,
+    "fiber": 4,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-36",
+    "context": "home",
+    "title": "Thunfisch-Ei-Reis-Bowl",
+    "detail": "Thunfisch, Ei, Reis, Gurke und Frühlingszwiebel",
+    "time": "16 Min.",
+    "calories": 495,
+    "protein": 42,
+    "carbs": 54,
+    "fat": 11,
+    "fiber": 4,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-37",
+    "context": "home",
+    "title": "Tofu-Linsen-Bolognese",
+    "detail": "Tofu, rote Linsen, Vollkornspaghetti und Tomate",
+    "time": "27 Min.",
+    "calories": 499,
+    "protein": 33,
+    "carbs": 73,
+    "fat": 12,
+    "fiber": 12,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-38",
+    "context": "home",
+    "title": "Kichererbsen-Spinat-Pasta",
+    "detail": "Kichererbsen, Vollkornnudeln, Spinat und Tomate",
+    "time": "21 Min.",
+    "calories": 494,
+    "protein": 24,
+    "carbs": 77,
+    "fat": 14,
+    "fiber": 19,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-39",
+    "context": "home",
+    "title": "Tempeh-Brokkoli-Nudeln",
+    "detail": "Tempeh, Vollkornnudeln, Brokkoli und Sojasauce",
+    "time": "20 Min.",
+    "calories": 500,
+    "protein": 34,
+    "carbs": 64,
+    "fat": 17,
+    "fiber": 10,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-40",
+    "context": "home",
+    "title": "Linsen-Shepherd’s-Pie",
+    "detail": "Linsen, Erbsen, Karotten und Kartoffelhaube",
+    "time": "35 Min.",
+    "calories": 494,
+    "protein": 22,
+    "carbs": 75,
+    "fat": 13,
+    "fiber": 21,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-41",
+    "context": "home",
+    "title": "Hüttenkäse-Gemüse-Pasta",
+    "detail": "Hüttenkäse, Vollkornnudeln, Zucchini und Tomate",
+    "time": "20 Min.",
+    "calories": 485,
+    "protein": 34,
+    "carbs": 58,
+    "fat": 15,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-42",
+    "context": "home",
+    "title": "Skyr-Beeren-Waffeln",
+    "detail": "Skyr, Hafermehl, Ei und Beerenkompott",
+    "time": "18 Min.",
+    "calories": 472,
+    "protein": 36,
+    "carbs": 54,
+    "fat": 12,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-43",
+    "context": "home",
+    "title": "Ei-Linsen-Salat",
+    "detail": "Eier, Berglinsen, Gurke, Tomate und Roggenbrot",
+    "time": "17 Min.",
+    "calories": 476,
+    "protein": 31,
+    "carbs": 50,
+    "fat": 17,
+    "fiber": 14,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-44",
+    "context": "home",
+    "title": "Halloumi-Couscous-Bowl",
+    "detail": "Halloumi, Couscous, Ofengemüse und Kräuterdip",
+    "time": "24 Min.",
+    "calories": 542,
+    "protein": 26,
+    "carbs": 64,
+    "fat": 21,
+    "fiber": 6,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-45",
+    "context": "home",
+    "title": "Ricotta-Spinat-Cannelloni",
+    "detail": "Cannelloni, Ricotta, Spinat und Tomatensauce",
+    "time": "35 Min.",
+    "calories": 523,
+    "protein": 33,
+    "carbs": 64,
+    "fat": 17,
+    "fiber": 7,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-46",
+    "context": "home",
+    "title": "Hähnchen-Linsen-Suppe",
+    "detail": "Hähnchen, Linsen, Karotten und Vollkornbrot",
+    "time": "30 Min.",
+    "calories": 490,
+    "protein": 45,
+    "carbs": 50,
+    "fat": 12,
+    "fiber": 16,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-47",
+    "context": "home",
+    "title": "Puten-Süßkartoffel-Pfanne",
+    "detail": "Putenbrust, Süßkartoffel, grüne Bohnen und Paprika",
+    "time": "25 Min.",
+    "calories": 521,
+    "protein": 48,
+    "carbs": 58,
+    "fat": 12,
+    "fiber": 12,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-48",
+    "context": "home",
+    "title": "Rind-Bohnen-Burrito-Bowl",
+    "detail": "Mageres Rind, Bohnen, Reis, Salsa und Salat",
+    "time": "22 Min.",
+    "calories": 526,
+    "protein": 46,
+    "carbs": 69,
+    "fat": 6,
+    "fiber": 11,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-49",
+    "context": "home",
+    "title": "Hähnchen-Pilz-Reis-Pfanne",
+    "detail": "Hähnchen, Reis, Champignons und Erbsen",
+    "time": "21 Min.",
+    "calories": 513,
+    "protein": 46,
+    "carbs": 53,
+    "fat": 12,
+    "fiber": 4,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-50",
+    "context": "home",
+    "title": "Puten-Zucchini-Taler",
+    "detail": "Putenhack-Taler, Zucchini, Kartoffelspalten und Joghurtdip",
+    "time": "28 Min.",
+    "calories": 508,
+    "protein": 43,
+    "carbs": 48,
+    "fat": 17,
+    "fiber": 5,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-51",
+    "context": "home",
+    "title": "Seelachs-Tomaten-Reis",
+    "detail": "Seelachs, Reis, Tomaten, Oliven und Kräuter",
+    "time": "24 Min.",
+    "calories": 494,
+    "protein": 42,
+    "carbs": 55,
+    "fat": 12,
+    "fiber": 3,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-52",
+    "context": "home",
+    "title": "Lachs-Kartoffel-Suppe",
+    "detail": "Lachs, Kartoffeln, Lauch und leichte Milchbrühe",
+    "time": "30 Min.",
+    "calories": 535,
+    "protein": 35,
+    "carbs": 49,
+    "fat": 22,
+    "fiber": 4,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-53",
+    "context": "home",
+    "title": "Thunfisch-Bohnen-Pasta",
+    "detail": "Thunfisch, weiße Bohnen, Vollkornnudeln und Tomaten",
+    "time": "19 Min.",
+    "calories": 496,
+    "protein": 41,
+    "carbs": 60,
+    "fat": 12,
+    "fiber": 11,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-54",
+    "context": "home",
+    "title": "Garnelen-Erbsen-Risotto",
+    "detail": "Garnelen, Risottoreis, Erbsen und Zitrone",
+    "time": "27 Min.",
+    "calories": 535,
+    "protein": 38,
+    "carbs": 64,
+    "fat": 14,
+    "fiber": 6,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-55",
+    "context": "home",
+    "title": "Tofu-Kichererbsen-Curry",
+    "detail": "Tofu, Kichererbsen, Spinat und Basmatireis",
+    "time": "25 Min.",
+    "calories": 505,
+    "protein": 28,
+    "carbs": 73,
+    "fat": 13,
+    "fiber": 12,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-56",
+    "context": "home",
+    "title": "Seitan-Pilz-Gulasch",
+    "detail": "Seitan, Champignons, Paprika und Kartoffeln",
+    "time": "28 Min.",
+    "calories": 493,
+    "protein": 41,
+    "carbs": 61,
+    "fat": 11,
+    "fiber": 8,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-57",
+    "context": "home",
+    "title": "Bohnen-Gefüllte Paprika",
+    "detail": "Kidneybohnen, Reis, Mais und Tomate in Paprika",
+    "time": "35 Min.",
+    "calories": 469,
+    "protein": 19,
+    "carbs": 76,
+    "fat": 12,
+    "fiber": 14,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-58",
+    "context": "home",
+    "title": "Erbsen-Tofu-Pasta",
+    "detail": "Tofu, Erbsen, Vollkornnudeln und Zitronensauce",
+    "time": "20 Min.",
+    "calories": 486,
+    "protein": 31,
+    "carbs": 67,
+    "fat": 14,
+    "fiber": 12,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "home-59",
+    "context": "home",
+    "title": "Hüttenkäse-Tomaten-Gnocchi",
+    "detail": "Hüttenkäse, Gnocchi, Kirschtomaten und Rucola",
+    "time": "18 Min.",
+    "calories": 511,
+    "protein": 34,
+    "carbs": 45,
+    "fat": 22,
+    "fiber": 4,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-60",
+    "context": "home",
+    "title": "Ei-Kartoffel-Spinat-Pfanne",
+    "detail": "Eier, Kartoffeln, Spinat und Hüttenkäse",
+    "time": "20 Min.",
+    "calories": 488,
+    "protein": 34,
+    "carbs": 50,
+    "fat": 18,
+    "fiber": 7,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-61",
+    "context": "home",
+    "title": "Quark-Pflaumen-Oats",
+    "detail": "Magerquark, Haferflocken, Pflaumen und Mandeln",
+    "time": "10 Min.",
+    "calories": 453,
+    "protein": 36,
+    "carbs": 57,
+    "fat": 10,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-62",
+    "context": "home",
+    "title": "Linsen-Ei-Bowl",
+    "detail": "Berglinsen, Eier, Ofengemüse und Joghurtdip",
+    "time": "24 Min.",
+    "calories": 473,
+    "protein": 34,
+    "carbs": 54,
+    "fat": 15,
+    "fiber": 19,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "home-63",
+    "context": "home",
+    "title": "Hähnchen-Kartoffel-Eintopf",
+    "detail": "Hähnchen, Kartoffeln, Karotten und Erbsen",
+    "time": "32 Min.",
+    "calories": 519,
+    "protein": 48,
+    "carbs": 53,
+    "fat": 12,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-64",
+    "context": "home",
+    "title": "Puten-Reis-Paprika",
+    "detail": "Mit Putenhack, Reis, Bohnen und Tomate gefüllte Paprika",
+    "time": "35 Min.",
+    "calories": 526,
+    "protein": 44,
+    "carbs": 59,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-65",
+    "context": "home",
+    "title": "Rind-Brokkoli-Nudeln",
+    "detail": "Mageres Rind, Vollkornnudeln, Brokkoli und Sojasauce",
+    "time": "20 Min.",
+    "calories": 517,
+    "protein": 47,
+    "carbs": 62,
+    "fat": 11,
+    "fiber": 11,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "home-66",
+    "context": "home",
+    "title": "Lachs-Quinoa-Bratlinge",
+    "detail": "Lachs-Quinoa-Bratlinge, Gurkensalat und Joghurtdip",
+    "time": "28 Min.",
+    "calories": 554,
+    "protein": 34,
+    "carbs": 52,
+    "fat": 23,
+    "fiber": 6,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "home-67",
+    "context": "home",
+    "title": "Tofu-Gemüse-Lasagne",
+    "detail": "Tofu, Lasagneplatten, Zucchini und Tomatensauce",
+    "time": "38 Min.",
+    "calories": 518,
+    "protein": 31,
+    "carbs": 62,
+    "fat": 19,
+    "fiber": 7,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-01",
+    "context": "supermarket",
+    "title": "Proteinreiche Skyr-Bowl",
+    "detail": "Skyr, Beeren, Haferflocken und Mandeln",
+    "time": "Ohne Kochen",
+    "calories": 440,
+    "protein": 42,
+    "carbs": 47,
+    "fat": 9,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-02",
+    "context": "supermarket",
+    "title": "Hähnchen-Wrap und Skyr",
+    "detail": "Frischer Hähnchen-Wrap und Natur-Skyr",
+    "time": "Direkt essen",
+    "calories": 510,
+    "protein": 48,
+    "carbs": 56,
+    "fat": 12,
+    "fiber": 7,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-03",
+    "context": "supermarket",
+    "title": "Protein-Sandwich und Obst",
+    "detail": "Vollkorn-Hähnchen-Sandwich und Apfel",
+    "time": "Direkt essen",
+    "calories": 485,
+    "protein": 39,
+    "carbs": 61,
+    "fat": 10,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-04",
+    "context": "supermarket",
+    "title": "Hüttenkäse-Salatbox",
+    "detail": "Hüttenkäse, Salatmischung, Tomaten und Vollkornbrötchen",
+    "time": "5 Min.",
+    "calories": 455,
+    "protein": 36,
+    "carbs": 49,
+    "fat": 12,
+    "fiber": 9,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-05",
+    "context": "supermarket",
+    "title": "Räucherlachs-Brotzeit",
+    "detail": "Räucherlachs, Roggenbrot, Gurke und Frischkäse light",
+    "time": "Direkt essen",
+    "calories": 500,
+    "protein": 38,
+    "carbs": 47,
+    "fat": 17,
+    "fiber": 7,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-06",
+    "context": "supermarket",
+    "title": "Linsensalat mit Ei",
+    "detail": "Fertiger Linsensalat, zwei Eier und Rohkost",
+    "time": "Direkt essen",
+    "calories": 475,
+    "protein": 31,
+    "carbs": 49,
+    "fat": 16,
+    "fiber": 13,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-07",
+    "context": "supermarket",
+    "title": "Thunfisch-Bohnen-Box",
+    "detail": "Thunfisch natur, Kidneybohnen, Mais und Salat",
+    "time": "5 Min.",
+    "calories": 450,
+    "protein": 44,
+    "carbs": 42,
+    "fat": 10,
+    "fiber": 12,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-08",
+    "context": "supermarket",
+    "title": "Tofu-Sushi und Edamame",
+    "detail": "Gemüse-Sushi, Edamame und Räuchertofu",
+    "time": "Direkt essen",
+    "calories": 525,
+    "protein": 29,
+    "carbs": 69,
+    "fat": 15,
+    "fiber": 10,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-09",
+    "context": "supermarket",
+    "title": "Quark-Bananen-Becher",
+    "detail": "Magerquark, Banane, Walnüsse und Knäckebrot",
+    "time": "5 Min.",
+    "calories": 465,
+    "protein": 39,
+    "carbs": 54,
+    "fat": 11,
+    "fiber": 7,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-10",
+    "context": "supermarket",
+    "title": "Hähnchensalat und Brötchen",
+    "detail": "Salatbox mit Hähnchen, Dressing separat und Körnerbrötchen",
+    "time": "Direkt essen",
+    "calories": 490,
+    "protein": 42,
+    "carbs": 48,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-11",
+    "context": "supermarket",
+    "title": "Mozzarella-Bohnen-Salat",
+    "detail": "Mozzarella light, weiße Bohnen, Tomaten und Rucola",
+    "time": "5 Min.",
+    "calories": 480,
+    "protein": 34,
+    "carbs": 43,
+    "fat": 18,
+    "fiber": 12,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-12",
+    "context": "supermarket",
+    "title": "Kefir-Müsli-Set",
+    "detail": "Kefir, Proteinmüsli, Beeren und Kürbiskerne",
+    "time": "Ohne Kochen",
+    "calories": 470,
+    "protein": 32,
+    "carbs": 56,
+    "fat": 13,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-13",
+    "context": "supermarket",
+    "title": "Falafel-Taboulé-Box",
+    "detail": "Falafel, Taboulé, Hummus und Rohkost",
+    "time": "Direkt essen",
+    "calories": 535,
+    "protein": 24,
+    "carbs": 67,
+    "fat": 19,
+    "fiber": 13,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-14",
+    "context": "supermarket",
+    "title": "Putenaufschnitt-Brotzeit",
+    "detail": "Vollkornbrot, Putenbrust, körniger Frischkäse und Paprika",
+    "time": "5 Min.",
+    "calories": 460,
+    "protein": 43,
+    "carbs": 50,
+    "fat": 10,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-15",
+    "context": "supermarket",
+    "title": "Garnelen-Reissalat",
+    "detail": "Garnelen, fertiger Reissalat und Blattsalat",
+    "time": "Direkt essen",
+    "calories": 505,
+    "protein": 37,
+    "carbs": 61,
+    "fat": 12,
+    "fiber": 7,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-16",
+    "context": "supermarket",
+    "title": "Grillhähnchen-Couscous-Box",
+    "detail": "Grillhähnchen ohne Haut, Couscoussalat und Rohkost",
+    "time": "Direkt essen",
+    "calories": 520,
+    "protein": 47,
+    "carbs": 52,
+    "fat": 14,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-17",
+    "context": "supermarket",
+    "title": "Skyr-Overnight-Oats",
+    "detail": "Skyr, Overnight Oats, Heidelbeeren und Chiasamen",
+    "time": "Ohne Kochen",
+    "calories": 450,
+    "protein": 37,
+    "carbs": 55,
+    "fat": 9,
+    "fiber": 10,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-18",
+    "context": "supermarket",
+    "title": "Thunfisch-Knäckebrot-Set",
+    "detail": "Thunfisch natur, Roggenknäcke, Salat und Frischkäse light",
+    "time": "5 Min.",
+    "calories": 470,
+    "protein": 42,
+    "carbs": 47,
+    "fat": 13,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-19",
+    "context": "supermarket",
+    "title": "Veganer Proteinpudding-Mix",
+    "detail": "Proteinpudding, Banane, Haferflocken und Mandeln",
+    "time": "Ohne Kochen",
+    "calories": 455,
+    "protein": 30,
+    "carbs": 57,
+    "fat": 12,
+    "fiber": 9,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-20",
+    "context": "supermarket",
+    "title": "Puten-Mozzarella-Wrap",
+    "detail": "Vollkornwrap, Putenbrust, Mozzarella light und Rucola",
+    "time": "Direkt essen",
+    "calories": 500,
+    "protein": 43,
+    "carbs": 54,
+    "fat": 13,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-21",
+    "context": "supermarket",
+    "title": "Eier-Hummus-Brotzeit",
+    "detail": "Zwei gekochte Eier, Hummus, Vollkornbrot und Rohkost",
+    "time": "Direkt essen",
+    "calories": 480,
+    "protein": 30,
+    "carbs": 43,
+    "fat": 21,
+    "fiber": 10,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-22",
+    "context": "supermarket",
+    "title": "Garnelen-Sushi-Box",
+    "detail": "Garnelen-Sushi, Edamame und Gurkensalat",
+    "time": "Direkt essen",
+    "calories": 515,
+    "protein": 39,
+    "carbs": 64,
+    "fat": 11,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-23",
+    "context": "supermarket",
+    "title": "Tofu-Bohnensalat-Box",
+    "detail": "Räuchertofu, bunter Bohnensalat und Vollkornbrötchen",
+    "time": "Direkt essen",
+    "calories": 490,
+    "protein": 31,
+    "carbs": 56,
+    "fat": 16,
+    "fiber": 15,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-24",
+    "context": "supermarket",
+    "title": "Hähnchen-Reis-Fertiggericht",
+    "detail": "Hähnchen-Reis-Schale mit Gemüse und leichter Sauce",
+    "time": "Mikrowelle",
+    "calories": 535,
+    "protein": 48,
+    "carbs": 56,
+    "fat": 13,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-25",
+    "context": "supermarket",
+    "title": "Hüttenkäse-Obst-Brotzeit",
+    "detail": "Hüttenkäse, Birne, Vollkornbrezel und Kürbiskerne",
+    "time": "Ohne Kochen",
+    "calories": 460,
+    "protein": 35,
+    "carbs": 58,
+    "fat": 10,
+    "fiber": 9,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-26",
+    "context": "supermarket",
+    "title": "Linsensuppe mit Skyr",
+    "detail": "Frische Linsensuppe, Natur-Skyr und Roggenbrötchen",
+    "time": "Mikrowelle",
+    "calories": 475,
+    "protein": 33,
+    "carbs": 56,
+    "fat": 13,
+    "fiber": 14,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-27",
+    "context": "supermarket",
+    "title": "Lachs-Poke-Box",
+    "detail": "Lachs, Reis, Edamame, Gurke und Sesam",
+    "time": "Direkt essen",
+    "calories": 535,
+    "protein": 38,
+    "carbs": 61,
+    "fat": 15,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-28",
+    "context": "supermarket",
+    "title": "Tempeh-Vollkorn-Sandwich",
+    "detail": "Tempeh, Vollkornbrot, Krautsalat und Senf",
+    "time": "Direkt essen",
+    "calories": 500,
+    "protein": 30,
+    "carbs": 58,
+    "fat": 17,
+    "fiber": 12,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-29",
+    "context": "supermarket",
+    "title": "Roastbeef-Brotzeit",
+    "detail": "Roastbeef, Roggenbrot, Gewürzgurken und Salat",
+    "time": "Direkt essen",
+    "calories": 495,
+    "protein": 42,
+    "carbs": 50,
+    "fat": 14,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-30",
+    "context": "supermarket",
+    "title": "Joghurt-Protein-Set",
+    "detail": "Griechischer Joghurt light, Proteindrink, Müsli und Beeren",
+    "time": "Ohne Kochen",
+    "calories": 480,
+    "protein": 38,
+    "carbs": 58,
+    "fat": 10,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-31",
+    "context": "supermarket",
+    "title": "Hähnchen-Sushi-Set",
+    "detail": "Hähnchen-Sushi, Edamame und Gurkensalat",
+    "time": "Direkt essen",
+    "calories": 505,
+    "protein": 40,
+    "carbs": 62,
+    "fat": 11,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-32",
+    "context": "supermarket",
+    "title": "Skyr-Apfel-Zimt-Müsli",
+    "detail": "Skyr, Apfel, Proteinmüsli und Zimt",
+    "time": "Ohne Kochen",
+    "calories": 445,
+    "protein": 36,
+    "carbs": 55,
+    "fat": 9,
+    "fiber": 9,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-33",
+    "context": "supermarket",
+    "title": "Thunfisch-Pasta-Salat",
+    "detail": "Thunfisch-Nudelsalat, Blattsalat und Cherrytomaten",
+    "time": "Direkt essen",
+    "calories": 500,
+    "protein": 37,
+    "carbs": 61,
+    "fat": 12,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-34",
+    "context": "supermarket",
+    "title": "Hummus-Linsen-Wrap",
+    "detail": "Vollkornwrap, Hummus, Linsen und Rohkost",
+    "time": "Direkt essen",
+    "calories": 490,
+    "protein": 25,
+    "carbs": 65,
+    "fat": 15,
+    "fiber": 15,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-35",
+    "context": "supermarket",
+    "title": "Puten-Protein-Bagel",
+    "detail": "Vollkornbagel, Putenbrust, Frischkäse light und Salat",
+    "time": "Direkt essen",
+    "calories": 480,
+    "protein": 41,
+    "carbs": 51,
+    "fat": 12,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-36",
+    "context": "supermarket",
+    "title": "Ei-Hüttenkäse-Snackbox",
+    "detail": "Gekochte Eier, Hüttenkäse, Knäckebrot und Rohkost",
+    "time": "Direkt essen",
+    "calories": 465,
+    "protein": 34,
+    "carbs": 42,
+    "fat": 18,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-37",
+    "context": "supermarket",
+    "title": "Lachs-Roggenbrötchen",
+    "detail": "Räucherlachs, Roggenbrötchen, Gurke und Frischkäse light",
+    "time": "Direkt essen",
+    "calories": 495,
+    "protein": 37,
+    "carbs": 48,
+    "fat": 17,
+    "fiber": 7,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-38",
+    "context": "supermarket",
+    "title": "Tofu-Reis-Fertigbowl",
+    "detail": "Tofu, Reis, Edamame und Asia-Gemüse",
+    "time": "Mikrowelle",
+    "calories": 520,
+    "protein": 29,
+    "carbs": 68,
+    "fat": 15,
+    "fiber": 12,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-39",
+    "context": "supermarket",
+    "title": "Hähnchen-Chili-Fertiggericht",
+    "detail": "Hähnchen-Chili mit Bohnen, Mais und Reis",
+    "time": "Mikrowelle",
+    "calories": 530,
+    "protein": 45,
+    "carbs": 58,
+    "fat": 13,
+    "fiber": 13,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-40",
+    "context": "supermarket",
+    "title": "Quark-Kirsch-Oats",
+    "detail": "Magerquark, Haferflocken, Kirschen und Mandeln",
+    "time": "Ohne Kochen",
+    "calories": 455,
+    "protein": 37,
+    "carbs": 56,
+    "fat": 9,
+    "fiber": 9,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-41",
+    "context": "supermarket",
+    "title": "Garnelen-Couscous-Salat",
+    "detail": "Garnelen, Couscoussalat, Gurke und Zitrone",
+    "time": "Direkt essen",
+    "calories": 510,
+    "protein": 38,
+    "carbs": 62,
+    "fat": 12,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-42",
+    "context": "supermarket",
+    "title": "Bohnen-Mais-Salat mit Skyr",
+    "detail": "Bohnensalat, Mais, Natur-Skyr und Vollkornbrötchen",
+    "time": "Direkt essen",
+    "calories": 485,
+    "protein": 31,
+    "carbs": 56,
+    "fat": 15,
+    "fiber": 14,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-43",
+    "context": "supermarket",
+    "title": "Veganes Linsen-Curry",
+    "detail": "Fertiges Linsen-Curry mit Reis und Blattspinat",
+    "time": "Mikrowelle",
+    "calories": 525,
+    "protein": 26,
+    "carbs": 76,
+    "fat": 13,
+    "fiber": 16,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-44",
+    "context": "supermarket",
+    "title": "Grillhähnchen-Sandwich",
+    "detail": "Vollkorn-Sandwich, Grillhähnchen, Tomate und Salat",
+    "time": "Direkt essen",
+    "calories": 500,
+    "protein": 43,
+    "carbs": 52,
+    "fat": 13,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-45",
+    "context": "supermarket",
+    "title": "Hüttenkäse-Rote-Bete-Bowl",
+    "detail": "Hüttenkäse, Rote Bete, Linsen und Roggenknäcke",
+    "time": "5 Min.",
+    "calories": 470,
+    "protein": 34,
+    "carbs": 49,
+    "fat": 15,
+    "fiber": 12,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-46",
+    "context": "supermarket",
+    "title": "Räucherforellen-Brotzeit",
+    "detail": "Räucherforelle, Roggenbrot, Gurke und Meerrettichquark",
+    "time": "Direkt essen",
+    "calories": 500,
+    "protein": 39,
+    "carbs": 48,
+    "fat": 17,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-47",
+    "context": "supermarket",
+    "title": "Tempeh-Edamame-Snackbox",
+    "detail": "Tempeh, Edamame, Reissalat und Rohkost",
+    "time": "Direkt essen",
+    "calories": 505,
+    "protein": 31,
+    "carbs": 62,
+    "fat": 15,
+    "fiber": 13,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-48",
+    "context": "supermarket",
+    "title": "Puten-Salat mit Roggenbrot",
+    "detail": "Putenbrust-Salatbox, Dressing separat und Roggenbrot",
+    "time": "Direkt essen",
+    "calories": 485,
+    "protein": 42,
+    "carbs": 48,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-49",
+    "context": "supermarket",
+    "title": "Rind-Reis-Fertigbowl",
+    "detail": "Mageres Rind, Reis, Brokkoli und Paprika",
+    "time": "Mikrowelle",
+    "calories": 535,
+    "protein": 44,
+    "carbs": 60,
+    "fat": 13,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-50",
+    "context": "supermarket",
+    "title": "Skyr-Protein-Milchreis",
+    "detail": "Protein-Milchreis, Skyr, Beeren und Zimt",
+    "time": "Ohne Kochen",
+    "calories": 450,
+    "protein": 36,
+    "carbs": 55,
+    "fat": 9,
+    "fiber": 7,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-51",
+    "context": "supermarket",
+    "title": "Thunfisch-Ei-Sandwich",
+    "detail": "Vollkorn-Sandwich mit Thunfisch, Ei und Gurke",
+    "time": "Direkt essen",
+    "calories": 490,
+    "protein": 40,
+    "carbs": 52,
+    "fat": 13,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-52",
+    "context": "supermarket",
+    "title": "Falafel-Quinoa-Salat",
+    "detail": "Falafel, Quinoa, Hummus und Rohkost",
+    "time": "Direkt essen",
+    "calories": 515,
+    "protein": 25,
+    "carbs": 68,
+    "fat": 16,
+    "fiber": 15,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-53",
+    "context": "supermarket",
+    "title": "Lachs-Spinat-Pasta-Box",
+    "detail": "Lachs, Pasta, Blattspinat und leichte Zitronensauce",
+    "time": "Mikrowelle",
+    "calories": 530,
+    "protein": 39,
+    "carbs": 62,
+    "fat": 14,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-54",
+    "context": "supermarket",
+    "title": "Hähnchen-Suppe mit Brot",
+    "detail": "Hähnchen-Gemüse-Suppe und Roggenbrötchen",
+    "time": "Mikrowelle",
+    "calories": 475,
+    "protein": 38,
+    "carbs": 53,
+    "fat": 12,
+    "fiber": 10,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-55",
+    "context": "supermarket",
+    "title": "Mozzarella-Linsen-Bowl",
+    "detail": "Mozzarella light, Linsen, Tomaten und Rucola",
+    "time": "Direkt essen",
+    "calories": 485,
+    "protein": 33,
+    "carbs": 48,
+    "fat": 18,
+    "fiber": 13,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-56",
+    "context": "supermarket",
+    "title": "Tofu-Erdnuss-Nudelbox",
+    "detail": "Tofu, Nudeln, Wokgemüse und leichte Erdnusssauce",
+    "time": "Mikrowelle",
+    "calories": 520,
+    "protein": 30,
+    "carbs": 64,
+    "fat": 16,
+    "fiber": 10,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-57",
+    "context": "supermarket",
+    "title": "Putenbällchen-Tomaten-Box",
+    "detail": "Putenbällchen, Tomatensauce, Reis und Gemüse",
+    "time": "Mikrowelle",
+    "calories": 525,
+    "protein": 45,
+    "carbs": 57,
+    "fat": 13,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-58",
+    "context": "supermarket",
+    "title": "Joghurt-Chia-Frucht-Set",
+    "detail": "Griechischer Joghurt light, Chia-Pudding, Obst und Haferflocken",
+    "time": "Ohne Kochen",
+    "calories": 450,
+    "protein": 32,
+    "carbs": 54,
+    "fat": 12,
+    "fiber": 10,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-59",
+    "context": "supermarket",
+    "title": "Garnelen-Vollkorn-Wrap",
+    "detail": "Vollkornwrap, Garnelen, Salat und Joghurtsauce",
+    "time": "Direkt essen",
+    "calories": 500,
+    "protein": 38,
+    "carbs": 58,
+    "fat": 13,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-60",
+    "context": "supermarket",
+    "title": "Seitan-Senf-Sandwich",
+    "detail": "Seitan, Vollkornbrot, Krautsalat und Senf",
+    "time": "Direkt essen",
+    "calories": 495,
+    "protein": 35,
+    "carbs": 59,
+    "fat": 13,
+    "fiber": 12,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-61",
+    "context": "supermarket",
+    "title": "Hähnchen-Caesar-Box leicht",
+    "detail": "Hähnchen, Römersalat, wenig Dressing und Vollkornbrötchen",
+    "time": "Direkt essen",
+    "calories": 510,
+    "protein": 44,
+    "carbs": 46,
+    "fat": 17,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-62",
+    "context": "supermarket",
+    "title": "Hüttenkäse-Beeren-Crunch",
+    "detail": "Hüttenkäse, Beeren, Vollkorncerealien und Mandeln",
+    "time": "Ohne Kochen",
+    "calories": 455,
+    "protein": 36,
+    "carbs": 52,
+    "fat": 10,
+    "fiber": 9,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-63",
+    "context": "supermarket",
+    "title": "Makrelen-Kartoffelsalat leicht",
+    "detail": "Räuchermakrele, leichter Kartoffelsalat und Gurke",
+    "time": "Direkt essen",
+    "calories": 520,
+    "protein": 38,
+    "carbs": 49,
+    "fat": 19,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "market-64",
+    "context": "supermarket",
+    "title": "Kichererbsen-Couscous-Becher",
+    "detail": "Kichererbsen, Couscous, Grillgemüse und Hummus",
+    "time": "Direkt essen",
+    "calories": 500,
+    "protein": 24,
+    "carbs": 70,
+    "fat": 14,
+    "fiber": 15,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "market-65",
+    "context": "supermarket",
+    "title": "Roastbeef-Protein-Wrap",
+    "detail": "Vollkornwrap, Roastbeef, Hüttenkäse und Salat",
+    "time": "Direkt essen",
+    "calories": 510,
+    "protein": 43,
+    "carbs": 53,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "market-66",
+    "context": "supermarket",
+    "title": "Ei-Linsen-Snackteller",
+    "detail": "Gekochte Eier, Linsensalat, Rohkost und Knäckebrot",
+    "time": "Direkt essen",
+    "calories": 475,
+    "protein": 31,
+    "carbs": 52,
+    "fat": 16,
+    "fiber": 13,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "market-67",
+    "context": "supermarket",
+    "title": "Lachs-Sushi-Miso-Set",
+    "detail": "Lachs-Sushi, Edamame und kleine Misosuppe",
+    "time": "Direkt essen",
+    "calories": 525,
+    "protein": 40,
+    "carbs": 64,
+    "fat": 12,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-01",
+    "context": "eating-out",
+    "title": "Hähnchen-Pho",
+    "detail": "Klare Brühe, extra Hähnchen und Kräuter",
+    "time": "Vietnamesisch",
+    "calories": 500,
+    "protein": 41,
+    "carbs": 58,
+    "fat": 9,
+    "fiber": 6,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-02",
+    "context": "eating-out",
+    "title": "Gegrillter Hähnchensalat",
+    "detail": "Dressing separat, dazu kleine Kartoffeln",
+    "time": "Bistro",
+    "calories": 470,
+    "protein": 45,
+    "carbs": 38,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-03",
+    "context": "eating-out",
+    "title": "Proteinreiches Sushi-Set",
+    "detail": "Sashimi, Edamame und sechs Maki",
+    "time": "Japanisch",
+    "calories": 530,
+    "protein": 43,
+    "carbs": 62,
+    "fat": 11,
+    "fiber": 7,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-04",
+    "context": "eating-out",
+    "title": "Döner-Teller leicht",
+    "detail": "Hähnchen, viel Salat, wenig Sauce und kleine Reisportion",
+    "time": "Imbiss",
+    "calories": 550,
+    "protein": 46,
+    "carbs": 51,
+    "fat": 17,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-05",
+    "context": "eating-out",
+    "title": "Falafel-Salat-Bowl",
+    "detail": "Falafel, großer Salat, Hummus und Fladenbrotviertel",
+    "time": "Orientalisch",
+    "calories": 520,
+    "protein": 23,
+    "carbs": 61,
+    "fat": 20,
+    "fiber": 14,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-06",
+    "context": "eating-out",
+    "title": "Poke mit Lachs",
+    "detail": "Lachs, halber Reis, Edamame und Gemüse",
+    "time": "Poke",
+    "calories": 545,
+    "protein": 39,
+    "carbs": 58,
+    "fat": 18,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-07",
+    "context": "eating-out",
+    "title": "Thai-Basilikum-Hähnchen",
+    "detail": "Hähnchen, Wokgemüse und kleine Reisportion",
+    "time": "Thai",
+    "calories": 525,
+    "protein": 42,
+    "carbs": 57,
+    "fat": 14,
+    "fiber": 7,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-08",
+    "context": "eating-out",
+    "title": "Linsen-Dal mit Reis",
+    "detail": "Linsen-Dal, kleine Reisportion und Gurkensalat",
+    "time": "Indisch",
+    "calories": 535,
+    "protein": 25,
+    "carbs": 76,
+    "fat": 14,
+    "fiber": 15,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "out-09",
+    "context": "eating-out",
+    "title": "Rührei-Vollkorn-Frühstück",
+    "detail": "Rührei, Vollkornbrot, Tomate und Obst",
+    "time": "Café",
+    "calories": 480,
+    "protein": 32,
+    "carbs": 49,
+    "fat": 17,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "out-10",
+    "context": "eating-out",
+    "title": "Rindfleisch-Gemüse-Wok",
+    "detail": "Mageres Rind, viel Gemüse und gedämpfter Reis",
+    "time": "Asiatisch",
+    "calories": 540,
+    "protein": 43,
+    "carbs": 55,
+    "fat": 17,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-11",
+    "context": "eating-out",
+    "title": "Ofenkartoffel mit Quark",
+    "detail": "Große Kartoffel, Kräuterquark und Beilagensalat",
+    "time": "Kantine",
+    "calories": 465,
+    "protein": 30,
+    "carbs": 64,
+    "fat": 10,
+    "fiber": 10,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "out-12",
+    "context": "eating-out",
+    "title": "Garnelen-Tacos",
+    "detail": "Drei kleine Tacos, Garnelen, Kraut und Salsa",
+    "time": "Mexikanisch",
+    "calories": 510,
+    "protein": 36,
+    "carbs": 57,
+    "fat": 15,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-13",
+    "context": "eating-out",
+    "title": "Tofu-Ramen leicht",
+    "detail": "Tofu, Gemüse, Brühe und halbe Nudelportion",
+    "time": "Japanisch",
+    "calories": 490,
+    "protein": 28,
+    "carbs": 61,
+    "fat": 15,
+    "fiber": 9,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-14",
+    "context": "eating-out",
+    "title": "Puten-Sandwich und Salat",
+    "detail": "Vollkorn-Sandwich mit Pute, dazu Beilagensalat",
+    "time": "Bäcker",
+    "calories": 475,
+    "protein": 37,
+    "carbs": 54,
+    "fat": 12,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-15",
+    "context": "eating-out",
+    "title": "Burrito-Bowl ohne Käse",
+    "detail": "Hähnchen, Bohnen, Reis, Salsa und Salat",
+    "time": "Mexikanisch",
+    "calories": 550,
+    "protein": 44,
+    "carbs": 69,
+    "fat": 11,
+    "fiber": 13,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-16",
+    "context": "eating-out",
+    "title": "Grilllachs mit Ofenkartoffeln",
+    "detail": "Lachs, kleine Ofenkartoffeln und Tagesgemüse",
+    "time": "Restaurant",
+    "calories": 550,
+    "protein": 42,
+    "carbs": 47,
+    "fat": 21,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-17",
+    "context": "eating-out",
+    "title": "Hähnchen-Curry leicht",
+    "detail": "Hähnchen, Gemüse, leichte Currysauce und kleine Reisportion",
+    "time": "Indisch",
+    "calories": 535,
+    "protein": 44,
+    "carbs": 59,
+    "fat": 14,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-18",
+    "context": "eating-out",
+    "title": "Puten-Kebab-Teller",
+    "detail": "Putenfleisch, großer Salat, wenig Sauce und Bulgur",
+    "time": "Imbiss",
+    "calories": 520,
+    "protein": 45,
+    "carbs": 48,
+    "fat": 16,
+    "fiber": 10,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-19",
+    "context": "eating-out",
+    "title": "Veggie-Chili-Ofenkartoffel",
+    "detail": "Ofenkartoffel, Bohnen-Chili, Joghurt und Salat",
+    "time": "Kantine",
+    "calories": 505,
+    "protein": 26,
+    "carbs": 74,
+    "fat": 12,
+    "fiber": 16,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "out-20",
+    "context": "eating-out",
+    "title": "Thunfisch-Salat-Sandwich",
+    "detail": "Vollkorn-Sandwich mit Thunfisch, dazu Beilagensalat",
+    "time": "Café",
+    "calories": 485,
+    "protein": 39,
+    "carbs": 53,
+    "fat": 13,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-21",
+    "context": "eating-out",
+    "title": "Rindfleisch-Pho",
+    "detail": "Klare Brühe, mageres Rind, Reisnudeln und Kräuter",
+    "time": "Vietnamesisch",
+    "calories": 520,
+    "protein": 41,
+    "carbs": 63,
+    "fat": 12,
+    "fiber": 7,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-22",
+    "context": "eating-out",
+    "title": "Tofu-Poke-Bowl",
+    "detail": "Tofu, halber Reis, Edamame, Gemüse und leichte Sauce",
+    "time": "Poke",
+    "calories": 510,
+    "protein": 29,
+    "carbs": 65,
+    "fat": 15,
+    "fiber": 12,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-23",
+    "context": "eating-out",
+    "title": "Hähnchen-Souvlaki-Teller",
+    "detail": "Hähnchenspieße, Kartoffeln, Bauernsalat und Tzatziki",
+    "time": "Griechisch",
+    "calories": 530,
+    "protein": 46,
+    "carbs": 51,
+    "fat": 16,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-24",
+    "context": "eating-out",
+    "title": "Shakshuka mit Joghurt",
+    "detail": "Eier in Tomatensauce, Joghurt und kleines Fladenbrot",
+    "time": "Café",
+    "calories": 490,
+    "protein": 31,
+    "carbs": 48,
+    "fat": 19,
+    "fiber": 10,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "out-25",
+    "context": "eating-out",
+    "title": "Linsenpasta mit Gemüse",
+    "detail": "Linsenpasta, Tomatensauce, Grillgemüse und Rucola",
+    "time": "Kantine",
+    "calories": 525,
+    "protein": 31,
+    "carbs": 70,
+    "fat": 13,
+    "fiber": 16,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-26",
+    "context": "eating-out",
+    "title": "Backfisch-Reis-Teller",
+    "detail": "Gebackener Weißfisch, Reis, Gemüse und Zitronendip",
+    "time": "Kantine",
+    "calories": 540,
+    "protein": 43,
+    "carbs": 59,
+    "fat": 14,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-27",
+    "context": "eating-out",
+    "title": "Rindburger mit Beilagensalat",
+    "detail": "Mageres Rindpatty im kleinen Vollkornbun, ohne Käse",
+    "time": "Burgerladen",
+    "calories": 550,
+    "protein": 42,
+    "carbs": 49,
+    "fat": 20,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-28",
+    "context": "eating-out",
+    "title": "Hähnchen-Ramen mit Gemüse",
+    "detail": "Hähnchen, Brühe, viel Gemüse und kleine Nudelportion",
+    "time": "Japanisch",
+    "calories": 525,
+    "protein": 43,
+    "carbs": 58,
+    "fat": 13,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-29",
+    "context": "eating-out",
+    "title": "Kleiner Falafel-Wrap",
+    "detail": "Falafel, Salat, Hummus und viel Rohkost im Fladenbrot",
+    "time": "Imbiss",
+    "calories": 515,
+    "protein": 24,
+    "carbs": 66,
+    "fat": 17,
+    "fiber": 14,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-30",
+    "context": "eating-out",
+    "title": "Garnelen-Bibimbap",
+    "detail": "Garnelen, Reis, Gemüse, Ei und wenig Sesamsauce",
+    "time": "Koreanisch",
+    "calories": 540,
+    "protein": 38,
+    "carbs": 67,
+    "fat": 13,
+    "fiber": 10,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-31",
+    "context": "eating-out",
+    "title": "Hähnchen-Teriyaki-Bowl",
+    "detail": "Hähnchen, Reis, Brokkoli und wenig Teriyakisauce",
+    "time": "Japanisch",
+    "calories": 535,
+    "protein": 44,
+    "carbs": 62,
+    "fat": 13,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-32",
+    "context": "eating-out",
+    "title": "Putenschnitzel natur",
+    "detail": "Putensteak, Petersilienkartoffeln und Tagesgemüse",
+    "time": "Kantine",
+    "calories": 520,
+    "protein": 46,
+    "carbs": 52,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-33",
+    "context": "eating-out",
+    "title": "Kabeljau-Couscous-Teller",
+    "detail": "Gegrillter Kabeljau, Couscous und mediterranes Gemüse",
+    "time": "Restaurant",
+    "calories": 520,
+    "protein": 42,
+    "carbs": 58,
+    "fat": 13,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-34",
+    "context": "eating-out",
+    "title": "Lachs-Sushi-Bowl",
+    "detail": "Lachs, Reis, Edamame, Gurke und Nori",
+    "time": "Japanisch",
+    "calories": 545,
+    "protein": 40,
+    "carbs": 65,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-35",
+    "context": "eating-out",
+    "title": "Garnelen-Pho",
+    "detail": "Klare Brühe, Garnelen, Reisnudeln und Kräuter",
+    "time": "Vietnamesisch",
+    "calories": 500,
+    "protein": 38,
+    "carbs": 62,
+    "fat": 11,
+    "fiber": 7,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-36",
+    "context": "eating-out",
+    "title": "Rind-Burrito-Bowl",
+    "detail": "Mageres Rind, Bohnen, Reis, Salsa und Salat",
+    "time": "Mexikanisch",
+    "calories": 550,
+    "protein": 44,
+    "carbs": 67,
+    "fat": 12,
+    "fiber": 14,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-37",
+    "context": "eating-out",
+    "title": "Puten-Pide mit Salat",
+    "detail": "Kleine Pide mit Putenhack, dazu großer Salat",
+    "time": "Imbiss",
+    "calories": 525,
+    "protein": 40,
+    "carbs": 60,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-38",
+    "context": "eating-out",
+    "title": "Chicken Tikka mit Reis",
+    "detail": "Hähnchen-Tikka, kleine Reisportion und Gemüse",
+    "time": "Indisch",
+    "calories": 540,
+    "protein": 45,
+    "carbs": 60,
+    "fat": 13,
+    "fiber": 8,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-39",
+    "context": "eating-out",
+    "title": "Tofu-Thai-Curry",
+    "detail": "Tofu, viel Gemüse, leichte Kokossauce und Reis",
+    "time": "Thai",
+    "calories": 530,
+    "protein": 28,
+    "carbs": 68,
+    "fat": 16,
+    "fiber": 12,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-40",
+    "context": "eating-out",
+    "title": "Tempeh-Nudel-Bowl",
+    "detail": "Tempeh, Reisnudeln, Wokgemüse und Limettensauce",
+    "time": "Asiatisch",
+    "calories": 525,
+    "protein": 31,
+    "carbs": 66,
+    "fat": 15,
+    "fiber": 11,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-41",
+    "context": "eating-out",
+    "title": "Vegane Bohnen-Burrito-Bowl",
+    "detail": "Schwarze Bohnen, Reis, Mais, Salsa und Salat",
+    "time": "Mexikanisch",
+    "calories": 520,
+    "protein": 25,
+    "carbs": 72,
+    "fat": 15,
+    "fiber": 17,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-42",
+    "context": "eating-out",
+    "title": "Linsensuppe mit Mini-Falafel",
+    "detail": "Linsensuppe, drei Falafel und Beilagensalat",
+    "time": "Orientalisch",
+    "calories": 490,
+    "protein": 23,
+    "carbs": 65,
+    "fat": 15,
+    "fiber": 16,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-43",
+    "context": "eating-out",
+    "title": "Gemüse-Omelett mit Brot",
+    "detail": "Omelett, Grillgemüse, Vollkornbrot und Obst",
+    "time": "Café",
+    "calories": 475,
+    "protein": 33,
+    "carbs": 44,
+    "fat": 19,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "out-44",
+    "context": "eating-out",
+    "title": "Kräuterquark-Kartoffel-Teller",
+    "detail": "Ofenkartoffeln, Kräuterquark und großer Beilagensalat",
+    "time": "Kantine",
+    "calories": 480,
+    "protein": 32,
+    "carbs": 60,
+    "fat": 13,
+    "fiber": 11,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "out-45",
+    "context": "eating-out",
+    "title": "Halloumi-Salat-Bowl",
+    "detail": "Halloumi, großer Salat, Couscous und Joghurtdip",
+    "time": "Bistro",
+    "calories": 535,
+    "protein": 29,
+    "carbs": 58,
+    "fat": 21,
+    "fiber": 11,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "out-46",
+    "context": "eating-out",
+    "title": "Kichererbsen-Masala",
+    "detail": "Kichererbsen-Masala, kleine Reisportion und Gurkensalat",
+    "time": "Indisch",
+    "calories": 525,
+    "protein": 25,
+    "carbs": 78,
+    "fat": 13,
+    "fiber": 16,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-47",
+    "context": "eating-out",
+    "title": "Hähnchen-Vollkorn-Sandwich",
+    "detail": "Hähnchen-Sandwich mit Salat, dazu Rohkost",
+    "time": "Bäcker",
+    "calories": 490,
+    "protein": 41,
+    "carbs": 50,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-48",
+    "context": "eating-out",
+    "title": "Puten-Chili mit Reis",
+    "detail": "Putenhack, Bohnen, Tomate und kleine Reisportion",
+    "time": "Kantine",
+    "calories": 520,
+    "protein": 44,
+    "carbs": 57,
+    "fat": 13,
+    "fiber": 14,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-49",
+    "context": "eating-out",
+    "title": "Rindergulasch mit Kartoffeln",
+    "detail": "Mageres Rindergulasch, Kartoffeln und Karotten",
+    "time": "Kantine",
+    "calories": 540,
+    "protein": 43,
+    "carbs": 56,
+    "fat": 16,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-50",
+    "context": "eating-out",
+    "title": "Schweinefilet mit Gemüse",
+    "detail": "Gegrilltes Schweinefilet, kleine Kartoffeln und Gemüse",
+    "time": "Restaurant",
+    "calories": 525,
+    "protein": 46,
+    "carbs": 48,
+    "fat": 16,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-51",
+    "context": "eating-out",
+    "title": "Kleine Meeresfrüchte-Paella",
+    "detail": "Reis, Garnelen, Muscheln, Erbsen und Paprika",
+    "time": "Spanisch",
+    "calories": 550,
+    "protein": 36,
+    "carbs": 68,
+    "fat": 15,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-52",
+    "context": "eating-out",
+    "title": "Thunfisch-Poke-Bowl",
+    "detail": "Thunfisch, Reis, Edamame, Gurke und Sesam",
+    "time": "Poke",
+    "calories": 535,
+    "protein": 39,
+    "carbs": 63,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-53",
+    "context": "eating-out",
+    "title": "Grillforelle mit Kartoffelsalat",
+    "detail": "Forellenfilet, leichter Kartoffelsalat und Gurke",
+    "time": "Restaurant",
+    "calories": 525,
+    "protein": 40,
+    "carbs": 51,
+    "fat": 18,
+    "fiber": 8,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-54",
+    "context": "eating-out",
+    "title": "Garnelen-Sommerrollen-Set",
+    "detail": "Sommerrollen mit Garnelen, kleine Reisportion und Salat",
+    "time": "Vietnamesisch",
+    "calories": 505,
+    "protein": 35,
+    "carbs": 63,
+    "fat": 12,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-55",
+    "context": "eating-out",
+    "title": "Tofu-Pho",
+    "detail": "Klare Brühe, Tofu, Reisnudeln, Pilze und Kräuter",
+    "time": "Vietnamesisch",
+    "calories": 490,
+    "protein": 27,
+    "carbs": 65,
+    "fat": 14,
+    "fiber": 10,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-56",
+    "context": "eating-out",
+    "title": "Seitan-Kebab-Teller",
+    "detail": "Seitan, Bulgur, viel Salat und wenig Sauce",
+    "time": "Imbiss",
+    "calories": 525,
+    "protein": 38,
+    "carbs": 57,
+    "fat": 16,
+    "fiber": 13,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-57",
+    "context": "eating-out",
+    "title": "Vegane Gemüse-Ramen",
+    "detail": "Tofu, Gemüse, Brühe und kleine Nudelportion",
+    "time": "Japanisch",
+    "calories": 510,
+    "protein": 26,
+    "carbs": 70,
+    "fat": 14,
+    "fiber": 12,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-58",
+    "context": "eating-out",
+    "title": "Gemüse-Sushi mit Edamame",
+    "detail": "Gemüse-Maki, Edamame, Avocado und Misosuppe",
+    "time": "Japanisch",
+    "calories": 495,
+    "protein": 27,
+    "carbs": 64,
+    "fat": 15,
+    "fiber": 11,
+    "tags": [
+      "vegan"
+    ]
+  },
+  {
+    "id": "out-59",
+    "context": "eating-out",
+    "title": "Pochierte Eier auf Vollkorntoast",
+    "detail": "Pochierte Eier, Spinat, Vollkorntoast und Joghurt",
+    "time": "Café",
+    "calories": 500,
+    "protein": 32,
+    "carbs": 48,
+    "fat": 20,
+    "fiber": 8,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "out-60",
+    "context": "eating-out",
+    "title": "Skyr-Obst-Frühstück",
+    "detail": "Skyr, Haferflocken, Obst und Nüsse",
+    "time": "Café",
+    "calories": 455,
+    "protein": 34,
+    "carbs": 55,
+    "fat": 11,
+    "fiber": 9,
+    "tags": [
+      "vegetarian"
+    ]
+  },
+  {
+    "id": "out-61",
+    "context": "eating-out",
+    "title": "Hähnchen-Fajita-Bowl",
+    "detail": "Hähnchen, Paprika, Bohnen, Reis und Salsa",
+    "time": "Mexikanisch",
+    "calories": 530,
+    "protein": 45,
+    "carbs": 58,
+    "fat": 13,
+    "fiber": 13,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-62",
+    "context": "eating-out",
+    "title": "Rind-Taco-Salat",
+    "detail": "Mageres Rind, Bohnen, Mais, Salat und Tortillastreifen",
+    "time": "Mexikanisch",
+    "calories": 520,
+    "protein": 42,
+    "carbs": 48,
+    "fat": 18,
+    "fiber": 13,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-63",
+    "context": "eating-out",
+    "title": "Putenbällchen-Pasta",
+    "detail": "Putenbällchen, Pasta, Tomatensauce und Gemüse",
+    "time": "Kantine",
+    "calories": 535,
+    "protein": 44,
+    "carbs": 61,
+    "fat": 13,
+    "fiber": 9,
+    "tags": [
+      "high-protein"
+    ]
+  },
+  {
+    "id": "out-64",
+    "context": "eating-out",
+    "title": "Kabeljau-Fisch-Tacos",
+    "detail": "Drei kleine Tacos, Kabeljau, Kraut und Salsa",
+    "time": "Mexikanisch",
+    "calories": 510,
+    "protein": 37,
+    "carbs": 59,
+    "fat": 14,
+    "fiber": 9,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-65",
+    "context": "eating-out",
+    "title": "Lachs-Salat-Bowl",
+    "detail": "Gegrillter Lachs, großer Salat, Kartoffeln und Joghurtdip",
+    "time": "Bistro",
+    "calories": 520,
+    "protein": 40,
+    "carbs": 49,
+    "fat": 18,
+    "fiber": 10,
+    "tags": [
+      "pescetarian"
+    ]
+  },
+  {
+    "id": "out-66",
+    "context": "eating-out",
+    "title": "Linsenburger mit Salat",
+    "detail": "Veganer Linsenburger im kleinen Bun, dazu Beilagensalat",
+    "time": "Burgerladen",
+    "calories": 515,
+    "protein": 25,
+    "carbs": 69,
+    "fat": 15,
+    "fiber": 15,
+    "tags": [
+      "vegan"
+    ]
+  }
 ]

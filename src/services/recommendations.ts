@@ -44,6 +44,12 @@ function score(entry: CatalogEntry, remaining: Nutrition, preferences: string[])
   return macroDistance + preferenceBonus + quickBonus;
 }
 
+/** The dish name in the reader's language, for screens that only have an id. */
+export function recipeTitle(mealId: string) {
+  const catalog = getLanguage() === 'de' ? catalogDe : catalogEn;
+  return (catalog as CatalogEntry[]).find((entry) => entry.id === mealId)?.title ?? '';
+}
+
 export function recommendMeals(
   context: MealContext,
   remaining: Nutrition,

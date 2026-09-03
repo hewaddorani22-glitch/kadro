@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { hasRecipe } from '@/services/recipes';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { recordRecommendationFeedback, recordRecommendationSet } from '@/services/cloudRepository';
 import { recommendMeals } from '@/services/recommendations';
@@ -206,6 +207,21 @@ export default function PlanScreen() {
                   onPress={() => chooseMeal(suggestion.id)}
                   variant={isChosen ? 'ghost' : 'secondary'}
                 />
+                {/*
+                  Picking a dish used to end here, which leaves the reader with
+                  the question they actually had: how do I make this.
+                */}
+                {hasRecipe(suggestion.id) ? (
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push(`/recipe?id=${suggestion.id}` as never)}
+                    style={styles.recipeLink}
+                  >
+                    <Ionicons color={colors.accentDeep} name="book-outline" size={18} />
+                    <Text style={styles.recipeLinkText}>{t.recipe.open}</Text>
+                    <Ionicons color={colors.muted} name="chevron-forward" size={16} />
+                  </Pressable>
+                ) : null}
                 {isChosen ? (
                   <View style={styles.portionBlock}>
                     <Text style={styles.portionLabel}>{t.plan.howMuch}</Text>
@@ -298,6 +314,8 @@ const styles = StyleSheet.create({
   contextDetail: { color: colors.muted, fontSize: 13 },
   chevron: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   chevronActive: { backgroundColor: colors.accent },
+  recipeLink: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  recipeLinkText: { color: colors.accentDeep, fontSize: 14, fontWeight: '700' },
   dayDone: { alignItems: 'center', gap: 12 },
   dayDoneTitle: { color: colors.text, fontSize: 19, fontWeight: '700' },
   dayDoneText: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center' },
