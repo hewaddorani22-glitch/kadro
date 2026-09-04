@@ -26,21 +26,15 @@ assert.ok(
 );
 assert.match(gateway, /product_name_en/, 'the English product name must be requested from the API');
 
-// Read the two preference lists out of the ternary rather than slicing on
-// punctuation, which caught a type annotation instead of the branch.
-const lists = [...gateway.matchAll(/\[(product\?\.product_name[^\]]+)\]/g)].map((match) =>
-  match[1].split(',').map((entry) => entry.trim()));
-assert.equal(lists.length, 2, `expected a German and an English preference list, found ${lists.length}`);
-const [germanOrder, englishOrder] = lists;
-assert.equal(germanOrder[0], 'product?.product_name_de', 'German readers must get the German name first');
-assert.equal(englishOrder[0], 'product?.product_name_en', 'English readers must get the English name first');
-assert.ok(
-  englishOrder.indexOf('product?.product_name_en') < englishOrder.indexOf('product?.product_name_de'),
-  'English readers must never be handed the German name before the English one',
-);
-for (const order of lists) {
-  assert.ok(order.includes('product?.product_name'), 'the generic name must remain as a fallback');
-}
+// The explicit localized field wins. The generic field is only trusted when
+// Open Food Facts says it is already in the requested language; otherwise the
+// last fallback may cross languages but never outrank the requested field.
+assert.match(gateway, /language === 'de' \? product\?\.product_name_de : product\?\.product_name_en/,
+  'the requested localized product name must be checked first');
+assert.match(gateway, /catalogueLanguage === language/,
+  'a generic product name must be checked against its catalogue language');
+assert.match(gateway, /language === 'de'\s*\n\s*\? \[product\?\.product_name_en\]\s*\n\s*: \[product\?\.product_name_de\]/,
+  'a foreign localized name may only be the final fallback');
 
 // --- No German fallback wording may ship from the gateway ------------------
 assert.ok(

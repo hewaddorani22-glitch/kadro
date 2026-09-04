@@ -56,12 +56,17 @@ if (!config.includes('enable_anonymous_sign_ins = true')) failures.push('local a
 if (!config.includes('enable_manual_linking = true')) failures.push('local manual account linking is not enabled');
 if (!config.includes('enable_confirmations = true')) failures.push('local email confirmation is not enabled');
 if (!config.includes('minimum_password_length = 8')) failures.push('local password minimum is not eight characters');
-if (!emailTemplate.includes('{{ .Token }}') || !emailTemplate.includes('{{ .ConfirmationURL }}')) {
-  failures.push('email-change template must support both OTP and confirmation-link flows');
+if (!emailTemplate.includes('{{ .Token }}') || !emailTemplate.includes('.Data.kandro_language')) {
+  failures.push('email-change template must send a localized in-app OTP');
 }
+if (/ConfirmationURL|localhost/.test(emailTemplate)) failures.push('email-change OTP must not send the user to a browser or localhost');
+if (!config.includes('double_confirm_changes = false')) failures.push('anonymous account linking must only confirm the new address');
+if (!config.includes('site_url = "https://getkandro.com/confirm"')) failures.push('production auth redirects must not point to localhost');
 
 for (const invariant of [
-  'client.auth.updateUser({ email: normalizedEmail })',
+  'client.auth.updateUser({',
+  'email: normalizedEmail',
+  'kandro_language: language',
   "type: 'email_change'",
   'assertSameUser(user.id',
   'client.auth.signInWithPassword',

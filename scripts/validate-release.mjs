@@ -137,7 +137,6 @@ if (process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim().startsWith('sb_secr
 if (!process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim()) {
   const message = 'EXPO_PUBLIC_REVENUECAT_IOS_API_KEY is empty — required for a real App Store build, not for Expo Go';
   if (production) blockers.push(message);
-  else warnings.push(message);
 }
 
 if (warnings.length) {

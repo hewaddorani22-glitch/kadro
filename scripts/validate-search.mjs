@@ -46,10 +46,10 @@ assert.match(runFn, /term\.length < 2/, 'a one-letter query must not be sent');
 assert.match(context, /FREE_ANALYSIS_MODES/, 'the free inputs must be named somewhere');
 const modes = context.match(/FREE_ANALYSIS_MODES = new Set<ScanMode>\(\[([^\]]*)\]\)/);
 assert.ok(modes, 'could not read the free input list');
-for (const mode of ['search', 'demo']) {
+for (const mode of ['search', 'demo', 'barcode']) {
   assert.ok(modes[1].includes(`'${mode}'`), `${mode} must not spend a free meal`);
 }
-for (const mode of ['live', 'description', 'barcode']) {
+for (const mode of ['live', 'description']) {
   assert.ok(!modes[1].includes(`'${mode}'`), `${mode} costs an analysis and must be charged`);
 }
 const logging = context.slice(context.indexOf('const logScannedMeal'), context.indexOf('const logPlannedMeal'));

@@ -1,7 +1,7 @@
 /*
  * The Discord invite, in one place.
  *
- * Empty until a real invite exists, and the buttons stay hidden while it is —
+ * Empty until a real invite exists, and the buttons stay hidden while it is :
  * a dead "join us" link on a launch page costs more than no link at all.
  * Create the invite in Discord (Server Settings, Invites, no expiry, no use
  * limit) and paste it here; both language versions pick it up.
@@ -18,8 +18,8 @@ function showDiscordLinks() {
 }
 
 // Waiting for DOMContentLoaded alone means nothing happens at all if the file
-// arrives after the document is already parsed — from cache, or moved into the
-// head one day — and the button silently stays hidden.
+// arrives after the document is already parsed: from cache, or moved into the
+// head one day: and the button silently stays hidden.
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', showDiscordLinks);
 } else {

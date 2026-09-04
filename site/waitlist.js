@@ -6,13 +6,13 @@
   var language = document.documentElement.lang === 'de' ? 'de' : 'en';
   var text = language === 'de'
     ? {
-      sending: 'Wird gesendet …', sent: 'Fast geschafft — bestätige jetzt den Link in deinem Postfach.',
+      sending: 'Wird gesendet …', sent: 'Fast geschafft: bestätige jetzt den Link in deinem Postfach.',
       invalid: 'Bitte prüfe deine E-Mail-Adresse.', many: 'Zu viele Versuche aus diesem Netzwerk. Bitte später erneut versuchen.',
       failed: 'Das hat gerade nicht geklappt. Versuch es bitte gleich noch einmal.', closed: 'Die Anmeldung öffnet in Kürze.',
       closedDiscord: 'Die Anmeldung öffnet in Kürze. Komm solange auf den Discord.'
     }
     : {
-      sending: 'Sending…', sent: 'Almost there — confirm the link in your inbox.',
+      sending: 'Sending…', sent: 'Almost there: confirm the link in your inbox.',
       invalid: 'Please check your email address.', many: 'Too many attempts from this network. Please try again later.',
       failed: 'That did not work just now. Please try again in a moment.', closed: 'Sign-ups open shortly.',
       closedDiscord: 'Sign-ups open shortly. Join the Discord in the meantime.'

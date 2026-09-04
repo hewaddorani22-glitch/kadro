@@ -79,3 +79,27 @@ export function proteinConsistency(meals: Meal[], targetProtein: number, days = 
       : 0,
   };
 }
+
+function dateFromKey(key: string) {
+  const [year, month, day] = key.split('-').map(Number);
+  return new Date(year, month - 1, day, 12);
+}
+
+/**
+ * A current logging streak remains alive until the end of today. If the user
+ * has not logged yet today, yesterday is therefore the starting point. Meal
+ * dates, not UTC timestamps, decide the day so travel and DST do not split it.
+ */
+export function currentLoggingStreak(meals: Meal[], today = new Date()): number {
+  const loggedDates = new Set(meals.map((meal) => meal.date).filter((date): date is string => Boolean(date)));
+  const todayKey = localDateKey(today);
+  const cursor = dateFromKey(todayKey);
+  if (!loggedDates.has(todayKey)) cursor.setDate(cursor.getDate() - 1);
+
+  let streak = 0;
+  while (loggedDates.has(localDateKey(cursor))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}

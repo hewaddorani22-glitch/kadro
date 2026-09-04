@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -15,12 +14,13 @@ import { trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { MealContext, MealSuggestion, PortionFactor } from '@/types/nutrition';
 import { formatNumber } from '@/utils/format';
+import { selectionHaptic, successHaptic } from '@/services/haptics';
 
 
 export default function PlanScreen() {
   const params = useLocalSearchParams<{ context?: string; fromScan?: string }>();
   const router = useRouter();
-  const { hasLoggedScan, logPlannedMeal, profile, remaining } = useApp();
+  const { freeScansLeft, hasLoggedScan, logPlannedMeal, profile, remaining } = useApp();
   const { language, locale, t } = useLanguage();
   const contexts: { id: MealContext; title: string; detail: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { id: 'home', title: t.plan.ctxHome, detail: t.plan.ctxHomeDetail, icon: 'home-outline' },
@@ -65,13 +65,13 @@ export default function PlanScreen() {
   }, [remaining, selected, suggestions]);
 
   const chooseContext = (context: MealContext) => {
-    void Haptics.selectionAsync();
+    void selectionHaptic();
     setSelected(context);
     setChosen(null);
   };
 
   const chooseMeal = (id: string) => {
-    void Haptics.selectionAsync();
+    void selectionHaptic();
     if (selected && chosen !== id) {
       const rank = suggestions.findIndex((suggestion) => suggestion.id === id) + 1;
       if (rank >= 1 && rank <= 3) {
@@ -85,7 +85,7 @@ export default function PlanScreen() {
   };
 
   /**
-   * Choosing a suggestion used to set local state and nothing else — no entry,
+   * Choosing a suggestion used to set local state and nothing else: no entry,
    * no calories, no change to the day. The one thing the whole product promises
    * is that the day re-plans after every meal, so this is where it happens.
    */
@@ -94,12 +94,12 @@ export default function PlanScreen() {
     setLogging(true);
     try {
       await logPlannedMeal(suggestion, portion);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void successHaptic();
       trackEvent('meal saved', { next_destination: 'today' });
       setLoggedTitle(suggestion.title);
       setChosen(null);
       // The paywall belongs after the value, never between choosing and eating.
-      if (params.fromScan === '1' && subscriptionStatus !== 'active') {
+      if (params.fromScan === '1' && subscriptionStatus !== 'active' && freeScansLeft === 0) {
         setTimeout(() => router.push('/paywall?reason=after-meal'), 900);
       }
     } finally {
@@ -239,7 +239,7 @@ export default function PlanScreen() {
                             accessibilityRole="radio"
                             accessibilityState={{ selected: active }}
                             key={choice.label}
-                            onPress={() => { void Haptics.selectionAsync(); setPortion(choice.factor); }}
+                            onPress={() => { void selectionHaptic(); setPortion(choice.factor); }}
                             style={[styles.portionChoice, active && styles.portionChoiceActive]}
                           >
                             <Text style={[styles.portionChoiceLabel, active && styles.portionChoiceActiveText]}>{choice.label}</Text>

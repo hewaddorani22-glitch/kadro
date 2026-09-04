@@ -16,6 +16,7 @@ import {
   saveProfile,
   saveWeightEntry,
   clearAnalysisQueue,
+  countLifetimeScanOnce,
 } from '@/services/localRepository';
 import {
   createPlannedMeal,
@@ -48,7 +49,7 @@ type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search
  * three free meals. Search is the reason this exists: it is a database lookup
  * the sheet openly labels as free.
  */
-const FREE_ANALYSIS_MODES = new Set<ScanMode>(['demo', 'search']);
+const FREE_ANALYSIS_MODES = new Set<ScanMode>(['demo', 'search', 'barcode']);
 
 function telemetryScanSource(mode: ScanMode) {
   if (mode === 'live') return 'camera' as const;
@@ -539,7 +540,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       }
     } catch (error) {
       // The gateway is the authority here. If it says there is no consent,
-      // the local record is stale — keeping it would leave the user looking at
+      // the local record is stale: keeping it would leave the user looking at
       // "Consent is active" with only a "Withdraw" button and no way back.
       if (error instanceof MealAnalysisError && error.kind === 'consent-required') {
         await forgetLocalWellnessConsent();
@@ -720,7 +721,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     // Corrections re-save the same scan id; only a genuinely new meal spends
     // part of the free allowance.
     if (!alreadyLogged && costsAnalysis) {
-      setLifetimeScanCount(await saveLifetimeScanCount((await loadLifetimeScanCount()) + 1));
+      setLifetimeScanCount(await countLifetimeScanOnce(scannedMeal.id));
     }
   }, [detectedItems, mealHistory, scannedMeal]);
 

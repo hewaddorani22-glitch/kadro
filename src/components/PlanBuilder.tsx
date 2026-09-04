@@ -1,10 +1,10 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { colors } from '@/constants/theme';
+import { stepHaptic } from '@/services/haptics';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { explainTargets } from '@/services/personalization';
@@ -54,7 +54,7 @@ export function frameAt(progress: number, steps: { value: number; unit: string }
  *
  * Lines fading in under one another read as a list being printed, not as work
  * being done. The ring fills, an arc turns, and the figure climbs through each
- * real intermediate value — resting energy, then activity, then the goal —
+ * real intermediate value: resting energy, then activity, then the goal :
  * landing on exactly the number the next screen shows.
  */
 export function PlanBuilder({ profile }: { profile: UserProfile }) {
@@ -85,7 +85,7 @@ export function PlanBuilder({ profile }: { profile: UserProfile }) {
         duration: 1100,
         easing: Easing.linear,
         // On the web build the native driver runs the first turn and then
-        // stops, leaving the arc frozen at zero — a still spinner reads as a
+        // stops, leaving the arc frozen at zero: a still spinner reads as a
         // hung screen, which is the one thing this must never look like.
         useNativeDriver: Platform.OS !== 'web',
       }),
@@ -100,7 +100,7 @@ export function PlanBuilder({ profile }: { profile: UserProfile }) {
   useEffect(() => {
     if (reduceMotion || frame.settled <= ticked.current) return;
     ticked.current = frame.settled;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    void stepHaptic(true);
   }, [frame.settled, reduceMotion]);
 
   const current = steps[frame.index];

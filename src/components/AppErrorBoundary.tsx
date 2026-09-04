@@ -28,7 +28,7 @@ export class AppErrorBoundary extends Component<Props, State> {
     if (!this.state.failed) return this.props.children;
 
     // A class component cannot use the hook, and this screen appears exactly
-    // when something already went wrong — so it reads the active dictionary
+    // when something already went wrong: so it reads the active dictionary
     // directly rather than shipping German to every reader.
     const t = getDictionary().errors;
 

@@ -34,7 +34,7 @@ export function isTeenProfile(profile: Pick<UserProfile, 'age'>) {
  * woman and a 95 kg man the same deficit.
  *
  * A surplus is deliberately not capped, while a deficit still is. Eating too
- * little is a health question; eating 550 kcal above maintenance is not — it
+ * little is a health question; eating 550 kcal above maintenance is not: it
  * only shifts how much of the gain is muscle versus fat, and that is the
  * user's call to make. Capping it at a flat 350 meant somebody who picked
  * 0.5 kg a week was quietly given 0.32, a number that matches nothing they
@@ -64,7 +64,7 @@ function dailyGoalOffset(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
  * The pace the calorie target actually applies.
  *
  * Only the deficit floor can move it now, and that is reported separately by
- * isRateLimited — so for a surplus this is simply the rate the user picked.
+ * isRateLimited: so for a surplus this is simply the rate the user picked.
  */
 export function effectiveWeeklyRate(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
   return weeklyRateKg;
@@ -93,7 +93,7 @@ function roundTo(value: number, step: number) {
 /**
  * Mifflin-St Jeor times an activity factor. The constant is +5 for men and
  * -161 for women; the midpoint of -78 applies when someone would rather not
- * say. Skipping the question cost about 115 kcal a day in a fixed direction —
+ * say. Skipping the question cost about 115 kcal a day in a fixed direction :
  * a fifth of a 0.5 kg weekly goal, always the same way for the same person.
  *
  * One function, because the target and the safety floor have to agree on what
@@ -160,7 +160,7 @@ export function calculateDailyTargets(profile: UserProfile): DailyTargets {
 
   // A large surplus can exhaust the carb ceiling and leave energy unassigned:
   // 3720 kcal against 550 g of carbs left 250 kcal that appeared nowhere. Fat
-  // absorbs the remainder, then protein — both still bounded.
+  // absorbs the remainder, then protein: both still bounded.
   const unassigned = calories - (protein * 4 + carbs * 4 + fat * 9);
   const fatTop = Math.min(140, fat + Math.max(0, roundTo(unassigned / 9, 5)));
   const stillUnassigned = calories - (protein * 4 + carbs * 4 + fatTop * 9);

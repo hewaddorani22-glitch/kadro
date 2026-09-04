@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -11,6 +10,7 @@ import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { countBucket, trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { successHaptic } from '@/services/haptics';
 import { PortionFactor } from '@/types/nutrition';
 import { formatNumber } from '@/utils/format';
 
@@ -25,7 +25,7 @@ export default function ConfirmScreen() {
   const { locale, t } = useLanguage();
 
   const confirm = () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void successHaptic();
     const includedItems = detectedItems.filter((item) => item.included);
     trackEvent('meal confirmed', {
       confidence: scannedMeal.confidence,

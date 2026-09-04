@@ -141,8 +141,8 @@ if (!progress.includes('trackedDays >= 3')) {
   failures.push('a hit rate needs enough days to mean anything; one tracked day must not be scored');
 }
 
-// 8. The one moment where something is finished. No streaks, no badges — but
-//    without any acknowledgement the app never feels rewarding either.
+// 8. The one moment where something is finished. A factual current streak is
+//    useful, but it must not turn into loss pressure or a punishment mechanic.
 // The wording lives in the dictionaries now, so check where it actually is.
 if (!ring.includes('t.ring.proteinDone')) failures.push('reaching the protein target must be acknowledged somewhere visible');
 for (const [label, dict] of [['German', dictDe], ['English', dictEn]]) {
@@ -154,8 +154,9 @@ if (!ring.includes('proteinReached && over === 0')) {
 if (!uiKit.includes('current >= target * 0.9')) {
   failures.push('the macro card must use the same 10% tolerance as the weekly strip');
 }
-if (/Streak|Serie am Leben|verloren|nicht verlieren/i.test(progress + ring)) {
-  failures.push('no streak mechanics: a broken streak is the most common reason people delete a tracker');
+if (!progress.includes('currentLoggingStreak')) failures.push('the progress screen does not show the real current logging streak');
+if (/Serie am Leben|verloren|nicht verlieren|save your streak|lost your streak/i.test(progress + ring + dictDe + dictEn)) {
+  failures.push('the factual streak must not be framed as loss or pressure');
 }
 
 // 9. Leaving the result screen must persist a correction. The exit handlers

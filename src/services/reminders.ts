@@ -39,7 +39,7 @@ export function configureNotifications() {
  * The Android channel name is what a user sees in system settings, and it was
  * hard-coded German for everyone. Setting the channel again under the same id
  * updates it, so this runs once at boot and again whenever the language
- * changes — the language is only known a render after the first call.
+ * changes: the language is only known a render after the first call.
  */
 export function applyNotificationChannel() {
   if (!remindersSupported || Platform.OS !== 'android') return;

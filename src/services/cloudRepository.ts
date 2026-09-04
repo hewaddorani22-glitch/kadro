@@ -43,7 +43,7 @@ type MealRow = {
   fat: number;
   fiber: number | null;
   confidence: 'high' | 'medium';
-  origin: 'scan';
+  origin: 'scan' | 'plan';
   saved_at: string;
   meal_items: MealItemRow[];
 };
@@ -63,7 +63,7 @@ function mealRow(meal: Meal, userId: string) {
     fat: meal.fat,
     fiber: meal.fiber ?? 0,
     confidence: meal.confidence,
-    origin: 'scan',
+    origin: meal.origin === 'plan' ? 'plan' : 'scan',
     saved_at: savedAt,
     updated_at: new Date().toISOString(),
   };
@@ -107,7 +107,7 @@ function mapMeal(row: MealRow): Meal {
     fat: row.fat,
     fiber: row.fiber ?? 0,
     confidence: row.confidence,
-    origin: 'scan',
+    origin: row.origin === 'plan' ? 'plan' : 'scan',
     items: (row.meal_items ?? []).map((item) => ({
       id: item.id,
       name: item.name,

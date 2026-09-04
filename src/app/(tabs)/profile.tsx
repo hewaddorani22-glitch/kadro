@@ -37,7 +37,7 @@ const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { profile, setUnitSystem, syncMode, targets, userName } = useApp();
+  const { profile, setUnitSystem, targets, userName } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const { language, locale, setLanguage, t } = useLanguage();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
@@ -80,15 +80,7 @@ export default function ProfileScreen() {
         <View style={styles.headerCopy}>
           <Eyebrow>{t.profile.eyebrow}</Eyebrow>
           <PageTitle>{userName.trim() || t.tabs.profile}</PageTitle>
-          <Text style={styles.subtitle}>
-            {syncMode === 'cloud'
-              ? t.profile.syncCloud
-              : syncMode === 'syncing'
-                ? t.profile.syncing
-                : syncMode === 'error'
-                  ? t.profile.syncError
-                  : t.profile.syncLocal}
-          </Text>
+          <Text style={styles.subtitle}>{t.profile.headerSubtitle}</Text>
         </View>
       </View>
 
@@ -286,7 +278,7 @@ function ToggleRow({ detail, disabled, icon, label, onValueChange, value }: { de
         <Text style={styles.rowDetail}>{detail}</Text>
       </View>
       {/*
-        Without a label VoiceOver announces only "switch, off" — the row's
+        Without a label VoiceOver announces only "switch, off": the row's
         text sits in a sibling view and is not read as part of the control.
       */}
       <Switch

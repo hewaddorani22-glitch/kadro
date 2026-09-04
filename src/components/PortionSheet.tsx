@@ -26,7 +26,7 @@ export type PortionTarget = {
  * had to decide "how much" before you knew "of what", and grams was the only
  * answer available. Nobody weighs a banana; they eat one, or two, or half.
  * So the amount is asked after the food is chosen, and a named portion counts
- * as a unit of its own — "2 × 1 banana" is 252 g without the user doing the
+ * as a unit of its own: "2 × 1 banana" is 252 g without the user doing the
  * multiplication.
  */
 export function PortionSheet({
@@ -149,7 +149,7 @@ export function PortionSheet({
           ) : null}
 
           <View style={styles.preview}>
-            <Text style={styles.previewValue}>{preview ? `~${preview.calories} kcal` : '—'}</Text>
+            <Text style={styles.previewValue}>{preview ? `~${preview.calories} kcal` : ':'}</Text>
             {preview ? (
               <Text style={styles.previewMacros}>
                 {preview.protein} g P · {preview.carbs} g C · {preview.fat} g F · {grams} g

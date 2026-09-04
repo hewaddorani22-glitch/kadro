@@ -1,6 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
-import * as Haptics from 'expo-haptics';
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -13,6 +12,7 @@ import { useApp } from '@/context/AppContext';
 import { FoodSearchResult, MealAnalysisError, searchFoods } from '@/services/mealAnalysis';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { primaryHaptic, successHaptic } from '@/services/haptics';
 import { formatNumber } from '@/utils/format';
 
 export default function ScanScreen() {
@@ -136,7 +136,7 @@ export default function ScanScreen() {
     if (capturing) return;
     if (!hasScanAccess()) return;
     setCapturing(true);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    void primaryHaptic();
 
     try {
       if (!permission?.granted || !cameraRef.current) {
@@ -175,7 +175,7 @@ export default function ScanScreen() {
 
   /**
    * Search does not reach the model, so it costs neither a free meal nor any
-   * credit — that is the whole reason it exists next to the camera.
+   * credit: that is the whole reason it exists next to the camera.
    *
    * Debounced, and every response is checked against the request that is still
    * current: typing "rice" fired four searches, and a slow first one could
@@ -245,12 +245,8 @@ export default function ScanScreen() {
 
   const openBarcode = (data: string) => {
     if (barcodeBusy || !/^\d{7,14}$/.test(data)) return;
-    if (!hasScanAccess()) {
-      setBarcodeBusy(true);
-      return;
-    }
     setBarcodeBusy(true);
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void successHaptic();
     startBarcodeScan(data);
     router.push('/analyzing');
   };

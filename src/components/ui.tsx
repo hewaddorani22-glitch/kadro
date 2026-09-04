@@ -203,7 +203,7 @@ export function MealPhoto({ uri, height = 250, placeholder = 'demo', style }: { 
   if (!uri && placeholder !== 'demo') {
     // Anything that is not a photo gets its own frame. Falling back to the
     // stock bowl labelled EXAMPLE told the user their searched food was a
-    // demo — and every input that is not the camera reaches this branch.
+    // demo: and every input that is not the camera reaches this branch.
     const copy = {
       barcode: { icon: 'barcode-outline', alt: t.confirm.photoBarcodeAlt, title: t.confirm.photoBarcodeTitle, text: t.confirm.photoBarcodeText },
       description: { icon: 'create-outline', alt: t.confirm.photoDescribeAlt, title: t.confirm.photoDescribeTitle, text: t.confirm.photoDescribeText },

@@ -60,7 +60,7 @@ export default function ResultScreen() {
   }, [isCurrentScanLogged, logScannedMeal]);
 
   // The numbers the reveal counts towards, read through refs so that logging
-  // the meal — which changes `projected` a moment after arrival — cannot tear
+  // the meal: which changes `projected` a moment after arrival: cannot tear
   // the animation down and restart it from zero. It used to take 2.4 seconds
   // to show the figure, and sometimes never got there at all.
   const targetsRef = useRef({ calories: 0, startingRemaining: 0, projected: 0 });

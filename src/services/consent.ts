@@ -51,7 +51,7 @@ export async function recordWellnessConsent(age: number): Promise<StoredConsent>
  * The two can legitimately diverge: deleting the account and re-enabling the
  * cloud creates a *new* anonymous user, and that user has no consent row. The
  * screen then said "Consent is active" while every analysis was refused, and
- * the only button offered was "Withdraw" — a dead end with no way back.
+ * the only button offered was "Withdraw": a dead end with no way back.
  */
 export async function forgetLocalWellnessConsent() {
   await AsyncStorage.removeItem(CONSENT_KEY);

@@ -11,7 +11,9 @@ const QUEUE_KEY = '@kandro/analysis-queue:v1';
 const PROFILE_KEY = '@kandro/profile:v1';
 const WEIGHTS_KEY = '@kandro/weight-entries:v1';
 const LIFETIME_SCANS_KEY = '@kandro/lifetime-scans:v1';
+const COUNTED_SCAN_IDS_KEY = '@kandro/counted-analysis-ids:v1';
 const DELETED_MEALS_KEY = '@kandro/deleted-meals:v1';
+let scanCountMutation: Promise<number> = Promise.resolve(0);
 
 /** Origins that count as "the user ate this". 'seed' is demo filler and never persists. */
 const LOGGED_ORIGINS = new Set(['scan', 'plan']);
@@ -61,7 +63,7 @@ export async function deleteMeal(id: string): Promise<Meal[]> {
 
 /**
  * Ids the user removed. The local delete is immediate, but the cloud call can
- * fail offline — without a tombstone the next hydration would merge the meal
+ * fail offline: without a tombstone the next hydration would merge the meal
  * straight back onto the user's day. Kept small and pruned on success.
  */
 export async function loadDeletedMealIds(): Promise<string[]> {
@@ -119,6 +121,29 @@ export async function saveLifetimeScanCount(count: number): Promise<number> {
   return next;
 }
 
+/**
+ * Spend an analysis credit exactly once for a scan id. Result and Confirm can
+ * save concurrently, so checking React state first is not enough: both calls
+ * can observe the same old history. Serialising the storage mutation closes
+ * that race and the id list makes retries idempotent across app restarts.
+ */
+export function countLifetimeScanOnce(scanId: string): Promise<number> {
+  const mutate = async () => {
+    const counted = await readJson<unknown>(COUNTED_SCAN_IDS_KEY, []);
+    const ids = Array.isArray(counted)
+      ? counted.filter((id): id is string => typeof id === 'string').slice(-199)
+      : [];
+    const current = await loadLifetimeScanCount();
+    if (ids.includes(scanId)) return current;
+    const next = await saveLifetimeScanCount(current + 1);
+    await AsyncStorage.setItem(COUNTED_SCAN_IDS_KEY, JSON.stringify([...ids, scanId]));
+    return next;
+  };
+  const next = scanCountMutation.then(mutate, mutate);
+  scanCountMutation = next.catch(() => loadLifetimeScanCount());
+  return next;
+}
+
 /** Keeps a stored value only when it is one the app can actually compute with. */
 function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback: T): T {
   return allowed.includes(value as T) ? (value as T) : fallback;
@@ -135,8 +160,8 @@ function numberInRange(value: unknown, minimum: number, maximum: number, fallbac
 export async function loadProfile(): Promise<UserProfile> {
   const stored = await readJson<Partial<UserProfile> | null>(PROFILE_KEY, null);
   if (!stored) return DEFAULT_PROFILE;
-  // A stored value the app no longer knows — from an older build, a corrupted
-  // write, or a cloud row written by a newer one — used to reach the target
+  // A stored value the app no longer knows: from an older build, a corrupted
+  // write, or a cloud row written by a newer one: used to reach the target
   // maths unchecked and surface as "NaN kcal left" on the Today screen.
   return {
     ...DEFAULT_PROFILE,
@@ -176,5 +201,5 @@ export async function saveWeightEntry(entry: WeightEntry): Promise<WeightEntry[]
 }
 
 export async function clearLocalKandroData() {
-  await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY, LIFETIME_SCANS_KEY, DELETED_MEALS_KEY]);
+  await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY, LIFETIME_SCANS_KEY, COUNTED_SCAN_IDS_KEY, DELETED_MEALS_KEY]);
 }

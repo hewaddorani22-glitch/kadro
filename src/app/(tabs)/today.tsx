@@ -44,7 +44,7 @@ export default function TodayScreen() {
    * Four slots, always all four, in the order a day happens.
    *
    * A flat list left "add a meal" as one button at the bottom and made the
-   * app guess from the clock which meal it was — a late breakfast filed as
+   * app guess from the clock which meal it was: a late breakfast filed as
    * lunch, and no way to say otherwise before logging.
    */
   const slots = useMemo(() => (['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const).map((type) => {
@@ -118,7 +118,7 @@ export default function TodayScreen() {
       {/*
         Once the budget is spent, pushing three more meal ideas is advice that
         contradicts the number directly above it. The card still lets someone
-        log what they eat — people do eat more, and hiding the button would
+        log what they eat: people do eat more, and hiding the button would
         just mean the day goes unrecorded.
       */}
       {dayIsDone ? (

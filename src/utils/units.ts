@@ -19,7 +19,7 @@ export function isUnitSystem(value: unknown): value is UnitSystem {
 }
 
 /**
- * A first guess from where the device says it is, never a lock-in — the profile
+ * A first guess from where the device says it is, never a lock-in: the profile
  * keeps whatever the user chooses. Only the US and the UK get a non-metric
  * default; everywhere else, including Ireland and Australia, weighs in
  * kilograms.
@@ -127,7 +127,7 @@ export function parseWeightInput(raw: string, system: UnitSystem): number | null
 
 /**
  * The stored rate stays in kilograms so targets never move when units change.
- * 0.25 kg reads as 0.5 lb and 0.5 kg as 1 lb — the rounding every fitness app
+ * 0.25 kg reads as 0.5 lb and 0.5 kg as 1 lb: the rounding every fitness app
  * uses, and well inside the noise of a weekly weigh-in.
  */
 export function formatWeeklyRate(kg: number, system: UnitSystem, locale = getLocale()) {

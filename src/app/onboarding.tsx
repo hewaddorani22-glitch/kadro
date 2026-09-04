@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -13,6 +12,7 @@ import { useApp } from '@/context/AppContext';
 import { BIOLOGICAL_SEXES, calculateDailyTargets, estimatedPace, isRateLimited, isTeenProfile, weeklyRateLabel } from '@/services/personalization';
 import { getGuardianConsentStatus, requestGuardianConsent } from '@/services/guardianConsent';
 import { trackEvent } from '@/services/telemetry';
+import { errorHaptic, selectionHaptic, stepHaptic, successHaptic } from '@/services/haptics';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
 import {
@@ -147,7 +147,7 @@ export default function OnboardingScreen() {
   }, [steps]);
 
   const goBack = () => {
-    void Haptics.selectionAsync();
+    void selectionHaptic();
     setStepIndex((current) => {
       let previous = Math.max(0, current - 1);
       if (steps[previous] === 'rate' && (goalRef.current === 'maintain' || ageRef.current < 18)) previous -= 1;
@@ -159,12 +159,12 @@ export default function OnboardingScreen() {
   // Next. Auto-advancing made a stray tap feel irreversible and prevented a
   // final visual check of the selected answer.
   const selectChoice = (apply: () => void) => {
-    void Haptics.selectionAsync();
+    void selectionHaptic();
     apply();
   };
 
   const skipStep = () => {
-    void Haptics.selectionAsync();
+    void selectionHaptic();
     setSkippedAnything(true);
     if (step === 'name') setDisplayName('');
     if (step === 'preferences') setPreferences([]);
@@ -185,7 +185,7 @@ export default function OnboardingScreen() {
   // is the result arriving.
   useEffect(() => {
     if (step !== 'plan') return;
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void successHaptic();
   }, [step]);
 
   const draftProfile = useMemo<UserProfile>(() => ({
@@ -207,7 +207,7 @@ export default function OnboardingScreen() {
     await grantWellnessConsent(draftProfile.age);
     await completeOnboarding(draftProfile);
     trackEvent('onboarding completed', { completion: skippedAnything ? 'skipped' : 'finished' });
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void successHaptic();
     setShowConsent(false);
     router.replace('/(tabs)/scan');
   };
@@ -235,7 +235,7 @@ export default function OnboardingScreen() {
       }
       await finishOnboarding();
     } catch {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      void errorHaptic();
       setConsentError(draftProfile.age < 16 ? t.onboarding.guardianCloudRequired : t.onboarding.consentError);
     } finally {
       setConsentBusy(false);
@@ -253,7 +253,7 @@ export default function OnboardingScreen() {
   };
 
   const primaryAction = async () => {
-    void Haptics.selectionAsync();
+    void selectionHaptic();
     if (step === 'plan') {
       if (editing) {
         if (draftProfile.age < 16 && !await getGuardianConsentStatus().catch(() => false)) {
@@ -457,7 +457,7 @@ export default function OnboardingScreen() {
                       accessibilityState={{ checked: selected }}
                       key={item.id}
                       onPress={() => {
-                        void Haptics.selectionAsync();
+                        void selectionHaptic();
                         if (item.id === 'none') setPreferences([]);
                         else setPreferences((current) => current.includes(item.id)
                           ? current.filter((entry) => entry !== item.id)
@@ -600,7 +600,7 @@ function UnitToggle({ onChange, value }: { onChange: (system: UnitSystem) => voi
             accessibilityRole="button"
             accessibilityState={{ selected: active }}
             key={system}
-            onPress={() => { void Haptics.selectionAsync(); onChange(system); }}
+            onPress={() => { void selectionHaptic(); onChange(system); }}
             style={[styles.unitOption, active && styles.unitOptionActive]}
           >
             <Text style={[styles.unitLabel, active && styles.unitLabelActive]}>{labels[system]}</Text>
@@ -614,6 +614,7 @@ function UnitToggle({ onChange, value }: { onChange: (system: UnitSystem) => voi
 function NumberStep({ format, max, min, onChange, step, unit, value }: { format?: (value: number) => string; max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
   const { t } = useLanguage();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const gesture = useRef(0);
   const latest = useRef(value);
   latest.current = value;
 
@@ -622,28 +623,35 @@ function NumberStep({ format, max, min, onChange, step, unit, value }: { format?
    *
    * A held stepper ran from 78 to 95 kg in silence after one tap's feedback,
    * which is the opposite of what the vibration is for: it is how you feel the
-   * number moving without watching it. Holding at a bound stays silent — there
+   * number moving without watching it. Holding at a bound stays silent: there
    * is nothing to feel when nothing changed.
    */
-  const apply = useCallback((direction: -1 | 1) => {
+  const apply = useCallback((direction: -1 | 1, repeating = false) => {
     const next = Math.min(max, Math.max(min, latest.current + direction * step));
     if (next === latest.current) return;
     latest.current = next;
-    void Haptics.selectionAsync();
+    void stepHaptic(repeating);
     onChange(next);
   }, [max, min, onChange, step]);
 
   const stop = useCallback(() => {
+    gesture.current += 1;
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
   }, []);
 
   const start = (direction: -1 | 1) => {
+    // A fast second tap used to replace the timer reference without cancelling
+    // the first timer. That orphan kept changing age or height after release.
+    stop();
+    const activeGesture = gesture.current;
     apply(direction);
     let delay = 340;
     const tick = () => {
-      apply(direction);
-      delay = Math.max(40, delay * 0.8);
+      if (activeGesture !== gesture.current) return;
+      apply(direction, true);
+      // Faster than this turns distinct taps into a cheap continuous buzz.
+      delay = Math.max(72, delay * 0.82);
       timer.current = setTimeout(tick, delay);
     };
     timer.current = setTimeout(tick, delay);

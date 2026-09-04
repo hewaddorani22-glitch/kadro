@@ -1,6 +1,6 @@
 # getkandro.com
 
-Statische Website. Kein Build, keine Abhängigkeiten — die Dateien sind das
+Statische Website. Kein Build, keine Abhängigkeiten: die Dateien sind das
 Deployment.
 
 **Live:** https://hewaddorani22-glitch.github.io/kadro/
@@ -33,7 +33,7 @@ src/i18n/legal.en.ts  →  site/en/privacy|terms|sources/index.html
 
 Text ändern heißt: die `.ts`-Datei ändern und `npm run site:legal` laufen
 lassen. `npm run verify` bricht ab, wenn die HTML-Dateien nicht mehr zur App
-passen — lokal und in der CI.
+passen: lokal und in der CI.
 
 Die Anbieterangaben kommen aus `EXPO_PUBLIC_LEGAL_*`. Sie stehen deshalb auch
 im CI-Workflow: nach § 5 DDG sind sie ohnehin öffentlich und stehen im
@@ -50,7 +50,7 @@ Deutsch liegt in der Wurzel, Englisch unter `/en/`. Jede übersetzte Seite träg
 deutsche Seite). `npm run validate:site` prüft, dass jeder interne Link
 auflöst und die Sprachpaare aufeinander zeigen.
 
-Das Impressum bleibt bewusst nur auf Deutsch — § 5 DDG ist deutsches Recht und
+Das Impressum bleibt bewusst nur auf Deutsch: § 5 DDG ist deutsches Recht und
 die Pflichtangaben sind an die deutschen Begriffe gebunden.
 
 ## Live-Domain prüfen
@@ -70,7 +70,7 @@ eingetragen werden.
 
 Anmeldungen laufen über die Edge Function `waitlist` und landen in der Tabelle
 `public.waitlist` bei Supabase in der EU. Kein E-Mail-Dienstleister hält die
-Liste — nur den Versand.
+Liste: nur den Versand.
 
 **Damit das Formular überhaupt erscheint**, brauchen die Function-Secrets im
 Supabase-Dashboard (Edge Functions → waitlist → Secrets) drei Werte:

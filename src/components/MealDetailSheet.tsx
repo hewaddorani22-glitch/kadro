@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,6 +8,7 @@ import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { Meal, PortionFactor } from '@/types/nutrition';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { selectionHaptic, warningHaptic } from '@/services/haptics';
 import { formatNumber } from '@/utils/format';
 import { MEAL_TYPES, mealTypeIcon, mealTypeLabel } from '@/utils/format';
 
@@ -39,7 +39,7 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
   const adjust = async (factor: PortionFactor) => {
     if (busy) return;
     setBusy(true);
-    void Haptics.selectionAsync();
+    void selectionHaptic();
     try {
       await adjustLoggedMealPortion(meal.id, factor);
       close();
@@ -51,7 +51,7 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
   const changeType = async (type: Meal['type']) => {
     if (busy || type === meal.type) return;
     setBusy(true);
-    void Haptics.selectionAsync();
+    void selectionHaptic();
     try {
       await setLoggedMealType(meal.id, type);
       close();
@@ -63,7 +63,7 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
   const remove = async () => {
     if (busy) return;
     setBusy(true);
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    void warningHaptic();
     try {
       await deleteLoggedMeal(meal.id);
       close();

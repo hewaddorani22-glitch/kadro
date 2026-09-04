@@ -14,7 +14,7 @@ const dictionaries: Record<Language, Dictionary> = { de, en };
 /**
  * English is the default and German is used when the device asks for it.
  *
- * The reach comes from English content, so most installs will not be German —
+ * The reach comes from English content, so most installs will not be German :
  * but German users still get the Bundeslebensmittelschlüssel references, which
  * only exist for their market. Defaulting the other way round would hand every
  * international install an app they cannot read.

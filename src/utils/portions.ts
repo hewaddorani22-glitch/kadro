@@ -36,7 +36,7 @@ export function scaleNutrition(per100g: Nutrition, grams: number): Nutrition {
  * Where the sheet should open.
  *
  * Two different situations, and treating them the same broke one of them
- * each way round. Picking a food from search opens on its friendliest unit —
+ * each way round. Picking a food from search opens on its friendliest unit :
  * "1 banana", not the database's generic 100 g. Re-opening an amount someone
  * already set has to show that amount: it reset to "1 × 1 banana", so a person
  * checking their 252 g was shown 126 g and had to set it again.

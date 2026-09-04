@@ -83,23 +83,23 @@ assert.ok(BUILDING_MS >= 2500 && BUILDING_MS <= 5000, `${BUILDING_MS} ms is not 
 
 // --- Feedback where a finger expects it ------------------------------------
 const stepper = onboarding.slice(onboarding.indexOf('const apply = useCallback'), onboarding.indexOf('const stop = useCallback'));
-assert.match(stepper, /Haptics\.selectionAsync\(\)/,
+assert.match(stepper, /stepHaptic\(repeating\)/,
   'a held stepper runs through twenty values in silence');
-assert.ok(stepper.indexOf('if (next === latest.current) return;') < stepper.indexOf('Haptics'),
+assert.ok(stepper.indexOf('if (next === latest.current) return;') < stepper.indexOf('stepHaptic'),
   'holding at a bound must not keep buzzing when nothing changes');
-assert.match(onboarding, /step !== 'plan'\) return;\s*\n\s*void Haptics\.notificationAsync/,
+assert.match(onboarding, /step !== 'plan'\) return;\s*\n\s*void successHaptic\(\)/,
   'the plan arrives without any feedback that it did');
-assert.match(read('src/components/PlanBuilder.tsx'), /Haptics\.impactAsync/,
+assert.match(read('src/components/PlanBuilder.tsx'), /stepHaptic\(true\)/,
   'the figures land without a tick');
 
 // Every place in the onboarding where a finger does something.
 for (const [label, pattern] of [
-  ['skipping a step', /const skipStep = \(\) => \{\s*\n\s*void Haptics\.selectionAsync\(\);/],
-  ['choosing an answer', /const selectChoice = [^;]*?\{\s*\n\s*void Haptics\.selectionAsync\(\);/s],
-  ['going back', /const goBack = \(\) => \{\s*\n\s*void Haptics\.selectionAsync\(\);/],
+  ['skipping a step', /const skipStep = \(\) => \{\s*\n\s*void selectionHaptic\(\);/],
+  ['choosing an answer', /const selectChoice = [^;]*?\{\s*\n\s*void selectionHaptic\(\);/s],
+  ['going back', /const goBack = \(\) => \{\s*\n\s*void selectionHaptic\(\);/],
   ['switching units', /onChange\(system\);/],
-  ['accepting consent', /NotificationFeedbackType\.Success/],
-  ['consent failing', /NotificationFeedbackType\.Error/],
+  ['accepting consent', /successHaptic\(\)/],
+  ['consent failing', /errorHaptic\(\)/],
 ]) {
   assert.match(onboarding, pattern, `${label} gives no feedback`);
 }

@@ -3,7 +3,7 @@ import { Dictionary, Language, dictionaryFor, localeTag } from '@/i18n';
 /**
  * The active dictionary for code that cannot use the React hook.
  *
- * Services throw and format messages that the user reads — a failed deletion,
+ * Services throw and format messages that the user reads: a failed deletion,
  * a rejected email, the evening notification. Threading the dictionary through
  * every signature would touch call sites that have nothing to do with language,
  * so the provider publishes it here instead and non-React code reads it.

@@ -1,5 +1,4 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -12,6 +11,7 @@ import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { successHaptic } from '@/services/haptics';
 import { formatNumber } from '@/utils/format';
 import { toBillingMode, trackEvent } from '@/services/telemetry';
 
@@ -84,7 +84,7 @@ export default function PaywallScreen() {
     const result = await purchase(selected);
     if (result !== 'active') return;
     trackEvent('subscription purchase completed', { billing_mode: billingMode, plan: selected });
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    void successHaptic();
     Alert.alert(
       testStore ? t.paywall.activatedTest : t.paywall.activated,
       testStore ? t.paywall.activatedTestBody : t.paywall.activatedBody,

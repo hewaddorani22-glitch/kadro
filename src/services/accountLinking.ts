@@ -1,4 +1,5 @@
 import { User } from '@supabase/supabase-js';
+import type { Language } from '@/i18n';
 
 import { getDictionary } from '@/i18n/active';
 import {
@@ -68,14 +69,21 @@ export async function enableNewCloudAccount(): Promise<AccountLinkState> {
   return stateFromUser(user);
 }
 
-export async function requestEmailLink(email: string): Promise<AccountLinkState> {
+export async function requestEmailLink(email: string, displayName: string, language: Language): Promise<AccountLinkState> {
   const client = requireClient();
   const user = await currentUser();
   if (!user) throw new Error(getDictionary().errors.sessionNotLoaded);
   if (!user.is_anonymous) return stateFromUser(user);
 
   const normalizedEmail = normalizeEmail(email);
-  const { data, error } = await client.auth.updateUser({ email: normalizedEmail });
+  const { data, error } = await client.auth.updateUser({
+    email: normalizedEmail,
+    data: {
+      ...user.user_metadata,
+      display_name: displayName.trim(),
+      kandro_language: language,
+    },
+  });
   if (error) throw error;
   const updatedUser = assertSameUser(user.id, data.user);
   return { status: 'pending', userId: updatedUser.id, email: updatedUser.new_email ?? normalizedEmail };
@@ -93,7 +101,7 @@ export async function verifyEmailLink(email: string, token: string): Promise<Acc
   const user = await currentUser();
   if (!user) throw new Error(getDictionary().errors.sessionNotLoaded);
   const normalizedToken = token.replace(/\s/g, '');
-  if (!/^\d{6,8}$/.test(normalizedToken)) throw new Error('Der Code muss aus 6 bis 8 Ziffern bestehen.');
+  if (!/^\d{6,8}$/.test(normalizedToken)) throw new Error(getDictionary().account.codeInvalid);
 
   const { data, error } = await client.auth.verifyOtp({
     email: normalizeEmail(email),
@@ -117,7 +125,7 @@ export async function setAccountPassword(password: string): Promise<AccountLinkS
   const client = requireClient();
   const user = await currentUser();
   if (!user || user.is_anonymous || !user.email) throw new Error(getDictionary().errors.confirmEmailFirst);
-  if (password.length < 8) throw new Error('Das Passwort muss mindestens 8 Zeichen lang sein.');
+  if (password.length < 8) throw new Error(getDictionary().account.passwordInvalid);
   const { data, error } = await client.auth.updateUser({ password });
   if (error) throw error;
   return stateFromUser(assertSameUser(user.id, data.user));
@@ -125,7 +133,7 @@ export async function setAccountPassword(password: string): Promise<AccountLinkS
 
 export async function signInToExistingAccount(email: string, password: string): Promise<AccountLinkState> {
   const client = requireClient();
-  if (password.length < 8) throw new Error('Das Passwort muss mindestens 8 Zeichen lang sein.');
+  if (password.length < 8) throw new Error(getDictionary().account.passwordInvalid);
   const { data, error } = await client.auth.signInWithPassword({ email: normalizeEmail(email), password });
   if (error) throw error;
   if (!data.user || data.user.is_anonymous) throw new Error(getDictionary().errors.permanentAccountNotLoaded);

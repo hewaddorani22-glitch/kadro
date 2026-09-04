@@ -10,7 +10,6 @@ import {
   accountLinkErrorMessage,
   enableNewCloudAccount,
   getAccountLinkState,
-  refreshEmailLink,
   requestEmailLink,
   resendEmailLink,
   setAccountPassword,
@@ -22,7 +21,7 @@ import { useLanguage } from '@/i18n/LanguageProvider';
 type ViewMode = 'upgrade' | 'sign-in';
 
 export function AccountLinkCard() {
-  const { refreshCloudState } = useApp();
+  const { refreshCloudState, userName } = useApp();
   const [account, setAccount] = useState<AccountLinkState | null>(null);
   const [mode, setMode] = useState<ViewMode>('upgrade');
   const [email, setEmail] = useState('');
@@ -32,7 +31,7 @@ export function AccountLinkCard() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
 
   useEffect(() => {
     let active = true;
@@ -188,13 +187,6 @@ export function AccountLinkCard() {
             label={busy ? t.account.checkingCode : t.account.confirmCode}
             onPress={() => void run(() => verifyEmailLink(account.email, code), t.account.emailConfirmed)}
           />
-          <PrimaryButton
-            disabled={busy}
-            icon="refresh-outline"
-            label={t.account.openedLink}
-            onPress={() => void run(refreshEmailLink, t.account.emailConfirmed)}
-            variant="secondary"
-          />
         </View>
         <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} onPress={() => void resend()} style={styles.centerButton}>
           <Text style={styles.textButtonLabel}>{t.account.resend}</Text>
@@ -214,7 +206,7 @@ export function AccountLinkCard() {
           disabled={busy || !email.trim()}
           icon="mail-outline"
           label={busy ? t.account.sendingEmail : t.account.sendEmail}
-          onPress={() => void run(() => requestEmailLink(email), t.account.checkInbox)}
+          onPress={() => void run(() => requestEmailLink(email, userName, language), t.account.checkInbox)}
         />
       </View>
       <Pressable accessibilityRole="button" onPress={() => { setMode('sign-in'); setError(null); setMessage(null); }} style={styles.centerButton}>

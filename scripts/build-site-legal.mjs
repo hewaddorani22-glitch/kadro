@@ -3,7 +3,7 @@
  * screens use.
  *
  * The site used to carry hand-maintained copies with a README note saying
- * "change both". They had already drifted — the site said "Account-ID" where
+ * "change both". They had already drifted: the site said "Account-ID" where
  * the app said "Supabase-IDs", and the two numbered §4 differently. A reviewer
  * comparing the in-app privacy screen with the privacy URL sees that.
  *
@@ -24,7 +24,7 @@ const check = process.argv.includes('--check');
 /**
  * The dictionaries are TypeScript and import through the `@/` alias. Transpile
  * them with the compiler the project already depends on rather than stripping
- * types by hand — a regex silently produced invalid JavaScript the moment a
+ * types by hand: a regex silently produced invalid JavaScript the moment a
  * helper gained an annotated parameter.
  */
 async function loadCopy(language) {
@@ -111,7 +111,7 @@ function render({ language, slug, doc, version }) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escape(doc.title)} — Kandro</title>
+<title>${escape(doc.title)}: Kandro</title>
 <meta name="description" content="${escape(description)}">
 <link rel="stylesheet" href="${up}styles.css">
 <link rel="icon" href="${up}icon.svg" type="image/svg+xml">
@@ -119,7 +119,7 @@ function render({ language, slug, doc, version }) {
 <meta name="theme-color" content="#F5F3EE">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Kandro">
-<meta property="og:title" content="${escape(doc.title)} — Kandro">
+<meta property="og:title" content="${escape(doc.title)}: Kandro">
 <meta property="og:description" content="${escape(description)}">
 <meta property="og:url" content="${canonical}">
 <meta property="og:image" content="https://getkandro.com/social.png">

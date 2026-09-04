@@ -7,7 +7,7 @@ import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen, SectionTit
 import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
-import { proteinConsistency } from '@/services/consistency';
+import { currentLoggingStreak, proteinConsistency } from '@/services/consistency';
 import { localDateKey } from '@/utils/date';
 import { formatWeight, formatWeightDelta, kgToStoneParts, parseStoneInput, parseWeightInput, weightInputUnit, weightInputValue } from '@/utils/units';
 import { formatDateParts } from '@/utils/format';
@@ -41,6 +41,7 @@ export default function ProgressScreen() {
     () => proteinConsistency(mealHistory, targets.protein),
     [mealHistory, targets.protein],
   );
+  const loggingStreak = useMemo(() => currentLoggingStreak(mealHistory), [mealHistory]);
   const { averageProtein, loggedCount: trackedDays, reachedCount } = consistency;
   const showsScore = trackedDays >= 3;
 
@@ -135,9 +136,9 @@ export default function ProgressScreen() {
             <Text style={styles.currentWeight}>{formatWeight(currentWeight, units, locale)}</Text>
           </View>
           {visibleWeights.length > 1 ? (
-            <View style={[styles.changePill, weightChange > 0 && styles.changePillAttention]}>
-              <Ionicons color={weightChange > 0 ? colors.attention : colors.success} name={weightChange > 0 ? 'arrow-up' : weightChange < 0 ? 'arrow-down' : 'remove'} size={15} />
-              <Text style={[styles.changeText, weightChange > 0 && styles.changeTextAttention]}>{formatWeightDelta(Math.abs(weightChange), units, locale)}</Text>
+            <View style={styles.changePill}>
+              <Ionicons color={colors.accentText} name={weightChange > 0 ? 'arrow-up' : weightChange < 0 ? 'arrow-down' : 'remove'} size={15} />
+              <Text style={styles.changeText}>{formatWeightDelta(Math.abs(weightChange), units, locale)}</Text>
             </View>
           ) : (
             <View style={styles.firstPill}><Text style={styles.firstPillText}>{t.progress.firstValue}</Text></View>
@@ -156,7 +157,7 @@ export default function ProgressScreen() {
       <View style={styles.statsRow}>
         <Card style={styles.statCard}>
           <IconCircle name="flame-outline" size={38} tone="neutral" />
-          <Text style={styles.statValue}>{trackedDays} / 7</Text>
+          <Text style={styles.statValue}>{loggingStreak}</Text>
           <Text style={styles.statLabel}>{t.progress.daysTracked}</Text>
         </Card>
         <Card style={styles.statCard}>
@@ -254,12 +255,14 @@ function WeightChart({ entries }: { entries: { date: string; weightKg: number }[
   const shown = entries.slice(-12);
   const min = Math.min(...shown.map((entry) => entry.weightKg));
   const max = Math.max(...shown.map((entry) => entry.weightKg));
+  const range = max - min;
   return (
     <View accessibilityLabel={t.progress.weightChartLabel(shown.length)} style={styles.chart}>
       {[0, 1, 2].map((line) => <View key={line} style={[styles.gridLine, { top: `${line * 45 + 5}%` }]} />)}
       <View style={styles.bars}>
         {shown.map((entry, index) => {
-          const normalized = (entry.weightKg - min) / (max - min || 1);
+          // Equal readings are a flat trend, not a row of minimum-height bars.
+          const normalized = range === 0 ? 0.5 : (entry.weightKg - min) / range;
           const height = 34 + normalized * 68;
           return (
             <View key={entry.date} style={styles.barColumn}>
@@ -298,10 +301,8 @@ const styles = StyleSheet.create({
   cardLabel: { color: colors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
   currentWeight: { color: colors.text, fontSize: 42, lineHeight: 49, fontWeight: '700', letterSpacing: -1.4, marginTop: 4, fontVariant: ['tabular-nums'] },
   kg: { fontSize: 17, fontWeight: '600', letterSpacing: 0 },
-  changePill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.successSoft, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 7 },
-  changePillAttention: { backgroundColor: colors.attentionSoft },
-  changeText: { color: colors.success, fontSize: 12, fontWeight: '700' },
-  changeTextAttention: { color: colors.attention },
+  changePill: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.neutralSoft, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 7 },
+  changeText: { color: colors.accentText, fontSize: 12, fontWeight: '700' },
   firstPill: { backgroundColor: colors.neutralSoft, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 7 },
   firstPillText: { color: colors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
   chart: { height: 150, overflow: 'hidden' },

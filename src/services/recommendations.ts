@@ -37,7 +37,7 @@ const veganIngredients = new Set(diet.diet.vegan);
  *
  * Reading the prose was all there was before recipes existed, and it let four
  * dishes through whose descriptions never mentioned the yoghurt, parmesan or
- * cream cheese their recipes contain — a lactose-free reader was offered all
+ * cream cheese their recipes contain: a lactose-free reader was offered all
  * four. Where a recipe exists it is what the person will actually cook, so it
  * is what gets checked; the prose stays the answer for bought food.
  */

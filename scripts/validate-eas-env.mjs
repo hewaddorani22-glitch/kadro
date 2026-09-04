@@ -38,17 +38,12 @@ for (const secret of ['SUPABASE_SERVICE', 'OPENROUTER_API_KEY', 'USDA_API_KEY', 
   assert.ok(!raw.includes(secret), `eas.json must not contain ${secret}`);
 }
 
-// The one value only Apple enrolment can supply. Named here so that shipping
-// without it is a deliberate act rather than an oversight.
+// Runtime account values belong to the selected EAS environment, not to this
+// committed file. Their presence is verified against EAS before release; this
+// local validator only prevents somebody from committing the wrong key type.
 const production = eas.build?.production?.env ?? {};
 const revenueCat = production.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
-if (!revenueCat) {
-  console.log(
-    'Note: EXPO_PUBLIC_REVENUECAT_IOS_API_KEY is not in eas.json. Set it in the EAS\n'
-    + '      production environment before the first TestFlight build, or the paywall\n'
-    + '      ships as an unconfigured preview and App Review rejects it under 2.1.',
-  );
-} else {
+if (revenueCat) {
   assert.ok(!revenueCat.startsWith('appl_') === false, 'the iOS RevenueCat key must be the appl_ one, not the Android or test key');
 }
 
