@@ -131,6 +131,10 @@ App ausdrücklich nach Gramm. Das vollständige Workbook wird nicht eingecheckt;
 `scripts/build-bls-search-catalog.py` erzeugt aus dem offiziellen Download die
 kompakte, gehashte Laufzeitdatei. Open Food Facts bleibt der Fallback für
 Markenprodukte, USDA der englische Fallback für Einträge außerhalb des BLS.
+Bei einer deutschen Produktsuche werden Einträge ohne deutschen Titel
+ausgelassen, statt einen englischen Namen in die Liste zu mischen. Beim
+Barcode bleibt der beste vorhandene Titel sichtbar, damit das konkret
+gescannte Produkt identifizierbar ist.
 
 ## USDA-Cache
 

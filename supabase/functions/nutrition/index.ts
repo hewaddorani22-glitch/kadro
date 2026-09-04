@@ -397,7 +397,7 @@ async function searchFoods(query: string, language: string): Promise<Result> {
  * fields list so the response stays small.
  */
 async function searchOpenFoodFacts(term: string, language: string): Promise<unknown[]> {
-  const fields = 'code,product_name,product_name_de,product_name_en,brands,nutriments,serving_quantity,serving_size';
+  const fields = 'code,lang,lc,product_name,product_name_de,product_name_en,brands,nutriments,serving_quantity,serving_size';
   const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(term)}&page_size=10&fields=${fields}`;
   const response = await fetch(url, {
     headers: { 'User-Agent': 'Kandro/1.0 (https://getkandro.com; hewaddorani22@gmail.com)' },
@@ -416,7 +416,11 @@ async function searchOpenFoodFacts(term: string, language: string): Promise<unkn
     // A product without energy is a product the app cannot log. Half the
     // catalogue is like this, and offering it would be offering a dead end.
     if (!Number.isFinite(calories)) continue;
-    const name = localizedProductName(product, language);
+    // Search results are optional. For German readers, omit a product whose
+    // catalogue record only carries an English title instead of leaking that
+    // title into an otherwise German list. Barcode lookup is different: the
+    // scanned product must remain identifiable, so it keeps the broad fallback.
+    const name = localizedProductName(product, language, language === 'de');
     if (!name) continue;
     const brand = Array.isArray(product.brands) ? product.brands[0] : product.brands;
     const serving = Number(product.serving_quantity);
@@ -489,10 +493,18 @@ async function searchUsdaFoods(term: string): Promise<unknown[]> {
 
 /** Picks the product name in the reader's language, falling back sensibly. */
 // deno-lint-ignore no-explicit-any
-function localizedProductName(product: any, language: string): string {
+function localizedProductName(product: any, language: string, strict = false): string {
+  const explicit = language === 'de' ? product?.product_name_de : product?.product_name_en;
+  if (typeof explicit === 'string' && explicit.trim()) return explicit.trim();
+
+  const catalogueLanguage = String(product?.lang ?? product?.lc ?? '').trim().toLowerCase().split(/[-_]/)[0];
+  const generic = typeof product?.product_name === 'string' ? product.product_name.trim() : '';
+  if (generic && (!strict || catalogueLanguage === language)) return generic;
+  if (strict) return '';
+
   const ordered = language === 'de'
-    ? [product?.product_name_de, product?.product_name, product?.product_name_en]
-    : [product?.product_name_en, product?.product_name, product?.product_name_de];
+    ? [product?.product_name_en]
+    : [product?.product_name_de];
   return ordered.map((value) => (typeof value === 'string' ? value.trim() : '')).find(Boolean) ?? '';
 }
 

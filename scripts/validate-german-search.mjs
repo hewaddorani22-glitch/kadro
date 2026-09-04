@@ -55,6 +55,10 @@ assert.match(off, /User-Agent/, 'Open Food Facts throttles callers that do not i
 assert.match(off, /AbortSignal\.timeout\(/, 'a slow extra source must not hold up the whole search');
 assert.match(off, /if \(!Number\.isFinite\(calories\)\) continue;/,
   'a product without energy cannot be logged and must not be offered');
+assert.match(off, /localizedProductName\(product, language, language === 'de'\)/,
+  'German search must not fall back to an English-only product title');
+assert.match(gateway, /if \(strict\) return '';/,
+  'strict localized-name selection must omit products without the requested language');
 assert.match(gateway, /try \{\s*\n\s*for \(const product of await searchOpenFoodFacts\(term, language\)\)/,
   'Open Food Facts going down must not fail the whole search');
 

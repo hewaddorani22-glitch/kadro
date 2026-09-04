@@ -61,7 +61,7 @@ assert.match(searchFn, /if \(language === 'de'\)/, 'German provider fallback mus
 assert.ok(!/name: String\(entry\.description/.test(searchFn.slice(searchFn.indexOf("if (language === 'de')"), searchFn.indexOf('let foods'))), 'German results must never expose a raw USDA description');
 
 const offFn = gateway.slice(gateway.indexOf('async function searchOpenFoodFacts'), gateway.indexOf('async function usdaRows'));
-assert.match(offFn, /localizedProductName\(product, language\)/, 'packaged products must follow the reader language');
+assert.match(offFn, /localizedProductName\(product, language, language === 'de'\)/, 'German product search must reject an English-only title');
 
 const localGateway = await readFile(new URL('../server/index.mjs', import.meta.url), 'utf8');
 assert.match(localGateway, /requestUrl\.pathname === '\/v1\/search'/, 'Expo Go local development needs the same search route');
