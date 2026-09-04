@@ -19,6 +19,8 @@ Every photo or text estimate goes to a confirmation screen before it is saved. T
 
 The first three AI analyses are free. Afterwards the paywall offers the live App Store monthly and annual subscriptions. Prices, period, auto-renewal, cancellation, Privacy Policy, Terms and Restore Purchases are visible before purchase. Search, previously logged meals and account deletion do not require a subscription.
 
+**Calorie targets cannot be driven to an unsafe level.** The daily target is Mifflin-St Jeor times an activity factor, and it never falls below 1,300 kcal or below 70% of the reviewer's own maintenance estimate, whichever is higher — the onboarding names the floor when it applies. The weekly rate is limited to 0.25 kg or 0.5 kg; there is no "aggressive" option, no fasting mode and no streak or punishment mechanic. Ages under 18 cannot be entered, and the database enforces the same boundary.
+
 Test account: none required; Kandro creates an anonymous Supabase session only after consent.
 
 Subscription products submitted with this version:
@@ -28,6 +30,8 @@ Subscription products submitted with this version:
 - Entitlement: `kandro_pro`
 
 For review, use the App Store sandbox purchase sheet. If analysis is temporarily unavailable, the deterministic **Example meal** remains available, but the production endpoint is expected to be live during review.
+
+**Age policy.** The Terms, the onboarding and the database all require the user to be 18 or over. This is our own policy for a nutrition-planning product, not a statement about the content, which is food, numbers and recipes.
 
 Support: `https://getkandro.com/en/support`
 Privacy: `https://getkandro.com/en/privacy`
