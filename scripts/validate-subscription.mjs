@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,6 +48,17 @@ if (!paywall.includes('t.paywall.keeps')) {
   failures.push('the paywall must state that existing history stays accessible without Pro');
 }
 for (const [label, dict] of [['German', dictDe], ['English', dictEn]]) {
+  // Guideline 3.1.2 wants the renewal terms and the legal links clear and
+  // conspicuous. They were nine point grey, which is the size something gets
+  // when you would rather it were not read — and a reviewer reads it that way.
+  const paywall = readFileSync(new URL('../src/app/paywall.tsx', import.meta.url), 'utf8');
+  for (const [style, minimum] of [['renewal', 12], ['legal', 12]]) {
+    const size = Number(paywall.match(new RegExp(`\\b${style}: \\{[^}]*fontSize: (\\d+)`))?.[1] ?? 0);
+    if (size < minimum) {
+      failures.push(`paywall ${style} text is ${size}pt; App Review expects the renewal terms to be legible`);
+    }
+  }
+
   for (const key of ['restore', 'keeps', 'renewalYear', 'renewalMonth', 'renewalTail']) {
     if (!dict.includes(`${key}:`)) failures.push(`${label} paywall is missing ${key}`);
   }

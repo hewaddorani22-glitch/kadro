@@ -301,9 +301,9 @@ const styles = StyleSheet.create({
   loader: { marginTop: 12 },
   error: { color: colors.attention, fontSize: 11, lineHeight: 16, marginTop: 12, textAlign: 'center' },
   disabledText: { opacity: 0.45 },
-  billing: { color: colors.muted, fontSize: 10, textAlign: 'center' },
-  renewal: { color: colors.muted, fontSize: 9, lineHeight: 13, textAlign: 'center', paddingHorizontal: 4 },
+  billing: { color: colors.muted, fontSize: 11, textAlign: 'center' },
+  renewal: { color: colors.text, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingHorizontal: 4 },
   legalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
-  legal: { color: colors.muted, fontSize: 9, textDecorationLine: 'underline' },
+  legal: { color: colors.accentDeep, fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' },
   legalDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.muted },
 });
