@@ -72,6 +72,7 @@ function preferenceChoicesFor(t: Dict) {
   return [
     { id: 'high-protein', label: t.onboarding.prefHighProtein },
     { id: 'vegetarian', label: t.onboarding.prefVegetarian },
+    { id: 'vegan', label: t.onboarding.prefVegan },
     { id: 'pork-free', label: t.onboarding.prefPorkFree },
     { id: 'lactose-free', label: t.onboarding.prefLactoseFree },
     { id: 'quick', label: t.onboarding.prefQuick },
@@ -362,7 +363,7 @@ export default function OnboardingScreen() {
                           {' · '}{draftProfile.goal === 'lose' ? '−' : '+'}{applied} {t.onboarding.perDay}
                         </Text>
                       </View>
-                      <Ionicons color={active ? colors.accentDeep : colors.border} name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
+                      <Ionicons color={active ? colors.accentText : colors.border} name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
                     </Pressable>
                   );
                 })}
@@ -567,7 +568,7 @@ function ChoiceList<T extends string>({ choices, onSelect, selected, values }: {
               <Text style={styles.choiceTitle}>{choice.label}</Text>
               <Text style={styles.choiceDetail}>{choice.detail}</Text>
             </View>
-            <Ionicons color={active ? colors.accentDeep : colors.border} name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
+            <Ionicons color={active ? colors.accentText : colors.border} name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
           </Pressable>
         );
       })}
@@ -722,7 +723,7 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
         </View>
       </View>
       <View style={styles.adaptsRow}>
-        <Ionicons color={colors.accentDeep} name="sync" size={18} />
+        <Ionicons color={colors.accentText} name="sync" size={18} />
         <Text style={styles.adaptsText}>{t.onboarding.adapts}</Text>
       </View>
       {limited ? (
@@ -735,7 +736,7 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
       ) : null}
       {isTeenProfile(profile) ? (
         <View style={styles.teenRow}>
-          <Ionicons color={colors.accentDeep} name="shield-checkmark-outline" size={16} />
+          <Ionicons color={colors.accentText} name="shield-checkmark-outline" size={16} />
           <Text style={styles.teenText}>{t.onboarding.teenPlanNotice}</Text>
         </View>
       ) : null}
@@ -762,7 +763,7 @@ const styles = StyleSheet.create({
   footer: { gap: 12, paddingTop: 8, backgroundColor: colors.background },
   choiceList: { gap: 12 },
   choice: { minHeight: 82, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 13 },
-  choiceActive: { borderColor: colors.accentDeep, backgroundColor: colors.neutralSoft },
+  choiceActive: { borderColor: colors.accentText, backgroundColor: colors.neutralSoft },
   choicePressed: { transform: [{ scale: 0.985 }] },
   choiceIcon: { width: 48, height: 48, borderRadius: 18, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   choiceIconActive: { backgroundColor: colors.accent },
@@ -780,7 +781,7 @@ const styles = StyleSheet.create({
   unitToggle: { flexDirection: 'row', gap: 8, alignSelf: 'stretch' },
   unitStepValue: { flex: 1, minHeight: 292, justifyContent: 'center', borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 18 },
   unitOption: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-  unitOptionActive: { borderColor: colors.accentDeep, backgroundColor: colors.accent },
+  unitOptionActive: { borderColor: colors.accentText, backgroundColor: colors.accent },
   unitLabel: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   unitLabelActive: { color: colors.text },
   numberControls: { width: '100%', flexDirection: 'row', justifyContent: 'center', gap: 14 },
@@ -817,7 +818,7 @@ const styles = StyleSheet.create({
   planStatValue: { minHeight: 38, color: colors.text, fontSize: 14, lineHeight: 18, fontWeight: '700', textAlign: 'center' },
   planStatLabel: { color: colors.muted, fontSize: 11, textAlign: 'center' },
   adaptsRow: { marginTop: 22, flexDirection: 'row', alignItems: 'center', gap: 7, backgroundColor: colors.neutralSoft, borderRadius: radii.pill, paddingHorizontal: 13, paddingVertical: 9 },
-  adaptsText: { flex: 1, color: colors.accentDeep, fontSize: 12, fontWeight: '700' },
+  adaptsText: { flex: 1, color: colors.accentText, fontSize: 12, fontWeight: '700' },
   limitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 16, backgroundColor: colors.attentionSoft, borderRadius: 14, padding: 11 },
   limitText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },
   safetyText: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 16 },
@@ -829,9 +830,9 @@ const styles = StyleSheet.create({
   guardianBlock: { gap: 7 },
   guardianLabel: { color: colors.text, fontSize: 12, fontWeight: '700' },
   guardianInput: { minHeight: 52, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, color: colors.text, fontSize: 16, paddingHorizontal: 15 },
-  guardianSent: { color: colors.accentDeep, fontSize: 12, lineHeight: 18, fontWeight: '600' },
+  guardianSent: { color: colors.accentText, fontSize: 12, lineHeight: 18, fontWeight: '600' },
   consentLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
-  consentLink: { color: colors.accentDeep, fontSize: 12, fontWeight: '800', textDecorationLine: 'underline' },
+  consentLink: { color: colors.accentText, fontSize: 12, fontWeight: '800', textDecorationLine: 'underline' },
   consentError: { color: colors.attention, fontSize: 12, lineHeight: 18 },
   teenRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 16, backgroundColor: colors.neutralSoft, borderRadius: 14, padding: 11 },
   teenText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },

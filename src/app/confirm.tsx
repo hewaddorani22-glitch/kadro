@@ -89,7 +89,7 @@ export default function ConfirmScreen() {
               <Text style={styles.portionTitle}>{t.confirm.amountQuestion}</Text>
               <Text style={styles.portionSubtitle}>{singleItem.name}</Text>
             </View>
-            <Ionicons color={colors.accentDeep} name="resize-outline" size={22} />
+            <Ionicons color={colors.accentText} name="resize-outline" size={22} />
           </View>
           <Pressable
             accessibilityLabel={t.confirm.amountQuestion}
@@ -108,7 +108,7 @@ export default function ConfirmScreen() {
             <Text style={styles.portionTitle}>{t.confirm.portionQuestion}</Text>
             <Text style={styles.portionSubtitle}>{mealPortion ? t.confirm.portionQuick : t.confirm.portionCustom}</Text>
           </View>
-          <Ionicons color={colors.accentDeep} name="resize-outline" size={22} />
+          <Ionicons color={colors.accentText} name="resize-outline" size={22} />
         </View>
         <View style={styles.portionSelector}>
           {([

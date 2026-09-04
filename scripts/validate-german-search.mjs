@@ -55,7 +55,7 @@ assert.match(off, /User-Agent/, 'Open Food Facts throttles callers that do not i
 assert.match(off, /AbortSignal\.timeout\(/, 'a slow extra source must not hold up the whole search');
 assert.match(off, /if \(!Number\.isFinite\(calories\)\) continue;/,
   'a product without energy cannot be logged and must not be offered');
-assert.match(gateway, /try \{\s*\n\s*for \(const product of await searchOpenFoodFacts\(term\)\)/,
+assert.match(gateway, /try \{\s*\n\s*for \(const product of await searchOpenFoodFacts\(term, language\)\)/,
   'Open Food Facts going down must not fail the whole search');
 
 console.log(`German search: ${Object.keys(GERMAN_FOOD_TERMS).length} food terms translated, Open Food Facts wired in as a fallback source.`);

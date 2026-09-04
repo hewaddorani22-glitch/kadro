@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   macroUnit: { fontSize: 11, fontWeight: '600' },
   macroLabel: { color: colors.muted, fontSize: 10 },
   section: { gap: 13 },
-  edit: { color: colors.accentDeep, fontSize: 13, fontWeight: '700' },
+  edit: { color: colors.accentText, fontSize: 13, fontWeight: '700' },
   ingredientsCard: { padding: 8 },
   ingredientRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 10 },
   ingredientCheck: { width: 28, height: 28, borderRadius: 10, backgroundColor: colors.successSoft, alignItems: 'center', justifyContent: 'center' },

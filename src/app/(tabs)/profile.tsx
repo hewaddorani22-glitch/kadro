@@ -296,7 +296,7 @@ function ToggleRow({ detail, disabled, icon, label, onValueChange, value }: { de
         ios_backgroundColor={colors.border}
         onValueChange={onValueChange}
         thumbColor={colors.surface}
-        trackColor={{ false: colors.border, true: colors.accentDeep }}
+        trackColor={{ false: colors.border, true: colors.accentText }}
         value={value}
       />
     </View>

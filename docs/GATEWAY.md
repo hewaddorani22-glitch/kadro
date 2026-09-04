@@ -115,6 +115,23 @@ Die Momentaufnahme stammt vom Max Rubner-Institut, BLS 4.0 (2025), CC BY 4.0,
 DOI `10.25826/Data20251217-134202-0`. Details und Testgrenzen stehen in
 `docs/ACCURACY.md`.
 
+## Zweisprachige Lebensmittelsuche
+
+Die kostenlose Suchroute verwendet zusätzlich die vollständige geprüfte
+BLS-4.0-Momentaufnahme mit 7.140 Lebensmitteln und zubereiteten Gerichten. Jeder
+Eintrag trägt denselben Quellcode, deutsche und englische Originalbezeichnung
+sowie fünf Nährwerte pro 100 g. Dadurch erscheinen deutsche Suchergebnisse
+nicht mehr mit rohen englischen USDA-Namen, und typische deutsche,
+amerikanische, britische, türkische und asiatische Gerichte werden ohne
+KI-Aufruf und meist ohne Netzwerk-Rundreise gefunden.
+
+Die 64 plate-level Referenzen bleiben als Teilmenge erhalten, weil sie zusätzlich
+eine geprüfte typische Portion besitzen. Bei allen anderen Treffern fragt die
+App ausdrücklich nach Gramm. Das vollständige Workbook wird nicht eingecheckt;
+`scripts/build-bls-search-catalog.py` erzeugt aus dem offiziellen Download die
+kompakte, gehashte Laufzeitdatei. Open Food Facts bleibt der Fallback für
+Markenprodukte, USDA der englische Fallback für Einträge außerhalb des BLS.
+
 ## USDA-Cache
 
 Pro Zutat geht eine USDA-Anfrage, bis zu zwölf pro Scan. api.data.gov begrenzt

@@ -16,7 +16,8 @@ import {
   validateAnalysisInput,
 } from '../_shared/nutrition.mjs';
 import { translateGermanQuery } from '../_shared/german-food-terms.mjs';
-import { resolveBlsFacts, searchBlsReferences } from '../_shared/bls-reference.mjs';
+import { getBlsReferenceByCode, resolveBlsFacts } from '../_shared/bls-reference.mjs';
+import { searchBlsCatalog } from '../_shared/bls-search.mjs';
 import {
   descriptionDetectionPrompt,
   detectionSchema,
@@ -288,8 +289,10 @@ async function analyzeDescription(input: any, admin: any): Promise<Result> {
  * the paid quota — which is the point: logging a banana should not spend one
  * of three free analyses, and should not take five seconds.
  *
- * Two sources. The German dish references come first because their values are
- * vetted rather than matched; USDA supplies everything else, in English.
+ * The complete bilingual BLS 4.0 snapshot answers common searches locally.
+ * That is faster than a provider round trip and keeps the visible name in the
+ * reader's language. USDA and Open Food Facts remain fallbacks for products
+ * the reference catalogue does not contain.
  */
 async function searchFoods(query: string, language: string): Promise<Result> {
   const term = normalizeSearchTerm(query);
@@ -298,30 +301,53 @@ async function searchFoods(query: string, language: string): Promise<Result> {
   }
 
   const results: unknown[] = [];
+  const seen = new Set<string>();
+  const add = (entry: unknown, referenceId: string) => {
+    if (seen.has(referenceId)) return;
+    seen.add(referenceId);
+    results.push(entry);
+  };
 
-  // Only German readers are offered the German dish names, because that is the
-  // only language those entries exist in.
+  for (const food of searchBlsCatalog(term, language, 15)) {
+    const meal = getBlsReferenceByCode(food.code);
+    add({
+      id: meal ? `bls-${meal.key}` : `bls-${food.code}`,
+      name: language === 'de' ? (meal?.nameDe ?? food.nameDe) : (meal?.nameEn ?? food.nameEn),
+      per100g: meal?.per100g ?? food.per100g,
+      defaultGrams: meal?.defaultGrams ?? 100,
+      portions: meal ? [{ label: language === 'de' ? '1 Portion' : '1 portion', grams: meal.defaultGrams }] : [],
+      source: { provider: 'bls', referenceId: food.code, label: `BLS 4.0 ${food.code}` },
+    }, food.code);
+    if (results.length >= 15) break;
+  }
+
+  // Everyday foods now finish here: no network, no quota and no English USDA
+  // wording leaking into a German result list.
+  if (results.length) {
+    return { status: 200, body: { query: term, results: results.slice(0, 15) } };
+  }
+
+  // A German query that is absent from the 7,140 bilingual references is most
+  // likely a brand. Open Food Facts has language-specific product fields;
+  // USDA does not, so sending its raw English descriptions here would recreate
+  // the localization bug this catalogue is meant to remove.
   if (language === 'de') {
-    for (const meal of searchBlsReferences(term, 4)) {
-      results.push({
-        id: `bls-${meal.key}`,
-        name: meal.nameDe,
-        per100g: meal.per100g,
-        defaultGrams: meal.defaultGrams,
-        portions: [{ label: language === 'de' ? '1 Portion' : '1 portion', grams: meal.defaultGrams }],
-        source: { provider: 'bls', referenceId: meal.code, label: `BLS 4.0 ${meal.code}` },
-      });
+    try {
+      for (const product of await searchOpenFoodFacts(term, language)) {
+        // deno-lint-ignore no-explicit-any
+        add(product, `off-${String((product as any)?.source?.referenceId ?? '')}`);
+      }
+    } catch {
+      // A missing brand result is an empty search, not a broken German UI.
     }
+    return { status: 200, body: { query: term, results: results.slice(0, 15) } };
   }
 
   let foods: unknown[] = [];
   try {
     foods = await searchUsdaFoods(term);
   } catch {
-    // A USDA outage must not empty a list that already has German dishes in it.
-    if (!results.length) {
-      return { status: 503, body: { code: 'provider_error', message: 'Search is unavailable.' } };
-    }
+    foods = [];
   }
 
   for (const food of foods) {
@@ -329,7 +355,7 @@ async function searchFoods(query: string, language: string): Promise<Result> {
     const entry = food as any;
     const facts = toFoodFacts(entry, { confidence: 'medium' });
     if (!facts) continue;
-    results.push({
+    add({
       id: `usda-${entry.fdcId}`,
       name: String(entry.description ?? '').trim(),
       per100g: {
@@ -342,7 +368,7 @@ async function searchFoods(query: string, language: string): Promise<Result> {
       defaultGrams: 100,
       portions: usdaPortions(entry),
       source: { provider: 'usda', referenceId: String(entry.fdcId), label: `USDA FDC ${entry.fdcId}` },
-    });
+    }, `usda-${entry.fdcId}`);
   }
 
   // Open Food Facts covers what a reference database never will: regional
@@ -351,8 +377,9 @@ async function searchFoods(query: string, language: string): Promise<Result> {
   // too, so it also answers the queries the translation above misses.
   if (results.length < 12) {
     try {
-      for (const product of await searchOpenFoodFacts(term)) {
-        results.push(product);
+      for (const product of await searchOpenFoodFacts(term, language)) {
+        // deno-lint-ignore no-explicit-any
+        add(product, `off-${String((product as any)?.source?.referenceId ?? '')}`);
       }
     } catch {
       // An extra source going down is not a failed search.
@@ -369,7 +396,7 @@ async function searchFoods(query: string, language: string): Promise<Result> {
  * a sign-in page; the Search-a-licious service does not, and it takes a
  * fields list so the response stays small.
  */
-async function searchOpenFoodFacts(term: string): Promise<unknown[]> {
+async function searchOpenFoodFacts(term: string, language: string): Promise<unknown[]> {
   const fields = 'code,product_name,product_name_de,product_name_en,brands,nutriments,serving_quantity,serving_size';
   const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(term)}&page_size=10&fields=${fields}`;
   const response = await fetch(url, {
@@ -389,7 +416,7 @@ async function searchOpenFoodFacts(term: string): Promise<unknown[]> {
     // A product without energy is a product the app cannot log. Half the
     // catalogue is like this, and offering it would be offering a dead end.
     if (!Number.isFinite(calories)) continue;
-    const name = String(product.product_name || product.product_name_de || product.product_name_en || '').trim();
+    const name = localizedProductName(product, language);
     if (!name) continue;
     const brand = Array.isArray(product.brands) ? product.brands[0] : product.brands;
     const serving = Number(product.serving_quantity);
@@ -405,7 +432,7 @@ async function searchOpenFoodFacts(term: string): Promise<unknown[]> {
       },
       defaultGrams: 100,
       portions: Number.isFinite(serving) && serving >= 1 && serving <= 2000
-        ? [{ label: String(product.serving_size || '1 serving').trim().slice(0, 40), grams: Math.round(serving) }]
+        ? [{ label: String(product.serving_size || (language === 'de' ? '1 Portion' : '1 serving')).trim().slice(0, 40), grams: Math.round(serving) }]
         : [],
       source: { provider: 'open-food-facts', referenceId: String(product.code), label: `Open Food Facts ${product.code}` },
     });

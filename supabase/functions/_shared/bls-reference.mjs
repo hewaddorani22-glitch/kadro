@@ -8,6 +8,8 @@
  * Source: Max Rubner-Institut, BLS 4.0 (2025), CC BY 4.0
  * DOI: https://doi.org/10.25826/Data20251217-134202-0
  */
+import { BLS_SEARCH_ROWS } from './bls-search-data.mjs';
+
 export const BLS_SOURCE = Object.freeze({
   name: 'Bundeslebensmittelschlüssel 4.0',
   version: '4.0 (2025)',
@@ -83,12 +85,15 @@ chicken_vegetables|Y562112|Gebratene Hähnchenbrust mit gedünstetem Kaisergemü
 gyros|Y384112|Schweine-Gyros, gebraten|250|230|24.35|0.5|14.48|0.3
 `.trim();
 
+const englishNameByCode = new Map(BLS_SEARCH_ROWS.map((row) => [row[0], row[2]]));
+
 export const BLS_REFERENCE_MEALS = Object.freeze(rows.split('\n').map((row) => {
   const [key, code, nameDe, defaultGrams, calories, protein, carbs, fat, fiber] = row.split('|');
   return Object.freeze({
     key,
     code,
     nameDe,
+    nameEn: englishNameByCode.get(code) ?? nameDe,
     defaultGrams: Number(defaultGrams),
     per100g: Object.freeze({
       calories: Number(calories),
@@ -108,9 +113,14 @@ export const BLS_MODEL_CATALOG = BLS_REFERENCE_MEALS
   .join('; ');
 
 const byKey = new Map(BLS_REFERENCE_MEALS.map((meal) => [meal.key, meal]));
+const byCode = new Map(BLS_REFERENCE_MEALS.map((meal) => [meal.code, meal]));
 
 export function getBlsReference(referenceKey) {
   return byKey.get(String(referenceKey ?? '')) ?? null;
+}
+
+export function getBlsReferenceByCode(code) {
+  return byCode.get(String(code ?? '')) ?? null;
 }
 
 export function resolveBlsFacts(item) {
@@ -133,21 +143,27 @@ export function resolveBlsFacts(item) {
  * German — and their values are vetted rather than matched, so they belong at
  * the top of a result list, not below it.
  */
-export function searchBlsReferences(query, limit = 6) {
+export function searchBlsReferences(query, limit = 6, language = 'de') {
   const needle = String(query ?? '').trim().toLowerCase();
   if (needle.length < 2) return [];
-  const terms = needle.split(/\s+/).filter(Boolean);
+  const stopWords = new Set(['and', 'or', 'the', 'with', 'und', 'oder', 'mit', 'der', 'die', 'das']);
+  const terms = needle.split(/\s+/).filter((term) => term && !stopWords.has(term));
+  if (!terms.length) return [];
   return BLS_REFERENCE_MEALS
     .map((meal) => {
-      const name = meal.nameDe.toLowerCase();
-      const matched = terms.filter((term) => name.includes(term)).length;
-      if (!matched) return null;
+      const localName = (language === 'de' ? meal.nameDe : meal.nameEn).toLowerCase();
+      const otherName = (language === 'de' ? meal.nameEn : meal.nameDe).toLowerCase();
+      const localMatched = terms.filter((term) => localName.includes(term)).length;
+      const otherMatched = terms.filter((term) => otherName.includes(term)).length;
+      const matched = Math.max(localMatched, otherMatched);
+      if (matched !== terms.length) return null;
       // Prefer the dish whose name is mostly the query rather than one that
       // merely contains it: "Reis" should not lead with a rice pudding.
-      return { meal, score: matched / terms.length + needle.length / name.length };
+      const name = localMatched >= otherMatched ? localName : otherName;
+      return { meal, score: matched / terms.length + needle.length / name.length + (localMatched ? 0.02 : 0) };
     })
     .filter(Boolean)
-    .sort((a, b) => b.score - a.score || a.meal.nameDe.localeCompare(b.meal.nameDe))
+    .sort((a, b) => b.score - a.score || (language === 'de' ? a.meal.nameDe : a.meal.nameEn).localeCompare(language === 'de' ? b.meal.nameDe : b.meal.nameEn))
     .slice(0, limit)
     .map(({ meal }) => meal);
 }

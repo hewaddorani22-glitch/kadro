@@ -10,7 +10,7 @@ export default function Index() {
   if (!hydrationReady) {
     return (
       <View accessibilityLabel="Kandro wird geladen" style={styles.loading}>
-        <ActivityIndicator color={colors.accentDeep} />
+        <ActivityIndicator color={colors.accentText} />
       </View>
     );
   }

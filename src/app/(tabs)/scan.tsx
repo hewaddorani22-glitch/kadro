@@ -1,8 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,6 +13,7 @@ import { useApp } from '@/context/AppContext';
 import { FoodSearchResult, MealAnalysisError, searchFoods } from '@/services/mealAnalysis';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { formatNumber } from '@/utils/format';
 
 export default function ScanScreen() {
   const router = useRouter();
@@ -36,18 +37,46 @@ export default function ScanScreen() {
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [pendingFood, setPendingFood] = useState<FoodSearchResult | null>(null);
+  const [torchOn, setTorchOn] = useState(false);
+  const [showBarcodeEntry, setShowBarcodeEntry] = useState(false);
+  const [barcodeEntry, setBarcodeEntry] = useState('');
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestSearch = useRef('');
   const [barcodeBusy, setBarcodeBusy] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const insets = useSafeAreaInsets();
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
   // The sheets cover the whole screen, so a camera running behind one is a
   // preview nobody can see holding a device nobody else can use.
   const cameraActive = pathname.endsWith('/scan')
     && mode !== 'description'
     && mode !== 'search'
+    && !showBarcodeEntry
     && permission?.granted === true;
+
+  // Tabs stay mounted. Without a focus reset, returning from a previous text
+  // search could leave the next Lunch/Dinner tap behind an invisible sheet and
+  // make the camera look frozen.
+  useFocusEffect(useCallback(() => {
+    const nextMode = requestedMode === 'description'
+      ? 'description'
+      : requestedMode === 'search'
+        ? 'search'
+        : 'photo';
+    setMode(nextMode);
+    setShowDescription(nextMode === 'description');
+    setShowSearch(nextMode === 'search');
+    setShowBarcodeEntry(false);
+    setTorchOn(false);
+    setCapturing(false);
+    setBarcodeBusy(false);
+    return () => {
+      setShowDescription(false);
+      setShowSearch(false);
+      setShowBarcodeEntry(false);
+      setTorchOn(false);
+    };
+  }, [requestedMode]));
 
   /**
    * onCameraReady fires once per mounted camera. Resetting the flag whenever
@@ -139,6 +168,7 @@ export default function ScanScreen() {
 
   const chooseMode = (nextMode: 'photo' | 'description' | 'barcode' | 'search') => {
     setMode(nextMode);
+    if (nextMode !== 'barcode') setTorchOn(false);
     if (nextMode === 'description') setShowDescription(true);
     if (nextMode === 'search') setShowSearch(true);
   };
@@ -213,7 +243,7 @@ export default function ScanScreen() {
     router.push('/analyzing');
   };
 
-  const handleBarcode = ({ data }: BarcodeScanningResult) => {
+  const openBarcode = (data: string) => {
     if (barcodeBusy || !/^\d{7,14}$/.test(data)) return;
     if (!hasScanAccess()) {
       setBarcodeBusy(true);
@@ -225,18 +255,33 @@ export default function ScanScreen() {
     router.push('/analyzing');
   };
 
+  const handleBarcode = ({ data }: BarcodeScanningResult) => openBarcode(data);
+
+  const submitBarcodeEntry = () => {
+    const normalized = barcodeEntry.replace(/\D/g, '');
+    if (!/^\d{8,14}$/.test(normalized)) {
+      Alert.alert(t.scan.barcodeManualInvalidTitle, t.scan.barcodeManualInvalidBody);
+      return;
+    }
+    setShowBarcodeEntry(false);
+    openBarcode(normalized);
+  };
+
   return (
     <View style={styles.container}>
       {cameraActive ? (
         <>
           <CameraView
             active={Platform.OS === 'ios' ? cameraActive : undefined}
-            barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e'] }}
+            autofocus="on"
+            barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'itf14', 'code128'] }}
+            enableTorch={mode === 'barcode' && torchOn}
             facing="back"
             onCameraReady={() => setCameraReady(true)}
             onBarcodeScanned={mode === 'barcode' ? handleBarcode : undefined}
             ref={cameraRef}
             style={StyleSheet.absoluteFill}
+            zoom={mode === 'barcode' ? 0.08 : 0}
           />
           {/* A black rectangle reads as a broken camera; say it is starting. */}
           {cameraReady ? null : (
@@ -251,8 +296,20 @@ export default function ScanScreen() {
           <View style={styles.fallbackOrb}>
             <Ionicons color={colors.accent} name="restaurant" size={58} />
           </View>
-          <Text style={styles.fallbackTitle}>{mode === 'description' ? t.scan.fallbackDescribeTitle : t.scan.fallbackPhotoTitle}</Text>
-          <Text style={styles.fallbackText}>{mode === 'description' ? t.scan.fallbackDescribeText : t.scan.fallbackPhotoText}</Text>
+          <Text style={styles.fallbackTitle}>
+            {mode === 'description'
+              ? t.scan.fallbackDescribeTitle
+              : mode === 'barcode'
+                ? t.scan.fallbackBarcodeTitle
+                : t.scan.fallbackPhotoTitle}
+          </Text>
+          <Text style={styles.fallbackText}>
+            {mode === 'description'
+              ? t.scan.fallbackDescribeText
+              : mode === 'barcode'
+                ? t.scan.fallbackBarcodeText
+                : t.scan.fallbackPhotoText}
+          </Text>
           {mode !== 'description' && !permission ? <Text style={styles.permissionStatus}>{t.scan.permissionChecking}</Text> : null}
           {mode !== 'description' && permission && !permission.granted ? (
             <Pressable accessibilityRole="button" onPress={() => void requestCameraAccess()} style={styles.permissionButton}>
@@ -275,7 +332,17 @@ export default function ScanScreen() {
             <Ionicons color={colors.accent} name="sparkles" size={15} />
             <Text style={styles.screenTitle}>{t.scan.title}</Text>
           </View>
-          <View style={styles.circlePlaceholder} />
+          {mode === 'barcode' && cameraActive ? (
+            <Pressable
+              accessibilityLabel={torchOn ? t.scan.torchOff : t.scan.torchOn}
+              accessibilityRole="switch"
+              accessibilityState={{ checked: torchOn }}
+              onPress={() => setTorchOn((value) => !value)}
+              style={[styles.circleButton, torchOn && styles.circleButtonActive]}
+            >
+              <Ionicons color={torchOn ? colors.text : colors.white} name={torchOn ? 'flash' : 'flash-outline'} size={21} />
+            </Pressable>
+          ) : <View style={styles.circlePlaceholder} />}
         </View>
 
         {cameraActive ? (
@@ -323,6 +390,10 @@ export default function ScanScreen() {
             <View style={styles.barcodeState}>
               <Ionicons color={colors.accent} name="barcode-outline" size={30} />
               <Text style={styles.barcodeText}>{barcodeBusy ? t.scan.barcodeOpening : t.scan.barcodeWaiting}</Text>
+              <Pressable accessibilityRole="button" onPress={() => setShowBarcodeEntry(true)} style={styles.barcodeManualButton}>
+                <Ionicons color={colors.white} name="keypad-outline" size={16} />
+                <Text style={styles.barcodeManualText}>{t.scan.barcodeManual}</Text>
+              </Pressable>
             </View>
           ) : (
             <Pressable accessibilityRole="button" onPress={() => setShowDescription(true)} style={styles.describeButton}>
@@ -333,6 +404,35 @@ export default function ScanScreen() {
           <Text style={styles.privacy}>{mode === 'photo' ? t.scan.privacyPhoto : t.scan.privacyOther}</Text>
         </View>
       </SafeAreaView>
+
+      <Modal animationType="fade" onRequestClose={() => setShowBarcodeEntry(false)} transparent visible={showBarcodeEntry}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
+          <View accessibilityViewIsModal style={[styles.barcodeSheet, { paddingBottom: insets.bottom + 20 }]}>
+            <Text accessibilityRole="header" style={styles.describeTitle}>{t.scan.barcodeManualTitle}</Text>
+            <Text style={styles.describeText}>{t.scan.barcodeManualHint}</Text>
+            <TextInput
+              accessibilityLabel={t.scan.barcodeManualTitle}
+              autoFocus
+              keyboardType="number-pad"
+              maxLength={18}
+              onChangeText={setBarcodeEntry}
+              onSubmitEditing={submitBarcodeEntry}
+              placeholder={t.scan.barcodeManualPlaceholder}
+              placeholderTextColor={colors.muted}
+              returnKeyType="done"
+              style={styles.barcodeInput}
+              value={barcodeEntry}
+            />
+            <Pressable accessibilityRole="button" onPress={submitBarcodeEntry} style={styles.describeSubmit}>
+              <Text style={styles.describeSubmitText}>{t.scan.barcodeManualSubmit}</Text>
+              <Ionicons color={colors.white} name="search" size={18} />
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => setShowBarcodeEntry(false)} style={styles.describeCancel}>
+              <Text style={styles.describeCancelText}>{t.common.cancel}</Text>
+            </Pressable>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal animationType="slide" onRequestClose={() => { setShowSearch(false); setMode('photo'); }} transparent visible={showSearch}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
@@ -370,10 +470,10 @@ export default function ScanScreen() {
                   <View style={styles.searchRowCopy}>
                     <Text numberOfLines={2} style={styles.searchRowName}>{result.name}</Text>
                     <Text style={styles.searchRowMeta}>
-                      {result.per100g.calories} kcal {t.scan.searchPer100} · {result.per100g.protein} g {t.common.protein}
+                      {formatNumber(Math.round(result.per100g.calories), locale)} kcal {t.scan.searchPer100} · {formatNumber(Number(result.per100g.protein.toFixed(1)), locale)} g {t.common.protein}
                     </Text>
                   </View>
-                  <Ionicons color={colors.accentDeep} name="add-circle" size={26} />
+                  <Ionicons color={colors.accentText} name="add-circle" size={26} />
                 </Pressable>
               ))}
             </ScrollView>
@@ -451,6 +551,7 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'space-between', pointerEvents: 'box-none' },
   topBar: { height: 66, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   circleButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(17,19,15,0.48)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  circleButtonActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   circlePlaceholder: { width: 42, height: 42 },
   titlePill: { height: 38, borderRadius: 19, backgroundColor: 'rgba(17,19,15,0.58)', paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 7 },
   screenTitle: { color: colors.white, fontSize: 15, fontWeight: '700' },
@@ -478,16 +579,20 @@ const styles = StyleSheet.create({
   smallPlaceholder: { width: 62, height: 46 },
   demoControl: { width: 62, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 3 },
   demoControlText: { color: colors.white, fontSize: 10, fontWeight: '700' },
-  barcodeState: { minHeight: 82, alignItems: 'center', justifyContent: 'center', gap: 7 },
+  barcodeState: { minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: 7 },
   barcodeText: { color: colors.white, fontSize: 12, fontWeight: '700' },
+  barcodeManualButton: { minHeight: 34, borderRadius: radii.pill, borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)', backgroundColor: 'rgba(255,255,255,0.10)', paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  barcodeManualText: { color: colors.white, fontSize: 11, fontWeight: '700' },
   describeButton: { minHeight: 52, borderRadius: radii.pill, backgroundColor: colors.accent, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 8 },
   describeButtonText: { color: colors.text, fontSize: 13, fontWeight: '800' },
   privacy: { color: 'rgba(255,255,255,0.48)', fontSize: 10 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.58)', justifyContent: 'flex-end' },
+  barcodeSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 22, gap: 13 },
+  barcodeInput: { minHeight: 56, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, color: colors.text, fontSize: 20, fontWeight: '700', letterSpacing: 1, paddingHorizontal: 15 },
   searchSheet: { maxHeight: '86%', borderTopLeftRadius: radii.card, borderTopRightRadius: radii.card, backgroundColor: colors.background, paddingHorizontal: 20, paddingTop: 20, gap: 12 },
   searchHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   freePill: { borderRadius: radii.pill, backgroundColor: colors.accentSoft, paddingHorizontal: 10, paddingVertical: 4 },
-  freePillText: { color: colors.accentDeep, fontSize: 11, fontWeight: '800', letterSpacing: 0.4 },
+  freePillText: { color: colors.accentText, fontSize: 11, fontWeight: '800', letterSpacing: 0.4 },
   searchInput: { minHeight: 52, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 17, paddingHorizontal: 16 },
   searchResults: { flexGrow: 0 },
   searchError: { color: colors.attention, fontSize: 14, lineHeight: 21, paddingVertical: 12 },

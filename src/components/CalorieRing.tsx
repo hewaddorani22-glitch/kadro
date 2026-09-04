@@ -33,7 +33,7 @@ export function CalorieRing({
   const remaining = Math.max(0, total - consumed);
   const over = Math.max(0, consumed - total);
   const consumedRatio = Math.min(1, Math.max(0, consumed / safeTotal));
-  const ringColor = over > 0 ? colors.attention : colors.accentDeep;
+  const ringColor = over > 0 ? colors.attention : colors.accentText;
   const statusColor = over > 0 ? colors.attention : colors.success;
   const celebrating = proteinReached && over === 0;
 

@@ -65,6 +65,7 @@ Acceptance criteria:
 - [x] Run the cloud-hydration smoke test in Expo Go and verify the persisted anonymous session after an app restart
 - [x] Add permanent account linking with verified email and password recovery; Apple remains optional after MVP validation
 - [x] Expand the validated bilingual catalog from 45 to 200 meals after live schema and ranking validation
+- [x] Add the complete 7,140-entry bilingual BLS 4.0 food search snapshot with localized German/English names and representative everyday ranking for German, US, UK, Turkish, and Asian foods
 - [ ] RevenueCat subscription and restore flow
   - [x] Expo Go-safe Test Store adapter, Supabase identity, live Offering prices, entitlement check, purchase, cancellation, and restore UI
   - [x] Create RevenueCat project, `kandro_pro` entitlement, current annual/monthly Offering, and run a Test Store purchase/restore smoke test

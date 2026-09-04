@@ -12,6 +12,8 @@ import {
   photoDetectionPrompt,
   isUsableSearchTerm,
   requestedLanguage,
+  getBlsReferenceByCode,
+  searchBlsCatalog,
   searchTermVariants,
   resolveBlsFacts,
   toFoodFacts,
@@ -188,9 +190,41 @@ async function analyzeDescription(input) {
   return resolveDetection(await detectDescription(description, requestedLanguage(input)), 'text');
 }
 
-async function lookupBarcode(barcode) {
+function searchFoods(query, language) {
+  const term = normalizeSearchTerm(query);
+  if (!isUsableSearchTerm(term)) {
+    return { status: 400, body: { code: 'invalid_input', message: 'Query too short.' } };
+  }
+
+  const results = [];
+  const seen = new Set();
+  for (const food of searchBlsCatalog(term, language, 15)) {
+    const meal = getBlsReferenceByCode(food.code);
+    if (seen.has(food.code)) continue;
+    seen.add(food.code);
+    results.push({
+      id: meal ? `bls-${meal.key}` : `bls-${food.code}`,
+      name: language === 'de' ? (meal?.nameDe ?? food.nameDe) : (meal?.nameEn ?? food.nameEn),
+      per100g: meal?.per100g ?? food.per100g,
+      defaultGrams: meal?.defaultGrams ?? 100,
+      portions: meal ? [{ label: language === 'de' ? '1 Portion' : '1 portion', grams: meal.defaultGrams }] : [],
+      source: { provider: 'bls', referenceId: food.code, label: `BLS 4.0 ${food.code}` },
+    });
+    if (results.length >= 15) break;
+  }
+  return { status: 200, body: { query: term, results: results.slice(0, 15) } };
+}
+
+function localizedProductName(product, language) {
+  const ordered = language === 'de'
+    ? [product?.product_name_de, product?.product_name, product?.product_name_en]
+    : [product?.product_name_en, product?.product_name, product?.product_name_de];
+  return ordered.map((value) => (typeof value === 'string' ? value.trim() : '')).find(Boolean) ?? '';
+}
+
+async function lookupBarcode(barcode, language) {
   if (!/^\d{7,14}$/.test(barcode)) return { status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } };
-  const fields = 'code,product_name_de,product_name,nutriments';
+  const fields = 'code,product_name_de,product_name_en,product_name,nutriments,serving_size,serving_quantity';
   const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`, {
     headers: { 'User-Agent': 'Kandro-MVP/1.0' },
   });
@@ -198,6 +232,8 @@ async function lookupBarcode(barcode) {
   const result = await response.json();
   const product = result.product;
   const values = product?.nutriments || {};
+  const name = localizedProductName(product, language);
+  const servingGrams = Math.round(Number(product?.serving_quantity));
   // A zero-calorie product is not a product without data. Diet drinks,
   // sparkling water and sugar-free gum are among the most scanned items, and
   // rejecting them as "missing nutrition" was simply wrong. Presence of the
@@ -220,7 +256,8 @@ async function lookupBarcode(barcode) {
     status: 200,
     body: {
       barcode,
-      name: product?.product_name_de || product?.product_name || 'Verpacktes Lebensmittel',
+      name,
+      nameMissing: !name,
       per100g: {
         calories: Math.round(Number(values['energy-kcal_100g'] || 0)),
         protein: Math.round(Number(values.proteins_100g || 0)),
@@ -228,6 +265,12 @@ async function lookupBarcode(barcode) {
         fat: Math.round(Number(values.fat_100g || 0)),
         fiber: Math.round(Number(values.fiber_100g || 0)),
       },
+      portions: Number.isFinite(servingGrams) && servingGrams >= 1 && servingGrams <= 2000
+        ? [{
+          label: String(product.serving_size || (language === 'de' ? '1 Portion' : '1 serving')).trim().slice(0, 40),
+          grams: servingGrams,
+        }]
+        : [],
       source: { provider: 'open-food-facts', referenceId: barcode, label: `Open Food Facts ${barcode}` },
     },
   };
@@ -247,6 +290,7 @@ const server = createServer(async (request, response) => {
   }
 
   try {
+    const requestUrl = new URL(request.url || '/', 'http://localhost');
     if (request.method === 'POST' && request.url === '/v1/analyze') {
       const result = await analyzeMeal(await readBody(request));
       return json(response, result.status, result.body);
@@ -255,9 +299,13 @@ const server = createServer(async (request, response) => {
       const result = await analyzeDescription(await readBody(request));
       return json(response, result.status, result.body);
     }
-    const barcodeMatch = request.method === 'GET' && request.url?.match(/^\/v1\/barcode\/(\d{7,14})$/);
+    if (request.method === 'GET' && requestUrl.pathname === '/v1/search') {
+      const result = searchFoods(requestUrl.searchParams.get('q') ?? '', requestedLanguage({ language: requestUrl.searchParams.get('language') }));
+      return json(response, result.status, result.body);
+    }
+    const barcodeMatch = request.method === 'GET' && requestUrl.pathname.match(/^\/v1\/barcode\/(\d{7,14})$/);
     if (barcodeMatch) {
-      const result = await lookupBarcode(barcodeMatch[1]);
+      const result = await lookupBarcode(barcodeMatch[1], requestedLanguage({ language: requestUrl.searchParams.get('language') }));
       return json(response, result.status, result.body);
     }
     return json(response, 404, { code: 'not_found', message: 'Route nicht gefunden.' });

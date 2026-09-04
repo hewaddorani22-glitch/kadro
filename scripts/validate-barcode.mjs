@@ -76,6 +76,14 @@ assert.ok(
 const scan = await read('src/app/(tabs)/scan.tsx');
 assert.ok(scan.includes('useLocalSearchParams'), 'the scan screen must honour the requested mode');
 assert.match(scan, /useState\(requestedMode === 'description'\)/, 'the description sheet must already be open on arrival');
+
+// A barcode camera has to remain usable in a dim kitchen and on products that
+// the camera cannot settle on. The second path is also an accessibility and
+// device-compatibility fallback, not merely decoration.
+assert.match(scan, /enableTorch=\{mode === 'barcode' && torchOn\}/, 'barcode mode needs a real torch control');
+assert.match(scan, /barcodeTypes: \[[^\]]*'itf14'[^\]]*'code128'/, 'the scanner must cover common numeric retail formats');
+assert.ok(scan.includes('barcodeManualTitle') && scan.includes('submitBarcodeEntry'), 'a barcode must be enterable by hand');
+assert.match(scan, /\^\\d\{8,14\}\$/, 'manual barcode input must reject incomplete codes');
 // Retrying a barcode the database has never heard of cannot help.
 const actions = analyzing.slice(analyzing.indexOf("analysisError === 'product-not-found'"));
 assert.ok(

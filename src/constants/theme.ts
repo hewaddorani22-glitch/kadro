@@ -1,4 +1,8 @@
-export const colors = {
+import { Appearance } from 'react-native';
+
+export const isDarkMode = Appearance.getColorScheme() === 'dark';
+
+const lightColors = {
   background: '#F5F3EE',
   surface: '#FFFFFF',
   text: '#14150F',
@@ -7,6 +11,7 @@ export const colors = {
   accent: '#BBDC8E',
   accentSoft: '#EFF6E3',
   accentDeep: '#3F5233',
+  accentText: '#3F5233',
   neutralSoft: '#F0EFE9',
   success: '#3F5233',
   successSoft: '#F0F1EC',
@@ -17,6 +22,35 @@ export const colors = {
   cameraSoft: '#25261F',
   white: '#FFFFFF',
 } as const;
+
+const darkColors: { [Key in keyof typeof lightColors]: string } = {
+  background: '#10120E',
+  surface: '#191C16',
+  text: '#F4F3EC',
+  muted: '#A8AA9F',
+  border: '#30342A',
+  accent: '#BBDC8E',
+  accentSoft: '#202A1C',
+  accentDeep: '#3F5233',
+  accentText: '#BBDC8E',
+  neutralSoft: '#22251F',
+  success: '#BBDC8E',
+  successSoft: '#1C281B',
+  attention: '#D7AA56',
+  attentionSoft: '#302719',
+  error: '#E2A16C',
+  camera: '#0C0E0B',
+  cameraSoft: '#171A15',
+  white: '#FFFFFF',
+};
+
+/**
+ * Styles are created once when the app starts, so the system appearance is
+ * resolved once here as well. A cold launch always follows the device theme;
+ * this avoids a second preference switch while keeping every screen on the
+ * same palette.
+ */
+export const colors = isDarkMode ? darkColors : lightColors;
 
 export const radii = {
   card: 18,
@@ -38,8 +72,8 @@ export const spacing = {
 
 export const shadows = {
   scan: {
-    shadowColor: '#14150F',
-    shadowOpacity: 0.08,
+    shadowColor: isDarkMode ? '#000000' : '#14150F',
+    shadowOpacity: isDarkMode ? 0.28 : 0.08,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,

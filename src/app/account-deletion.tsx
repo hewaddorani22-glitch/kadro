@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   warningCopy: { flex: 1, gap: 7 },
   warningTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
   warningText: { color: colors.muted, fontSize: 12, lineHeight: 18 },
-  link: { color: colors.accentDeep, fontSize: 12, fontWeight: '800', textDecorationLine: 'underline' },
+  link: { color: colors.accentText, fontSize: 12, fontWeight: '800', textDecorationLine: 'underline' },
   confirmRow: { minHeight: 74, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 12 },
   checkbox: { width: 24, height: 24, borderRadius: 8, borderWidth: 1, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   checkboxSelected: { backgroundColor: colors.accentDeep, borderColor: colors.accentDeep },

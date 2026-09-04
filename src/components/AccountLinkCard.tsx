@@ -85,7 +85,7 @@ export function AccountLinkCard() {
   if (!account) {
     return (
       <Card style={styles.card}>
-        <ActivityIndicator color={colors.accentDeep} />
+        <ActivityIndicator color={colors.accentText} />
         <Text style={styles.loadingText}>{t.account.loading}</Text>
       </Card>
     );
@@ -123,12 +123,12 @@ export function AccountLinkCard() {
         <AccountHeader icon="shield-checkmark" title={t.account.linkedTitle} />
         <Text style={styles.body}>{t.account.linkedText}</Text>
         <View style={styles.emailPill}>
-          <Ionicons color={colors.accentDeep} name="mail-outline" size={16} />
+          <Ionicons color={colors.accentText} name="mail-outline" size={16} />
           <Text style={styles.emailText}>{account.email}</Text>
         </View>
         <Pressable accessibilityRole="button" accessibilityState={{ expanded: showPassword }} onPress={() => setShowPassword((current) => !current)} style={styles.textButton}>
           <Text style={styles.textButtonLabel}>{showPassword ? t.account.closePassword : t.account.setPassword}</Text>
-          <Ionicons color={colors.accentDeep} name={showPassword ? 'chevron-up' : 'chevron-down'} size={17} />
+          <Ionicons color={colors.accentText} name={showPassword ? 'chevron-up' : 'chevron-down'} size={17} />
         </Pressable>
         {showPassword ? (
           <View style={styles.form}>
@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
   emailText: { flex: 1, color: colors.text, fontSize: 12, fontWeight: '600' },
   textButton: { minHeight: 40, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   centerButton: { minHeight: 36, alignItems: 'center', justifyContent: 'center' },
-  textButtonLabel: { color: colors.accentDeep, fontSize: 12, fontWeight: '700' },
+  textButtonLabel: { color: colors.accentText, fontSize: 12, fontWeight: '700' },
   feedback: { borderRadius: 14, padding: 11, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   errorFeedback: { backgroundColor: colors.attentionSoft },
   successFeedback: { backgroundColor: colors.accentSoft },

@@ -90,7 +90,13 @@ for (const meal of catalogs.de.filter((entry) => entry.context === 'home')) {
 const service = readFileSync(new URL('../src/services/recommendations.ts', import.meta.url), 'utf8');
 const filter = service.slice(service.indexOf('function matchesDietaryConstraints'), service.indexOf('function isQuick'));
 assert.match(filter, /const recipe = recipes\[entry\.id\];/, 'the filter no longer looks at the recipe');
-for (const [preference, set] of [['vegetarian', 'meatIngredients'], ['pork-free', 'porkIngredients'], ['lactose-free', 'lactoseIngredients']]) {
+for (const [preference, set] of [['vegan', 'veganIngredients'], ['vegetarian', 'meatIngredients'], ['pork-free', 'porkIngredients'], ['lactose-free', 'lactoseIngredients']]) {
+  if (preference === 'vegan') {
+    if (!/includes\('vegan'\) && keys\.some\(\(key\) => !veganIngredients\.has\(key\)\)/.test(filter)) {
+      problems.push('recommendations.ts: vegan is not checked against every recipe ingredient');
+    }
+    continue;
+  }
   const pattern = new RegExp(`includes\\('${preference}'\\) && keys\\.some\\(\\(key\\) => ${set}\\.has\\(key\\)\\)`);
   if (!pattern.test(filter)) problems.push(`recommendations.ts: ${preference} is not checked against the ingredient list`);
 }
@@ -137,6 +143,11 @@ const english = await import(`data:text/javascript;charset=utf-8,${encodeURIComp
 
 const byId = Object.fromEntries(catalogs.de.map((meal) => [meal.id, meal]));
 const forbidden = {
+  vegan: (meal) => {
+    const recipe = recipes[meal.id];
+    if (recipe) return recipe.ingredients.some(({ key }) => seen.get(key) !== 'vegan');
+    return !meal.tags.includes('vegan');
+  },
   vegetarian: (meal) => {
     const recipe = recipes[meal.id];
     if (recipe) return recipe.ingredients.some(({ key }) => ['meat', 'fish'].includes(seen.get(key)));
@@ -159,7 +170,8 @@ const forbidden = {
 };
 
 const combinations = [
-  [], ['vegetarian'], ['lactose-free'], ['pork-free'], ['high-protein'], ['quick'],
+  [], ['vegan'], ['vegetarian'], ['lactose-free'], ['pork-free'], ['high-protein'], ['quick'],
+  ['vegan', 'quick'], ['vegan', 'high-protein'],
   ['vegetarian', 'lactose-free'], ['vegetarian', 'pork-free'], ['lactose-free', 'pork-free'],
   ['vegetarian', 'lactose-free', 'pork-free'], ['vegetarian', 'lactose-free', 'quick', 'high-protein'],
 ];
@@ -239,7 +251,7 @@ const pick = (preferences, context = 'home') => {
 
   // Every context must have something to offer for every preference.
   for (const context of ['home', 'supermarket', 'eating-out']) {
-    for (const preference of ['quick', 'high-protein', 'vegetarian']) {
+    for (const preference of ['quick', 'high-protein', 'vegetarian', 'vegan']) {
       const offered = pick([preference], context);
       if (!offered.some((meal) => meal.tags.includes(preference))) {
         problems.push(`${context}: choosing "${preference}" offers nothing tagged ${preference}`);

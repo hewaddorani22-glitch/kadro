@@ -162,6 +162,7 @@ export default function PaywallScreen() {
       >
         <View style={styles.heroMark}><KandroMark size={76} /></View>
         {testStore ? <View style={styles.testBadge}><Text style={styles.testBadgeText}>{t.paywall.testStoreBadge}</Text></View> : null}
+        <Text style={styles.eyebrow}>{t.paywall.eyebrow}</Text>
         <Text style={styles.title}>{headline}</Text>
         <Text style={styles.subtitle}>{subline}</Text>
 
@@ -176,14 +177,14 @@ export default function PaywallScreen() {
         ) : null}
 
         <View style={styles.benefits}>
-          <Benefit label={t.paywall.benefit1} />
-          <Benefit label={t.paywall.benefit2} />
-          <Benefit label={t.paywall.benefit3} />
-          <Benefit label={t.paywall.benefit4} />
+          <Benefit detail={t.paywall.benefit1Detail} icon="scan-outline" title={t.paywall.benefit1} />
+          <Benefit detail={t.paywall.benefit2Detail} icon="navigate-outline" title={t.paywall.benefit2} />
+          <Benefit detail={t.paywall.benefit3Detail} icon="restaurant-outline" title={t.paywall.benefit3} />
+          <Benefit detail={t.paywall.benefit4Detail} icon="stats-chart-outline" title={t.paywall.benefit4} />
         </View>
 
         <View style={styles.keepsCard}>
-          <Ionicons color={colors.accentDeep} name="lock-open-outline" size={17} />
+          <Ionicons color={colors.accentText} name="lock-open-outline" size={17} />
           <Text style={styles.keepsText}>
             {t.paywall.keeps}
           </Text>
@@ -208,7 +209,7 @@ export default function PaywallScreen() {
             selected={selected === 'monthly'}
           />
         </View>
-        {status === 'loading' ? <ActivityIndicator color={colors.accentDeep} style={styles.loader} /> : null}
+        {status === 'loading' ? <ActivityIndicator color={colors.accentText} style={styles.loader} /> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
 
@@ -235,11 +236,15 @@ export default function PaywallScreen() {
   );
 }
 
-function Benefit({ label }: { label: string }) {
+function Benefit({ detail, icon, title }: { detail: string; icon: keyof typeof Ionicons.glyphMap; title: string }) {
   return (
     <View style={styles.benefit}>
-      <View style={styles.benefitCheck}><Ionicons color={colors.text} name="checkmark" size={16} /></View>
-      <Text style={styles.benefitText}>{label}</Text>
+      <View style={styles.benefitIcon}><Ionicons color={colors.accentText} name={icon} size={20} /></View>
+      <View style={styles.benefitCopy}>
+        <Text style={styles.benefitTitle}>{title}</Text>
+        <Text style={styles.benefitDetail}>{detail}</Text>
+      </View>
+      <Ionicons color={colors.success} name="checkmark-circle" size={20} />
     </View>
   );
 }
@@ -272,23 +277,26 @@ const styles = StyleSheet.create({
   heroMark: { width: 104, height: 104, borderRadius: 52, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   testBadge: { backgroundColor: colors.accent, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 5, marginTop: 10 },
   testBadgeText: { color: colors.text, fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
-  title: { color: colors.text, fontSize: 36, lineHeight: 41, fontWeight: '700', letterSpacing: -1.2, textAlign: 'center', marginTop: 20 },
+  eyebrow: { color: colors.accentText, fontSize: 10, fontWeight: '800', letterSpacing: 1.3, marginTop: 16 },
+  title: { color: colors.text, fontSize: 36, lineHeight: 41, fontWeight: '700', letterSpacing: -1.2, textAlign: 'center', marginTop: 7 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 340, marginTop: 10 },
   progressCard: { alignSelf: 'stretch', marginTop: 20, borderRadius: radii.card, backgroundColor: colors.neutralSoft, paddingHorizontal: 14, paddingVertical: 12, gap: 3 },
   progressLabel: { color: colors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
   progressValue: { color: colors.text, fontSize: 13, fontWeight: '700', lineHeight: 18 },
   keepsCard: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 18, borderRadius: radii.card, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent, padding: 13 },
   keepsText: { flex: 1, minWidth: 0, color: colors.text, fontSize: 11, lineHeight: 16 },
-  benefits: { alignSelf: 'stretch', gap: 13, marginTop: 22, paddingHorizontal: 7 },
-  benefit: { flexDirection: 'row', alignItems: 'center', gap: 11 },
-  benefitCheck: { width: 30, height: 30, borderRadius: 12, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
-  benefitText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  benefits: { alignSelf: 'stretch', gap: 9, marginTop: 22 },
+  benefit: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 11, borderRadius: radii.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 13, paddingVertical: 11 },
+  benefitIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  benefitCopy: { flex: 1, minWidth: 0, gap: 3 },
+  benefitTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  benefitDetail: { color: colors.muted, fontSize: 11, lineHeight: 15 },
   plans: { alignSelf: 'stretch', gap: 10, marginTop: 25 },
   planCard: { minHeight: 76, borderRadius: radii.button, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  planCardSelected: { borderColor: colors.accentDeep, backgroundColor: colors.neutralSoft },
+  planCardSelected: { borderColor: colors.accentText, backgroundColor: colors.neutralSoft },
   planCardDisabled: { opacity: 0.45 },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
-  radioSelected: { borderColor: colors.accentDeep },
+  radioSelected: { borderColor: colors.accentText },
   radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.accentDeep },
   planCopy: { flex: 1, minWidth: 0, gap: 4 },
   planLabelRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 7 },
@@ -304,6 +312,6 @@ const styles = StyleSheet.create({
   billing: { color: colors.muted, fontSize: 11, textAlign: 'center' },
   renewal: { color: colors.text, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingHorizontal: 4 },
   legalRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
-  legal: { color: colors.accentDeep, fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' },
+  legal: { color: colors.accentText, fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' },
   legalDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.muted },
 });

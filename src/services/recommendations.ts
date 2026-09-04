@@ -30,6 +30,7 @@ const diet = ingredientDiet as {
 const lactoseIngredients = new Set(diet.lactose);
 const porkIngredients = new Set(diet.pork);
 const meatIngredients = new Set([...diet.diet.meat, ...diet.diet.fish]);
+const veganIngredients = new Set(diet.diet.vegan);
 
 /**
  * The ingredient list, when there is one, beats the description.
@@ -44,12 +45,14 @@ function matchesDietaryConstraints(entry: CatalogEntry, preferences: string[]) {
   const recipe = recipes[entry.id];
   if (recipe) {
     const keys = recipe.ingredients.map((item) => item.key);
+    if (preferences.includes('vegan') && keys.some((key) => !veganIngredients.has(key))) return false;
     if (preferences.includes('vegetarian') && keys.some((key) => meatIngredients.has(key))) return false;
     if (preferences.includes('pork-free') && keys.some((key) => porkIngredients.has(key))) return false;
     if (preferences.includes('lactose-free') && keys.some((key) => lactoseIngredients.has(key))) return false;
     return true;
   }
   const copy = `${entry.title} ${entry.detail}`.replace(negated, ' ');
+  if (preferences.includes('vegan') && !entry.tags.includes('vegan')) return false;
   if (preferences.includes('vegetarian') && !entry.tags.some((tag) => tag === 'vegetarian' || tag === 'vegan')) return false;
   if (preferences.includes('pork-free') && porkWords.test(copy)) return false;
   if (preferences.includes('lactose-free') && lactoseWords.test(copy)) return false;

@@ -6,7 +6,7 @@ import { colors } from '@/constants/theme';
 export function KandroMark({
   dotColor = colors.accent,
   size = 48,
-  strokeColor = colors.accentDeep,
+  strokeColor = colors.accentText,
   style,
 }: {
   dotColor?: string;

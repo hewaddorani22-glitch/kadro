@@ -136,7 +136,7 @@ export function SectionTitle({ children, action }: PropsWithChildren<{ action?: 
   );
 }
 
-export function ProgressBar({ value, color = colors.accentDeep }: { value: number; color?: string }) {
+export function ProgressBar({ value, color = colors.accentText }: { value: number; color?: string }) {
   // A target of zero makes callers hand us 0/0 or x/0. NaN survives min and
   // max and would reach the style as width: "NaN%"; an exceeded target is a
   // full bar, not an empty one.

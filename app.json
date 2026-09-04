@@ -12,7 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#F5F3EE"
     },
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "locales": {
       "en": "./locales/en.json",
       "de": "./locales/de.json"

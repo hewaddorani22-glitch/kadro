@@ -121,7 +121,7 @@ export function PlanBuilder({ profile }: { profile: UserProfile }) {
             cy={SIZE / 2}
             fill="none"
             r={RADIUS}
-            stroke={colors.accentDeep}
+            stroke={colors.accentText}
             strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
             strokeDashoffset={CIRCUMFERENCE * (1 - progress)}
             strokeLinecap="round"

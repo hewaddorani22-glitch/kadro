@@ -11,6 +11,19 @@ import { readFileSync } from 'node:fs';
 const problems = [];
 const scan = readFileSync(new URL('../src/app/(tabs)/scan.tsx', import.meta.url), 'utf8');
 
+// A tab stays mounted. Every fresh visit without an explicit deep-link mode
+// must therefore put the camera back in photo mode instead of preserving a
+// covered search/description state from the previous visit.
+if (!scan.includes('useFocusEffect(useCallback')) {
+  problems.push('the mounted scan tab is not reset when it receives focus again');
+}
+if (!/requestedMode === 'search'[\s\S]+: 'photo'/.test(scan)) {
+  problems.push('a normal meal-slot visit no longer defaults back to photo mode');
+}
+if (!/setShowDescription\(nextMode === 'description'\)/.test(scan) || !/setShowSearch\(nextMode === 'search'\)/.test(scan)) {
+  problems.push('the focus reset can leave a stale full-screen sheet over the camera');
+}
+
 // The reset effect must depend on the camera's existence only.
 const resetMatch = scan.match(/if \(!cameraActive\) setCameraReady\(false\);\s*\n\s*\}, \[([^\]]*)\]\);/);
 if (!resetMatch) {

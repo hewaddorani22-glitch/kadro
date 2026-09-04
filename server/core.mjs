@@ -27,8 +27,12 @@ export {
   BLS_REFERENCE_MEALS,
   BLS_SOURCE,
   getBlsReference,
+  getBlsReferenceByCode,
   resolveBlsFacts,
+  searchBlsReferences,
 } from '../supabase/functions/_shared/bls-reference.mjs';
+
+export { searchBlsCatalog } from '../supabase/functions/_shared/bls-search.mjs';
 
 export {
   descriptionDetectionPrompt,

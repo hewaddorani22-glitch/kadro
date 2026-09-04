@@ -37,7 +37,7 @@ export default function TodayScreen() {
     resetScan();
     // resetScan clears any previous choice, so the slot is set after it.
     if (slot) setPlannedMealType(slot);
-    router.push('/(tabs)/scan');
+    router.navigate('/(tabs)/scan');
   };
 
   /**
@@ -135,14 +135,19 @@ export default function TodayScreen() {
         </Card>
       ) : (
         <Card style={styles.nextCard}>
-          <View style={styles.nextHeader}>
+          <Pressable
+            accessibilityHint={t.today.showIdeas}
+            accessibilityRole="button"
+            onPress={() => router.push('/(tabs)/plan')}
+            style={({ pressed }) => [styles.nextHeader, pressed && styles.nextHeaderPressed]}
+          >
             <IconCircle name="navigate" size={48} />
             <View style={styles.nextHeading}>
               <Eyebrow>{t.today.nextMove}</Eyebrow>
               <Text style={styles.mealMoment}>{hasLoggedScan ? t.today.nextMeal : t.today.firstMeal}</Text>
             </View>
             <Ionicons color={colors.text} name="arrow-forward" size={22} />
-          </View>
+          </Pressable>
           <View style={styles.targetRow}>
             <View style={styles.targetBlock}>
               <Text style={styles.targetLabel}>{t.today.targetRange}</Text>
@@ -275,6 +280,7 @@ const styles = StyleSheet.create({
   dayDoneText: { color: colors.muted, fontSize: 14, lineHeight: 21 },
   nextCard: { backgroundColor: colors.accentSoft, borderColor: colors.accent, gap: 18 },
   nextHeader: { flexDirection: 'row', alignItems: 'center', gap: 13 },
+  nextHeaderPressed: { opacity: 0.68 },
   nextHeading: { flex: 1, gap: 4 },
   mealMoment: { color: colors.text, fontSize: 23, fontWeight: '700' },
   targetRow: { flexDirection: 'row', alignItems: 'center' },

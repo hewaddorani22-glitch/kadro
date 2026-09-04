@@ -10,7 +10,7 @@ An iOS-first nutrition app built with React Native, Expo Router and TypeScript.
 
 1. English-first onboarding with German localization, personalized targets and transparent wellness guardrails
 2. Daily calorie and macro dashboard with an honest empty timeline before the first meal
-3. Full-screen meal camera with real Describe, Barcode, and deterministic demo fallbacks
+3. Full-screen meal camera with real Describe, Barcode, bilingual food search, and deterministic demo fallbacks
 4. Real photo compression plus structured vision analysis through an authenticated server boundary
 5. One-tap `weniger / passt / mehr` portion confirmation plus optional gram-level editing
 6. Animated meal result with confidence and estimated nutrition
@@ -18,7 +18,7 @@ An iOS-first nutrition app built with React Native, Expo Router and TypeScript.
 8. Three deterministic contextual suggestions from a 200-meal bilingual catalog
 9. Real local weight/meal progress, profile and transparent subscription paywall
 
-The demo meal remains available as a deterministic fallback. Real scans use GPT-4.1-mini through OpenRouter or direct OpenAI only for visible-food, preparation, hidden-calorie risk, and portion detection. Nutrition then resolves through a 64-dish German BLS 4.0 reference set, with USDA FoodData Central as the ingredient fallback. Typed meal descriptions use the same structured boundary. The barcode adapter reads packaged-food data from Open Food Facts and starts at 100 g for explicit correction. RevenueCat-backed purchase and restore actions use a non-billing preview until its public SDK keys and offering are configured. Typed integration contracts keep raw provider payloads out of the UI.
+The demo meal remains available as a deterministic fallback. Real scans use GPT-4.1-mini through OpenRouter or direct OpenAI only for visible-food, preparation, hidden-calorie risk, and portion detection. Nutrition then resolves through a 64-dish German BLS 4.0 reference set, with USDA FoodData Central as the ingredient fallback. Free text search uses the complete reviewed BLS 4.0 snapshot of 7,140 foods and prepared dishes with native German and English names; Open Food Facts remains the packaged-product fallback. Typed meal descriptions use the same structured boundary. The barcode adapter reads packaged-food data from Open Food Facts and starts at 100 g for explicit correction. RevenueCat-backed purchase and restore actions use a non-billing preview until its public SDK keys and offering are configured. Typed integration contracts keep raw provider payloads out of the UI.
 
 The first three complete AI analyses are free. Every estimate must be confirmed before it is saved, so the user can correct ingredients and portions. Further analyses require an active `kandro_pro` RevenueCat entitlement; search and the user's existing history remain available.
 
@@ -149,7 +149,7 @@ JavaScript render failures and explicitly handled integration failures use the s
 npm run verify
 ```
 
-The gate includes the original deterministic 30-case Day 4 matrix plus 64 weighed German BLS 4.0 reference meals. This protects source mapping, portion scaling, cache selection and error handling, but it does not replace the pending review of at least 30 weighed real iPhone meal photos. See [docs/ACCURACY.md](./docs/ACCURACY.md).
+The gate includes the original deterministic 30-case Day 4 matrix, 64 weighed German BLS 4.0 reference meals, and bilingual search checks across the complete 7,140-entry BLS snapshot. This protects source mapping, portion scaling, cache selection, localization and error handling, but it does not replace the pending review of at least 30 weighed real iPhone meal photos. See [docs/ACCURACY.md](./docs/ACCURACY.md).
 
 The complete plan audit, including the external TestFlight and legal gates, lives in [docs/PLAN_34_AUDIT.md](./docs/PLAN_34_AUDIT.md).
 

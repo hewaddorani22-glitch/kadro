@@ -181,7 +181,7 @@ export default function PlanScreen() {
               <Text style={styles.resultsTitle}>{t.plan.optionsTitle}</Text>
               <Text style={styles.resultsMeta}>{t.plan.optionsMeta(`${Math.max(300, calorieCenter - 50)}–${calorieCenter + 50}`, `${Math.max(20, proteinCenter - 5)}–${proteinCenter + 5}`)}</Text>
             </View>
-            <Ionicons color={colors.accentDeep} name="checkmark-done" size={24} />
+            <Ionicons color={colors.accentText} name="checkmark-done" size={24} />
           </View>
           )}
 
@@ -219,7 +219,7 @@ export default function PlanScreen() {
                     onPress={() => router.push(`/recipe?id=${suggestion.id}` as never)}
                     style={styles.recipeLink}
                   >
-                    <Ionicons color={colors.accentDeep} name="book-outline" size={18} />
+                    <Ionicons color={colors.accentText} name="book-outline" size={18} />
                     <Text style={styles.recipeLinkText}>{t.recipe.open}</Text>
                     <Ionicons color={colors.muted} name="chevron-forward" size={16} />
                   </Pressable>
@@ -310,14 +310,14 @@ const styles = StyleSheet.create({
   proteinText: { color: colors.accent, fontSize: 11, fontWeight: '700' },
   contextList: { gap: 11 },
   contextCard: { minHeight: 84, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  contextActive: { backgroundColor: colors.neutralSoft, borderColor: colors.accentDeep },
+  contextActive: { backgroundColor: colors.neutralSoft, borderColor: colors.accentText },
   contextCopy: { flex: 1, gap: 4 },
   contextTitle: { color: colors.text, fontSize: 17, fontWeight: '600' },
   contextDetail: { color: colors.muted, fontSize: 13 },
   chevron: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   chevronActive: { backgroundColor: colors.accent },
   recipeLink: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  recipeLinkText: { color: colors.accentDeep, fontSize: 14, fontWeight: '700' },
+  recipeLinkText: { color: colors.accentText, fontSize: 14, fontWeight: '700' },
   dayDone: { alignItems: 'center', gap: 12 },
   dayDoneTitle: { color: colors.text, fontSize: 19, fontWeight: '700' },
   dayDoneText: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center' },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   resultsTitle: { color: colors.text, fontSize: 22, fontWeight: '700', letterSpacing: -0.5 },
   resultsMeta: { color: colors.muted, fontSize: 12, marginTop: 4 },
   suggestion: { gap: 17 },
-  suggestionChosen: { borderColor: colors.accentDeep, backgroundColor: colors.accentSoft },
+  suggestionChosen: { borderColor: colors.accentText, backgroundColor: colors.accentSoft },
   suggestionTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   rank: { width: 34, height: 34, borderRadius: 12, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   rankText: { color: colors.muted, fontSize: 11, fontWeight: '800' },
@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   suggestionTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   suggestionDetail: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   source: { color: colors.muted, fontSize: 9, marginTop: 2 },
-  time: { flexShrink: 0, maxWidth: 92, color: colors.accentDeep, fontSize: 11, fontWeight: '600', textAlign: 'right' },
+  time: { flexShrink: 0, maxWidth: 92, color: colors.accentText, fontSize: 11, fontWeight: '600', textAlign: 'right' },
   nutritionRow: { flexDirection: 'row', backgroundColor: colors.background, borderRadius: 16, paddingVertical: 10 },
   nutritionStat: { flex: 1, alignItems: 'center', gap: 2 },
   nutritionValue: { color: colors.text, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] },
