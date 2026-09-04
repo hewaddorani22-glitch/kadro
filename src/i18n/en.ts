@@ -606,7 +606,7 @@ export const en: typeof de = {
     cheaper: (percent: number) => `${percent}% CHEAPER`,
     yearly: 'Yearly',
     monthly: 'Monthly',
-    yearlyFallback: '€3.33 per month',
+    yearlyFallback: '€4.17 per month',
     monthlyFallback: 'Flexible, cancel any time',
     unavailable: 'Not available',
     trialThen: (trial: string, detail: string) => `${trial} free, then ${detail}`,

@@ -615,7 +615,7 @@ export const de = {
     cheaper: (percent: number) => `${percent} % GÜNSTIGER`,
     yearly: 'Jährlich',
     monthly: 'Monatlich',
-    yearlyFallback: '€3,33 pro Monat',
+    yearlyFallback: '4,17 € pro Monat',
     monthlyFallback: 'Flexibel, jederzeit kündbar',
     unavailable: 'Nicht verfügbar',
     trialThen: (trial: string, detail: string) => `${trial} gratis, dann ${detail}`,

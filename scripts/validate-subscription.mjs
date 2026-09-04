@@ -63,6 +63,20 @@ for (const [label, dict] of [['German', dictDe], ['English', dictEn]]) {
     if (!dict.includes(`${key}:`)) failures.push(`${label} paywall is missing ${key}`);
   }
 }
+
+// Preview copy is shown when the native store cannot be loaded. It must never
+// advertise a monthly equivalent that disagrees with the annual preview price.
+for (const [label, dict, decimalSeparator] of [
+  ['German', dictDe, ','],
+  ['English', dictEn, '.'],
+]) {
+  const annual = dict.match(/previewYearly:\s*['"](?:€)?([0-9]+[.,][0-9]{2})\s*(?:€)?['"]/)?.[1];
+  const monthly = dict.match(/yearlyFallback:\s*['"](?:€)?([0-9]+[.,][0-9]{2})\s*(?:€)?\s+(?:pro Monat|per month)['"]/)?.[1];
+  const parsePrice = (value) => Number(value?.replace(decimalSeparator, '.'));
+  if (!annual || !monthly || Math.abs(parsePrice(annual) / 12 - parsePrice(monthly)) > 0.011) {
+    failures.push(`${label} annual preview and monthly equivalent disagree`);
+  }
+}
 if (/Nur noch|läuft ab in|Angebot endet|letzte Chance|only .* left|offer ends|last chance/i.test(paywall + dictDe + dictEn)) {
   failures.push('the paywall must not use countdowns, scarcity or loss framing');
 }
