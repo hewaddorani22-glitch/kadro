@@ -33,8 +33,7 @@
         "marketingUrl": "https://getkandro.com/en/",
         "supportUrl": "https://getkandro.com/en/support",
         "privacyPolicyUrl": "https://getkandro.com/en/privacy",
-        "privacyChoicesUrl": "https://getkandro.com/en/privacy",
-        "name": "Kandro Macro & Protein Tracker"
+        "privacyChoicesUrl": "https://getkandro.com/en/privacy"
       },
       "de-DE": {
         "title": "Kandro",
@@ -59,8 +58,7 @@
         "marketingUrl": "https://getkandro.com/",
         "supportUrl": "https://getkandro.com/support",
         "privacyPolicyUrl": "https://getkandro.com/privacy",
-        "privacyChoicesUrl": "https://getkandro.com/privacy",
-        "name": "Kandro Makro & Protein Tracker"
+        "privacyChoicesUrl": "https://getkandro.com/privacy"
       }
     },
     "release": {

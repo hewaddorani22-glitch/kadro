@@ -18,6 +18,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "credentialsSource": "remote",
       "environment": "production",
       "env": {
         "EXPO_PUBLIC_LEGAL_PROVIDER_NAME": "Hewad Dorani",
@@ -32,6 +33,7 @@
   "submit": {
     "production": {
       "ios": {
+        "appleTeamId": "85S69CVRAY",
         "ascAppId": "6808622187",
         "metadataPath": "./store.config.json"
       }

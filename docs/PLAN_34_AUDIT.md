@@ -49,7 +49,7 @@ Der Anhang enthält einen unnummerierten Produktkern und 33 nummerierte Abschnit
 | 30 | TikTok-Slideshow | Marketingarbeit | Konzept im Plan, bewusst kein Bestandteil des MVP-Codes. |
 | 31 | „Log → adaptieren“ | Fertig | Tonalität und Berechnung bestrafen nicht; sie leiten zur nächsten sinnvollen Entscheidung. |
 | 32 | Späterer Moat | Fundament fertig, Lernen später | Korrekturen, Impressions und Accepted/Rejected-Feedback werden strukturiert gespeichert. Ein lernender Preference Graph ist laut Plan spätere Arbeit. |
-| 33 | Vier-Tage-Build-Plan | Teilweise extern blockiert | Tag 1–3 sind im lokalen/Test-Store-Umfang fertig. Tag 4 ist im Code fertig, aber die unten aufgeführten nativen, rechtlichen und Veröffentlichungsnachweise fehlen. |
+| 33 | Vier-Tage-Build-Plan | Teilweise nativ offen | Tag 1–3 sind fertig. Tag 4 ist im Code fertig, der signierte App-Store-Build `1.0.0 (4)` ist erstellt und der TestFlight-Upload läuft; physische Tests, Screenshots und die privaten Apple-Geschäftsangaben bleiben offen. |
 
 ## Die vier Tage
 
@@ -65,7 +65,7 @@ Fertig: Kamera, lokale Bildkompression, Modell-Erkennung, USDA, Open Food Facts,
 
 Fertig: Restwerte, persönliche Ziele/Vorlieben, echte Mahlzeitenhistorie, drei strukturierte kontextbezogene Vorschläge, Supabase Auth/RLS/Sync, RevenueCat Test Store und PostHog EU Opt-in.
 
-Noch nativ: StoreKit-Produkte, Sentry-Crashreporting und zugehörige Tests im Development-/TestFlight-Build.
+Noch nativ: StoreKit-Sandboxkauf/-wiederherstellung, Sentry-Crashreporting und zugehörige Tests im TestFlight-Build. Die echten Monats- und Jahresprodukte sowie das RevenueCat-Offering sind eingerichtet.
 
 ### Tag 4 – Launch Quality
 
@@ -83,9 +83,9 @@ Vor einer externen Beta zwingend offen:
 
 1. mindestens 30 echte iPhone-Mahlzeiten manuell gegen Zutaten und Portionen prüfen;
 2. VoiceOver, Dynamic Type, Kontrast, Kamera-Berechtigung und Offline-Retry auf einem physischen iPhone prüfen;
-3. Freigabe der bereits bezahlten Apple-Developer-Mitgliedschaft, App-Store-Connect-Zugang, echte Abo-Produkte und nativer StoreKit-Test;
-4. nach Apples Identitätsprüfung: signierter Build, echte App-Store-Screenshots und TestFlight-Upload; Expo/EAS ist bereits als `@hewad/kandro` verknüpft;
-5. rechtliche Anbieter-/Verantwortlichen-Daten, Kontaktkanal, Aufbewahrungsfristen und finale Prüfung;
+3. nativer StoreKit-Sandboxkauf, Abbruch, Entitlement-Refresh und Wiederherstellung im TestFlight-Build;
+4. TestFlight-Verarbeitung abschließen, echte App-Store-Screenshots aus genau diesem Build aufnehmen und beide Abo-Review-Screenshots ergänzen;
+5. DSA-Händlerbestätigung, Bankkonto und US-Steuerfragebogen mit den privaten Angaben des Account Holders abschließen;
 6. Sentry nativ mit DSN, Source Maps und Test-Crash aktivieren;
 7. Landingpage erst nach fertigen Rechtsangaben öffentlich schalten.
 
