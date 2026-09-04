@@ -1,6 +1,6 @@
 # App Store and TestFlight handoff
 
-This file is the source of truth for Kandro's first iOS release. English is the primary App Store localization; German is provided as an additional localization. Build-specific fields remain open until Apple activates the Developer Program membership and the native subscriptions exist.
+This file is the source of truth for Kandro's first iOS release. English is the primary App Store localization; German is provided as an additional localization. Apple activated the Developer Program membership on 4 September 2026; build-specific fields remain open until the native subscriptions and first TestFlight build exist.
 
 ## Product metadata (English — primary)
 
@@ -13,6 +13,7 @@ This file is the source of truth for Kandro's first iOS release. English is the 
 - **Copyright:** `2026 Hewad Dorani`
 - **Support URL:** `https://getkandro.com/en/support`
 - **Privacy Policy URL:** `https://getkandro.com/en/privacy`
+- **Age rating:** answer the current App Store Connect questionnaire with no objectionable-content descriptors, then override to **18+** because Kandro's EULA and onboarding are restricted to adults. Do not push the legacy EAS Metadata `SEVENTEEN_PLUS` advisory.
 
 ### Promotional text
 
@@ -22,7 +23,7 @@ Snap what you ate. Confirm the estimate and know what fits next. Kandro re-plans
 
 Kandro is not another food diary. It helps you make the next practical decision after every meal.
 
-So funktioniert es:
+How it works:
 
 - Photograph or describe a meal, scan a barcode, or search for a food.
 - Review every detected ingredient and adjust the portion before saving.
@@ -64,16 +65,15 @@ Capture native screenshots from the production/TestFlight build, not the web pre
 
 1. [x] Sign in to Expo and link the EAS project `@hewad/kandro`.
 2. [x] Add the public Supabase production values in EAS and keep the local gateway override absent. AI/USDA secrets are live behind the authenticated Supabase gateway, never in the iOS bundle.
-3. Create the App Store Connect app record for bundle ID `com.hewaddorani.kandro`.
-4. Create annual and monthly auto-renewable subscriptions, connect them to RevenueCat's `kandro_pro` entitlement, and add the public iOS RevenueCat SDK key to the production EAS environment.
+3. Create the App Store Connect app record for bundle ID `com.hewaddorani.kandro`. Store metadata is versioned in `store.config.json`; review-contact details, subscription metadata, privacy nutrition labels, regulated-medical-device status, DSA trader details, and screenshots remain dashboard-only checks.
+4. Create `com.hewaddorani.kandro.pro.monthly` and `com.hewaddorani.kandro.pro.annual` as auto-renewable subscriptions, connect them to RevenueCat's `kandro_pro` entitlement, and add the public iOS RevenueCat SDK key to the production EAS environment.
 5. Build with the checked-in `production` profile and submit to TestFlight.
 6. Run a sandbox purchase, cancellation, entitlement refresh, and restore on a physical iPhone.
 7. Test camera permission denied/granted, no network queue/retry, account linking, consent, analytics opt-out, and live account deletion in that exact build.
 8. Capture the six final screenshots only after the build passes.
 
-## What remains after Apple enrollment
+## Remaining native evidence
 
-- Apple Developer Program activation is pending Apple's identity review. The signed bundle ID, App Store record, subscriptions, and TestFlight upload remain unavailable until Apple approves the paid enrollment.
 - Native StoreKit sandbox test and App Store subscription metadata/review screenshots.
 - At least 30 real iPhone meal-photo results reviewed against the confirmed food and portion, including poor light, blur, partial plates, multiple dishes, and offline retry.
 - Native accessibility pass with VoiceOver, Dynamic Type, Reduce Motion, and contrast on a physical iPhone.

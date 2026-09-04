@@ -23,8 +23,8 @@ Test account: none required; Kandro creates an anonymous Supabase session only a
 
 Subscription products submitted with this version:
 
-- `[monthly product ID]`
-- `[annual product ID]`
+- `com.hewaddorani.kandro.pro.monthly`
+- `com.hewaddorani.kandro.pro.annual`
 - Entitlement: `kandro_pro`
 
 For review, use the App Store sandbox purchase sheet. If analysis is temporarily unavailable, the deterministic **Example meal** remains available, but the production endpoint is expected to be live during review.
