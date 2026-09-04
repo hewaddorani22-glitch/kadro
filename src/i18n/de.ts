@@ -125,6 +125,7 @@ export const de = {
     heightSubtitle: 'Ungefähre Angaben reichen völlig.',
     weightTitle: 'Was wiegst du aktuell?',
     weightSubtitle: 'Kein Urteil. Nur ein Startpunkt, der sich mitbewegt.',
+    adjustHint: 'Tippen zum Anpassen · gedrückt halten für größere Schritte',
     activityTitle: 'Wie aktiv bist du?',
     activitySubtitle: 'Denk an eine durchschnittliche Woche, nicht an deine beste.',
     preferencesTitle: 'Wie möchtest du essen?',

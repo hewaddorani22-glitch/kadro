@@ -129,7 +129,6 @@ export default function OnboardingScreen() {
   const [guardianEmail, setGuardianEmail] = useState('');
   const [guardianRequestSent, setGuardianRequestSent] = useState(false);
   const [skippedAnything, setSkippedAnything] = useState(false);
-  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const goalRef = useRef(goal);
   goalRef.current = goal;
   const ageRef = useRef(age);
@@ -137,26 +136,17 @@ export default function OnboardingScreen() {
 
   const step = steps[stepIndex];
 
-  const clearAdvance = useCallback(() => {
-    if (advanceTimer.current) clearTimeout(advanceTimer.current);
-    advanceTimer.current = null;
-  }, []);
-
-  useEffect(() => clearAdvance, [clearAdvance]);
-
   const goNext = useCallback(() => {
-    clearAdvance();
     setStepIndex((current) => {
       let next = Math.min(steps.length - 1, current + 1);
       // Holding weight has no rate to choose.
       if (steps[next] === 'rate' && (goalRef.current === 'maintain' || ageRef.current < 18)) next += 1;
       return Math.min(steps.length - 1, next);
     });
-  }, [clearAdvance, steps]);
+  }, [steps]);
 
   const goBack = () => {
     void Haptics.selectionAsync();
-    clearAdvance();
     setStepIndex((current) => {
       let previous = Math.max(0, current - 1);
       if (steps[previous] === 'rate' && (goalRef.current === 'maintain' || ageRef.current < 18)) previous -= 1;
@@ -164,13 +154,12 @@ export default function OnboardingScreen() {
     });
   };
 
-  // Single-choice steps move on by themselves. The short delay lets the user
-  // see their answer land before the screen changes.
-  const selectAndAdvance = (apply: () => void) => {
+  // A selection stays on screen until the user explicitly confirms it with
+  // Next. Auto-advancing made a stray tap feel irreversible and prevented a
+  // final visual check of the selected answer.
+  const selectChoice = (apply: () => void) => {
     void Haptics.selectionAsync();
     apply();
-    clearAdvance();
-    advanceTimer.current = setTimeout(goNext, 220);
   };
 
   const skipStep = () => {
@@ -283,7 +272,7 @@ export default function OnboardingScreen() {
     goNext();
   };
 
-  const showFooterButton = step !== 'building' && !isChoiceStep(step);
+  const showFooterButton = step !== 'building';
   const footerLabel = step === 'plan' ? (editing ? t.onboarding.saveChanges : t.onboarding.scanFirstMeal) : t.common.next;
 
   return (
@@ -331,7 +320,7 @@ export default function OnboardingScreen() {
 
           <View style={styles.body}>
             {step === 'goal' ? (
-              <ChoiceList choices={goalChoices} onSelect={(value) => selectAndAdvance(() => setGoal(value))} selected={goal} values={['lose', 'maintain', 'gain'] as NutritionGoal[]} />
+              <ChoiceList choices={goalChoices} onSelect={(value) => selectChoice(() => setGoal(value))} selected={goal} values={['lose', 'maintain', 'gain'] as NutritionGoal[]} />
             ) : null}
 
             {step === 'rate' ? (
@@ -353,7 +342,7 @@ export default function OnboardingScreen() {
                       accessibilityRole="radio"
                       accessibilityState={{ selected: active }}
                       key={rate}
-                      onPress={() => selectAndAdvance(() => setWeeklyRate(rate))}
+                      onPress={() => selectChoice(() => setWeeklyRate(rate))}
                       style={({ pressed }) => [styles.choice, active && styles.choiceActive, pressed && styles.choicePressed]}
                     >
                       <View style={[styles.choiceIcon, active && styles.choiceIconActive]}>
@@ -402,7 +391,7 @@ export default function OnboardingScreen() {
             {step === 'sex' ? (
               <ChoiceList
                 choices={sexChoices}
-                onSelect={(value) => selectAndAdvance(() => setSex(value))}
+                onSelect={(value) => selectChoice(() => setSex(value))}
                 selected={sex}
                 values={BIOLOGICAL_SEXES}
               />
@@ -454,7 +443,7 @@ export default function OnboardingScreen() {
             ) : null}
 
             {step === 'activity' ? (
-              <ChoiceList choices={activityChoices} onSelect={(value) => selectAndAdvance(() => setActivity(value))} selected={activity} values={['low', 'light', 'high'] as UserProfile['activityLevel'][]} />
+              <ChoiceList choices={activityChoices} onSelect={(value) => selectChoice(() => setActivity(value))} selected={activity} values={['low', 'light', 'high'] as UserProfile['activityLevel'][]} />
             ) : null}
 
             {step === 'preferences' ? (
@@ -555,10 +544,6 @@ export default function OnboardingScreen() {
       </Modal>
     </SafeAreaView>
   );
-}
-
-function isChoiceStep(step: StepId) {
-  return step === 'goal' || step === 'rate' || step === 'activity';
 }
 
 function ChoiceList<T extends string>({ choices, onSelect, selected, values }: { choices: Choice[]; onSelect: (choice: T) => void; selected: T; values: T[] }) {
@@ -669,14 +654,17 @@ function NumberStep({ format, max, min, onChange, step, unit, value }: { format?
 
   return (
     <View style={styles.numberStep}>
-      <StepperButton icon="remove" label={t.common.decreaseUnit(unit)} onPressIn={() => start(-1)} onPressOut={stop} />
       <View style={styles.numberCenter}>
         <View style={styles.numberRow}>
           <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.number, numberSize(display)]}>{display}</Text>
           {unit ? <Text style={styles.numberUnit}>{unit}</Text> : null}
         </View>
       </View>
-      <StepperButton icon="add" label={t.common.increaseUnit(unit)} onPressIn={() => start(1)} onPressOut={stop} />
+      <Text style={styles.adjustHint}>{t.onboarding.adjustHint}</Text>
+      <View style={styles.numberControls}>
+        <StepperButton icon="remove" label={t.common.decreaseUnit(unit)} onPressIn={() => start(-1)} onPressOut={stop} />
+        <StepperButton icon="add" label={t.common.increaseUnit(unit)} onPressIn={() => start(1)} onPressOut={stop} />
+      </View>
     </View>
   );
 }
@@ -688,9 +676,9 @@ function NumberStep({ format, max, min, onChange, step, unit, value }: { format?
  * everywhere.
  */
 function numberSize(display: string) {
-  if (display.length <= 3) return { fontSize: 76, lineHeight: 86 };
-  if (display.length <= 6) return { fontSize: 52, lineHeight: 62 };
-  return { fontSize: 34, lineHeight: 42 };
+  if (display.length <= 3) return { fontSize: 100, lineHeight: 112 };
+  if (display.length <= 6) return { fontSize: 70, lineHeight: 80 };
+  return { fontSize: 46, lineHeight: 56 };
 }
 
 function StepperButton({ icon, label, onPressIn, onPressOut }: { icon: 'add' | 'remove'; label: string; onPressIn: () => void; onPressOut: () => void }) {
@@ -783,26 +771,28 @@ const styles = StyleSheet.create({
   choiceDetail: { color: colors.muted, fontSize: 13 },
   nameField: { gap: 7 },
   nameInput: { minHeight: 64, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 22, fontWeight: '600', paddingHorizontal: 18 },
-  numberStep: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  numberStep: { width: '100%', alignItems: 'center', justifyContent: 'center', gap: 14, paddingVertical: 24 },
   // 'stretch', not 'center': centring shrank the stepper to its content width,
   // and its space-between then pressed the number flat against the − and +
   // circles with no gap at all.
-  unitStep: { flex: 1, justifyContent: 'space-between', paddingBottom: 24 },
+  unitStep: { flex: 1, gap: 18, paddingBottom: 10 },
   rateStep: { gap: 22 },
   unitToggle: { flexDirection: 'row', gap: 8, alignSelf: 'stretch' },
-  unitStepValue: { flex: 1, justifyContent: 'center' },
+  unitStepValue: { flex: 1, minHeight: 292, justifyContent: 'center', borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 18 },
   unitOption: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   unitOptionActive: { borderColor: colors.accentDeep, backgroundColor: colors.accent },
   unitLabel: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   unitLabelActive: { color: colors.text },
-  numberButton: { width: 64, height: 64, borderRadius: 32, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
+  numberControls: { width: '100%', flexDirection: 'row', justifyContent: 'center', gap: 14 },
+  numberButton: { flex: 1, maxWidth: 240, height: 72, borderRadius: 24, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   numberButtonPressed: { backgroundColor: colors.neutralSoft, transform: [{ scale: 0.94 }] },
-  numberCenter: { flex: 1, minWidth: 0, alignItems: 'center', paddingHorizontal: 12 },
-  number: { color: colors.text, fontSize: 76, lineHeight: 86, fontWeight: '700', letterSpacing: -2.5, fontVariant: ['tabular-nums'] },
+  numberCenter: { width: '100%', minHeight: 112, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  number: { color: colors.text, fontSize: 100, lineHeight: 112, fontWeight: '700', letterSpacing: -3, fontVariant: ['tabular-nums'] },
   // Beside the value, on its baseline: underneath it read as a caption, and
   // people reported not seeing the unit at all.
   numberRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 6 },
-  numberUnit: { color: colors.muted, fontSize: 20, fontWeight: '700' },
+  numberUnit: { color: colors.muted, fontSize: 30, fontWeight: '700' },
+  adjustHint: { color: colors.muted, fontSize: 13, lineHeight: 18, textAlign: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   chip: { minHeight: 52, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 6 },
   chipSelected: { backgroundColor: colors.accent, borderColor: colors.accent },

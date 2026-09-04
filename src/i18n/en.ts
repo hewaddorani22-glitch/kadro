@@ -124,6 +124,7 @@ export const en: typeof de = {
     heightSubtitle: 'A rough figure is plenty.',
     weightTitle: 'What do you weigh right now?',
     weightSubtitle: 'No judgement. Just a starting point that moves with you.',
+    adjustHint: 'Tap to adjust · hold for faster changes',
     activityTitle: 'How active are you?',
     activitySubtitle: 'Think of an average week, not your best one.',
     preferencesTitle: 'How do you like to eat?',

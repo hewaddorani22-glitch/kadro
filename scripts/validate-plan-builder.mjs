@@ -95,7 +95,7 @@ assert.match(read('src/components/PlanBuilder.tsx'), /Haptics\.impactAsync/,
 // Every place in the onboarding where a finger does something.
 for (const [label, pattern] of [
   ['skipping a step', /const skipStep = \(\) => \{\s*\n\s*void Haptics\.selectionAsync\(\);/],
-  ['choosing an answer', /const selectAndAdvance = [^;]*?\{\s*\n\s*void Haptics\.selectionAsync\(\);/s],
+  ['choosing an answer', /const selectChoice = [^;]*?\{\s*\n\s*void Haptics\.selectionAsync\(\);/s],
   ['going back', /const goBack = \(\) => \{\s*\n\s*void Haptics\.selectionAsync\(\);/],
   ['switching units', /onChange\(system\);/],
   ['accepting consent', /NotificationFeedbackType\.Success/],
@@ -103,5 +103,19 @@ for (const [label, pattern] of [
 ]) {
   assert.match(onboarding, pattern, `${label} gives no feedback`);
 }
+
+// A choice must remain visible until Next is pressed. This is a confirmation
+// boundary, not a slideshow: an accidental answer cannot take the user away.
+assert.doesNotMatch(onboarding, /selectAndAdvance|setTimeout\(goNext/,
+  'a single-choice answer still advances the onboarding automatically');
+assert.match(onboarding, /const showFooterButton = step !== 'building';/,
+  'single-choice steps must show the same explicit Next button as numeric steps');
+
+// Measurements are the only dense controls in onboarding. The value needs a
+// full-width card and a genuinely large primary number on a real iPhone.
+assert.match(onboarding, /if \(display\.length <= 3\) return \{ fontSize: 100, lineHeight: 112 \}/,
+  'height and weight values are too small to be the focus of the step');
+assert.match(onboarding, /unitStepValue: \{[^}]*minHeight: 292[^}]*backgroundColor: colors\.surface/s,
+  'measurement controls need a distinct, touchable visual region');
 
 console.log('Plan builder: the count reaches every value and ends on the target, and the taps are felt.');
