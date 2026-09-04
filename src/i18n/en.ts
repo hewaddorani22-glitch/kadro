@@ -584,8 +584,8 @@ export const en: typeof de = {
     confirmYes: 'Yes, remove it',
   },
   paywall: {
-    previewYearly: '€39.99',
-    previewMonthly: '€9.99',
+    previewYearly: '€49.99',
+    previewMonthly: '€7.99',
     close: 'Close paywall',
     restore: 'Restore',
     blockedHeadline: (count: number) => `Your ${count} meals are logged.`,

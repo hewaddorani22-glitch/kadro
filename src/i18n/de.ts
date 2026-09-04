@@ -593,8 +593,8 @@ export const de = {
     confirmYes: 'Ja, entfernen',
   },
   paywall: {
-    previewYearly: '39,99 €',
-    previewMonthly: '9,99 €',
+    previewYearly: '49,99 €',
+    previewMonthly: '7,99 €',
     close: 'Paywall schließen',
     restore: 'Wiederherstellen',
     blockedHeadline: (count: number) => `Deine ${count} Mahlzeiten sind erfasst.`,
