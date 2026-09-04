@@ -193,3 +193,6 @@ export async function clearRemindersAfterAccountDeletion() {
   ]);
   await AsyncStorage.multiRemove([REMINDER_KEY, OFFER_SEEN_KEY]);
 }
+
+/** Account-scoped reminder choices must not cross into a restored account. */
+export const clearRemindersForAccountSwitch = clearRemindersAfterAccountDeletion;

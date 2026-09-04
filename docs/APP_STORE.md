@@ -1,10 +1,10 @@
 # App Store and TestFlight handoff
 
-This file is the source of truth for Kandro's first iOS release. English is the primary App Store localization; German is provided as an additional localization. Apple activated the Developer Program membership on 4 September 2026. The signed App Store build `1.0.0 (4)` completed successfully that day and its TestFlight upload is tracked as EAS submission `125e6a99-7409-4796-bcdd-024d350a7a2d`. Nothing has been submitted to App Review.
+This file is the source of truth for Kandro's first iOS release. English is the primary App Store localization; German is provided as an additional localization. Apple activated the Developer Program membership on 4 September 2026. Signed TestFlight builds 4 and 5 were processed, but neither contains the final audited source. Nothing has been submitted to App Review and neither build may be treated as release evidence for the current source.
 
 ## Product metadata (English — primary)
 
-- **Name:** Kandro
+- **Name:** Kandro Macro & Protein Tracker
 - **Subtitle:** Know what to eat next
 - **Primary category:** Health & Fitness
 - **Bundle ID:** `com.hewaddorani.kandro`
@@ -52,16 +52,15 @@ Meet Kandro: meal photo, description, barcode and food search; ingredient and po
 - **Privacy Policy URL:** `https://getkandro.com/privacy`
 - Use the German description from `store.config.json`, with the same 14+, guardian, growth-safe estimate and non-medical disclosures as the English description.
 
-## Screenshot storyboard
+## Screenshot package
 
-Capture native screenshots from the production/TestFlight build, not the web preview. Use one accepted 6.9-inch portrait size, preferably `1320 × 2868` px with no alpha channel. Keep real status bars and avoid personal email addresses or account identifiers.
+The repository contains five English and five German 6.9-inch portrait assets at `1320 × 2868` px. Before submission, compare every depicted control and claim to the exact final native build; replace any screen that no longer matches. Keep personal email addresses and account identifiers out of all assets.
 
-1. **Heute:** headline `Dein Tag. Sofort im Blick.` with calories remaining, macros, and Next Move.
-2. **Scan:** headline `Foto, Text oder Barcode.` with a real plate fully visible and the three honest input modes.
-3. **Bestätigen:** headline `Du behältst die Kontrolle.` with detected ingredients and the portion selector.
-4. **Ergebnis:** headline `Schätzung statt Scheingenauigkeit.` with confidence and source labels.
-5. **Plan:** headline `Drei Ideen, die jetzt passen.` with exactly three contextual recommendations.
-6. **Account:** headline `Deine Daten, deine Entscheidung.` with account security, analytics opt-out, privacy, and deletion entry.
+1. Daily calorie/protein target and next move.
+2. Reviewable photo analysis and editable portions.
+3. Three adaptive next-meal options.
+4. Fast database/barcode/search logging.
+5. Fully specified recipe/ingredient view.
 
 ## Native TestFlight gate
 
@@ -69,19 +68,20 @@ Capture native screenshots from the production/TestFlight build, not the web pre
 2. [x] Add the public Supabase production values in EAS and keep the local gateway override absent. AI/USDA secrets are live behind the authenticated Supabase gateway, never in the iOS bundle.
 3. [x] Create the App Store Connect app record for bundle ID `com.hewaddorani.kandro`. Store metadata is versioned in `store.config.json`; review-contact details, subscription metadata, privacy nutrition labels, regulated-medical-device status, DSA trader details, and screenshots remain dashboard-only checks.
 4. [x] Create `com.hewaddorani.kandro.pro.monthly` and `com.hewaddorani.kandro.pro.annual` as auto-renewable subscriptions, connect them to RevenueCat's `kandro_pro` entitlement, and add the public iOS RevenueCat SDK key to the production EAS environment.
-5. [ ] Build with the checked-in `production` profile and submit to TestFlight. Build `1.0.0 (4)` is complete; the TestFlight upload is queued at EAS.
-6. Run a sandbox purchase, cancellation, entitlement refresh, and restore on a physical iPhone.
-7. Test camera permission denied/granted, no network queue/retry, account linking, consent, analytics opt-out, and live account deletion in that exact build.
-8. Capture the six final screenshots only after the build passes.
+5. [x] Historical builds 4 and 5 reached TestFlight. [ ] Create a fresh production build from the final audited commit without submitting it to App Review.
+6. Deploy the reviewed server-authoritative analysis/entitlement and privacy-remediation migrations/functions before treating the fresh build as a release candidate.
+7. For this loginless App Review flow, set RevenueCat **Sandbox Testing Access** to `Anybody`: the reviewer receives a fresh anonymous Supabase UUID that cannot be pre-allowlisted. Then run Apple-sandbox purchase, cancellation, server entitlement refresh, expiry/refund, pending and restore on a physical iPhone. The server must still accept only `store=app_store` plus the exact internal iOS app, product and entitlement IDs. Expo Go/RevenueCat Test Store (`rc_billing`) is UI simulation only and must remain unable to unlock hosted Pro.
+8. Test camera permission denied/granted, network failure/retry, account linking, consent, analytics opt-out and live account deletion in that exact build.
+9. Compare and, if needed, regenerate all five localized screenshot pairs only after that build passes.
 
 ## Remaining native evidence
 
-- Complete the queued TestFlight upload and Apple's processing, then add the Account Holder to an internal testing group.
+- Create and process a fresh TestFlight candidate from the final audited commit; builds 4 and 5 are historical only.
 - Native StoreKit sandbox test and App Store subscription metadata/review screenshots.
 - At least 30 real iPhone meal-photo results reviewed against the confirmed food and portion, including poor light, blur, partial plates, multiple dishes, and offline retry.
 - Native accessibility pass with VoiceOver, Dynamic Type, Reduce Motion, and contrast on a physical iPhone.
 - Finish the DSA trader verification code, bank account and US tax questionnaire. These require the account holder's private verification/financial answers.
-- Capture and upload the final native screenshots, select the processed build and both subscriptions, then stop for the account holder's final inspection before App Review.
+- Reconfirm the five localized screenshot pairs against the final binary, select the processed build and both subscriptions, then stop for the account holder's final inspection before App Review.
 
 ## Anbieter- und URL-Angaben
 

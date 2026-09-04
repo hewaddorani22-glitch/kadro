@@ -32,6 +32,7 @@ yarn-error.*
 
 # macOS
 .DS_Store
+*.icloud
 *.pem
 
 # local env files
@@ -47,3 +48,9 @@ yarn-error.*
 
 # Secrets for the hosted analysis gateway
 supabase/.env.gateway
+
+# Local App Review credentials and private release notes
+release/app-store-audit/private/
+
+# Local audit scratch renders; never include them in release commits
+/tmp/

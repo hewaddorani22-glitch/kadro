@@ -37,19 +37,28 @@ const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { profile, setUnitSystem, targets, userName } = useApp();
+  const { hydrationReady, profile, setUnitSystem, targets, userName } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const { language, locale, setLanguage, t } = useLanguage();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(false);
-  const isMinor = profile.age < 18;
+  const analyticsEligible = hydrationReady && Boolean(profile.completedAt) && profile.age >= 18;
+  const isMinor = !analyticsEligible;
   const reminderTime = `${String(REMINDER_HOUR).padStart(2, '0')}:${String(REMINDER_MINUTE).padStart(2, '0')}`;
 
   useEffect(() => {
+    if (!hydrationReady) return;
     let active = true;
     void getAnalyticsCollectionEnabled().then((enabled) => {
       if (active) setAnalyticsEnabled(enabled);
     });
+    return () => {
+      active = false;
+    };
+  }, [hydrationReady, profile.age, profile.completedAt]);
+
+  useEffect(() => {
+    let active = true;
     void isEveningReminderEnabled().then((enabled) => {
       if (active) setReminderEnabled(enabled);
     });
@@ -59,9 +68,9 @@ export default function ProfileScreen() {
   }, []);
 
   useEffect(() => {
-    if (!isMinor) return;
+    if (!hydrationReady || analyticsEligible) return;
     void setAnalyticsCollectionEnabled(false).then(() => setAnalyticsEnabled(false));
-  }, [isMinor]);
+  }, [analyticsEligible, hydrationReady]);
 
   const updateAnalytics = async (enabled: boolean) => {
     setAnalyticsEnabled(await setAnalyticsCollectionEnabled(enabled));
@@ -158,7 +167,7 @@ export default function ProfileScreen() {
               : isTelemetryConfigured
                 ? t.profile.analyticsOn
                 : t.profile.analyticsOff}
-            disabled={isMinor || !isTelemetryConfigured}
+            disabled={!analyticsEligible || !isTelemetryConfigured}
             icon="analytics-outline"
             label={t.profile.analytics}
             onValueChange={(enabled) => void updateAnalytics(enabled)}

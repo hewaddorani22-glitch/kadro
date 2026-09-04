@@ -15,7 +15,7 @@ export type MealAnalysisResult = {
   warnings: string[];
 };
 
-export type AnalysisErrorKind = 'not-configured' | 'consent-required' | 'invalid-input' | 'offline' | 'unclear-image' | 'multiple-dishes' | 'product-not-found' | 'provider-error';
+export type AnalysisErrorKind = 'not-configured' | 'consent-required' | 'subscription-required' | 'daily-limit' | 'invalid-input' | 'request-expired' | 'offline' | 'unclear-image' | 'multiple-dishes' | 'product-not-found' | 'provider-error';
 
 export type PendingAnalysis = MealAnalysisInput & {
   id: string;

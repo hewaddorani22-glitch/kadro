@@ -1,0 +1,194 @@
+BUILD 7 SIGNED IPA ARCHIVE INSPECTION
+=====================================
+
+Scope
+-----
+EAS build ID: 420935a7-2aed-43e1-9daf-cb53f306a549
+Build page: https://expo.dev/accounts/hewad/projects/kandro/builds/420935a7-2aed-43e1-9daf-cb53f306a549
+EAS status: FINISHED
+Distribution: STORE
+Profile: production
+Submission performed by this audit: NO
+
+Artifact integrity
+------------------
+Downloaded bytes: 18,304,334
+SHA-256: c027a4957b148a846c7a5faf434afa60dd1f3aac76c92d29806dd3ac911b6d4e
+ZIP entries: 130
+unzip integrity test: PASS (no compressed-data errors)
+Unsafe absolute/parent ZIP paths: 0
+Payload application: Kandro.app
+
+Application identity and deployment
+-----------------------------------
+CFBundleDisplayName: Kandro
+CFBundleName: Kandro
+CFBundleIdentifier: com.hewaddorani.kandro
+CFBundleShortVersionString: 1.0.0
+CFBundleVersion: 7
+CFBundleExecutable: Kandro
+Platform: iPhoneOS
+Device family: iPhone only (UIDeviceFamily=1)
+MinimumOSVersion: 15.1
+Mach-O LC_BUILD_VERSION minimum: 15.1
+SDK: iPhoneOS 26.0 (23A339)
+Xcode: 26.0 (17A324)
+Architecture: arm64 only
+Mach-O UUID: 15A9736E-43D3-3890-AA28-E5DBE6D1C5F6
+Hermes bytecode: version 96
+User interface style: Automatic
+Orientations: portrait and portrait upside down
+URL schemes: kandro, com.hewaddorani.kandro
+Nested app extensions/watch apps: none
+Source maps or unpackaged .js/.ts/.tsx source files: none
+
+Permissions, transport and export declarations
+----------------------------------------------
+NSCameraUsageDescription: present
+English localized camera text: present and states meal analysis plus original-photo deletion
+German localized camera text: present and states meal analysis plus original-photo deletion
+NSMicrophoneUsageDescription: absent; microphone capture is not declared
+Photo-library usage descriptions: absent
+NSUserTrackingUsageDescription: absent
+UIBackgroundModes: absent
+NSAppTransportSecurity.NSAllowsArbitraryLoads: false
+ITSAppUsesNonExemptEncryption: false
+Expo Updates enabled: false
+Expo Updates check-on-launch setting: ALWAYS but inert because EXUpdatesEnabled=false
+
+The main Mach-O has LC_ENCRYPTION_INFO_64 cryptid=0. That is normal for a developer-exported IPA before Apple applies App Store DRM and is not evidence that App Store transport processing occurred.
+
+Code signing
+------------
+codesign --verify --deep --strict --verbose=4: PASS
+Designated requirement: satisfied
+Signature authority class: Apple Distribution
+Team identifier: 85S69CVRAY
+Bundle signing identifier: com.hewaddorani.kandro
+Signed time: 2026-09-05 00:02:13 Europe/Berlin
+CodeDirectory hash type: SHA-256
+get-task-allow: false
+
+Final app entitlements:
+- application-identifier = 85S69CVRAY.com.hewaddorani.kandro
+- com.apple.developer.team-identifier = 85S69CVRAY
+- aps-environment = production
+- beta-reports-active = true
+- get-task-allow = false
+
+Entitlements not present:
+- HealthKit
+- Sign in with Apple
+- associated domains
+- app groups
+- iCloud containers
+- keychain access groups explicitly requested by the app
+
+P2 least-privilege observation: expo-notifications results in a production APNs entitlement even though UIBackgroundModes is absent and the currently described reminder flow is local. The entitlement alone does not show that a push token is collected or remote push is used, and it is not a P0/P1 archive blocker. Remove the unused capability in a later hardening build if remote push is intentionally out of scope; confirm that App Store privacy answers describe actual runtime behavior, not entitlement presence.
+
+Embedded App Store provisioning profile
+---------------------------------------
+Name: Kandro App Store 2026
+UUID: 0d2e65b4-9127-4865-8fcd-f313d9d3697f
+App ID name: Kandro iOS App
+Team: Hewad Dorani / 85S69CVRAY
+Created: 2026-09-04
+Expires: 2027-09-04
+Platforms: iOS, xrOS, visionOS
+ProvisionedDevices: absent
+ProvisionsAllDevices: absent
+Certificate entries: 1
+Distribution certificate validity: 2026-09-04 through 2027-09-04
+Profile application identifier matches the signed app: YES
+Profile permits production APNs, beta reports and get-task-allow=false: YES
+Certificate serial number and certificate material: intentionally omitted
+
+Embedded dynamic frameworks
+---------------------------
+1. React.framework
+   bundle ID: react-native.React
+   version: 1.0
+   architecture: arm64
+   strict codesign verification: PASS
+2. ReactNativeDependencies.framework
+   bundle ID: third-party.ReactNativeDependencies
+   version: 1.0
+   architecture: arm64
+   strict codesign verification: PASS
+3. hermes.framework
+   bundle ID: dev.hermesengine.iphoneos
+   version: 0.12.0
+   architecture: arm64
+   strict codesign verification: PASS
+
+Privacy manifests
+-----------------
+Manifest count: 16
+
+Paths:
+- PrivacyInfo.xcprivacy
+- ExpoApplication_privacy.bundle/PrivacyInfo.xcprivacy
+- ExpoConstants_privacy.bundle/PrivacyInfo.xcprivacy
+- ExpoDevice_privacy.bundle/PrivacyInfo.xcprivacy
+- ExpoFileSystem_privacy.bundle/PrivacyInfo.xcprivacy
+- ExpoLocalization_privacy.bundle/PrivacyInfo.xcprivacy
+- ExpoNotifications_privacy.bundle/PrivacyInfo.xcprivacy
+- Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_boost.bundle/PrivacyInfo.xcprivacy
+- Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_folly.bundle/PrivacyInfo.xcprivacy
+- Frameworks/ReactNativeDependencies.framework/ReactNativeDependencies_glog.bundle/PrivacyInfo.xcprivacy
+- PurchasesHybridCommon.bundle/PrivacyInfo.xcprivacy
+- RNCAsyncStorage_resources.bundle/PrivacyInfo.xcprivacy
+- React-Core_privacy.bundle/PrivacyInfo.xcprivacy
+- React-cxxreact_privacy.bundle/PrivacyInfo.xcprivacy
+- RevenueCat.bundle/PrivacyInfo.xcprivacy
+- SDWebImage.bundle/PrivacyInfo.xcprivacy
+
+Top-level aggregated required-reason declarations:
+- File timestamp: C617.1, 0A2A.1, 3B52.1
+- User defaults: CA92.1
+- System boot time: 35F9.1
+- Disk space: E174.1, 85F4.1
+- Tracking: false
+- Top-level collected-data list: empty
+
+RevenueCat manifest:
+- Purchase History
+- linked: false
+- tracking: false
+- purpose: App Functionality
+- UserDefaults required-reason API: CA92.1
+
+All parsed manifests that include NSPrivacyTracking declare false. No privacy-manifest build warning or Xcode error was found. App Store Connect privacy answers remain a separate manual/live-system gate and must cover the app's actual collection even where the top-level binary manifest has an empty collected-data list.
+
+Build/archive evidence
+----------------------
+EAS project fingerprint: e410ce56a5e09e470cff837903cbbb433924a639
+EAS reported base Git commit: 22b1bf91af7824ffb976389e8bf259a0c8c1ccb5
+Xcode result: ** ARCHIVE SUCCEEDED **
+Expo Doctor in EAS: 18/18 checks passed
+Metro eager bundle: succeeded (1,552 modules)
+Signed IPA export: succeeded
+EAS application-archive upload: succeeded
+
+Important source-identity limitation: EAS reports the checked-out base commit, while this audit build used the then-current audited working-tree upload. The EAS fingerprint identifies the uploaded build context. Do not claim that Build 7 equals a later audit commit byte-for-byte. If product/config source changes after this archive, create and inspect a new build.
+
+Assessment
+----------
+PASS:
+- Valid, internally consistent App Store distribution archive
+- Correct app/version/build identity
+- Release-only arm64 device binary
+- Strict nested signature verification
+- get-task-allow disabled
+- ATS arbitrary loads disabled
+- Localized camera permission text present
+- Privacy manifests and required-reason declarations embedded
+- No unsafe ZIP paths or malformed compressed entries
+
+OBSERVATIONS / NON-BLOCKING RISKS:
+- P2 least-privilege: production APNs entitlement is present although the current described reminder flow is local; verify actual runtime behavior/privacy answers and remove the capability later if unused.
+- HealthKit entitlement is absent. Build 7 therefore does not implement Apple Health/Watch integration, regardless of any future product plan or marketing copy.
+- This static archive inspection does not replace installation on a physical device, sandbox purchase/restore testing, App Store Connect processing, or Apple transport validation.
+- Build-time dependency warnings are summarized in 31_build7_xcode_log_extract.txt.
+
+P0/P1 archive finding: NONE from the static signed-archive inspection.

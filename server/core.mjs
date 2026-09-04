@@ -15,6 +15,7 @@ export {
   nutrient,
   rankFoodMatches,
   requestedLanguage,
+  safeGatewayFailureCode,
   searchTermVariants,
   toFoodFacts,
   usdaCacheKey,

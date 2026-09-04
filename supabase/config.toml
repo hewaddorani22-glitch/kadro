@@ -245,6 +245,12 @@ verify_jwt = true
 [functions.nutrition]
 verify_jwt = true
 
+# RevenueCat is server-to-server. Supabase JWT verification cannot apply, so
+# the handler requires both the configured Authorization value and RevenueCat's
+# timestamped HMAC over the raw request body.
+[functions.revenuecat-webhook]
+verify_jwt = false
+
 # The waitlist is called by the website, which has no session, so the platform
 # cannot check anything here. Everything that keeps it from being abused is in
 # the function: a narrow production-and-loopback origin allowlist, one row per

@@ -1,0 +1,62 @@
+=== JS BUNDLE TYPE ===
+/tmp/kandro-build5-extracted.IrWyD7/Payload/Kandro.app/main.jsbundle: Hermes JavaScript bytecode, version 96
+=== URL/HOST TOKENS (deduplicated) ===
+http://blankArgument
+http://hostname
+http://localhost:3000CHECKOUT_UPDATEDein
+http://localhost:8081
+http://localhost:9999Dihitung
+http://placeholder.base64Slice
+http://www.w3.org
+http://yandex.com
+https://api.revenuecat.commitCachePassiveMountEffectransgender-sharpricingPhasessionNotLoaded_dispatchPressedStateChange
+https://apps.apple.com
+https://cdn.paddle.com
+https://classic-assets.eascdn.net
+https://da08ctfrofx1b.cloudfront.net
+https://developer.mozilla.org
+https://docs.expo.dev
+https://docs.revenuecat.com
+https://docs.stripe.com
+https://e.revenue.catalogSourceLabelogo-mastodoneTitleRemisearch-circle-sharprefetchImageWithMetadatab_control_buttonInner_isRemote
+https://errors.rev.cat
+https://eu-assets.i.posthog.commitCallbackspace-sharphraseashellSuspendCounterINTRO_ELIGIBILITY_STATUS_NO_INTRO_OFFER_EXISTScontoExpressCheckoutLineItemsIS_ENV_WITH_LOCAL_ASSETScrambled
+https://eu.i.posthog.commitClassCallbacksetToSJISFunctionTofu-Reis-Fertigbowlinked_flag_keyboardIsDismissibleTofu-Sushi
+https://exp.host
+https://expo.devDependenciesYour
+https://expo.fyi
+https://getkandro.com
+https://github.com
+https://js.stripe.com
+https://js.stripe.commitDeletionEffectsOnFibergba
+https://omtmxqzwxvthycyfkggv.supabase.co
+https://phony.examplechevron-righttps:
+https://posthog.com
+https://react.dev
+https://reactnative.dev
+https://reactnavigation.org
+https://rev.cat
+https://sdk.revenuecat-static.commitHookEffectListMountransitionAnimationheaderHeighttps:
+https://svelte.dev
+https://us.i.posthog.commitHostMountransitionDuration
+https://www.revenuecat.com
+=== PROHIBITED NETWORK MARKER COUNTS ===
+localhost=2
+127.0.0.1=1
+192.168.=
+10.0.2.2=
+exp.direct=1
+ngrok.io=
+OPENROUTER_API_KEY=
+OPENAI_API_KEY=
+USDA_API_KEY=
+sb_secret=1
+service_role=
+=== EXPECTED PRODUCTION HOST MARKER COUNTS ===
+omtmxqzwxvthycyfkggv.supabase.co=1
+eu.i.posthog.com=1
+api.revenuecat.com=1
+openfoodfacts.org=
+=== EMBEDDED FILES WITH DOTENV/DEBUG NAMES ===
+=== BUNDLE SIZE ===
+6227895 bytes main.jsbundle

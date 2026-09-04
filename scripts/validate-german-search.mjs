@@ -59,7 +59,7 @@ assert.match(off, /localizedProductName\(product, language, language === 'de'\)/
   'German search must not fall back to an English-only product title');
 assert.match(gateway, /if \(strict\) return '';/,
   'strict localized-name selection must omit products without the requested language');
-assert.match(gateway, /try \{\s*\n\s*for \(const product of await searchOpenFoodFacts\(term, language\)\)/,
-  'Open Food Facts going down must not fail the whole search');
+assert.match(gateway, /try \{\s*for \(const product of await searchOpenFoodFacts\(\s*term,\s*language,\s*claimProvider \? \(\) => claimProvider\('off_search'\) : undefined,\s*\)\)[\s\S]*catch \(error\) \{\s*if \(error instanceof ProviderQuotaError\) throw error;/,
+  'Open Food Facts going down must not fail the whole search, while quota denials must remain authoritative');
 
 console.log(`German search: ${Object.keys(GERMAN_FOOD_TERMS).length} food terms translated, Open Food Facts wired in as a fallback source.`);

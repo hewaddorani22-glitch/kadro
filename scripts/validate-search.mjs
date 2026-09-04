@@ -14,6 +14,7 @@ const gateway = await read('supabase/functions/nutrition/index.ts');
 const service = await read('src/services/mealAnalysis.ts');
 const screen = await read('src/app/(tabs)/scan.tsx');
 const context = await read('src/context/AppContext.tsx');
+const confirm = await read('src/app/confirm.tsx');
 
 // --- No model call, and outside the paid quota -----------------------------
 const searchFn = gateway.slice(gateway.indexOf('async function searchFoods'), gateway.indexOf('async function usdaRows'));
@@ -40,9 +41,9 @@ assert.match(runFn, /clearTimeout\(searchTimer\.current\)/, 'a pending search mu
 assert.match(runFn, /latestSearch\.current !== request/, 'stale responses must be discarded');
 assert.match(runFn, /term\.length < 2/, 'a one-letter query must not be sent');
 
-// --- Logging a searched food must not spend a free meal --------------------
-// The sheet says "Free". The result screen logs the meal on arrival, and that
-// is where the allowance is charged, so the exemption has to live there too.
+// --- A searched food must never spend a free analysis ----------------------
+// The server charges a successful AI result before Confirm. Search is already
+// resolved data, so it must be excluded at that exact success boundary.
 assert.match(context, /FREE_ANALYSIS_MODES/, 'the free inputs must be named somewhere');
 const modes = context.match(/FREE_ANALYSIS_MODES = new Set<ScanMode>\(\[([^\]]*)\]\)/);
 assert.ok(modes, 'could not read the free input list');
@@ -53,11 +54,14 @@ for (const mode of ['live', 'description']) {
   assert.ok(!modes[1].includes(`'${mode}'`), `${mode} costs an analysis and must be charged`);
 }
 const logging = context.slice(context.indexOf('const logScannedMeal'), context.indexOf('const logPlannedMeal'));
+const analyzing = context.slice(context.indexOf('const analyzeCurrentPhoto'), context.indexOf('const resumeLatestAnalysis'));
 assert.match(
-  logging,
-  /!alreadyLogged && costsAnalysis/,
-  'the allowance must only be charged for an input that reached the model',
+  analyzing,
+  /!FREE_ANALYSIS_MODES\.has\(activeScanMode\)[\s\S]*countLifetimeScanOnce\(invocationScanId\)/,
+  'only a successful input that reached the model may spend an analysis',
 );
+assert.doesNotMatch(logging, /countLifetimeScanOnce/,
+  'saving or abandoning Confirm must not change an already decided allowance');
 // The allowance is also derived from how many stored meals carry origin
 // 'scan', so incrementing a counter is not enough on its own.
 assert.match(
@@ -77,10 +81,19 @@ assert.match(mealFn, /grams \/ 100/, 'values must scale from per-100g to the cho
 // --- Both languages offer it ----------------------------------------------
 for (const file of ['src/i18n/de.ts', 'src/i18n/en.ts']) {
   const dictionary = await read(file);
-  for (const key of ['modeSearch', 'searchTitle', 'searchEmpty', 'searchFree']) {
+  for (const key of ['modeSearch', 'searchTitle', 'searchEmpty', 'searchFree', 'searchAgain']) {
     assert.ok(dictionary.includes(`${key}:`), `${file} is missing ${key}`);
   }
 }
+
+// A database search has no photo to retake. Its secondary action must return
+// to an already-open search sheet and say what will actually happen.
+assert.match(confirm, /scanMode === 'search' \? t\.confirm\.searchAgain : t\.confirm\.retake/,
+  'search confirmation must not offer to retake a photo');
+const changeInput = confirm.slice(confirm.indexOf('const changeInput'), confirm.indexOf('const confirm'));
+assert.match(changeInput, /scanMode === 'search'/, 'the change-input action must distinguish a search result');
+assert.match(changeInput, /router\.replace\('\/\(tabs\)\/scan\?mode=search'\)/,
+  'choosing another searched food must reopen the search sheet');
 // German search leans on the BLS dish names, because USDA is English only.
 const bls = await read('supabase/functions/_shared/bls-reference.mjs');
 assert.ok(bls.includes('export function searchBlsReferences'), 'German search needs the dish references');

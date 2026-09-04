@@ -93,8 +93,16 @@ if (!scan.includes('freeScansLeft > 0') || !scan.includes("subscriptionStatus ==
 if (!scan.includes('FREE_SCAN_ALLOWANCE') || !scan.includes('t.scan.allowanceLeft')) {
   failures.push('scanner does not show the remaining free allowance before the paywall');
 }
-if (!appContext.includes('saveLifetimeScanCount') || !appContext.includes('alreadyLogged')) {
-  failures.push('the free allowance must be spent once per meal, not once per save');
+const analyzeFlow = appContext.slice(
+  appContext.indexOf('const analyzeCurrentPhoto = useCallback'),
+  appContext.indexOf('const resumeLatestAnalysis = useCallback'),
+);
+const saveFlow = appContext.slice(
+  appContext.indexOf('const logScannedMeal = useCallback'),
+  appContext.indexOf('const logPlannedMeal = useCallback'),
+);
+if (!analyzeFlow.includes('countLifetimeScanOnce(invocationScanId)') || saveFlow.includes('countLifetimeScanOnce')) {
+  failures.push('the free allowance must be spent once per successful request, before optional meal save');
 }
 if (!result.includes('savedOnArrival') || !result.includes('logScannedMeal()')) failures.push('the first complete result is not persisted before the paywall boundary');
 if (!appContext.includes('setLifetimeScanCount')) failures.push('a completed scan does not update the free-scan boundary');

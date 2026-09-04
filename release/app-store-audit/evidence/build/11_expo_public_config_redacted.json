@@ -1,0 +1,54 @@
+{
+  "name": "Kandro",
+  "slug": "kandro",
+  "version": "1.0.0",
+  "orientation": "portrait",
+  "scheme": "kandro",
+  "userInterfaceStyle": "automatic",
+  "platforms": [
+    "ios",
+    "android",
+    "web"
+  ],
+  "locales": {
+    "en": "./locales/en.json",
+    "de": "./locales/de.json"
+  },
+  "ios": {
+    "supportsTablet": false,
+    "appleTeamId": "85S69CVRAY",
+    "bundleIdentifier": "com.hewaddorani.kandro",
+    "infoPlist": {
+      "NSCameraUsageDescription": "Kandro uses the camera to photograph your meal and estimate nutrition. The original photo is discarded after analysis and is not stored.",
+      "NSAppTransportSecurity": {
+        "NSAllowsArbitraryLoads": false
+      },
+      "ITSAppUsesNonExemptEncryption": false
+    }
+  },
+  "plugins": [
+    "expo-router",
+    [
+      "expo-camera",
+      {
+        "cameraPermission": "Allow Kandro to photograph meals for analysis.",
+        "microphonePermission": false,
+        "recordAudioAndroid": false
+      }
+    ],
+    "expo-font",
+    "expo-localization",
+    [
+      "expo-notifications",
+      {
+        "color": "#3F5233"
+      }
+    ]
+  ],
+  "extra": {
+    "router": {},
+    "eas": {
+      "projectId": "7e8a6217-bd12-45e9-bbef-e72f5e183632"
+    }
+  }
+}

@@ -12,6 +12,7 @@ import {
   photoDetectionPrompt,
   isUsableSearchTerm,
   requestedLanguage,
+  safeGatewayFailureCode,
   getBlsReferenceByCode,
   searchBlsCatalog,
   searchTermVariants,
@@ -102,8 +103,7 @@ async function requestDetection(content) {
   });
 
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`${aiProvider}_${response.status}:${detail.slice(0, 300)}`);
+    throw new Error(`${aiProvider}_${response.status}`);
   }
   return JSON.parse(extractResponseText(await response.json()));
 }
@@ -310,8 +310,8 @@ const server = createServer(async (request, response) => {
     }
     return json(response, 404, { code: 'not_found', message: 'Route nicht gefunden.' });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'unknown_error';
-    const setupError = message === 'ai_key_missing' || message === 'ai_provider_invalid';
+    const safeCode = safeGatewayFailureCode(error);
+    const setupError = safeCode === 'ai_key_missing' || safeCode === 'ai_provider_invalid';
     return json(response, setupError ? 503 : 502, {
       code: setupError ? 'server_not_configured' : 'provider_error',
       message: setupError ? 'Der gewählte KI-Provider ist nicht vollständig konfiguriert.' : 'Ein externer Analysedienst ist gerade nicht erreichbar.',

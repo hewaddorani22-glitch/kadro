@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Card, PrimaryButton } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
@@ -13,7 +13,6 @@ import {
   requestEmailLink,
   resendEmailLink,
   setAccountPassword,
-  signInToExistingAccount,
   verifyEmailLink,
 } from '@/services/accountLinking';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -21,7 +20,7 @@ import { useLanguage } from '@/i18n/LanguageProvider';
 type ViewMode = 'upgrade' | 'sign-in';
 
 export function AccountLinkCard() {
-  const { refreshCloudState, userName } = useApp();
+  const { loadExistingAccount, refreshCloudState, userName } = useApp();
   const [account, setAccount] = useState<AccountLinkState | null>(null);
   const [mode, setMode] = useState<ViewMode>('upgrade');
   const [email, setEmail] = useState('');
@@ -79,6 +78,23 @@ export function AccountLinkCard() {
     } finally {
       setBusy(false);
     }
+  };
+
+  const confirmExistingAccountLoad = () => {
+    Alert.alert(
+      t.account.replaceTitle,
+      t.account.replaceText,
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        {
+          text: t.account.replaceAction,
+          onPress: () => void run(
+            () => loadExistingAccount(email, password),
+            t.account.loadedMessage,
+          ),
+        },
+      ],
+    );
   };
 
   if (!account) {
@@ -163,7 +179,7 @@ export function AccountLinkCard() {
             disabled={busy || !email.trim() || password.length < 8}
             icon="log-in-outline"
             label={busy ? t.account.loadingAccount : t.account.loadAccount}
-            onPress={() => void run(() => signInToExistingAccount(email, password), t.account.loadedMessage, true)}
+            onPress={confirmExistingAccountLoad}
           />
         </View>
         <Pressable accessibilityRole="button" onPress={() => { setMode('upgrade'); setError(null); setMessage(null); }} style={styles.centerButton}>

@@ -1,0 +1,121 @@
+BUILD 7 STATIC BUNDLE / SECRET / DEBUG SCAN
+===========================================
+
+Scope and method
+----------------
+Artifact SHA-256: c027a4957b148a846c7a5faf434afa60dd1f3aac76c92d29806dd3ac911b6d4e
+Scanned application: Payload/Kandro.app
+Hermes bundle: main.jsbundle
+Hermes bundle bytes: 6,294,871
+Hermes bytecode version: 96
+Hermes source hash: 20e6334cb9f62e7a764138f229fa8f13627c2d34
+Hermes functions: 24,598
+Hermes strings: 31,267
+
+The Hermes bytecode was disassembled with the Expo SDK 54 React Native hermesc binary. Native executable/framework printable strings and all archive filenames were scanned separately. Potential credentials were counted only; values were never printed or stored in this evidence.
+
+Expected production service markers
+-----------------------------------
+Supabase project host (omtmxqzwxvthycyfkggv.supabase.co): 1
+EU PostHog ingestion host (eu.i.posthog.com): 1
+RevenueCat API host (api.revenuecat.com): 1
+Public legal/support host (getkandro.com): 5
+
+Direct provider hosts that must remain server-side
+--------------------------------------------------
+api.openai.com: 0
+openrouter.ai: 0
+api.nal.usda.gov: 0
+world.openfoodfacts.org: 0
+
+Result: the production client contains its Supabase, PostHog, RevenueCat and legal/support destinations, but no direct OpenAI, OpenRouter, USDA or Open Food Facts destination.
+
+Credential-pattern scan (values never emitted)
+------------------------------------------------
+OpenRouter sk-or-v1 token pattern: 0
+OpenAI sk-proj token pattern: 0
+Generic long sk_ token pattern: 0
+Supabase sb_secret full-token pattern: 0
+Supabase service_role marker: 0
+JWT-like eyJhbGci long-token pattern: 0
+Google AIza key pattern: 0
+GitHub token pattern: 0
+PEM/OpenSSH private-key header: 0
+OPENROUTER_API_KEY variable name: 0
+OPENAI_API_KEY variable name: 0
+USDA_API_KEY variable name: 0
+
+Exact comparison against locally configured secrets, without printing values:
+- OPENROUTER_API_KEY: 0 bundle matches
+- OPENAI_API_KEY: not locally configured; token-pattern count 0
+- USDA_API_KEY: 0 bundle matches
+
+The literal prefix "sb_secret_" occurs once because Supabase's client library recognizes and rejects/handles that key class. No value matching sb_secret_ plus a credential payload exists.
+
+Expected extractable public client configuration
+------------------------------------------------
+Supabase sb_publishable token pattern: 1
+Exact local Supabase publishable-key match: 1
+PostHog phc_ token pattern: 2 (string-table plus bytecode reference)
+Exact local PostHog project-token match: 1
+RevenueCat appl_ token pattern: 2 (string-table plus bytecode reference)
+Exact local RevenueCat test-key match: 0
+
+These values are client identifiers by design, not server secrets. Their presence is acceptable only because authorization/RLS, quotas and server-side secrets enforce security. The scan does not treat public identifiers as confidential.
+
+Environment/credential files in the IPA
+---------------------------------------
+.env / .env.* files: 0
+Files named with secret/credential markers: 0
+.pem files: 0
+.p8 files: 0
+.p12 files: 0
+.key files: 0
+Unpacked .js/.jsx/.ts/.tsx or source-map files: 0
+
+Local/development markers
+-------------------------
+localhost: 11 disassembly occurrences
+127.0.0.1: 2 disassembly occurrences
+exp.direct: 1 regex occurrence
+ngrok: 0
+tunnel: 0
+dev=true: 0
+hot=true: 0
+EXPO_PUBLIC_ANALYSIS_API_URL variable name: 0
+Locally configured analysis URL: empty
+Exact local analysis-URL value bundle match: 0
+__DEV__ symbol/string: 3
+debugger substring: 5
+metro substring: 48
+
+Context classification:
+- Expo Constants getDevServer fallback string
+- Expo Router RSC generated-origin fallback
+- Supabase GoTrue library default URL constant
+- Supabase propagation-target list for local development
+- WebAuthn/domain and generic URL parser checks
+- exp.direct host-validation regular expression in Expo runtime code
+
+No configured operational localhost/127.0.0.1/exp.direct API endpoint, dev=true query, hot=true query or local analysis gateway was found. The remaining strings are shipped dependency defaults/validators and do not by themselves activate development mode.
+
+Network transport classification
+--------------------------------
+All identified production service markers use HTTPS.
+HTTP URL literals were limited to localhost/dependency defaults, W3C namespace literals, placeholder/example strings and dependency compatibility data. No app-owned remote production HTTP endpoint was identified.
+Info.plist independently sets NSAllowsArbitraryLoads=false.
+
+Build-mode indicators
+---------------------
+Signed distribution binary: YES
+get-task-allow: false
+Device architecture: arm64
+Hermes bytecode instead of source JavaScript: YES
+Expo OTA updates: disabled
+Unpacked source map: absent
+
+Static-analysis limitations
+---------------------------
+This scan detects literal and bytecode-table values. It cannot prove runtime reachability, detect a value constructed only at runtime, or replace a network capture from the exact installed binary. Public client keys are necessarily recoverable from a mobile client and must never be treated as secrets.
+
+P0/P1 bundle leak finding: NONE.

@@ -1,0 +1,5 @@
+
+> kandro@1.0.0 validate:deletion:live
+> node scripts/validate-account-deletion.mjs
+
+Validated live Supabase account deletion, profile cascade, and refresh-token revocation.

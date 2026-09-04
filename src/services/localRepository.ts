@@ -5,6 +5,7 @@ import { DEFAULT_PROFILE, isBiologicalSex } from '@/services/personalization';
 import { Meal, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 import { defaultUnitSystem, isUnitSystem } from '@/utils/units';
+import { isAnalysisRequestId, newAnalysisRequestId } from '@/utils/requestId';
 
 const MEALS_KEY = '@kandro/meals:v1';
 const QUEUE_KEY = '@kandro/analysis-queue:v1';
@@ -13,6 +14,7 @@ const WEIGHTS_KEY = '@kandro/weight-entries:v1';
 const LIFETIME_SCANS_KEY = '@kandro/lifetime-scans:v1';
 const COUNTED_SCAN_IDS_KEY = '@kandro/counted-analysis-ids:v1';
 const DELETED_MEALS_KEY = '@kandro/deleted-meals:v1';
+const ACCOUNT_SWITCH_PENDING_KEY = '@kandro/account-switch-pending:v1';
 let scanCountMutation: Promise<number> = Promise.resolve(0);
 
 /** Origins that count as "the user ate this". 'seed' is demo filler and never persists. */
@@ -83,7 +85,17 @@ export async function forgetDeletedMeal(id: string) {
 }
 
 export async function loadAnalysisQueue(): Promise<PendingAnalysis[]> {
-  return readJson(QUEUE_KEY, []);
+  const stored = await readJson<PendingAnalysis[]>(QUEUE_KEY, []);
+  let migrated = false;
+  const queue = stored.map((job) => {
+    if (isAnalysisRequestId(job.id)) return job;
+    migrated = true;
+    return { ...job, id: newAnalysisRequestId() };
+  }).slice(-3);
+  // Builds created before the server ledger used `scan-<timestamp>`. Persist a
+  // UUID once so every later retry reaches the same idempotent reservation.
+  if (migrated) await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  return queue;
 }
 
 export async function queueAnalysis(job: PendingAnalysis): Promise<number> {
@@ -105,14 +117,23 @@ export async function clearAnalysisQueue() {
 }
 
 /**
- * Monotonic count of meals this device has ever logged. Meal history is pruned
- * (locally by day, in the cloud after 90 days), so the free allowance cannot be
- * derived from it alone without silently handing out more free scans.
+ * Monotonic count of successful AI results on this device. Meal history is
+ * pruned and a user may abandon Confirm, so the allowance cannot be derived
+ * from saved meals alone.
  */
 export async function loadLifetimeScanCount(): Promise<number> {
-  const stored = await readJson<unknown>(LIFETIME_SCANS_KEY, 0);
-  const value = Number(stored);
-  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+  const [stored, ledger] = await Promise.all([
+    readJson<unknown>(LIFETIME_SCANS_KEY, 0),
+    readJson<unknown>(COUNTED_SCAN_IDS_KEY, []),
+  ]);
+  const storedValue = Number(stored);
+  const ledgerValue = ledger && typeof ledger === 'object' && !Array.isArray(ledger)
+    ? Number((ledger as { count?: unknown }).count)
+    : 0;
+  return Math.max(
+    Number.isFinite(storedValue) && storedValue > 0 ? Math.floor(storedValue) : 0,
+    Number.isFinite(ledgerValue) && ledgerValue > 0 ? Math.floor(ledgerValue) : 0,
+  );
 }
 
 export async function saveLifetimeScanCount(count: number): Promise<number> {
@@ -122,21 +143,28 @@ export async function saveLifetimeScanCount(count: number): Promise<number> {
 }
 
 /**
- * Spend an analysis credit exactly once for a scan id. Result and Confirm can
- * save concurrently, so checking React state first is not enough: both calls
- * can observe the same old history. Serialising the storage mutation closes
- * that race and the id list makes retries idempotent across app restarts.
+ * Spend an analysis credit exactly once for a request id. Count and recent IDs
+ * share one AsyncStorage value, so a crash cannot persist one without the
+ * other. The legacy count is mirrored for backward compatibility.
  */
 export function countLifetimeScanOnce(scanId: string): Promise<number> {
   const mutate = async () => {
     const counted = await readJson<unknown>(COUNTED_SCAN_IDS_KEY, []);
-    const ids = Array.isArray(counted)
-      ? counted.filter((id): id is string => typeof id === 'string').slice(-199)
-      : [];
+    const rawIds = Array.isArray(counted)
+      ? counted
+      : counted && typeof counted === 'object' && Array.isArray((counted as { ids?: unknown }).ids)
+        ? (counted as { ids: unknown[] }).ids
+        : [];
+    const ids = rawIds.filter((id): id is string => typeof id === 'string').slice(-199);
     const current = await loadLifetimeScanCount();
     if (ids.includes(scanId)) return current;
-    const next = await saveLifetimeScanCount(current + 1);
-    await AsyncStorage.setItem(COUNTED_SCAN_IDS_KEY, JSON.stringify([...ids, scanId]));
+    const next = current + 1;
+    await AsyncStorage.setItem(COUNTED_SCAN_IDS_KEY, JSON.stringify({
+      version: 1,
+      count: next,
+      ids: [...ids, scanId],
+    }));
+    await saveLifetimeScanCount(next);
     return next;
   };
   const next = scanCountMutation.then(mutate, mutate);
@@ -202,4 +230,65 @@ export async function saveWeightEntry(entry: WeightEntry): Promise<WeightEntry[]
 
 export async function clearLocalKandroData() {
   await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY, LIFETIME_SCANS_KEY, COUNTED_SCAN_IDS_KEY, DELETED_MEALS_KEY]);
+}
+
+export type PendingLocalAccountSwitch = {
+  previousUserId: string;
+  startedAt: string;
+};
+
+export async function beginLocalAccountSwitch(previousUserId: string) {
+  if (!previousUserId) throw new Error('missing_previous_account_id');
+  // Written before auth changes. If the process dies during sign-in, launch
+  // recovery knows never to merge the old local data into the current session.
+  await AsyncStorage.setItem(ACCOUNT_SWITCH_PENDING_KEY, JSON.stringify({
+    previousUserId,
+    startedAt: new Date().toISOString(),
+  } satisfies PendingLocalAccountSwitch));
+}
+
+export async function loadLocalAccountSwitch(): Promise<PendingLocalAccountSwitch | null> {
+  const stored = await readJson<Partial<PendingLocalAccountSwitch> | null>(ACCOUNT_SWITCH_PENDING_KEY, null);
+  return stored
+    && typeof stored.previousUserId === 'string'
+    && stored.previousUserId.length > 0
+    && typeof stored.startedAt === 'string'
+    ? { previousUserId: stored.previousUserId, startedAt: stored.startedAt }
+    : null;
+}
+
+export async function completeLocalAccountSwitch() {
+  await AsyncStorage.removeItem(ACCOUNT_SWITCH_PENDING_KEY);
+}
+
+/**
+ * Replaces every account-scoped local value after signing in to a different
+ * existing account. It is serialized behind any scan-credit mutation already
+ * in progress so a late result from the previous identity cannot overwrite
+ * the replacement count.
+ */
+export function replaceLocalAccountData(
+  profile: UserProfile,
+  mealHistory: Meal[],
+  lifetimeScanCount: number,
+): Promise<number> {
+  const replace = async () => {
+    const cleanMeals = mealHistory
+      .filter(isLogged)
+      .filter((meal, index, meals) => meals.findIndex((candidate) => candidate.id === meal.id) === index)
+      .sort((a, b) => (a.savedAt ?? '').localeCompare(b.savedAt ?? ''));
+    const count = Math.max(0, Math.floor(lifetimeScanCount));
+    await AsyncStorage.multiSet([
+      [MEALS_KEY, JSON.stringify(cleanMeals)],
+      [PROFILE_KEY, JSON.stringify(profile)],
+      [LIFETIME_SCANS_KEY, JSON.stringify(count)],
+      [COUNTED_SCAN_IDS_KEY, JSON.stringify({ version: 1, count, ids: [] })],
+    ]);
+    await AsyncStorage.multiRemove([QUEUE_KEY, WEIGHTS_KEY, DELETED_MEALS_KEY]);
+    return count;
+  };
+
+  const next = scanCountMutation.then(replace, replace);
+  scanCountMutation = next.catch(() => loadLifetimeScanCount());
+  return next;
 }

@@ -39,7 +39,7 @@ export default function ProgressScreen() {
 
   const consistency = useMemo(
     () => proteinConsistency(mealHistory, targets.protein),
-    [mealHistory, targets.protein],
+    [locale, mealHistory, targets.protein],
   );
   const loggingStreak = useMemo(() => currentLoggingStreak(mealHistory), [mealHistory]);
   const { averageProtein, loggedCount: trackedDays, reachedCount } = consistency;

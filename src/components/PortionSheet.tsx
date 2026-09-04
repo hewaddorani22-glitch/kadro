@@ -124,8 +124,9 @@ export function PortionSheet({
             <View style={styles.unitRow}>
               {portions.map((portion, index) => (
                 <Pressable
+                  aria-checked={unitIndex === index}
                   accessibilityRole="radio"
-                  accessibilityState={{ selected: unitIndex === index }}
+                  accessibilityState={{ checked: unitIndex === index }}
                   key={portion.label}
                   onPress={() => pickUnit(index)}
                   style={[styles.unitChip, unitIndex === index && styles.unitChipOn]}
@@ -137,8 +138,9 @@ export function PortionSheet({
                 </Pressable>
               ))}
               <Pressable
+                aria-checked={unitIndex === -1}
                 accessibilityRole="radio"
-                accessibilityState={{ selected: unitIndex === -1 }}
+                accessibilityState={{ checked: unitIndex === -1 }}
                 onPress={() => pickUnit(-1)}
                 style={[styles.unitChip, unitIndex === -1 && styles.unitChipOn]}
               >

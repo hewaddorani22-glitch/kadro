@@ -13,16 +13,34 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKe
 export const functionsBaseUrl = isSupabaseConfigured ? `${supabaseUrl!.replace(/\/$/, '')}/functions/v1` : null;
 export const supabaseAnonKey = supabasePublishableKey ?? null;
 
+export type SupabaseAccessSession = {
+  accessToken: string;
+  userId: string;
+};
+
 /**
  * Access token for the current session, refreshing it first when needed.
  * Returns null when Supabase is unavailable or the user opted out of the cloud.
  */
 export async function getAccessToken(): Promise<string | null> {
+  return (await getAccessSession())?.accessToken ?? null;
+}
+
+/** The token and subject are captured from the same Supabase session read. */
+export async function getAccessSession(): Promise<SupabaseAccessSession | null> {
   if (!supabase) return null;
-  const user = await ensureSupabaseUser().catch(() => null);
-  if (!user) return null;
+  if (!await ensureSupabaseUser().catch(() => null)) return null;
   const { data } = await supabase.auth.getSession();
-  return data.session?.access_token ?? null;
+  const session = data.session;
+  return session ? { accessToken: session.access_token, userId: session.user.id } : null;
+}
+
+/** Reads only the persisted session; unlike ensureSupabaseUser it never creates a new identity. */
+export async function getCurrentSessionUserId(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  return data.session?.user.id ?? null;
 }
 
 export const supabase = isSupabaseConfigured

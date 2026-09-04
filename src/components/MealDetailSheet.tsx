@@ -119,8 +119,9 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
                 const active = meal.type === type;
                 return (
                   <Pressable
+                    aria-checked={active}
                     accessibilityRole="radio"
-                    accessibilityState={{ disabled: busy, selected: active }}
+                    accessibilityState={{ checked: active, disabled: busy }}
                     disabled={busy}
                     key={type}
                     onPress={() => void changeType(type)}
@@ -146,8 +147,9 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
                 const active = Math.abs(currentFactor - choice.factor) < 0.05;
                 return (
                   <Pressable
+                    aria-checked={active}
                     accessibilityRole="radio"
-                    accessibilityState={{ disabled: busy, selected: active }}
+                    accessibilityState={{ checked: active, disabled: busy }}
                     disabled={busy}
                     key={choice.label}
                     onPress={() => void adjust(choice.factor)}

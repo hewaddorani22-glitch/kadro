@@ -63,7 +63,12 @@ const COMMON_REFERENCE_CODES = new Set([
 function scoreName(name, words, query, terms) {
   if (!name || !query) return 0;
   let base = 0;
-  if (name === query) {
+  // BLS sometimes writes German compounds with a space ("Hafer Flocken"),
+  // while people type the ordinary compound ("Haferflocken"). Treat those
+  // spellings as the same exact food. This is deliberately equality-only:
+  // collapsing arbitrary substrings would make "Reis" match "Milchreis".
+  const compoundExact = terms.length === 1 && name.replace(/\s+/g, '') === query;
+  if (name === query || compoundExact) {
     base = 1200;
   } else if (name.startsWith(`${query} `)) {
     base = 900 - Math.min(words.length, 20);

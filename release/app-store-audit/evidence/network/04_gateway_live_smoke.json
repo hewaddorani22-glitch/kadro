@@ -1,0 +1,52 @@
+{
+  "auditedAt": "2026-09-04T18:23:14.671Z",
+  "host": "omtmxqzwxvthycyfkggv.supabase.co",
+  "tests": [
+    {
+      "label": "unauthenticated search rejected",
+      "status": 401,
+      "milliseconds": 523,
+      "code": "UNUSABLE_CREDENTIAL",
+      "itemCount": null,
+      "resultCount": null,
+      "titlePresent": false
+    },
+    {
+      "label": "authenticated food search",
+      "status": 200,
+      "milliseconds": 661,
+      "code": null,
+      "itemCount": null,
+      "resultCount": 15,
+      "titlePresent": false
+    },
+    {
+      "label": "authenticated barcode",
+      "status": 200,
+      "milliseconds": 694,
+      "code": null,
+      "itemCount": null,
+      "resultCount": null,
+      "titlePresent": false
+    },
+    {
+      "label": "invalid description rejected",
+      "status": 400,
+      "milliseconds": 559,
+      "code": "invalid_input",
+      "itemCount": null,
+      "resultCount": null,
+      "titlePresent": false
+    },
+    {
+      "label": "authenticated AI description",
+      "status": 200,
+      "milliseconds": 4413,
+      "code": null,
+      "itemCount": 1,
+      "resultCount": null,
+      "titlePresent": true
+    }
+  ],
+  "temporaryAuditAccountDeleted": true
+}

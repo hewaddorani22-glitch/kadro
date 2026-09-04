@@ -1,0 +1,36 @@
+Kandro release-gate: final audit-package checks
+Generated: 2026-09-05 (Europe/Berlin)
+
+1. EAS build-definition validator
+Command: npm run validate:eas
+Exit: 0
+Result: legal identity travels with the build and no committed secret is required.
+
+2. Patch whitespace validation
+Command: git diff --check
+Exit: 0
+Result: no whitespace errors.
+
+3. Audit artifact and link checker
+Exit: 0
+Required top-level artifacts: 19/19
+JSON documents parsed: 3/3
+Relative Markdown links resolved: 119/119
+Tracked files below release/app-store-audit/private/: 0
+Private local handoff file modes: 0600
+Direct opaque EAS artifact or IPA download URLs in packet: 0
+
+4. Product-file audit index
+Rows: 262
+Current product path parity: PASS
+Current Git blob hash parity: PASS
+CSV column width: PASS
+Allowed index statuses only: PASS
+
+5. Formal report status validation
+Markdown-table status cells checked: 253
+Allowed values: PASS, FAIL, FIXED_VERIFIED, NOT_APPLICABLE, UNVERIFIED_BLOCKER, MANUAL_CONFIRMATION_REQUIRED
+Result: PASS; no other value appears in a formal status column.
+
+Harness note
+The first package-check invocation treated ripgrep exit 1 (zero matches) as a command failure. The checker was corrected to accept ripgrep exit 1 as the documented no-match result and rerun successfully. This was an audit-harness issue, not a product or release test failure.

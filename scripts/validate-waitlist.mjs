@@ -14,7 +14,9 @@ import { readFileSync } from 'node:fs';
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const fn = read('supabase/functions/waitlist/index.ts');
 const migration = read('supabase/migrations/20260903210000_add_waitlist.sql');
+const retention = read('supabase/migrations/20260904184701_add_waitlist_retention.sql');
 const config = read('supabase/config.toml');
+const runbook = read('site/README.md');
 const problems = [];
 
 // --- Nothing but the function may reach the table --------------------------
@@ -36,35 +38,137 @@ assert.match(fn, /'http:\/\/127\.0\.0\.1:4173'/,
 assert.match(fn, /ALLOWED_ORIGINS\.has\(origin\) \? origin : SITE/,
   'unknown origins are reflected instead of being rejected by CORS');
 assert.ok(!/Access-Control-Allow-Origin': '\*'/.test(fn), 'the origin is wide open');
-assert.match(fn, /HOURLY_LIMIT/, 'nothing stops a script signing up all night');
-assert.match(fn, /count \?\? 0\) >= HOURLY_LIMIT\) return json\(request, \{ code: 'too_many' \}, 429\)/,
-  'the hourly cap is measured but not enforced');
+assert.match(retention, /create table if not exists private\.waitlist_rate_limits/,
+  'there is no dedicated attempt ledger, so repeated addresses evade a row count');
+assert.match(retention, /primary key \(kind, key_hash\)/,
+  'concurrent attempts do not contend on one rate-limit record');
+assert.match(retention, /create or replace function private\.consume_waitlist_rate_limit/,
+  'the IP and email limits are not consumed atomically');
+assert.match(retention, /on conflict \(kind, key_hash\) do update[\s\S]*attempt_count/,
+  'rate-limit increments race through separate count and write operations');
+assert.match(retention, /interval '10 minutes'[\s\S]*interval '1 hour'/,
+  'per-email cooldown or per-network hourly window is missing');
+assert.match(retention, /email_attempts = 1 and ip_attempts <= 3/,
+  'the database does not enforce both abuse limits');
+assert.match(retention, /grant execute on function private\.consume_waitlist_rate_limit\(text, text, timestamptz\)[\s\S]*to service_role/,
+  'the invoker wrapper cannot reach the private waitlist limiter as service_role');
+assert.match(retention, /grant execute on function public\.consume_waitlist_rate_limit\(text, text\) to service_role/,
+  'the edge function cannot consume the private abuse limit');
+assert.match(fn, /db\.rpc\('consume_waitlist_rate_limit'/,
+  'the public endpoint never consumes the atomic abuse limit');
+assert.match(fn, /rateDecision as \{ allowed\?: boolean \}\)\.allowed !== true[\s\S]*status: 'check_your_mail'/,
+  'a denied attempt either sends mail or exposes a distinct rate-limit response');
+assert.ok(!/\.from\('waitlist'\)[\s\S]{0,200}count: 'exact'/.test(fn),
+  'a waitlist row count is still treated as an attempt count');
+assert.match(fn, /Boolean\(resendKey && mailFrom && ipSalt\)/,
+  'the form opens without the secret required for abuse-resistant hashing');
+assert.match(fn, /MAX_JSON_BODY_BYTES = 4_096/,
+  'the unauthenticated endpoint accepts unbounded request bodies');
+assert.match(fn, /length > MAX_JSON_BODY_BYTES[\s\S]*reader\.cancel/,
+  'chunked bodies can bypass the declared content-length limit');
 
 // --- Double opt-in ---------------------------------------------------------
 assert.match(migration, /confirmed_at timestamptz/,
   'without a confirmation timestamp the consent cannot be evidenced');
-assert.match(migration, /unsubscribed_at timestamptz/, 'no record of an unsubscribe');
-assert.match(fn, /sendConfirmation\(email, language, token\)/,
+assert.match(fn, /sendConfirmation\(email, language, confirmationToken, unsubscribeToken\)/,
   'the address is stored without a confirmation ever being sent');
 // A sign-up must never be usable before the click.
 assert.ok(!/confirmed_at: new Date\(\)\.toISOString\(\)[\s\S]{0,400}upsert/.test(fn),
   'a sign-up confirms itself, which is single opt-in wearing a costume');
-assert.match(fn, /if \(!resendKey \|\| !mailFrom\) return json\(request, \{ code: 'not_accepting' \}, 503\)/,
+assert.match(fn, /if \(!resendKey \|\| !mailFrom \|\| !ipSalt\) return json\(request, \{ code: 'not_accepting' \}, 503\)/,
   'addresses are collected even when no confirmation can be sent');
+
+// --- Unsubscribe is an actual deletion, not a preference flag -------------
+assert.match(retention, /add column if not exists unsubscribe_token text/,
+  'confirmation and unsubscribe still share one token');
+assert.match(retention, /delete from public\.waitlist\s*\nwhere unsubscribed_at is not null/,
+  'rows retained by the previous unsubscribe implementation survive the migration');
+assert.match(retention, /create unique index if not exists waitlist_unsubscribe_token_idx/,
+  'unsubscribe tokens are not unique');
+assert.match(fn, /sendConfirmation\(email, language, confirmationToken, unsubscribeToken\)/,
+  'the mail sender never receives an unsubscribe token');
+assert.match(fn, /\/unsubscribe\/\?t=\$\{unsubscribeToken\}/,
+  'the confirmation mail has no language-specific unsubscribe link');
+assert.match(fn, /text: `\$\{text\.lead\}[\s\S]*\$\{unsubscribeLink\}`/,
+  'the plain-text email omits the unsubscribe link');
+assert.match(fn, /html: `<p>\$\{text\.lead\}[\s\S]*\$\{unsubscribeLink\}/,
+  'the HTML email omits the unsubscribe link');
+assert.match(fn, /\.delete\(\)\s*\n\s*\.eq\('unsubscribe_token', token\)/,
+  'unsubscribe leaves the email or other waitlist data behind');
+assert.match(fn, /return json\(request, \{ status: 'unsubscribed' \}\)/,
+  'valid-looking unknown tokens do not receive the same answer as known tokens');
+assert.match(fn, /token: makeToken\(\)/,
+  'a confirmation token can be reused after confirmation');
+assert.ok(!/confirmed_at: null/.test(fn),
+  'a repeat sign-up silently revokes an already confirmed waitlist consent');
+assert.match(fn, /select\('language,source,token,unsubscribe_token,ip_hash,signed_up_at,confirmed_at'\)/,
+  'the previous reachable token state is not captured before a resend');
+assert.match(fn, /if \(previous\?\.confirmed_at\) return json\(request, \{ status: 'check_your_mail' \}\)/,
+  'a confirmed address can be spammed and have its unsubscribe token rotated');
+assert.match(fn, /catch \{[\s\S]*previous[\s\S]*update\(\{[\s\S]*token: previous\.token[\s\S]*unsubscribe_token: previous\.unsubscribe_token/,
+  'a failed resend invalidates the previous confirmation and unsubscribe links');
+assert.match(fn, /\.eq\('token', confirmationToken\)[\s\S]*\.eq\('unsubscribe_token', unsubscribeToken\)/,
+  'send-failure compensation can overwrite a newer concurrent sign-up');
+assert.match(fn, /: db\.from\('waitlist'\)\.delete\(\)[\s\S]*\.eq\('email', email\)[\s\S]*\.eq\('token', confirmationToken\)/,
+  'a failed first send leaves an unreachable unconfirmed address behind');
+assert.match(fn, /if \(cleanupError\) return json\(request, \{ code: 'privacy_cleanup_failed' \}, 503\)/,
+  'failed send compensation is silently ignored');
+
+const unsubscribeScript = read('site/unsubscribe.js');
+for (const page of ['site/unsubscribe/index.html', 'site/en/unsubscribe/index.html']) {
+  const html = read(page);
+  assert.match(html, /data-unsubscribe hidden/, `${page}: the form flashes before its token is validated`);
+  assert.match(html, /data-unsubscribe-status aria-live="polite"/, `${page}: result is not announced accessibly`);
+  assert.match(html, /rel="canonical"/, `${page}: missing canonical URL`);
+}
+assert.match(unsubscribeScript, /ENDPOINT \+ '\/unsubscribe'/,
+  'the public page never invokes the unsubscribe route');
+assert.match(unsubscribeScript, /if \(!\/\^\[a-f0-9\]\{48\}\$\/\.test\(token\)\)/,
+  'the public page sends malformed tokens to production');
+assert.match(unsubscribeScript, /form\.hidden = false/,
+  'a valid unsubscribe token never reveals the explicit confirmation control');
+assert.match(unsubscribeScript, /status\.textContent = text\.failed/,
+  'network failures are misreported as invalid links');
+
+// --- Retention is executable and anchored to the real launch --------------
+assert.match(retention, /values \(true, null\)/,
+  'the migration invents a launch date instead of waiting for the real event');
+assert.match(retention, /create or replace function private\.purge_waitlist/,
+  'there is no executable retention function');
+assert.match(retention, /confirmed_at is null[\s\S]*interval '30 days'/,
+  'unconfirmed addresses have no bounded retention');
+assert.match(retention, /configured_launch \+ interval '6 months'/,
+  'confirmed addresses are not removed six months after the recorded launch');
+assert.match(retention, /create extension if not exists pg_cron/,
+  'the cleanup depends on a scheduler that is never installed');
+assert.match(retention, /grant usage on schema cron to postgres/,
+  'the scheduling role cannot use the cron schema');
+assert.match(retention, /cron\.schedule\([\s\S]*'kandro-waitlist-retention'[\s\S]*private\.purge_waitlist\(\)/,
+  'the daily cleanup job is not scheduled');
+assert.match(retention, /cron\.schedule\([\s\S]*'kandro-waitlist-rate-limit-retention'[\s\S]*private\.purge_waitlist_rate_limits\(\)/,
+  'short-lived abuse fingerprints have no cleanup schedule');
+assert.match(retention, /revoke all on function private\.purge_waitlist\(timestamptz\) from public, anon, authenticated/,
+  'clients can invoke the privileged purge function');
+assert.match(runbook, /where singleton = true and launched_at is null/,
+  'the runbook does not say how to record the actual launch once');
+assert.match(runbook, /\/unsubscribe\/\?t=<unsubscribe_token>/,
+  'future launch or follow-up messages are not required to carry an unsubscribe link');
 
 // --- What the endpoint gives away ------------------------------------------
 assert.match(fn, /return json\(request, \{ status: 'check_your_mail' \}\)/,
   'the answer differs for a known address, which turns the form into a lookup');
 assert.ok(!/already_subscribed|exists/.test(fn),
   'the endpoint tells a stranger whether an address is on the list');
-assert.match(fn, /const digest = await crypto\.subtle\.digest\('SHA-256'/,
+assert.match(fn, /const digest = await crypto\.subtle\.digest\(\s*'SHA-256'/,
   'the raw IP is stored, turning rate limiting into a visitor log');
+assert.match(fn, /cf-connecting-ip[\s\S]*x-real-ip[\s\S]*chain\.at\(-1\)/,
+  'a caller-controlled first forwarded-for value can bypass the network limit');
 assert.ok(!/ip: ip\b|ip_address/.test(fn), 'the raw IP reaches the database');
 
 // --- Said out loud, in both languages --------------------------------------
 for (const [language, file, needles] of [
-  ['de', 'src/i18n/legal.de.ts', ['Warteliste auf getkandro.com', 'Double-Opt-in', 'Art. 6 Abs. 1 lit. a DSGVO', 'Abmeldelink', 'Resend']],
-  ['en', 'src/i18n/legal.en.ts', ['Waiting list on getkandro.com', 'double opt-in', 'Art. 6(1)(a) GDPR', 'unsubscribe link', 'Resend']],
+  ['de', 'src/i18n/legal.de.ts', ['Warteliste auf getkandro.com', 'Double-Opt-in', 'Art. 6 Abs. 1 lit. a DSGVO', 'Abmeldelink', 'Resend', '30 Tagen', 'sechs Monate', 'Kampagnenquelle', 'Hashwerte der IP- und E-Mail-Adresse', 'drei Stunden']],
+  ['en', 'src/i18n/legal.en.ts', ['Waiting list on getkandro.com', 'double opt-in', 'Art. 6(1)(a) GDPR', 'unsubscribe link', 'Resend', '30 days', 'six months', 'campaign source', 'hashes of the IP and email address', 'three hours']],
 ]) {
   const legal = read(file);
   for (const needle of needles) {

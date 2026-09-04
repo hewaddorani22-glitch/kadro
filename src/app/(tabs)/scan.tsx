@@ -120,12 +120,16 @@ export default function ScanScreen() {
   const close = () => router.replace('/(tabs)/today');
 
   const subscribed = subscriptionStatus === 'active';
+  const subscriptionUncertain = subscriptionStatus === 'loading' || subscriptionStatus === 'error';
   // hasEverLoggedScan is kept so the copy can distinguish a first-time user from
   // someone who has simply used up the allowance.
   const showAllowance = !subscribed && freeScansLeft > 0 && hasEverLoggedScan;
 
   const hasScanAccess = () => {
-    if (subscribed || freeScansLeft > 0) return true;
+    // Loading/error is not proof of inactivity. Let the server-authoritative
+    // analysis ledger decide instead of locally blocking a paying user after
+    // a transient RevenueCat or network failure.
+    if (subscribed || subscriptionUncertain || freeScansLeft > 0) return true;
     // The paywall reads very differently when it interrupted someone mid-scan
     // than when it was opened out of curiosity.
     router.push('/paywall?reason=blocked');
@@ -525,7 +529,7 @@ export default function ScanScreen() {
 
 function ModeButton({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="radio" accessibilityState={{ selected: active }} onPress={onPress} style={[styles.modeButton, active && styles.modeButtonActive]}>
+    <Pressable aria-checked={active} accessibilityRole="radio" accessibilityState={{ checked: active }} onPress={onPress} style={[styles.modeButton, active && styles.modeButtonActive]}>
       <Text style={[styles.modeText, active && styles.modeTextActive]}>{label.toUpperCase()}</Text>
     </Pressable>
   );

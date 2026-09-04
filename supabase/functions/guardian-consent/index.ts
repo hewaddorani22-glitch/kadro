@@ -2,9 +2,9 @@ import { createClient } from 'npm:@supabase/supabase-js@2.58.0';
 
 const SITE = 'https://getkandro.com';
 const NOTICE_VERSION = '2026-09-04-guardian-v1';
-const TOKEN_HOURS = 48;
-const RESEND_COOLDOWN_MS = 60_000;
+const MAX_BODY_BYTES = 4_096;
 const EMAIL = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+const rateLimitSalt = Deno.env.get('GUARDIAN_RATE_LIMIT_SALT') ?? '';
 
 const allowedOrigins = new Set([
   SITE,
@@ -44,6 +44,56 @@ function token() {
 async function hash(value: string) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
   return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashFingerprint(kind: 'user' | 'ip' | 'email', value: string) {
+  if (!value || !rateLimitSalt) return null;
+  return hash(`${rateLimitSalt}:${kind}:${value}`);
+}
+
+/**
+ * Supabase's edge proxy supplies the connection address. Prefer the proxy's
+ * dedicated headers; if only a forwarded chain exists, use the last hop rather
+ * than the attacker-controlled first entry. Missing provenance fails closed.
+ */
+function trustedClientIp(request: Request) {
+  const dedicated = request.headers.get('cf-connecting-ip')
+    ?? request.headers.get('x-real-ip');
+  if (dedicated?.trim()) return dedicated.trim();
+  const chain = (request.headers.get('x-forwarded-for') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return chain.at(-1) ?? null;
+}
+
+async function readJsonBody(request: Request) {
+  const declaredLength = Number(request.headers.get('content-length') ?? 0);
+  if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
+    return { body: null, tooLarge: true };
+  }
+
+  const reader = request.body?.getReader();
+  if (!reader) return { body: null, tooLarge: false };
+  const decoder = new TextDecoder();
+  let byteLength = 0;
+  let raw = '';
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      byteLength += value.byteLength;
+      if (byteLength > MAX_BODY_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        return { body: null, tooLarge: true };
+      }
+      raw += decoder.decode(value, { stream: true });
+    }
+    raw += decoder.decode();
+    return { body: JSON.parse(raw) as Record<string, unknown>, tooLarge: false };
+  } catch {
+    return { body: null, tooLarge: false };
+  }
 }
 
 async function currentUser(request: Request) {
@@ -103,62 +153,50 @@ async function requestConsent(request: Request, body: Record<string, unknown>) {
   const guardianEmail = normalizeEmail(body.guardianEmail);
   if (!guardianEmail) return json(request, { code: 'invalid_email' }, 400);
   const language = body.language === 'de' ? 'de' : 'en';
-
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('guardian_consent_at,guardian_consent_version')
-    .eq('user_id', user.id)
-    .maybeSingle();
-  if (profile?.guardian_consent_at && profile.guardian_consent_version === NOTICE_VERSION) {
-    return json(request, { status: 'approved' });
-  }
-
-  const { data: previous } = await admin
-    .from('guardian_consent_requests')
-    .select('requested_at')
-    .eq('user_id', user.id)
-    .maybeSingle();
-  if (previous && Date.now() - new Date(previous.requested_at).getTime() < RESEND_COOLDOWN_MS) {
-    return json(request, { code: 'too_many' }, 429);
+  const resendKey = Deno.env.get('RESEND_API_KEY') ?? '';
+  const from = Deno.env.get('GUARDIAN_CONSENT_FROM') ?? Deno.env.get('WAITLIST_FROM') ?? '';
+  const clientIp = trustedClientIp(request);
+  if (!resendKey || !from || !rateLimitSalt || !clientIp) {
+    return json(request, { code: 'unavailable' }, 503);
   }
 
   const rawToken = token();
   const tokenHash = await hash(rawToken);
-  const now = new Date();
-  const expiresAt = new Date(now.getTime() + TOKEN_HOURS * 60 * 60 * 1000).toISOString();
+  const [userHash, ipHash, emailHash] = await Promise.all([
+    hashFingerprint('user', user.id),
+    hashFingerprint('ip', clientIp),
+    hashFingerprint('email', guardianEmail),
+  ]);
+  if (!userHash || !ipHash || !emailHash) return json(request, { code: 'unavailable' }, 503);
 
-  const { error: profileError } = await admin.from('profiles').upsert({
-    user_id: user.id,
-    age,
-    guardian_consent_at: null,
-    guardian_consent_version: null,
-    privacy_version: null,
-    wellness_consent_at: null,
-    updated_at: now.toISOString(),
-  }, { onConflict: 'user_id' });
-  if (profileError) return json(request, { code: 'store_failed' }, 500);
-
-  const { error: requestError } = await admin.from('guardian_consent_requests').upsert({
-    user_id: user.id,
-    guardian_email: guardianEmail,
-    language,
-    notice_version: NOTICE_VERSION,
-    token_hash: tokenHash,
-    requested_at: now.toISOString(),
-    expires_at: expiresAt,
-    confirmed_at: null,
-    updated_at: now.toISOString(),
-  }, { onConflict: 'user_id' });
-  if (requestError) return json(request, { code: 'store_failed' }, 500);
+  // The RPC atomically checks the current approval, consumes all applicable
+  // limits and rotates the token. Parallel requests cannot all send mail.
+  const { data: claim, error: claimError } = await admin.rpc('claim_guardian_consent_request', {
+    p_user_id: user.id,
+    p_age: age,
+    p_language: language,
+    p_notice_version: NOTICE_VERSION,
+    p_token_hash: tokenHash,
+    p_user_hash: userHash,
+    p_ip_hash: ipHash,
+    p_email_hash: emailHash,
+  });
+  if (claimError) return json(request, { code: 'store_failed' }, 500);
+  if (claim?.status === 'approved') return json(request, { status: 'approved' });
+  if (claim?.status === 'rate_limited') return json(request, { code: 'too_many' }, 429);
+  if (claim?.status !== 'claimed') return json(request, { code: 'store_failed' }, 500);
 
   try {
     await sendGuardianMail(guardianEmail, language, rawToken);
-    // The address has served its only purpose. Keep the request/timestamp as
-    // evidence, but do not turn the database into a list of guardian emails.
-    await admin.from('guardian_consent_requests').update({ guardian_email: null }).eq('user_id', user.id);
   } catch {
-    await admin.from('guardian_consent_requests').delete().eq('user_id', user.id);
-    return json(request, { code: 'send_failed' }, 502);
+    // Token compare-and-swap: a slow failing request must never delete a newer
+    // successful request for the same user.
+    const { error: cleanupError } = await admin
+      .from('guardian_consent_requests')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('token_hash', tokenHash);
+    return json(request, { code: cleanupError ? 'privacy_cleanup_failed' : 'send_failed' }, cleanupError ? 503 : 502);
   }
   return json(request, { status: 'pending' });
 }
@@ -188,35 +226,24 @@ async function confirmConsent(request: Request, body: Record<string, unknown>) {
     return json(request, { code: 'invalid_confirmation' }, 400);
   }
   const tokenHash = await hash(rawToken);
-  const { data: pending, error } = await admin
-    .from('guardian_consent_requests')
-    .select('user_id,notice_version,expires_at,confirmed_at')
-    .eq('token_hash', tokenHash)
-    .maybeSingle();
-  if (error || !pending || pending.notice_version !== NOTICE_VERSION || new Date(pending.expires_at).getTime() < Date.now()) {
-    return json(request, { code: 'invalid_token' }, 404);
-  }
-  if (!pending.confirmed_at) {
-    const confirmedAt = new Date().toISOString();
-    const { data: approvedProfile, error: profileError } = await admin.from('profiles').update({
-      guardian_consent_at: confirmedAt,
-      guardian_consent_version: NOTICE_VERSION,
-      updated_at: confirmedAt,
-    }).eq('user_id', pending.user_id).gte('age', 14).lt('age', 16).select('user_id').maybeSingle();
-    if (profileError || !approvedProfile) return json(request, { code: 'confirm_failed' }, 409);
-    const { error: requestError } = await admin.from('guardian_consent_requests').update({
-      confirmed_at: confirmedAt,
-      updated_at: confirmedAt,
-    }).eq('user_id', pending.user_id);
-    if (requestError) return json(request, { code: 'confirm_failed' }, 500);
-  }
+  // One database transaction verifies the unexpired request, records the
+  // approval in the protected profile and deletes the request. A replay sees
+  // no row and a failed delete rolls the profile update back with it.
+  const { data: consumed, error } = await admin.rpc('consume_guardian_consent', {
+    p_token_hash: tokenHash,
+    p_notice_version: NOTICE_VERSION,
+  });
+  if (error) return json(request, { code: 'confirm_failed' }, 500);
+  if (consumed !== true) return json(request, { code: 'invalid_token' }, 404);
   return json(request, { status: 'approved' });
 }
 
 async function handle(request: Request) {
   if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(request) });
   if (request.method !== 'POST') return json(request, { code: 'method_not_allowed' }, 405);
-  const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  const parsed = await readJsonBody(request);
+  if (parsed.tooLarge) return json(request, { code: 'payload_too_large' }, 413);
+  const body = parsed.body;
   if (!body) return json(request, { code: 'invalid_input' }, 400);
   if (body.action === 'request') return requestConsent(request, body);
   if (body.action === 'status') return consentStatus(request);

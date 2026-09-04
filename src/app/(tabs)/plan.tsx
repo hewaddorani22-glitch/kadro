@@ -133,7 +133,7 @@ export default function PlanScreen() {
         {contexts.map((context) => {
           const active = selected === context.id;
           return (
-            <Pressable accessibilityRole="radio" accessibilityState={{ selected: active }} key={context.id} onPress={() => chooseContext(context.id)} style={[styles.contextCard, active && styles.contextActive]}>
+            <Pressable aria-checked={active} accessibilityRole="radio" accessibilityState={{ checked: active }} key={context.id} onPress={() => chooseContext(context.id)} style={[styles.contextCard, active && styles.contextActive]}>
               <IconCircle name={context.icon} size={52} tone={active ? 'accent' : 'neutral'} />
               <View style={styles.contextCopy}>
                 <Text style={styles.contextTitle}>{context.title}</Text>
@@ -229,15 +229,16 @@ export default function PlanScreen() {
                     <Text style={styles.portionLabel}>{t.plan.howMuch}</Text>
                     <View style={styles.portionSelector}>
                       {([
-                        { factor: 0.7 as PortionFactor, label: t.confirm.less, multiplier: '0,7×' },
+                        { factor: 0.7 as PortionFactor, label: t.confirm.less, multiplier: `${formatNumber(0.7, locale)}×` },
                         { factor: 1 as PortionFactor, label: t.plan.normal, multiplier: '1×' },
-                        { factor: 1.4 as PortionFactor, label: t.confirm.more, multiplier: '1,4×' },
+                        { factor: 1.4 as PortionFactor, label: t.confirm.more, multiplier: `${formatNumber(1.4, locale)}×` },
                       ]).map((choice) => {
                         const active = portion === choice.factor;
                         return (
                           <Pressable
+                            aria-checked={active}
                             accessibilityRole="radio"
-                            accessibilityState={{ selected: active }}
+                            accessibilityState={{ checked: active }}
                             key={choice.label}
                             onPress={() => { void selectionHaptic(); setPortion(choice.factor); }}
                             style={[styles.portionChoice, active && styles.portionChoiceActive]}

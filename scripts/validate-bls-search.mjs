@@ -36,6 +36,7 @@ for (const [code, calories, protein] of [
 const leading = (query, language) => searchBlsCatalog(query, language, 1)[0];
 for (const [query, language, code, expectedName] of [
   ['Banane', 'de', 'F503100', 'Banane roh'],
+  ['Haferflocken', 'de', 'C133000', 'Hafer Flocken'],
   ['banana', 'en', 'F503100', 'Banana raw'],
   ['Reis', 'de', 'X820162', 'Reis gekocht'],
   ['rice', 'en', 'X820162', 'Rice boiled'],

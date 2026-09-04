@@ -1,0 +1,86 @@
+BUILD 7 SANITIZED EAS/XCODE LOG EXTRACT
+=======================================
+
+Source
+------
+EAS build ID: 420935a7-2aed-43e1-9daf-cb53f306a549
+Build page: https://expo.dev/accounts/hewad/projects/kandro/builds/420935a7-2aed-43e1-9daf-cb53f306a549
+Temporary signed Google Cloud log URLs: omitted
+Raw remote logs: inspected only in /tmp and not copied into the repository
+
+Toolchain and builder
+---------------------
+Builder: Apple M4 Pro, 5 vCPUs, 20 GB RAM
+Builder image: macOS Sequoia 15.6 / Xcode 26.0
+Xcode build: 17A324
+iPhoneOS SDK: 26.0 / 23A339
+Node.js: 20.19.4
+CocoaPods: 1.16.2
+Fastlane: 2.228.0
+Build configuration: Release
+Destination: generic/platform=iOS
+Archive method: app-store
+Deployment target: 15.1
+
+Sanitized archive command
+-------------------------
+/Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild \
+  -workspace ./Kandro.xcworkspace \
+  -scheme Kandro \
+  -configuration Release \
+  -derivedDataPath ./build \
+  -destination generic/platform=iOS \
+  -archivePath <ARCHIVE_PATH> \
+  -resultBundlePath <RESULT_BUNDLE_PATH> \
+  archive
+
+Positive build evidence
+-----------------------
+Expo Doctor: 18/18 checks passed
+Metro: iOS bundle completed in 7,306 ms (1,552 modules)
+Main top-level PrivacyInfo.xcprivacy copied into Kandro.app: YES
+Privacy resource bundles copied: YES
+Main app signing phase completed: YES
+Xcode result: ** ARCHIVE SUCCEEDED **
+Signed IPA export: succeeded
+dSYM export/compression: succeeded
+Application archive upload to EAS artifact storage: succeeded
+EAS final status: FINISHED
+
+Xcode diagnostics
+-----------------
+Xcode error lines: 0
+Xcode warning lines: 1,611
+Warnings directly in generated app source ios/Kandro: 0
+
+Dominant warning categories:
+- 767 React prebuilt umbrella-header completeness warnings
+- 374 nullability-specifier warnings in dependency headers
+- 124 block-pointer nullability warnings in dependency headers
+- 42 dependency deprecation-annotation synchronization warnings
+- 30 dependency documentation-parameter warnings
+- 27 React Native component super-call warnings
+- additional dependency deprecations, unused functions and Swift future-language warnings
+- one Hermes pod run-script dependency-analysis warning
+
+No app-owned source warning was identified. The warnings are primarily Expo, React Native, CocoaPods and prebuilt React dependency diagnostics. They did not prevent archive, signing or export. Several Swift concurrency diagnostics say they become errors in Swift 6 language mode; the current archive succeeded, but SDK/dependency upgrades should be kept current before a future toolchain makes them fatal.
+
+Node engine warning
+-------------------
+npm emitted EBADENGINE for @supabase/supabase-js 2.112.4 and its auth/functions/postgrest/realtime/storage packages because those installed packages declare Node >=22 while the EAS image used Node 20.19.4.
+
+Assessment: this did not block dependency installation, Metro compilation, native archive or IPA export. It is a reproducibility/maintenance risk for the next build, not proof of an iOS runtime failure. Align the EAS Node version with the locked Supabase package requirement before treating future builds as warning-clean.
+
+Other dependency maintenance warnings
+-------------------------------------
+npm also reported deprecated transitive packages including old rimraf, uuid, inflight and glob releases. These are dependency-chain maintenance findings; no archive error or direct credential leak resulted from them. Use the repository's dependency audit for vulnerability severity and upgrade decisions.
+
+Credential handling evidence
+----------------------------
+EAS reported that remote Apple credentials were ready.
+The local IPA inspection independently verified the full nested signature and embedded profile.
+Certificate serial numbers, keychain paths, key values and temporary signed URLs are omitted from this extract.
+
+Boundary
+--------
+This log proves successful archive/export in EAS. It does not prove App Store Connect upload/processing, sandbox purchase behavior or physical-device runtime behavior. No upload to TestFlight or submission for review was performed by this audit.

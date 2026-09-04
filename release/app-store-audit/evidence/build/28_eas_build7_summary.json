@@ -1,0 +1,55 @@
+{
+  "evidenceGeneratedAt": "2026-09-05T00:20:00+02:00",
+  "build": {
+    "id": "420935a7-2aed-43e1-9daf-cb53f306a549",
+    "status": "FINISHED",
+    "platform": "IOS",
+    "distribution": "STORE",
+    "buildProfile": "production",
+    "message": "Release-gate archive audit; not submitted",
+    "buildPageUrl": "https://expo.dev/accounts/hewad/projects/kandro/builds/420935a7-2aed-43e1-9daf-cb53f306a549",
+    "artifactUrl": "OPAQUE_DIRECT_DOWNLOAD_URL_INTENTIONALLY_OMITTED",
+    "createdAt": "2026-09-04T21:57:38.745Z",
+    "completedAt": "2026-09-04T22:02:25.170Z",
+    "expirationDate": "2026-10-04T21:57:38.775Z",
+    "metricsMilliseconds": {
+      "buildWaitTime": 1449,
+      "buildQueueTime": 6898,
+      "buildDuration": 278078
+    }
+  },
+  "app": {
+    "identifier": "com.hewaddorani.kandro",
+    "version": "1.0.0",
+    "buildNumber": "7",
+    "sdkVersion": "54.0.0"
+  },
+  "sourceIdentity": {
+    "easReportedGitCommitHash": "22b1bf91af7824ffb976389e8bf259a0c8c1ccb5",
+    "easReportedGitCommitMessage": "fix onboarding auth analytics and scan allowance",
+    "easFingerprintId": "01a06e6d-675e-761c-a79d-ecde1794a0de",
+    "easFingerprintHash": "e410ce56a5e09e470cff837903cbbb433924a639",
+    "note": "The EAS Git hash is the checked-out base commit. The upload was built from the then-current audited working-tree context, so the EAS fingerprint is the archive-context identity; do not claim commit-to-archive equality until the final source is committed and rebuilt."
+  },
+  "downloadedArtifact": {
+    "bytes": 18304334,
+    "sha256": "c027a4957b148a846c7a5faf434afa60dd1f3aac76c92d29806dd3ac911b6d4e",
+    "zipEntryCount": 130,
+    "zipIntegrity": "PASS",
+    "unsafeZipPathEntryCount": 0
+  },
+  "localArchiveChecks": {
+    "codesignDeepStrict": "PASS",
+    "mainArchitecture": "arm64",
+    "getTaskAllow": false,
+    "privacyManifestCount": 16,
+    "xcodeArchiveResult": "SUCCEEDED",
+    "xcodeErrorLineCount": 0
+  },
+  "submissionState": "NOT_UPLOADED_OR_SUBMITTED_BY_THIS_AUDIT",
+  "excluded": [
+    "Temporary signed Google Cloud log URLs",
+    "Certificate serial numbers",
+    "Secret or public client key values"
+  ]
+}

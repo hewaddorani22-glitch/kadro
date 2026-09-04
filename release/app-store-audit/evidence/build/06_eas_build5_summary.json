@@ -1,0 +1,23 @@
+{
+  "id": "0cf45a1d-cc8d-49cb-bc37-62ead25b7112",
+  "status": "FINISHED",
+  "platform": "IOS",
+  "distribution": "STORE",
+  "buildProfile": "production",
+  "appIdentifier": "com.hewaddorani.kandro",
+  "sdkVersion": "54.0.0",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "5",
+  "gitCommitHash": "bb213926c65cad8bed825b780cd1f1966c842a00",
+  "gitCommitMessage": "Make onboarding choices explicit and measurements clearer",
+  "createdAt": "2026-09-04T15:34:28.617Z",
+  "completedAt": "2026-09-04T15:39:17.866Z",
+  "isForIosSimulator": false,
+  "artifactAvailable": true,
+  "xcodeLogAvailable": true,
+  "metrics": {
+    "buildWaitTime": 1573,
+    "buildQueueTime": 21335,
+    "buildDuration": 266341
+  }
+}

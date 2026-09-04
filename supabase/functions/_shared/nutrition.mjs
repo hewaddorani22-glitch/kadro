@@ -7,6 +7,23 @@ export function requestedLanguage(input) {
   return input?.language === 'de' ? 'de' : 'en';
 }
 
+const SAFE_GATEWAY_FAILURES = new Set([
+  'ai_key_missing',
+  'ai_provider_invalid',
+  'missing_structured_output',
+]);
+
+/**
+ * Turns an arbitrary exception into the only value that may enter gateway logs.
+ * Provider bodies and model output are intentionally not part of this contract.
+ */
+export function safeGatewayFailureCode(error) {
+  const message = error instanceof Error ? error.message : '';
+  if (SAFE_GATEWAY_FAILURES.has(message)) return message;
+  if (/^(?:openrouter|openai|usda|off)_[1-5]\d{2}$/.test(message)) return message;
+  return error instanceof SyntaxError ? 'provider_response_invalid' : 'gateway_unexpected_error';
+}
+
 export function validateAnalysisInput(input) {
   return input?.mimeType === 'image/jpeg'
     && typeof input?.imageBase64 === 'string'

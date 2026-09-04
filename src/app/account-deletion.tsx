@@ -8,6 +8,7 @@ import { colors, radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { accountDeletionErrorMessage, deleteKandroAccount } from '@/services/accountDeletion';
+import { accountLinkErrorMessage, enableNewCloudAccount } from '@/services/accountLinking';
 
 const appleSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
 
@@ -34,6 +35,19 @@ export default function AccountDeletionScreen() {
     }
   };
 
+  const startAgain = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await enableNewCloudAccount();
+      router.replace('/onboarding');
+    } catch (failure) {
+      setError(accountLinkErrorMessage(failure));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   if (deleted) {
     return (
       <Screen>
@@ -42,7 +56,13 @@ export default function AccountDeletionScreen() {
           <Text accessibilityRole="header" style={styles.title}>{t.deletion.doneTitle}</Text>
           <Text style={styles.copy}>{t.deletion.doneText}</Text>
         </View>
-        <PrimaryButton icon="arrow-forward" label={t.deletion.backToApp} onPress={() => router.replace('/(tabs)/today')} />
+        {error ? <Text accessibilityLiveRegion="assertive" style={styles.error}>{error}</Text> : null}
+        <PrimaryButton
+          disabled={busy}
+          icon="arrow-forward"
+          label={busy ? t.deletion.startingAgain : t.deletion.backToApp}
+          onPress={() => void startAgain()}
+        />
       </Screen>
     );
   }

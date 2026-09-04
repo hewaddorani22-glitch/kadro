@@ -58,6 +58,10 @@ assert.doesNotThrow(() => format.formatClockTime(new Date('nonsense')));
 // --- Numbers ----------------------------------------------------------------
 assert.equal(format.formatNumber(2020, 'en-GB'), '2,020');
 assert.equal(format.formatNumber(2020, 'de-DE'), '2.020');
+assert.equal(format.formatNumber(0.7, 'en-GB'), '0.7');
+assert.equal(format.formatNumber(1.4, 'en-US'), '1.4');
+assert.equal(format.formatNumber(0.7, 'de-DE'), '0,7');
+assert.equal(format.formatNumber(1.4, 'de-DE'), '1,4');
 for (const broken of [NaN, Infinity, -Infinity]) {
   assert.doesNotThrow(() => format.formatNumber(broken, 'en-GB'), `formatNumber(${broken}) threw`);
 }
@@ -96,5 +100,13 @@ for (const file of [
   const source = await read(file);
   assert.ok(!/'de-DE'/.test(source), `${file}: a hardcoded German locale shows a 24-hour clock to an American`);
 }
+
+// Portion multipliers are user-visible decimal numbers too. Keeping a German
+// literal here made the otherwise English Plan screen show 0,7× and 1,4×.
+const plan = await read('src/app/(tabs)/plan.tsx');
+assert.match(plan, /formatNumber\(0\.7, locale\)/, 'the smaller Plan portion must use the active locale');
+assert.match(plan, /formatNumber\(1\.4, locale\)/, 'the larger Plan portion must use the active locale');
+assert.ok(!plan.includes("multiplier: '0,7×'"), 'the English Plan must not inherit a German decimal literal');
+assert.ok(!plan.includes("multiplier: '1,4×'"), 'the English Plan must not inherit a German decimal literal');
 
 console.log('Validated formatting: broken dates, rejected locales, non-finite numbers and zero targets all degrade instead of throwing.');

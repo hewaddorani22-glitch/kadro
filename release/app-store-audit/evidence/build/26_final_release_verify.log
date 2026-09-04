@@ -1,0 +1,272 @@
+
+> kandro@1.0.0 verify
+> npm run typecheck && npm run validate:state-integrity && npm run validate:provider-limits && npm run validate:allowance && npm run validate:entitlements && npm run validate:offline-copy && npm run validate:i18n && npm run validate:language-memos && npm run validate:privacy && npm run validate:units && npm run validate:formatting && npm run validate:consent-recovery && npm run validate:reveal && npm run validate:accessibility && npm run validate:eas && npm run validate:targets && npm run validate:plan-builder && npm run validate:day-complete && npm run validate:portions && npm run validate:plan-editing && npm run validate:camera && npm run validate:german-search && npm run validate:bls-search && npm run validate:recipes && npm run validate:meal-slots && npm run validate:preferences && npm run validate:meals && npm run validate:german && npm run validate:catalog && npm run validate:analysis-language && npm run validate:barcode && npm run validate:search && npm run validate:cache && npm run validate:matching && npm run validate:product && npm run validate:loop && npm run validate:supabase && npm run validate:subscription && npm run validate:site && npm run validate:site-images && npm run validate:store-listing && npm run validate:store-screenshots && npm run validate:waitlist && npm run validate:language-routing && node --check server/index.mjs && npm run doctor && npx expo export --platform web
+
+
+> kandro@1.0.0 typecheck
+> tsc --noEmit
+
+
+> kandro@1.0.0 validate:state-integrity
+> node scripts/validate-state-integrity.mjs
+
+State integrity checks passed.
+
+> kandro@1.0.0 validate:provider-limits
+> node scripts/validate-provider-rate-limits.mjs
+
+Provider abuse limits passed: nutrition and RevenueCat requests are atomically bounded before fetch.
+
+> kandro@1.0.0 validate:allowance
+> node scripts/validate-analysis-allowance.mjs
+
+Analysis allowance checks passed: only origin=scan survives hydration as a paid AI analysis.
+
+> kandro@1.0.0 validate:entitlements
+> node scripts/validate-entitlements.mjs
+
+Entitlement checks passed: signed multi-user TRANSFER webhook, Apple App Store sandbox/production allowlist, Test Store rejection, server-confirmed purchase refresh with atomic cooldown, 3-success lifetime ledger, pro cap and idempotent replay.
+
+> kandro@1.0.0 validate:offline-copy
+> node scripts/validate-offline-copy.mjs
+
+Offline copy checks passed: only queued photos are described as saved locally.
+
+> kandro@1.0.0 validate:i18n
+> node scripts/validate-i18n.mjs
+
+Validated 64 source files and both dictionaries: no stray German, matching keys, English default.
+
+> kandro@1.0.0 validate:language-memos
+> node scripts/validate-language-memos.mjs
+
+Checked every memo against 25 language-aware services: none can freeze on the device's language.
+
+> kandro@1.0.0 validate:privacy
+> node scripts/validate-privacy-consent.mjs
+
+Validated explicit AI consent, withdrawal, 14+ guardian enforcement and minimal native permissions.
+
+> kandro@1.0.0 validate:units
+> node scripts/validate-units.mjs
+
+Validated unit conversions, stone rollover, locale defaults, input parsing, and that switching units cannot move a target.
+
+> kandro@1.0.0 validate:formatting
+> node scripts/validate-formatting.mjs
+
+Validated formatting: broken dates, rejected locales, non-finite numbers and zero targets all degrade instead of throwing.
+
+> kandro@1.0.0 validate:consent-recovery
+> node scripts/validate-consent-recovery.mjs
+
+Validated consent recovery: the server decides, a stale local record is dropped, and a refusal is never shown as "nothing found".
+
+> kandro@1.0.0 validate:reveal
+> node scripts/validate-result-reveal.mjs
+
+Validated the result reveal: runs once, reads live figures, survives the meal being logged, and updates after a correction.
+
+> kandro@1.0.0 validate:accessibility
+> node scripts/validate-accessibility.mjs
+
+Validated 31 screens: controls announce labels and every radio exposes its checked state.
+
+> kandro@1.0.0 validate:eas
+> node scripts/validate-eas-env.mjs
+
+Validated the EAS build definition: legal identity travels with the build, no secrets are committed.
+
+> kandro@1.0.0 validate:targets
+> node scripts/validate-targets.mjs
+
+Validated 199800 target profiles: macros always describe the calorie figure, protein stays under 40% of energy, and the estimate tracks weight, age and activity.
+Checked the onboarding calculation chain against 3888 profiles.
+
+> kandro@1.0.0 validate:plan-builder
+> node scripts/validate-plan-builder.mjs
+
+Plan builder: the count reaches every value and ends on the target, and the taps are felt.
+
+> kandro@1.0.0 validate:day-complete
+> node scripts/validate-day-complete.mjs
+
+Day-complete state guarded in Today and Plan.
+
+> kandro@1.0.0 validate:portions
+> node scripts/validate-portions.mjs
+
+Portion arithmetic and portion lists check out, and portions survive every hop to the sheet.
+
+> kandro@1.0.0 validate:plan-editing
+> node scripts/validate-plan-editing.mjs
+
+Plan editing reuses onboarding, stays prefilled, and only re-checks guardian approval for ages 14–15.
+
+> kandro@1.0.0 validate:camera
+> node scripts/validate-camera.mjs
+
+Camera lifecycle: ready-flag tied to the camera, shutter never dead, no preview behind sheets.
+
+> kandro@1.0.0 validate:german-search
+> node scripts/validate-german-search.mjs
+
+German search: 338 food terms translated, Open Food Facts wired in as a fallback source.
+
+> kandro@1.0.0 validate:bls-search
+> node scripts/validate-bls-search.mjs
+
+Validated 7,140 bilingual BLS foods and everyday German, American, British, Turkish and Asian search cases.
+
+> kandro@1.0.0 validate:recipes
+> node scripts/validate-recipes.mjs
+
+Validated 67 recipes: every macro is the sum of 85 sourced ingredients, and both catalogues agree.
+
+> kandro@1.0.0 validate:meal-slots
+> node scripts/validate-meal-slots.mjs
+
+Meal slots: four on Today, each logging into itself, the clock only as fallback.
+
+> kandro@1.0.0 validate:preferences
+> node scripts/validate-preferences.mjs
+
+Preferences honoured: 85 ingredients classified, 756 suggestions from the real recommender broke none of them, and 966 German and English answers matched exactly.
+
+> kandro@1.0.0 validate:meals
+> node scripts/validate-meal-cases.mjs
+
+Validated 30 representative Kandro meal and image-quality cases.
+
+> kandro@1.0.0 validate:german
+> node scripts/validate-german-meals.mjs
+
+Validated 64 sourced German BLS 4.0 meal references.
+
+> kandro@1.0.0 validate:catalog
+> node scripts/validate-catalog.mjs
+
+Validated 200 Kandro catalog meals in 2 languages across 3 contexts.
+Validated 216 deterministic recommendation sets; 91 meals reached the top three.
+Validated that both catalogs describe the same meals and that the pork and lactose filters match identically.
+
+> kandro@1.0.0 validate:analysis-language
+> node scripts/validate-analysis-language.mjs
+
+Validated the analysis language contract: prompts, schema, both gateways, the app request and the error mapping.
+
+> kandro@1.0.0 validate:barcode
+> node scripts/validate-barcode.mjs
+
+Validated the barcode path: localized names, no German fallback, an identifying User-Agent, and a way out of an unknown product.
+
+> kandro@1.0.0 validate:search
+> node scripts/validate-search.mjs
+
+Validated search: no model call, no quota, no free meal spent, debounced, stale responses discarded.
+
+> kandro@1.0.0 validate:cache
+> node scripts/validate-usda-cache.mjs
+
+Validated 6 cached USDA lookups and 4 relevance rankings: identical results, misses stay flagged, rounding within 1.
+
+> kandro@1.0.0 validate:matching
+> node scripts/validate-usda-matching.mjs
+
+Validated 13 USDA rankings against captured responses, plus order independence and placeholder rejection.
+
+> kandro@1.0.0 validate:product
+> node scripts/validate-product-flow.mjs
+
+Validated persisted personalization, honest progress, repeat-scan math, preferences, and all three scanner inputs.
+
+> kandro@1.0.0 validate:loop
+> node scripts/validate-daily-loop.mjs
+
+Validated the daily loop: meals log and correct properly, the timeline reads as a chronology, Verlauf leads with protein consistency, and targets scale with the person.
+
+> kandro@1.0.0 validate:supabase
+> node scripts/validate-supabase.mjs
+
+Validated 6 RLS-protected Kandro tables, ID-preserving account linking, and the metered, cached analysis gateway.
+
+> kandro@1.0.0 validate:subscription
+> node scripts/validate-subscription.mjs
+
+Validated the announced free-scan allowance plus RevenueCat offering, entitlement, purchase, cancellation, and restore boundaries.
+
+> kandro@1.0.0 validate:site
+> node scripts/build-site-legal.mjs --check && node scripts/validate-site.mjs
+
+Website legal pages match the app copy in both languages.
+Validated 17 pages: internal links, canonicals, hreflang pairs and the App Store required URLs.
+
+> kandro@1.0.0 validate:site-images
+> node scripts/validate-site-images.mjs
+
+Validated 10 landing-page screenshots: real size matches the declared box, and every device is phone-shaped.
+
+> kandro@1.0.0 validate:store-listing
+> node scripts/validate-store-listing.mjs
+
+Validated 2 store listings: within Apple's limits, and no word is paid for twice.
+
+> kandro@1.0.0 validate:store-screenshots
+> node scripts/validate-app-store-screenshots.mjs
+
+Validated 10 localized App Store screenshots at 1320×2868 with no alpha channel.
+
+> kandro@1.0.0 validate:waitlist
+> node scripts/validate-waitlist.mjs
+
+Waitlist: only the service role reaches the table, sign-ups are double opt-in, and both privacy policies say so.
+
+> kandro@1.0.0 validate:language-routing
+> node scripts/validate-language-routing.mjs
+
+Language routing: the device decides once, an explicit choice always wins, and nothing loops.
+
+> kandro@1.0.0 doctor
+> npx expo-doctor
+
+env: load .env.local .env
+env: export AI_PROVIDER EXPO_PUBLIC_ANALYSIS_API_URL EXPO_PUBLIC_LEGAL_CONTACT_EMAIL EXPO_PUBLIC_LEGAL_PRIVACY_URL EXPO_PUBLIC_LEGAL_PROVIDER_ADDRESS EXPO_PUBLIC_LEGAL_PROVIDER_NAME EXPO_PUBLIC_LEGAL_SUPPORT_URL EXPO_PUBLIC_LEGAL_TERMS_URL EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID EXPO_PUBLIC_REVENUECAT_TEST_API_KEY EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY EXPO_PUBLIC_SUPABASE_URL OPENAI_API_KEY OPENAI_VISION_MODEL OPENROUTER_API_KEY OPENROUTER_VISION_MODEL OPENROUTER_ZDR PORT USDA_API_KEY EXPO_PUBLIC_POSTHOG_ENABLED EXPO_PUBLIC_POSTHOG_HOST EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN
+Running 18 checks on your project...
+18/18 checks passed. No issues detected!
+env: load .env.local .env
+env: export AI_PROVIDER OPENROUTER_API_KEY OPENROUTER_VISION_MODEL OPENROUTER_ZDR OPENAI_VISION_MODEL USDA_API_KEY PORT EXPO_PUBLIC_REVENUECAT_TEST_API_KEY EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID EXPO_PUBLIC_SUPABASE_URL EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY EXPO_PUBLIC_LEGAL_PROVIDER_NAME EXPO_PUBLIC_LEGAL_PROVIDER_ADDRESS EXPO_PUBLIC_LEGAL_CONTACT_EMAIL EXPO_PUBLIC_LEGAL_PRIVACY_URL EXPO_PUBLIC_LEGAL_TERMS_URL EXPO_PUBLIC_LEGAL_SUPPORT_URL EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN EXPO_PUBLIC_POSTHOG_HOST EXPO_PUBLIC_POSTHOG_ENABLED
+Using src/app as the root directory for Expo Router.
+Starting Metro Bundler
+| (node:73794) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:73793) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+| (node:73792) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+| (Use `node --trace-warnings ...` to show where the warning was created)
+Web Bundled 771ms node_modules/expo-router/entry.js (1231 modules)
+
+› Assets (20):
+assets/meal-bowl.3f0a454ae5ca040eb512aadd87872d7e.jpg (260 kB)
+node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/Ionicons.b4eb097d35f44ed943676fd56f6bdc51.ttf (390 kB)
+node_modules/@react-navigation/elements/lib/module/assets/back-icon-mask.0a328cd9c1afd0afe8e3b1ec5165b1b4.png (653 B)
+node_modules/@react-navigation/elements/lib/module/assets/back-icon.35ba0eaec5a4f5ed12ca16fabeae451d.png (207 B)
+node_modules/@react-navigation/elements/lib/module/assets/clear-icon.c94f6478e7ae0cdd9f15de1fcb9e5e55.png (4 variations | 425 B)
+node_modules/@react-navigation/elements/lib/module/assets/close-icon.808e1b1b9b53114ec2838071a7e6daa7.png (4 variations | 235 B)
+node_modules/@react-navigation/elements/lib/module/assets/search-icon.286d67d3f74808a60a78d3ebf1a5fb57.png (928 B)
+node_modules/expo-router/assets/arrow_down.017bc6ba3fc25503e5eb5e53826d48a8.png (9.46 kB)
+node_modules/expo-router/assets/error.d1ea1496f9057eb392d5bbf3732a61b7.png (469 B)
+node_modules/expo-router/assets/file.19eeb73b9593a38f8e9f418337fc7d10.png (138 B)
+node_modules/expo-router/assets/forward.d8b800c443b8972542883e0b9de2bdc6.png (188 B)
+node_modules/expo-router/assets/pkg.ab19f4cbc543357183a20571f68380a3.png (364 B)
+node_modules/expo-router/assets/sitemap.412dd9275b6b48ad28f5e3d81bb1f626.png (465 B)
+node_modules/expo-router/assets/unmatched.20e71bdf79e3a97bf55fd9e164041578.png (4.75 kB)
+
+› web bundles (1):
+_expo/static/js/web/entry-a2992d016a176cc35f4c364e6d643fd3.js (3.61 MB)
+
+› Files (3):
+favicon.ico (14.5 kB)
+index.html (1.21 kB)
+metadata.json (49 B)
+
+Exported: dist

@@ -28,6 +28,20 @@ async function htmlFiles(dir) {
 
 const exists = async (path) => stat(path).then(() => true, () => false);
 
+function relativeLuminance(hex) {
+  const channels = hex.slice(1).match(/.{2}/g).map((value) => Number.parseInt(value, 16) / 255);
+  const linear = channels.map((value) => value <= 0.04045
+    ? value / 12.92
+    : ((value + 0.055) / 1.055) ** 2.4);
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+}
+
+function contrastRatio(foreground, background) {
+  const light = Math.max(relativeLuminance(foreground), relativeLuminance(background));
+  const dark = Math.min(relativeLuminance(foreground), relativeLuminance(background));
+  return (light + 0.05) / (dark + 0.05);
+}
+
 const pages = await htmlFiles(siteRoot);
 
 for (const page of pages) {
@@ -58,7 +72,7 @@ for (const page of pages) {
 
   const alternates = [...html.matchAll(/rel="alternate" hreflang="([^"]+)" href="([^"]+)"/g)]
     .map((m) => [m[1], m[2]]);
-  const isTranslated = /\/(privacy|terms|sources|support)\/index\.html$/.test(rel) || /site\/(en\/)?index\.html$/.test(rel);
+  const isTranslated = /\/(privacy|terms|sources|support|unsubscribe)\/index\.html$/.test(rel) || /site\/(en\/)?index\.html$/.test(rel);
   if (isTranslated) {
     const langs = alternates.map(([lang]) => lang);
     for (const required of ['de', 'en', 'x-default']) {
@@ -77,11 +91,40 @@ for (const page of pages) {
 
 // App Store Connect requires these URLs to be reachable, in both languages for
 // the audience the app actually ships to.
-for (const required of ['privacy', 'terms', 'sources', 'support', 'impressum']) {
+for (const required of ['privacy', 'terms', 'sources', 'support', 'unsubscribe', 'impressum']) {
   if (!await exists(join(siteRoot, required, 'index.html'))) failures.push(`missing page /${required}`);
 }
-for (const required of ['privacy', 'terms', 'sources', 'support']) {
+for (const required of ['privacy', 'terms', 'sources', 'support', 'unsubscribe']) {
   if (!await exists(join(siteRoot, 'en', required, 'index.html'))) failures.push(`missing page /en/${required}`);
+}
+
+const [styles, imprint, sourcesDe, sourcesEn] = await Promise.all([
+  readFile(join(siteRoot, 'styles.css'), 'utf8'),
+  readFile(join(siteRoot, 'impressum', 'index.html'), 'utf8'),
+  readFile(join(siteRoot, 'sources', 'index.html'), 'utf8'),
+  readFile(join(siteRoot, 'en', 'sources', 'index.html'), 'utf8'),
+]);
+
+if (/ec\.europa\.eu\/consumers\/odr|Online-Streitbeilegungsplattform/i.test(imprint)) {
+  failures.push('site/impressum/index.html: contains the discontinued EU ODR platform claim');
+}
+if (!/body:not\(\.landing\) main \{[^}]*overflow-wrap:\s*anywhere/.test(styles)) {
+  failures.push('site/styles.css: legal pages can overflow on narrow screens');
+}
+
+const canvas = styles.match(/--canvas:\s*(#[a-f0-9]{6})/i)?.[1];
+const microcopy = styles.match(/\.microcopy\s*\{[^}]*color:\s*(#[a-f0-9]{6})/i)?.[1];
+if (!canvas || !microcopy || contrastRatio(microcopy, canvas) < 4.5) {
+  failures.push('site/styles.css: hero microcopy does not reach WCAG AA text contrast on the canvas');
+}
+
+if (!sourcesDe.includes('Datenbank- und Durchschnittswerte')
+    || !sourcesDe.includes('Portion bleiben Schätzungen')) {
+  failures.push('site/sources/index.html: reference values and estimated matching/portions are not clearly separated');
+}
+if (!sourcesEn.includes('database and average values')
+    || !sourcesEn.includes('portion remain estimates')) {
+  failures.push('site/en/sources/index.html: reference values and estimated matching/portions are not clearly separated');
 }
 
 if (failures.length) {

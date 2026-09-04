@@ -85,17 +85,63 @@ Solange sie fehlen, antwortet `/status` mit `accepting: false`, das Formular
 bleibt unsichtbar und nur der Discord-Button steht da. Das ist Absicht: eine
 Adresse, der man keine Bestätigung schicken kann, darf man auch nicht sammeln.
 
+Der öffentliche Endpunkt begrenzt Anmeldeversuche atomisch auf eine Nachricht
+je E-Mail-Adresse in zehn Minuten und drei Versuche je Netzwerk in einer
+Stunde. Die dafür getrennt gespeicherten gesalzenen Hashwerte werden durch
+einen stündlichen Job spätestens nach drei Stunden gelöscht. Eine bereits
+bestätigte Adresse erhält bei erneuter Eingabe keine weitere Bestätigungsmail;
+die Antwort bleibt absichtlich identisch, damit das Formular keine Adressen
+verrät. Fehlt der IP-Header oder das Salt, wird fail-closed nichts versendet.
+
 Der Discord-Invite steht in `site/community.js`. Solange er leer ist, bleibt
 auch dieser Button verborgen.
+
+## Elternzustimmungs-E-Mails
+
+Die Edge Function `guardian-consent` nutzt ebenfalls `RESEND_API_KEY` und,
+solange `GUARDIAN_CONSENT_FROM` nicht gesetzt ist, `WAITLIST_FROM`. Production
+braucht zusätzlich ein unabhängiges `GUARDIAN_RATE_LIMIT_SALT`. Die Function
+erlaubt atomisch eine Zustellung je App-Account in zehn Minuten, höchstens drei
+je Elternadresse in einer Stunde und zehn je Ausgangsnetzwerk in einer Stunde.
+Gespeichert werden dafür nur getrennt gesalzene Fingerprints; ein stündlicher
+Job löscht sie spätestens nach drei Stunden. Fehlen Mail-Konfiguration, Salt
+oder eine vertrauenswürdige Proxy-Adresse, wird vor der Token-Erzeugung nichts
+versendet.
 
 ### Die Liste beim Start abrufen
 
 ```sql
-select email, language, confirmed_at
+select email, language, unsubscribe_token, confirmed_at
 from public.waitlist
-where confirmed_at is not null and unsubscribed_at is null
+where confirmed_at is not null
 order by confirmed_at;
 ```
 
 Nur bestätigte Adressen anschreiben. Unbestätigte sind nach § 7 UWG kein
 gültiges Einverständnis, und genau dafür gibt es die beiden Zeitstempel.
+Abmeldungen löschen den vollständigen Datensatz sofort; deshalb gibt es in der
+Versandabfrage keinen dauerhaften Abmelde- oder Sperrdatensatz.
+
+**Jede** Start- oder Folgenachricht muss den zur gespeicherten Sprache
+passenden persönlichen Abmeldelink enthalten:
+
+```text
+de: https://getkandro.com/unsubscribe/?t=<unsubscribe_token>
+en: https://getkandro.com/en/unsubscribe/?t=<unsubscribe_token>
+```
+
+### Tatsächlichen Start für die Aufbewahrungsfrist festhalten
+
+Die Migration erfindet kein Startdatum. Sobald die App tatsächlich öffentlich
+gestartet ist, muss die verantwortliche Person diesen Zeitpunkt genau einmal
+setzen:
+
+```sql
+update private.waitlist_release_state
+set launched_at = now(), updated_at = now()
+where singleton = true and launched_at is null;
+```
+
+Der tägliche Datenbankjob löscht unbestätigte Einträge nach 30 Tagen und alle
+verbleibenden bestätigten Einträge spätestens sechs Monate nach diesem
+tatsächlichen Startzeitpunkt.

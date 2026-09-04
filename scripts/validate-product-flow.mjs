@@ -26,7 +26,8 @@ requireText('index', 'profile.completedAt', 'startup does not skip completed onb
 requireText('routeGuard', 'publicBeforeConsent', 'deep links can bypass onboarding consent');
 requireText('onboarding', 'calculateDailyTargets(draftProfile)', 'onboarding target is not calculated from the entered profile');
 requireText('onboarding', 'completeOnboarding(draftProfile)', 'onboarding does not persist the entered profile');
-requireText('appContext', 'saveProfile(completedProfile)', 'profile is not persisted locally');
+requireText('appContext', 'await adoptProfile(completedProfile)', 'profile is not persisted locally through the privacy-safe adoption path');
+requireText('appContext', 'await saveProfile(nextProfile)', 'the shared profile adoption path does not persist locally');
 requireText('appContext', 'syncUserSetup(completedProfile, nextTargets)', 'profile and targets are not mirrored to Supabase');
 requireText('localRepository', 'WEIGHTS_KEY', 'weight history is not persisted');
 requireText('progress', 'mealHistory', 'progress does not use actual meal history');

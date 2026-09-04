@@ -23,7 +23,7 @@ function contact() {
 }
 
 export const legalEn: LegalCopySet = {
-  version: '1.2 · Last updated 4 September 2026',
+  version: '1.6 · Last updated 4 September 2026',
   privacy: {
     title: 'Privacy notice',
     intro: 'This notice explains in plain language which data Kandro processes, why, and how you can delete it again at any time.',
@@ -40,8 +40,10 @@ export const legalEn: LegalCopySet = {
         paragraphs: [
           'On your device, Kandro processes your profile, your targets, weight entries, confirmed meals and at most three failed, compressed photo scans kept for a retry you trigger yourself.',
           'When the cloud is active, Supabase stores in the EU a random account ID, your profile, your current targets, confirmed meals, ingredients, recommendations and feedback. Weight entries stay on your device; an email address is only stored if you deliberately secure your guest account.',
-          'For a user aged 14 or 15, a parent or legal guardian must confirm an emailed link before wellness processing is enabled. Kandro uses the guardian email only to send that request and clears it from the Kandro database immediately after sending. Supabase stores the request, confirmation time and notice version as evidence; Resend processes the address to deliver the mail.',
-          'PostHog only receives anonymous feature events and sanitised errors, and only if you switch them on. Photos, email addresses, foods, calories, macros and Supabase IDs are not sent to PostHog.',
+          'To prevent automated exhaustion of USDA, Open Food Facts and RevenueCat, Supabase keeps per-provider counters linked to one-way pseudonyms of the random account ID and source network for at most two hours after their last use. Food queries and barcodes are not stored in these counters.',
+          'For a user aged 14 or 15, a parent or legal guardian must confirm an emailed link before consent can be completed and the analysis features are enabled. The guardian email exists only in the delivery function’s working memory and is not stored in Kandro’s database. Until confirmation or expiry after 48 hours, Supabase stores only the pending request with a hash of the single-use token. To prevent automated guardian-email abuse, each request also consumes atomic limits based on separately salted hashes of the app account, source network and guardian email. The raw network address and guardian email are not stored for this purpose, and these separate rate-limit records are deleted within three hours. After successful confirmation, the request is deleted immediately; the confirmation time and notice version remain in the protected profile as evidence. Resend processes the address and technical delivery data to send the message.',
+          'If you deliberately enable optional usage analytics, PostHog receives a random Distinct or device ID persisted on the device, allowlisted feature events, sanitised errors and technical app-version, operating-system and SDK information. Photos, email addresses, foods, calories, macros and Supabase IDs are not sent to PostHog.',
+          'For subscription management, RevenueCat receives the random Supabase account ID as a Custom App User ID, plus product, purchase, duration and entitlement information. This lets Kandro associate and restore a purchase for the same account; RevenueCat receives no meals, body details or nutrition data.',
         ],
       },
       {
@@ -55,31 +57,35 @@ export const legalEn: LegalCopySet = {
         title: '4. Purpose, legal basis and retention',
         paragraphs: [
           'Nutrition and goal data are health data within the meaning of Art. 9 GDPR. The legal basis is your explicit consent under Art. 9(2)(a) GDPR, which you give during onboarding and can withdraw at any time under “You → Analysis & data use” with effect for the future. After withdrawal, Kandro sends no analysis, body or nutrition data to the named recipients. Consent is stored with a timestamp and notice version on your device and, when the cloud is active, in your protected profile.',
-          'Kandro is available from age 14. In Germany, users aged 14 or 15 need authorization from a parent or legal guardian under Art. 8 GDPR before the explicit wellness-data consent can take effect; from age 16 the user can consent for themselves. The guardian confirms the disclosed recipients and purposes through a single-use link that expires after 48 hours. They can withdraw authorization through the contact address above; the user can also stop future processing in the app at any time.',
+          'Kandro is available from age 14. In Germany, users aged 14 or 15 need authorization from a parent or legal guardian under Art. 8 GDPR before the explicit wellness-data consent can take effect; from age 16 the user can consent for themselves. The guardian confirms the disclosed recipients and purposes through a single-use link that expires after 48 hours. After successful confirmation, the request and token hash are deleted immediately; a daily database job removes expired requests. They can withdraw authorization through the contact address above; the user can also stop future processing in the app at any time.',
           'Local data remains until you delete the app data or your account. Confirmed meals are stored locally for your history; for the cloud history the app currently loads at most 90 days. Cloud data remains until the account is deleted. Technically necessary backups may expire according to the retention periods of the respective processor.',
+          'To recover a successful analysis after an interrupted response and prevent free or Pro allowances from being counted twice, Supabase stores the structured nutrition result with a random request ID and your account ID. The photo, Base64 working copy, prompt and typed raw text are not stored for this purpose. An hourly job clears the result after 22 hours. The request ID, status and allowance type then remain for at most 30 days to prevent duplicate calls and abuse; RevenueCat webhook IDs remain for at most 90 days for deduplication. Account deletion immediately cascades to these Kandro records.',
+          'Voluntarily transmitted PostHog events remain until the retention configured for the EU project expires or a valid erasure request is completed. Switching analytics off stops future transmission but does not automatically erase events already sent. RevenueCat and Apple may keep purchase and subscription history as long as needed for restoration, billing, fraud prevention or legal duties. OpenRouter does not retain prompt or response content, but keeps content-free request metadata under its own retention criteria.',
         ],
       },
       {
         title: '5. Your rights',
         paragraphs: [
-          'You can request access, rectification, erasure, restriction and – where applicable – data portability, and you can withdraw consent with effect for the future. Anonymous usage analytics can be switched off at any time under “You”.',
-          'Under “You → Delete account and data” you can delete your Supabase account, the associated cloud data and your local history. An Apple subscription must additionally be cancelled in your Apple subscription settings.',
+          'You can request access, rectification, erasure, restriction and, where applicable, data portability, and you can withdraw consent with effect for the future. Pseudonymous usage analytics can be switched off at any time under “You”.',
+          'Under “You → Delete account and data” you can delete your Supabase account, the associated cloud data and your local history. An Apple subscription must additionally be cancelled in your Apple subscription settings. Events already sent to PostHog and purchase history held by Apple or RevenueCat are not erased automatically; you can contact the address above about erasure where that right applies.',
           'You have the right to lodge a complaint with a supervisory authority; for North Rhine-Westphalia this is the State Commissioner for Data Protection and Freedom of Information NRW.',
         ],
       },
       {
         title: '6. Processors and transfers',
         paragraphs: [
-          'We use Supabase (database and account, EU region), OpenRouter in the United States and Microsoft Azure with the OpenAI GPT-4.1 mini model (image and text analysis), USDA FoodData Central and Open Food Facts (nutrition matching), RevenueCat (subscription management), Resend (guardian and waiting-list email delivery) and optionally PostHog (anonymous usage analytics, EU). Optional product analytics stay disabled for users under 18.',
-          'The AI data path is restricted to OpenRouter and ZDR-capable Microsoft Azure endpoints without fallback. Requests are configured with “store: false”, data collection denied and Zero Data Retention: content is not used for training and is not stored permanently by the AI provider. Photos are processed solely for the duration of the analysis. OpenRouter and USDA FoodData Central process data in the United States; USDA receives normalized food terms only, not photos, account IDs or body data.',
+          'We use Supabase (database and account, EU region), OpenRouter in the United States and Microsoft Azure with the OpenAI GPT-4.1 mini model (image and text analysis), USDA FoodData Central and Open Food Facts (nutrition matching), RevenueCat (subscription management with a linked account ID and purchase status), Resend (guardian and waiting-list email delivery) and optionally PostHog (pseudonymous usage analytics, EU). Optional product analytics stay disabled for users under 18.',
+          'The AI data path is restricted to OpenRouter and ZDR-capable Microsoft Azure endpoints without fallback. Requests are configured with “store: false”, data collection denied and Zero Data Retention: prompt, photo and response content is not used for training and is not retained by OpenRouter or the selected inference endpoint. Separately, OpenRouter stores content-free request metadata such as timestamp, model used, token counts and latency for billing, reporting and model ranking. According to its documentation, OpenRouter may temporarily pass a small number of prompts to a ZDR model for anonymous categorisation; only the category, not the prompt, is stored without an account or user-ID association. Photos are processed solely for the duration of the analysis. OpenRouter and USDA FoodData Central process data in the United States; USDA receives normalized food terms only, not photos, account IDs or body data.',
+          'RevenueCat processes the Supabase account ID with product, purchase, subscription and entitlement status. When voluntarily enabled, PostHog processes the pseudonymous Distinct ID, allowlisted product interactions, sanitised errors and technical app, operating-system and SDK information. Resend processes the email address and technical delivery data for the relevant message. Retention follows the purposes described above and each processor’s retention or deletion rules; details and erasure requests are available through the contact address.',
         ],
       },
       {
         title: '7. Waiting list on getkandro.com',
         paragraphs: [
-          'Anyone signing up on the website to be told about the launch gives an email address. We store it together with the chosen language, the time of sign-up and the time of confirmation. The legal basis is your consent, Art. 6(1)(a) GDPR.',
-          'Sign-up is double opt-in: after submitting you receive a confirmation mail, and only the click in it adds you. Without that click we do not use the address. To keep automated bulk sign-ups out we also store a salted hash of the IP address, not the address itself.',
-          'The address is used only for the launch notice and messages directly related to it, not for an ongoing newsletter. Every mail carries an unsubscribe link; we delete the entry once you unsubscribe, and at the latest six months after launch. Sending is done through Resend; the entries are stored at Supabase in the EU.',
+          'Anyone signing up on the website to be told about the launch gives an email address. We store it with the chosen language, an optional campaign source from the “ref” parameter, and the sign-up and confirmation times. The website also stores your language choice locally in the browser. The legal basis for the waiting list is your consent, Art. 6(1)(a) GDPR.',
+          'Sign-up is double opt-in: after submitting you receive a confirmation mail, and only the click in it adds you. Without that click we do not use the address. We store separate random tokens for confirmation and unsubscribe. To keep automated bulk sign-ups out we also store a salted hash of the IP address, not the IP address itself. Each sign-up attempt additionally consumes an atomic limit using separately salted hashes of the IP and email address. These separate rate-limit records are deleted within three hours.',
+          'The address is used only for the launch notice and messages directly related to it, not for an ongoing newsletter. Every mail carries an unsubscribe link; once you confirm it, the complete waiting-list entry is deleted immediately. Unconfirmed entries are deleted after 30 days. Confirmed entries are deleted no later than six months after the actual public app launch recorded in the system. A daily database job enforces these limits.',
+          'Sending is done through Resend; Resend processes the address and technical delivery data under its own retention criteria. Waiting-list entries are stored at Supabase in the EU until the deletion described above.',
           'The Discord server is an offering of Discord. Joining it is something you do towards Discord; we receive no data from you in the process and have no influence over how Discord handles it.',
         ],
       },
@@ -92,7 +98,7 @@ export const legalEn: LegalCopySet = {
       {
         title: '1. What the app does',
         paragraphs: [
-          'Kandro is a general wellness and planning tool for users aged 14 and over. Users aged 14 or 15 need permission from a parent or legal guardian before body, meal, photo or text data is processed. The app structures foods you photograph or describe, or packaged products via barcode, estimates their nutrition values, calculates a daily frame and suggests suitable next meals from a curated catalogue of typical reference values.',
+          'Kandro is a general wellness and planning tool for users aged 14 and over. Users aged 14 or 15 need permission from a parent or legal guardian before consent can be completed and the analysis features are enabled. The app structures foods you photograph or describe, or packaged products via barcode, estimates their nutrition values, calculates a daily frame and suggests suitable next meals from a curated catalogue of typical reference values.',
           'All values are estimates. You can correct detected ingredients and portion sizes before saving.',
         ],
       },
@@ -142,7 +148,7 @@ export const legalEn: LegalCopySet = {
       {
         title: 'German dishes · Bundeslebensmittelschlüssel',
         paragraphs: [
-          'For typical German dishes, Kandro uses reviewed nutrition values from the Bundeslebensmittelschlüssel. The model identifies the dish and the portion; the nutrition values themselves come from this database and are not estimated.',
+          'For typical German dishes, Kandro uses reviewed reference values from the Bundeslebensmittelschlüssel. These values are not generated by AI; they are database and average values. Matching them to the detected dish, assuming a preparation and scaling them to the estimated portion remain estimates.',
           'Max Rubner-Institut (2025): Bundeslebensmittelschlüssel (BLS), Version 4.0 – Deutsche Nährstoffdatenbank. Karlsruhe. DOI: 10.25826/Data20251217-134202-0',
           'Licence: Creative Commons Attribution 4.0 International (CC BY 4.0). The data was selected for use in Kandro and converted to portion sizes; the Max Rubner-Institut has neither reviewed nor endorsed Kandro.',
         ],

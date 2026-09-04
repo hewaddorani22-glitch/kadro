@@ -1,4 +1,6 @@
-import PostHog from 'posthog-react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { File, Paths } from 'expo-file-system';
+import PostHog, { PostHogPersistedProperty } from 'posthog-react-native';
 
 import { AnalysisErrorKind } from '@/services/contracts';
 import { MealContext, NutritionGoal } from '@/types/nutrition';
@@ -47,6 +49,11 @@ type ErrorContext = {
 const projectToken = process.env.EXPO_PUBLIC_POSTHOG_PROJECT_TOKEN?.trim();
 const host = process.env.EXPO_PUBLIC_POSTHOG_HOST?.trim() || 'https://eu.i.posthog.com';
 const telemetryAvailable = process.env.EXPO_PUBLIC_POSTHOG_ENABLED?.trim().toLowerCase() === 'true';
+const ANALYTICS_CONSENT_KEY = '@kandro/analytics-consent:v1';
+// PostHog React Native 4.x uses these exact storage names. Kandro now supplies
+// AsyncStorage explicitly, but earlier builds selected Expo FileSystem first;
+// both locations must be erased at an identity or age boundary.
+const POSTHOG_STORAGE_KEYS = ['.posthog-rn.json', '.posthog-rn-logs.json'] as const;
 const allowedEvents = new Set<string>([
   ...([
     'onboarding completed',
@@ -80,9 +87,30 @@ function sanitizeAutomaticProperties<Event extends { properties?: Record<string,
   return event;
 }
 
-const posthog = projectToken && telemetryAvailable
-  ? new PostHog(projectToken, {
+// Unknown age is fail-closed. This in-memory policy gate prevents a persisted
+// PostHog opt-in or queued event from another session from emitting before the
+// authoritative local/cloud profile has been adopted.
+let analyticsSubjectAge: number | null = null;
+// Separate from PostHog's own persisted opt-in so the SDK never has to start
+// (and fetch remote configuration) merely to discover that consent is absent.
+let analyticsConsentGranted: boolean | null = null;
+
+function analyticsAgeEligible() {
+  return analyticsSubjectAge !== null && analyticsSubjectAge >= 18;
+}
+
+function analyticsAllowedForCurrentProfile() {
+  return analyticsAgeEligible() && analyticsConsentGranted === true;
+}
+
+const telemetryConfigured = Boolean(projectToken && telemetryAvailable);
+let posthog: PostHog | null = null;
+
+function createPostHog() {
+  if (!projectToken || !telemetryAvailable) return null;
+  return new PostHog(projectToken, {
       host,
+      customStorage: AsyncStorage,
       defaultOptIn: false,
       personProfiles: 'never',
       captureAppLifecycleEvents: false,
@@ -100,11 +128,96 @@ const posthog = projectToken && telemetryAvailable
       preloadFeatureFlags: false,
       sendFeatureFlagEvent: false,
       setDefaultPersonProperties: false,
-      before_send: (event) => event && allowedEvents.has(event.event) ? sanitizeAutomaticProperties(event) : null,
-    })
-  : null;
+      before_send: (event) => event && analyticsAllowedForCurrentProfile() && allowedEvents.has(event.event)
+        ? sanitizeAutomaticProperties(event)
+        : null,
+    });
+}
 
-export const isTelemetryConfigured = Boolean(posthog);
+async function erasePersistedPostHogStorage() {
+  // This is the authoritative current storage backend. A failure must reach
+  // account-switch/deletion callers so they cannot cross an identity boundary
+  // while an old opt-in or event queue may still be recoverable on restart.
+  await AsyncStorage.multiRemove([ANALYTICS_CONSENT_KEY, ...POSTHOG_STORAGE_KEYS]);
+  for (const name of POSTHOG_STORAGE_KEYS) {
+    try {
+      const file = new File(Paths.document, name);
+      if (file.exists) file.delete();
+    } catch {
+      // The web build and a device without a legacy file both land here.
+    }
+  }
+}
+
+async function clearTelemetryIdentity() {
+  analyticsSubjectAge = null;
+  analyticsConsentGranted = false;
+  let sdkCleanupError: unknown = null;
+  if (posthog) {
+    // Close the in-memory queues before the first await. Then hydrate once,
+    // clear again, opt out and drain every debounced write before the final
+    // direct deletion below.
+    clearPersistedQueues(posthog);
+    try {
+      await posthog.ready();
+      clearPersistedQueues(posthog);
+      await posthog.optOut();
+      clearPersistedQueues(posthog);
+      posthog.reset([]);
+      clearPersistedQueues(posthog);
+      await posthog.optOut();
+      await (posthog as unknown as { flushStorage: () => Promise<void> }).flushStorage();
+    } catch (error) {
+      sdkCleanupError = error;
+    }
+  }
+  // Attempt the direct deletion even when SDK cleanup failed. Still surface
+  // the SDK failure afterwards because an undrained scheduled write could
+  // otherwise recreate a queue after this function reports success.
+  await erasePersistedPostHogStorage();
+  if (sdkCleanupError) throw sdkCleanupError;
+}
+
+async function readyPostHog() {
+  if (!analyticsAllowedForCurrentProfile()) return null;
+  if (!posthog) posthog = createPostHog();
+  if (!posthog) return null;
+  await posthog.ready();
+  return posthog;
+}
+
+const persistedQueues = [
+  PostHogPersistedProperty.Queue,
+  PostHogPersistedProperty.AiQueue,
+  PostHogPersistedProperty.AiCaptureQueue,
+  PostHogPersistedProperty.LogsQueue,
+] as const;
+
+function clearPersistedQueues(client: PostHog) {
+  for (const queue of persistedQueues) client.setPersistedProperty(queue, null);
+}
+
+async function loadLocalAnalyticsConsent() {
+  if (analyticsConsentGranted !== null) return analyticsConsentGranted;
+  try {
+    analyticsConsentGranted = await AsyncStorage.getItem(ANALYTICS_CONSENT_KEY) === 'true';
+  } catch {
+    analyticsConsentGranted = false;
+  }
+  return analyticsConsentGranted;
+}
+
+async function persistLocalAnalyticsConsent(enabled: boolean) {
+  analyticsConsentGranted = enabled;
+  // This setter runs synchronously before the first storage await. PostHog's
+  // flush path does not re-check opt-out after taking a queued batch, so the
+  // in-memory queues must disappear in the same tick as our own gate closes.
+  if (!enabled && posthog) clearPersistedQueues(posthog);
+  if (enabled) await AsyncStorage.setItem(ANALYTICS_CONSENT_KEY, 'true');
+  else await AsyncStorage.removeItem(ANALYTICS_CONSENT_KEY);
+}
+
+export const isTelemetryConfigured = telemetryConfigured;
 
 export function countBucket(count: number): CountBucket {
   if (count <= 1) return '1';
@@ -113,11 +226,11 @@ export function countBucket(count: number): CountBucket {
 }
 
 export function trackEvent<Name extends AnalyticsEventName>(name: Name, properties: AnalyticsEventMap[Name]) {
-  posthog?.capture(name, properties);
+  if (analyticsAllowedForCurrentProfile()) posthog?.capture(name, properties);
 }
 
 export function captureOperationalError(error: unknown, context: ErrorContext) {
-  if (!posthog) return;
+  if (!posthog || !analyticsAllowedForCurrentProfile()) return;
   const original = error instanceof Error ? error : null;
   const safeError = new Error(`${context.area}:${context.operation}:${context.code ?? original?.name ?? 'unknown'}`);
   safeError.name = original?.name || 'KandroOperationalError';
@@ -134,22 +247,70 @@ export function captureOperationalError(error: unknown, context: ErrorContext) {
 }
 
 export async function getAnalyticsCollectionEnabled() {
-  if (!posthog) return false;
-  await posthog.ready();
-  return !posthog.optedOut;
+  if (!analyticsAgeEligible()) return false;
+  // Reading the switch must remain a local AsyncStorage operation. Starting
+  // PostHog here would contact it before the user opted in.
+  return loadLocalAnalyticsConsent();
 }
 
 export async function setAnalyticsCollectionEnabled(enabled: boolean) {
-  if (!posthog) return false;
-  if (enabled) await posthog.optIn();
-  else await posthog.optOut();
-  return enabled;
+  if (!analyticsAgeEligible()) {
+    await persistLocalAnalyticsConsent(false);
+    if (posthog) {
+      await posthog.ready();
+      clearPersistedQueues(posthog);
+      await posthog.optOut();
+      clearPersistedQueues(posthog);
+    }
+    return false;
+  }
+  if (!enabled) {
+    // Revoke the local gate before touching the SDK. No queued callback can
+    // pass before_send while opt-out and queue erasure finish.
+    await persistLocalAnalyticsConsent(false);
+    if (!posthog) return false;
+    // optOut prevents new captures, but the SDK can still hold events that
+    // were queued before the user withdrew permission. Erase those queues at
+    // the same boundary so disabling analytics cannot leak a final batch.
+    await posthog.ready();
+    clearPersistedQueues(posthog);
+    await posthog.optOut();
+    clearPersistedQueues(posthog);
+    return false;
+  }
+  await persistLocalAnalyticsConsent(true);
+  const client = await readyPostHog();
+  if (!client) {
+    await persistLocalAnalyticsConsent(false).catch(() => undefined);
+    return false;
+  }
+  await client.optIn();
+  return analyticsAllowedForCurrentProfile();
+}
+
+/** Apply the profile-age privacy boundary before any screen may emit. */
+export async function applyAnalyticsAgePolicy(age: number | null) {
+  analyticsSubjectAge = Number.isInteger(age) ? age : null;
+  // The SDK is constructed lazily only after an adult profile is known. A
+  // minor/unknown profile therefore cannot auto-flush a persisted queue from
+  // an earlier session during module startup. If an instance already exists,
+  // wait for storage hydration, opt out, and erase every local queue.
+  if (!analyticsAgeEligible()) {
+    await clearTelemetryIdentity();
+    return;
+  }
+  // Adults still remain fully local until they have explicitly enabled the
+  // switch. This read does not construct the PostHog SDK or make a request.
+  if (await loadLocalAnalyticsConsent()) await readyPostHog();
 }
 
 export async function clearTelemetryAfterAccountDeletion() {
-  if (!posthog) return;
-  posthog.reset();
-  await posthog.optOut();
+  await clearTelemetryIdentity();
+}
+
+/** Prevents an old device identity or queued event crossing into a login. */
+export async function clearTelemetryForAccountSwitch() {
+  await clearTelemetryIdentity();
 }
 
 export function toBillingMode(mode: 'unconfigured' | 'test-store' | 'native-store' | 'web' | undefined): BillingMode {

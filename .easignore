@@ -1,0 +1,54 @@
+# Keep the remote iOS build context aligned with .gitignore. EAS uses this
+# file instead of .gitignore when it exists.
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+dist-ios/
+web-build/
+expo-env.d.ts
+.playwright-cli/
+output/
+
+# Native/generated credentials
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+credentials.json
+
+# Metro/debug
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.icloud
+*.pem
+
+# Local configuration and gateway secrets
+.env
+.env*.local
+supabase/.env.gateway
+
+# Generated native folders
+/ios
+/android
+
+# Audit evidence and local reviewer credentials are release records, not app
+# source. They stay in Git but never enter the EAS upload context.
+/release/
+
+# Unrelated local scratch space
+/tmp/
+
+# TypeScript cache
+*.tsbuildinfo

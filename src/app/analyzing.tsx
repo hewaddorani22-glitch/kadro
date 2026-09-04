@@ -7,6 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { mealPhotoPlaceholder } from '@/utils/format';
 import { MealPhoto, PrimaryButton } from '@/components/ui';
 import { colors, radii } from '@/constants/theme';
+import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { useApp } from '@/context/AppContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -22,6 +23,7 @@ export default function AnalyzingScreen() {
     analysisStatus,
     analyzeCurrentPhoto,
     photoUri,
+    resetScan,
     scanMode,
     startDemoScan,
   } = useApp();
@@ -33,7 +35,10 @@ export default function AnalyzingScreen() {
   const errorCopy: Record<AnalysisErrorKind, { title: string; detail: string }> = {
     'not-configured': { title: t.analyzing.errNotConfiguredTitle, detail: t.analyzing.errNotConfiguredBody },
     'consent-required': { title: t.analyzing.errConsentTitle, detail: t.analyzing.errConsentBody },
+    'subscription-required': { title: t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE), detail: t.paywall.blockedSub },
+    'daily-limit': { title: t.analyzing.errProviderTitle, detail: t.errors.gatewayDailyLimit },
     'invalid-input': { title: t.analyzing.errInputTitle, detail: t.analyzing.errInputBody },
+    'request-expired': { title: t.analyzing.errExpiredTitle, detail: t.analyzing.errExpiredBody },
     offline: { title: t.analyzing.errOfflineTitle, detail: t.analyzing.errOfflineBody },
     'unclear-image': { title: t.analyzing.errUnclearTitle, detail: t.analyzing.errUnclearBody },
     'multiple-dishes': { title: t.analyzing.errMultipleTitle, detail: t.analyzing.errMultipleBody },
@@ -83,13 +88,21 @@ export default function AnalyzingScreen() {
     void analyzeCurrentPhoto();
   };
 
+  const changeInput = (path: '/(tabs)/scan' | '/(tabs)/scan?mode=description' = '/(tabs)/scan') => {
+    resetScan();
+    router.replace(path);
+  };
+
   const error = analysisError ? errorCopy[analysisError] : null;
   const failed = analysisStatus === 'error' || analysisStatus === 'queued';
+  const failureDetail = analysisError === 'offline'
+    ? (analysisStatus === 'queued' ? error?.detail : t.analyzing.errOfflineNotQueuedBody)
+    : analysisMessage ?? error?.detail;
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel={t.analyzing.close} accessibilityRole="button" onPress={() => router.replace('/(tabs)/scan')} style={styles.closeButton}>
+        <Pressable accessibilityLabel={t.analyzing.close} accessibilityRole="button" onPress={() => changeInput()} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={23} />
         </Pressable>
         <Text style={styles.topTitle}>{t.analyzing.title}</Text>
@@ -116,30 +129,35 @@ export default function AnalyzingScreen() {
           </View>
           <Text accessibilityLiveRegion="polite" style={styles.title}>{failed ? error?.title : t.analyzing.working}</Text>
           <Text style={styles.subtitle}>
-            {failed ? analysisMessage ?? error?.detail : t.analyzing.workingText}
+            {failed ? failureDetail : t.analyzing.workingText}
           </Text>
 
           {failed ? (
             <View style={styles.actions}>
-              {analysisError === 'consent-required' ? (
+              {analysisError === 'subscription-required' ? (
+                <>
+                  <PrimaryButton icon="sparkles" label={t.paywall.ctaStart} onPress={() => router.replace('/paywall?reason=blocked')} />
+                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
+                </>
+              ) : analysisError === 'consent-required' ? (
                 <>
                   <PrimaryButton icon="shield-checkmark-outline" label={t.analyzing.openConsent} onPress={() => router.replace('/data-consent' as never)} />
-                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
                 </>
-              ) : analysisError === 'product-not-found' || analysisError === 'invalid-input' ? (
+              ) : analysisError === 'product-not-found' || analysisError === 'invalid-input' || analysisError === 'request-expired' ? (
                 <>
                   {analysisError === 'product-not-found' ? <PrimaryButton
                     icon="create-outline"
                     label={t.analyzing.describeInstead}
-                    onPress={() => router.replace('/(tabs)/scan?mode=description')}
+                    onPress={() => changeInput('/(tabs)/scan?mode=description')}
                   /> : null}
-                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
                 </>
               ) : (
                 <>
                   {analysisError !== 'not-configured' ? <PrimaryButton icon="refresh" label={t.analyzing.retry} onPress={retry} /> : null}
                   <PrimaryButton label={t.analyzing.openDemo} onPress={runDemo} variant={analysisError === 'not-configured' ? 'primary' : 'secondary'} />
-                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
                 </>
               )}
             </View>

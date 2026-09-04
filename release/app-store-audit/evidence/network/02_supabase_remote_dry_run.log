@@ -1,0 +1,8 @@
+
+> kandro@1.0.0 db:remote:check
+> SUPABASE_HOME=./supabase/.cli-home supabase db push --linked --dry-run --profile ./supabase/kandro.profile.yml
+
+Initialising login role...
+DRY RUN: migrations will *not* be pushed to the database.
+Connecting to remote database...
+{"upToDate":true,"dryRun":true,"migrations":[],"seeds":[],"roles":[],"message":"Remote database is up to date."}

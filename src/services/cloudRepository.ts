@@ -3,11 +3,13 @@ import { localDateKey } from '@/utils/date';
 
 import { ensureSupabaseUser, isSupabaseConfigured, supabase } from './supabaseClient';
 import { isUnitSystem } from '@/utils/units';
-import { isBiologicalSex } from '@/services/personalization';
+import { calculateDailyTargets, isBiologicalSex } from '@/services/personalization';
 import { formatClockTime } from '@/utils/format';
 
 export type CloudProfile = {
   userId: string;
+  /** False only for a never-declared or deliberately invalidated cloud age. */
+  ageDeclared: boolean;
   profile: UserProfile;
   targets: DailyTargets;
 };
@@ -131,70 +133,89 @@ function mapMeal(row: MealRow): Meal {
   };
 }
 
-export async function initializeCloudProfile(defaultProfile: UserProfile, defaultTargets: DailyTargets): Promise<CloudProfile | null> {
+export async function initializeCloudProfile(
+  defaultProfile: UserProfile,
+  defaultTargets: DailyTargets,
+  deriveMissingTargetsFromCloud = false,
+): Promise<CloudProfile | null> {
   if (!supabase || !isSupabaseConfigured) return null;
   const user = await ensureSupabaseUser();
   if (!user) return null;
 
   const today = localDateKey();
   const now = new Date().toISOString();
-  const [profileWrite, targetWrite] = await Promise.all([
-    supabase.from('profiles').upsert(
-      {
-        user_id: user.id,
-        display_name: defaultProfile.displayName,
-        goal: defaultProfile.goal,
-        activity_level: defaultProfile.activityLevel,
-        weekly_rate_kg: defaultProfile.weeklyRateKg,
-        unit_system: defaultProfile.unitSystem,
-        sex: defaultProfile.sex,
-        preferences: defaultProfile.preferences,
-        updated_at: now,
-      },
-      { onConflict: 'user_id', ignoreDuplicates: true },
-    ),
-    supabase.from('daily_targets').upsert(
-      {
-        user_id: user.id,
-        target_date: today,
-        calories: defaultTargets.calories,
-        protein: defaultTargets.protein,
-        carbs: defaultTargets.carbs,
-        fat: defaultTargets.fat,
-        updated_at: now,
-      },
-      { onConflict: 'user_id,target_date', ignoreDuplicates: true },
-    ),
-  ]);
+  const profileWrite = await supabase.from('profiles').upsert(
+    {
+      user_id: user.id,
+      display_name: defaultProfile.displayName,
+      goal: defaultProfile.goal,
+      ...(defaultProfile.completedAt ? {
+        age: defaultProfile.age,
+        height_cm: defaultProfile.heightCm,
+        weight_kg: defaultProfile.weightKg,
+      } : {}),
+      activity_level: defaultProfile.activityLevel,
+      weekly_rate_kg: defaultProfile.weeklyRateKg,
+      unit_system: defaultProfile.unitSystem,
+      sex: defaultProfile.sex,
+      preferences: defaultProfile.preferences,
+      updated_at: now,
+    },
+    { onConflict: 'user_id', ignoreDuplicates: true },
+  );
   if (profileWrite.error) throw profileWrite.error;
-  if (targetWrite.error) throw targetWrite.error;
 
-  const [profileResult, targetResult] = await Promise.all([
-    supabase.from('profiles').select('display_name,goal,age,height_cm,weight_kg,activity_level,weekly_rate_kg,unit_system,sex,preferences,updated_at').eq('user_id', user.id).single(),
-    supabase.from('daily_targets').select('calories,protein,carbs,fat').eq('user_id', user.id).eq('target_date', today).single(),
-  ]);
+  // Read the destination profile before creating today's target. A returning
+  // account often has no row yet for a new calendar day; writing generic
+  // defaults first would permanently replace its personalised plan.
+  const profileResult = await supabase.from('profiles')
+    .select('display_name,goal,age,height_cm,weight_kg,activity_level,weekly_rate_kg,unit_system,sex,preferences,updated_at')
+    .eq('user_id', user.id)
+    .single();
   if (profileResult.error) throw profileResult.error;
+
+  const profile: UserProfile = {
+    displayName: profileResult.data.display_name,
+    goal: profileResult.data.goal,
+    age: Number(profileResult.data.age ?? defaultProfile.age),
+    heightCm: Number(profileResult.data.height_cm ?? defaultProfile.heightCm),
+    weightKg: Number(profileResult.data.weight_kg ?? defaultProfile.weightKg),
+    activityLevel: profileResult.data.activity_level === 'high' ? 'high' : profileResult.data.activity_level === 'low' ? 'low' : 'light',
+    weeklyRateKg: Number(profileResult.data.weekly_rate_kg) === 0.25 ? 0.25 : 0.5,
+    unitSystem: isUnitSystem(profileResult.data.unit_system) ? profileResult.data.unit_system : defaultProfile.unitSystem,
+    sex: isBiologicalSex(profileResult.data.sex) ? profileResult.data.sex : 'unspecified',
+    preferences: profileResult.data.preferences ?? [],
+    completedAt: profileResult.data.age && profileResult.data.height_cm && profileResult.data.weight_kg
+      ? profileResult.data.updated_at
+      : null,
+  };
+  const missingTargetDefaults = deriveMissingTargetsFromCloud && profile.completedAt
+    ? calculateDailyTargets(profile)
+    : defaultTargets;
+  const targetWrite = await supabase.from('daily_targets').upsert(
+    {
+      user_id: user.id,
+      target_date: today,
+      calories: missingTargetDefaults.calories,
+      protein: missingTargetDefaults.protein,
+      carbs: missingTargetDefaults.carbs,
+      fat: missingTargetDefaults.fat,
+      updated_at: now,
+    },
+    { onConflict: 'user_id,target_date', ignoreDuplicates: true },
+  );
+  if (targetWrite.error) throw targetWrite.error;
+  const targetResult = await supabase.from('daily_targets')
+    .select('calories,protein,carbs,fat')
+    .eq('user_id', user.id)
+    .eq('target_date', today)
+    .single();
   if (targetResult.error) throw targetResult.error;
 
   return {
     userId: user.id,
-    profile: {
-      displayName: profileResult.data.display_name,
-      goal: profileResult.data.goal,
-      age: Number(profileResult.data.age ?? defaultProfile.age),
-      heightCm: Number(profileResult.data.height_cm ?? defaultProfile.heightCm),
-      weightKg: Number(profileResult.data.weight_kg ?? defaultProfile.weightKg),
-      activityLevel: profileResult.data.activity_level === 'high' ? 'high' : profileResult.data.activity_level === 'low' ? 'low' : 'light',
-      weeklyRateKg: Number(profileResult.data.weekly_rate_kg) === 0.25 ? 0.25 : 0.5,
-      // A row written before the column existed comes back null.
-      unitSystem: isUnitSystem(profileResult.data.unit_system) ? profileResult.data.unit_system : defaultProfile.unitSystem,
-      // A row written before the column existed comes back null.
-      sex: isBiologicalSex(profileResult.data.sex) ? profileResult.data.sex : 'unspecified',
-      preferences: profileResult.data.preferences ?? [],
-      completedAt: profileResult.data.age && profileResult.data.height_cm && profileResult.data.weight_kg
-        ? profileResult.data.updated_at
-        : null,
-    },
+    ageDeclared: profileResult.data.age !== null,
+    profile,
     targets: targetResult.data,
   };
 }
@@ -297,7 +318,12 @@ export async function loadCloudMealHistory(days = 90): Promise<Meal[]> {
   return (data as MealRow[]).map(mapMeal);
 }
 
-export async function hasCloudMeal(): Promise<boolean> {
+/**
+ * A stored meal only proves that an AI analysis happened when its origin is
+ * `scan`. Search, barcode, demo and Kandro's own plan are deliberately stored
+ * as `plan`, because none of those paths spends an analysis credit.
+ */
+export async function hasCloudAnalyzedMeal(): Promise<boolean> {
   if (!supabase || !isSupabaseConfigured) return false;
   const user = await ensureSupabaseUser();
   if (!user) return false;
@@ -305,6 +331,7 @@ export async function hasCloudMeal(): Promise<boolean> {
     .from('meals')
     .select('id')
     .eq('user_id', user.id)
+    .eq('origin', 'scan')
     .limit(1);
   if (error) throw error;
   return (data?.length ?? 0) > 0;

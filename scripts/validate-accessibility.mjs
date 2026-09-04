@@ -71,6 +71,21 @@ for (const file of files) {
     if (iconOnly && !/accessibilityLabel=/.test(element.text)) {
       failures.push(`${label}:${element.line} an icon-only Pressable has no accessibilityLabel`);
     }
+
+    // A radio needs a checked state. `selected` may render the visual state on
+    // native, but React Native Web does not expose it as aria-checked, leaving
+    // assistive technology unable to tell which mutually exclusive option won.
+    if (/accessibilityRole=["']radio["']/.test(element.text)) {
+      if (!/accessibilityState=\{\{[\s\S]*?checked\s*:/.test(element.text)) {
+        failures.push(`${label}:${element.line} a radio has no checked accessibilityState`);
+      }
+      if (!/aria-checked=/.test(element.text)) {
+        failures.push(`${label}:${element.line} a radio has no aria-checked web state`);
+      }
+      if (/accessibilityState=\{\{[\s\S]*?selected\s*:/.test(element.text)) {
+        failures.push(`${label}:${element.line} a radio uses selected instead of checked`);
+      }
+    }
   }
 }
 
@@ -78,4 +93,4 @@ if (failures.length) {
   throw new Error(`Accessibility validation failed:\n- ${failures.join('\n- ')}`);
 }
 
-console.log(`Validated ${files.length} screens: every switch, text field and icon-only button announces itself.`);
+console.log(`Validated ${files.length} screens: controls announce labels and every radio exposes its checked state.`);

@@ -13,6 +13,8 @@ const consistency = read('src/services/consistency.ts');
 const progress = read('src/app/(tabs)/progress.tsx');
 const authTemplate = read('supabase/templates/email_change.html');
 const authConfig = read('supabase/config.toml');
+const consent = read('src/services/consent.ts');
+const deletionScreen = read('src/app/account-deletion.tsx');
 
 assert.match(onboarding, /stop\(\);\s*const activeGesture = gesture\.current/,
   'every new stepper gesture must cancel the previous hold timer');
@@ -22,13 +24,21 @@ assert.match(onboarding, /activeGesture !== gesture\.current/,
 assert.match(local, /COUNTED_SCAN_IDS_KEY/);
 assert.match(local, /scanCountMutation\.then\(mutate, mutate\)/,
   'analysis credits must be serialized instead of racing through React state');
-assert.match(app, /countLifetimeScanOnce\(scannedMeal\.id\)/,
-  'a scan id must spend at most one analysis credit');
+assert.match(app, /countLifetimeScanOnce\(invocationScanId\)[\s\S]*if \(!isCurrentInvocation\(\)\) return;[\s\S]*setLifetimeScanCount\(nextLifetimeCount\)[\s\S]*setAnalysisStatus\('ready'\)/,
+  'the stable provider request id must spend at most one credit when the result succeeds');
+const saveStart = app.indexOf('const logScannedMeal = useCallback');
+const saveEnd = app.indexOf('const logPlannedMeal = useCallback', saveStart);
+assert.doesNotMatch(app.slice(saveStart, saveEnd), /countLifetimeScanOnce/,
+  'abandoning the confirmation screen must not postpone the spent-credit update until meal save');
 
 assert.match(cloud, /origin: meal\.origin === 'plan' \? 'plan' : 'scan'/,
   'cloud writes must preserve free plan/search meals');
 assert.match(cloud, /origin: row\.origin === 'plan' \? 'plan' : 'scan'/,
   'cloud reads must preserve free plan/search meals');
+assert.match(cloud, /defaultProfile\.completedAt \? \{[\s\S]*age: defaultProfile\.age,[\s\S]*height_cm: defaultProfile\.heightCm,[\s\S]*weight_kg: defaultProfile\.weightKg/,
+  'a first cloud profile created from completed local onboarding must preserve its declared measurements');
+assert.match(cloud, /deriveMissingTargetsFromCloud && profile\.completedAt[\s\S]*calculateDailyTargets\(profile\)[\s\S]*missingTargetDefaults/,
+  'a returning account with no target row for today must derive it from the cloud profile instead of generic defaults');
 assert.match(app, /\['demo', 'search', 'barcode'\]/,
   'barcode and search must remain outside the paid AI allowance');
 assert.doesNotMatch(scan.slice(scan.indexOf('const openBarcode'), scan.indexOf('const handleBarcode')), /hasScanAccess/,
@@ -73,6 +83,12 @@ assert.match(authTemplate, /\.Data\.display_name/);
 assert.match(authTemplate, /{{ \.Token }}/);
 assert.doesNotMatch(authTemplate, /ConfirmationURL|localhost/,
   'the in-app OTP flow must not send users to a browser link');
+assert.match(consent, /if \(!user\) throw new Error\('cloud_account_disabled'\)/,
+  'a configured but intentionally disabled cloud account must not record a misleading local-only consent');
+assert.match(deletionScreen, /enableNewCloudAccount\(\)[\s\S]*router\.replace\('\/onboarding'\)/,
+  'after deletion the user needs an explicit, functional path to create a fresh account before consenting again');
+assert.match(local, /beginLocalAccountSwitch\(previousUserId: string\)[\s\S]*previousUserId,[\s\S]*startedAt/,
+  'the account-switch crash marker must identify the previous session, not just store a boolean');
 
 for (const path of ['src', 'site']) {
   const files = fs.readdirSync(new URL(`../${path}`, import.meta.url), { recursive: true, withFileTypes: true });

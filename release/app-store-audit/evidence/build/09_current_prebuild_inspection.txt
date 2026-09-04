@@ -1,0 +1,164 @@
+SOURCE_COMMIT=22b1bf91af7824ffb976389e8bf259a0c8c1ccb5
+PREBUILD_COMMAND=npx expo prebuild --platform ios --no-install
+=== NATIVE FILES ===
+ios/.gitignore
+ios/.xcode.env
+ios/Kandro.xcodeproj/project.pbxproj
+ios/Kandro.xcodeproj/project.xcworkspace/contents.xcworkspacedata
+ios/Kandro.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+ios/Kandro.xcodeproj/xcshareddata/xcschemes/Kandro.xcscheme
+ios/Kandro/AppDelegate.swift
+ios/Kandro/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png
+ios/Kandro/Images.xcassets/AppIcon.appiconset/Contents.json
+ios/Kandro/Images.xcassets/Contents.json
+ios/Kandro/Images.xcassets/SplashScreenBackground.colorset/Contents.json
+ios/Kandro/Images.xcassets/SplashScreenLegacy.imageset/Contents.json
+ios/Kandro/Images.xcassets/SplashScreenLegacy.imageset/image.png
+ios/Kandro/Images.xcassets/SplashScreenLegacy.imageset/image@2x.png
+ios/Kandro/Images.xcassets/SplashScreenLegacy.imageset/image@3x.png
+ios/Kandro/Info.plist
+ios/Kandro/Kandro-Bridging-Header.h
+ios/Kandro/Kandro.entitlements
+ios/Kandro/SplashScreen.storyboard
+ios/Kandro/Supporting/Expo.plist
+ios/Kandro/Supporting/de.lproj/InfoPlist.strings
+ios/Kandro/Supporting/en.lproj/InfoPlist.strings
+ios/Podfile
+ios/Podfile.properties.json
+=== PBX TARGETS/BUILD SETTINGS SELECTED ===
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:270:				CURRENT_PROJECT_VERSION = 1;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:276:				INFOPLIST_FILE = Kandro/Info.plist;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:277:				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:282:				MARKETING_VERSION = 1.0;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:288:				PRODUCT_BUNDLE_IDENTIFIER = "com.hewaddorani.kandro";
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:289:				PRODUCT_NAME = "Kandro";
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:292:				SWIFT_VERSION = 5.0;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:294:				DEVELOPMENT_TEAM = 85S69CVRAY;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:295:				TARGETED_DEVICE_FAMILY = "1";
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:296:				CODE_SIGN_ENTITLEMENTS = Kandro/Kandro.entitlements;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:305:				CURRENT_PROJECT_VERSION = 1;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:306:				INFOPLIST_FILE = Kandro/Info.plist;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:307:				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:312:				MARKETING_VERSION = 1.0;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:318:				PRODUCT_BUNDLE_IDENTIFIER = "com.hewaddorani.kandro";
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:319:				PRODUCT_NAME = "Kandro";
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:321:				SWIFT_VERSION = 5.0;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:323:				DEVELOPMENT_TEAM = 85S69CVRAY;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:324:				TARGETED_DEVICE_FAMILY = "1";
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:325:				CODE_SIGN_ENTITLEMENTS = Kandro/Kandro.entitlements;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:376:				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+/tmp/kandro-current-prebuild.7tPma4/ios/Kandro.xcodeproj/project.pbxproj:428:				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
+=== INFO.PLIST ===
+{
+  "CADisableMinimumFrameDurationOnPhone" => 1
+  "CFBundleDevelopmentRegion" => "$(DEVELOPMENT_LANGUAGE)"
+  "CFBundleDisplayName" => "Kandro"
+  "CFBundleExecutable" => "$(EXECUTABLE_NAME)"
+  "CFBundleIdentifier" => "$(PRODUCT_BUNDLE_IDENTIFIER)"
+  "CFBundleInfoDictionaryVersion" => "6.0"
+  "CFBundleName" => "$(PRODUCT_NAME)"
+  "CFBundlePackageType" => "$(PRODUCT_BUNDLE_PACKAGE_TYPE)"
+  "CFBundleShortVersionString" => "1.0.0"
+  "CFBundleSignature" => "????"
+  "CFBundleURLTypes" => [
+    0 => {
+      "CFBundleURLSchemes" => [
+        0 => "kandro"
+        1 => "com.hewaddorani.kandro"
+      ]
+    }
+  ]
+  "CFBundleVersion" => "1"
+  "ITSAppUsesNonExemptEncryption" => 0
+  "LSMinimumSystemVersion" => "12.0"
+  "LSRequiresIPhoneOS" => 1
+  "NSAppTransportSecurity" => {
+    "NSAllowsArbitraryLoads" => 0
+  }
+  "NSCameraUsageDescription" => "Allow Kandro to photograph meals for analysis."
+  "NSUserActivityTypes" => [
+    0 => "$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route"
+  ]
+  "RCTNewArchEnabled" => 1
+  "UILaunchStoryboardName" => "SplashScreen"
+  "UIRequiredDeviceCapabilities" => [
+    0 => "arm64"
+  ]
+  "UIRequiresFullScreen" => 0
+  "UIStatusBarStyle" => "UIStatusBarStyleDefault"
+  "UISupportedInterfaceOrientations" => [
+    0 => "UIInterfaceOrientationPortrait"
+    1 => "UIInterfaceOrientationPortraitUpsideDown"
+  ]
+  "UIUserInterfaceStyle" => "Automatic"
+  "UIViewControllerBasedStatusBarAppearance" => 0
+}
+=== ENTITLEMENTS ===
+{
+  "aps-environment" => "development"
+}
+=== PRIVACY MANIFEST ===
+=== PODFILE ===
+require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
+require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
+
+require 'json'
+podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
+
+def ccache_enabled?(podfile_properties)
+  # Environment variable takes precedence
+  return ENV['USE_CCACHE'] == '1' if ENV['USE_CCACHE']
+
+  # Fall back to Podfile properties
+  podfile_properties['apple.ccacheEnabled'] == 'true'
+end
+
+ENV['RCT_NEW_ARCH_ENABLED'] ||= '0' if podfile_properties['newArchEnabled'] == 'false'
+ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] ||= podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
+ENV['RCT_USE_RN_DEP'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
+ENV['RCT_USE_PREBUILT_RNCORE'] ||= '1' if podfile_properties['ios.buildReactNativeFromSource'] != 'true' && podfile_properties['newArchEnabled'] != 'false'
+platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
+
+prepare_react_native_project!
+
+target 'Kandro' do
+  use_expo_modules!
+
+  if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
+    config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
+  else
+    config_command = [
+      'node',
+      '--no-warnings',
+      '--eval',
+      'require(\'expo/bin/autolinking\')',
+      'expo-modules-autolinking',
+      'react-native-config',
+      '--json',
+      '--platform',
+      'ios'
+    ]
+  end
+
+  config = use_native_modules!(config_command)
+
+  use_frameworks! :linkage => podfile_properties['ios.useFrameworks'].to_sym if podfile_properties['ios.useFrameworks']
+  use_frameworks! :linkage => ENV['USE_FRAMEWORKS'].to_sym if ENV['USE_FRAMEWORKS']
+
+  use_react_native!(
+    :path => config[:reactNativePath],
+    :hermes_enabled => podfile_properties['expo.jsEngine'] == nil || podfile_properties['expo.jsEngine'] == 'hermes',
+    # An absolute path to your application root.
+    :app_path => "#{Pod::Config.instance.installation_root}/..",
+    :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
+  )
+
+  post_install do |installer|
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false,
+      :ccache_enabled => ccache_enabled?(podfile_properties),
+    )
+  end
+end

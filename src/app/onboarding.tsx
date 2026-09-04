@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { KandroMark } from '@/components/KandroMark';
@@ -33,9 +33,11 @@ type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyph
 
 
 const STEPS = ['goal', 'name', 'sex', 'age', 'rate', 'height', 'weight', 'activity', 'preferences', 'building', 'plan'] as const;
-// The same questions, minus the first-run theatre: someone changing from
-// losing weight to building muscle has already seen the plan being built.
-const EDIT_STEPS = STEPS.filter((id) => id !== 'building');
+// The same questions, minus the first-run theatre and age. Age is declared once
+// because crossing 16 changes guardian consent and crossing 18 changes the
+// analytics policy. A correction needs a trusted support path that updates
+// those states together; a local edit must never outrun the server trigger.
+const EDIT_STEPS = STEPS.filter((id) => id !== 'building' && id !== 'age');
 type StepId = (typeof STEPS)[number];
 
 type Dict = ReturnType<typeof useLanguage>['t'];
@@ -95,12 +97,14 @@ function copyFor(t: Dict): Record<StepId, { title: string; subtitle: string }> {
   };
 }
 
-/** Steps the user may leave without answering. Everything else has a safe default. */
+/** Steps the user may leave without answering. Age needs an explicit confirmation. */
 const skippableSteps = new Set<StepId>(['name', 'preferences']);
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const compactHeight = windowHeight <= 600;
   const { completeOnboarding, grantWellnessConsent, profile } = useApp();
   const { language, locale, t } = useLanguage();
   const copy = copyFor(t);
@@ -119,6 +123,9 @@ export default function OnboardingScreen() {
   // switchable right on the step where it matters.
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => (editing ? profile.unitSystem : defaultUnitSystem()));
   const [age, setAge] = useState(() => (editing ? profile.age : 29));
+  // The visible starting value is only a convenient picker position. It must
+  // never become the user's declared age until they adjust or affirm it.
+  const [ageConfirmed, setAgeConfirmed] = useState(() => editing);
   const [height, setHeight] = useState(() => (editing ? profile.heightCm : 178));
   const [weight, setWeight] = useState(() => (editing ? profile.weightKg : 78));
   const [activity, setActivity] = useState<UserProfile['activityLevel']>(() => (editing ? profile.activityLevel : 'light'));
@@ -254,6 +261,9 @@ export default function OnboardingScreen() {
 
   const primaryAction = async () => {
     void selectionHaptic();
+    // Keep the invariant here as well as on the disabled button: navigation
+    // must not persist the convenient picker default through another caller.
+    if (step === 'age' && !ageConfirmed) return;
     if (step === 'plan') {
       if (editing) {
         if (draftProfile.age < 16 && !await getGuardianConsentStatus().catch(() => false)) {
@@ -302,26 +312,26 @@ export default function OnboardingScreen() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, compactHeight && styles.contentCompact]}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
           style={styles.flex}
         >
-          <View style={styles.headingBlock}>
+          <View style={[styles.headingBlock, compactHeight && styles.headingBlockCompact]}>
             {step === 'goal' || step === 'plan' ? (
-              <View style={styles.brandMark}><KandroMark size={42} /></View>
+              <View style={[styles.brandMark, compactHeight && styles.brandMarkCompact]}><KandroMark size={compactHeight ? 34 : 42} /></View>
             ) : null}
-            <Text accessibilityRole="header" style={styles.title}>{copy[step].title}</Text>
-            <Text style={styles.subtitle}>
+            <Text accessibilityRole="header" style={[styles.title, compactHeight && styles.titleCompact]}>{copy[step].title}</Text>
+            <Text style={[styles.subtitle, compactHeight && styles.subtitleCompact]}>
               {/* The rate question means something different for each goal. */}
               {step === 'rate' && goal === 'gain' ? t.onboarding.rateSubtitleGain : copy[step].subtitle}
             </Text>
           </View>
 
-          <View style={styles.body}>
+          <View style={[styles.body, compactHeight && styles.bodyCompact]}>
             {step === 'goal' ? (
-              <ChoiceList choices={goalChoices} onSelect={(value) => selectChoice(() => setGoal(value))} selected={goal} values={['lose', 'maintain', 'gain'] as NutritionGoal[]} />
+              <ChoiceList choices={goalChoices} compact={compactHeight} onSelect={(value) => selectChoice(() => setGoal(value))} selected={goal} values={['lose', 'maintain', 'gain'] as NutritionGoal[]} />
             ) : null}
 
             {step === 'rate' ? (
@@ -340,13 +350,14 @@ export default function OnboardingScreen() {
                   const applied = draftProfile.goal === 'gain' ? Math.min(350, daily) : daily;
                   return (
                     <Pressable
+                      aria-checked={active}
                       accessibilityRole="radio"
-                      accessibilityState={{ selected: active }}
+                      accessibilityState={{ checked: active }}
                       key={rate}
                       onPress={() => selectChoice(() => setWeeklyRate(rate))}
-                      style={({ pressed }) => [styles.choice, active && styles.choiceActive, pressed && styles.choicePressed]}
+                      style={({ pressed }) => [styles.choice, compactHeight && styles.choiceCompact, active && styles.choiceActive, pressed && styles.choicePressed]}
                     >
-                      <View style={[styles.choiceIcon, active && styles.choiceIconActive]}>
+                      <View style={[styles.choiceIcon, compactHeight && styles.choiceIconCompact, active && styles.choiceIconActive]}>
                         <Ionicons color={colors.text} name={rate === 0.25 ? 'leaf-outline' : 'flash-outline'} size={22} />
                       </View>
                       <View style={styles.choiceTextBlock}>
@@ -392,13 +403,42 @@ export default function OnboardingScreen() {
             {step === 'sex' ? (
               <ChoiceList
                 choices={sexChoices}
+                compact={compactHeight}
                 onSelect={(value) => selectChoice(() => setSex(value))}
                 selected={sex}
                 values={BIOLOGICAL_SEXES}
               />
             ) : null}
             {step === 'age' ? (
-              <NumberStep max={80} min={14} onChange={setAge} step={1} unit={t.onboarding.years} value={age} />
+              <View style={styles.ageStep}>
+                <NumberStep
+                  max={100}
+                  min={14}
+                  onChange={(nextAge) => {
+                    setAge(nextAge);
+                    setAgeConfirmed(true);
+                  }}
+                  step={1}
+                  unit={t.onboarding.years}
+                  value={age}
+                />
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: ageConfirmed }}
+                  onPress={() => {
+                    void selectionHaptic();
+                    setAgeConfirmed(true);
+                  }}
+                  style={[styles.ageConfirmation, ageConfirmed && styles.ageConfirmationChecked]}
+                >
+                  <Ionicons
+                    color={ageConfirmed ? colors.accentText : colors.muted}
+                    name={ageConfirmed ? 'checkmark-circle' : 'ellipse-outline'}
+                    size={22}
+                  />
+                  <Text style={styles.ageConfirmationText}>{t.onboarding.confirmAge(age)}</Text>
+                </Pressable>
+              </View>
             ) : null}
             {step === 'height' ? (
               <View style={styles.unitStep}>
@@ -444,7 +484,7 @@ export default function OnboardingScreen() {
             ) : null}
 
             {step === 'activity' ? (
-              <ChoiceList choices={activityChoices} onSelect={(value) => selectChoice(() => setActivity(value))} selected={activity} values={['low', 'light', 'high'] as UserProfile['activityLevel'][]} />
+              <ChoiceList choices={activityChoices} compact={compactHeight} onSelect={(value) => selectChoice(() => setActivity(value))} selected={activity} values={['low', 'light', 'high'] as UserProfile['activityLevel'][]} />
             ) : null}
 
             {step === 'preferences' ? (
@@ -488,6 +528,7 @@ export default function OnboardingScreen() {
         {showFooterButton ? (
           <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
             <PrimaryButton
+              disabled={step === 'age' && !ageConfirmed}
               icon={step === 'plan' ? 'camera' : 'arrow-forward'}
               label={footerLabel}
               onPress={() => void primaryAction()}
@@ -547,7 +588,7 @@ export default function OnboardingScreen() {
   );
 }
 
-function ChoiceList<T extends string>({ choices, onSelect, selected, values }: { choices: Choice[]; onSelect: (choice: T) => void; selected: T; values: T[] }) {
+function ChoiceList<T extends string>({ choices, compact = false, onSelect, selected, values }: { choices: Choice[]; compact?: boolean; onSelect: (choice: T) => void; selected: T; values: T[] }) {
   return (
     <View style={styles.choiceList}>
       {choices.map((choice, index) => {
@@ -555,13 +596,14 @@ function ChoiceList<T extends string>({ choices, onSelect, selected, values }: {
         const active = value === selected;
         return (
           <Pressable
+            aria-checked={active}
             accessibilityRole="radio"
-            accessibilityState={{ selected: active }}
+            accessibilityState={{ checked: active }}
             key={value}
             onPress={() => onSelect(value)}
-            style={({ pressed }) => [styles.choice, active && styles.choiceActive, pressed && styles.choicePressed]}
+            style={({ pressed }) => [styles.choice, compact && styles.choiceCompact, active && styles.choiceActive, pressed && styles.choicePressed]}
           >
-            <View style={[styles.choiceIcon, active && styles.choiceIconActive]}>
+            <View style={[styles.choiceIcon, compact && styles.choiceIconCompact, active && styles.choiceIconActive]}>
               <Ionicons color={colors.text} name={choice.icon} size={22} />
             </View>
             <View style={styles.choiceTextBlock}>
@@ -763,23 +805,35 @@ const styles = StyleSheet.create({
   skip: { minWidth: 92, color: colors.muted, fontSize: 13, fontWeight: '600', textAlign: 'right' },
   skipPlaceholder: { width: 92 },
   content: { flexGrow: 1, paddingTop: 26, paddingBottom: 8 },
+  contentCompact: { paddingTop: 12, paddingBottom: 6 },
   headingBlock: { gap: 10 },
+  headingBlockCompact: { gap: 6 },
   brandMark: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', marginBottom: 5 },
+  brandMarkCompact: { width: 34, height: 34, marginBottom: 2 },
   title: { color: colors.text, fontSize: 34, lineHeight: 40, fontWeight: '700', letterSpacing: -1.1 },
+  titleCompact: { fontSize: 28, lineHeight: 33, letterSpacing: -0.8 },
   subtitle: { color: colors.muted, fontSize: 16, lineHeight: 23, maxWidth: 360 },
+  subtitleCompact: { fontSize: 14, lineHeight: 19 },
   body: { flexGrow: 1, justifyContent: 'center', paddingVertical: 22 },
+  bodyCompact: { justifyContent: 'flex-start', paddingVertical: 12 },
   footer: { gap: 12, paddingTop: 8, backgroundColor: colors.background },
   choiceList: { gap: 12 },
   choice: { minHeight: 82, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 13 },
+  choiceCompact: { minHeight: 70, borderRadius: 20, padding: 10, gap: 10 },
   choiceActive: { borderColor: colors.accentText, backgroundColor: colors.neutralSoft },
   choicePressed: { transform: [{ scale: 0.985 }] },
   choiceIcon: { width: 48, height: 48, borderRadius: 18, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  choiceIconCompact: { width: 42, height: 42, borderRadius: 15 },
   choiceIconActive: { backgroundColor: colors.accent },
   choiceTextBlock: { flex: 1, minWidth: 0, gap: 3 },
   choiceTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   choiceDetail: { color: colors.muted, fontSize: 13 },
   nameField: { gap: 7 },
   nameInput: { minHeight: 64, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 22, fontWeight: '600', paddingHorizontal: 18 },
+  ageStep: { width: '100%', alignItems: 'center', gap: 4 },
+  ageConfirmation: { minHeight: 52, alignSelf: 'stretch', borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  ageConfirmationChecked: { borderColor: colors.accentText, backgroundColor: colors.neutralSoft },
+  ageConfirmationText: { color: colors.text, fontSize: 15, fontWeight: '700' },
   numberStep: { width: '100%', alignItems: 'center', justifyContent: 'center', gap: 14, paddingVertical: 24 },
   // 'stretch', not 'center': centring shrank the stepper to its content width,
   // and its space-between then pressed the number flat against the − and +

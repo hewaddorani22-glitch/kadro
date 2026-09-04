@@ -1,0 +1,7 @@
+
+> kandro@1.0.0 validate:release:production
+> node scripts/validate-release.mjs --production
+
+Release checks passed for production: provider identity, legal copy, subscription disclosure, iOS config and gateway wiring.
+
+EXIT_CODE=0

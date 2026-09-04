@@ -4,6 +4,9 @@ import { AppState } from 'react-native';
 import { AnalysisErrorKind, MealAnalysisInput } from '@/services/contracts';
 import { analyzeBarcode, analyzeDescription, analyzePreparedPhoto, deleteTemporaryPhoto, FoodSearchResult, MealAnalysisError, mealFromSearch, prepareMealPhoto } from '@/services/mealAnalysis';
 import {
+  beginLocalAccountSwitch,
+  clearLocalKandroData,
+  completeLocalAccountSwitch,
   loadAllStoredScans,
   loadAnalysisQueue,
   loadLifetimeScanCount,
@@ -17,6 +20,8 @@ import {
   saveWeightEntry,
   clearAnalysisQueue,
   countLifetimeScanOnce,
+  loadLocalAccountSwitch,
+  replaceLocalAccountData,
 } from '@/services/localRepository';
 import {
   createPlannedMeal,
@@ -30,16 +35,18 @@ import {
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { calculateDailyTargets, DEFAULT_PROFILE } from '@/services/personalization';
 import { availableRepeats, RepeatCandidate } from '@/services/repeatMeals';
-import { deleteSyncedMeal, hydrateCloudState, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
-import { isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/supabaseClient';
-import { captureOperationalError, countBucket, setAnalyticsCollectionEnabled, trackEvent } from '@/services/telemetry';
+import { deleteSyncedMeal, hydrateCloudState, hydrateExistingCloudAccount, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
+import { getCurrentSessionUserId, isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/supabaseClient';
+import { applyAnalyticsAgePolicy, captureOperationalError, clearTelemetryForAccountSwitch, countBucket, trackEvent } from '@/services/telemetry';
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 import { getDictionary } from '@/i18n/active';
 import type { UnitSystem } from '@/utils/units';
-import { forgetLocalWellnessConsent, hasCurrentWellnessConsent, recordWellnessConsent, withdrawWellnessConsent as withdrawStoredWellnessConsent } from '@/services/consent';
-import { setEveningReminderEnabled } from '@/services/reminders';
+import { clearLocalWellnessConsent, forgetLocalWellnessConsent, hasCurrentWellnessConsent, recordWellnessConsent, withdrawWellnessConsent as withdrawStoredWellnessConsent } from '@/services/consent';
+import { clearRemindersForAccountSwitch, setEveningReminderEnabled } from '@/services/reminders';
 import { formatClockTime } from '@/utils/format';
+import { newAnalysisRequestId } from '@/utils/requestId';
+import { AccountLinkState, signInToExistingAccount } from '@/services/accountLinking';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
 type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search';
@@ -87,6 +94,8 @@ type AppContextValue = {
   pendingAnalysisCount: number;
   syncMode: SyncMode;
   refreshCloudState: () => Promise<void>;
+  loadExistingAccount: (email: string, password: string) => Promise<AccountLinkState>;
+  retryAccountRecovery: () => Promise<void>;
   grantWellnessConsent: (age?: number) => Promise<void>;
   withdrawWellnessConsent: () => Promise<void>;
   completeOnboarding: (profile: UserProfile) => Promise<void>;
@@ -124,7 +133,7 @@ function countScans(meals: Meal[]) {
 }
 
 function makeScanId() {
-  return `scan-${Date.now()}`;
+  return newAnalysisRequestId();
 }
 
 function scaleItem(item: MealItem, nextAmount: number): MealItem {
@@ -171,6 +180,15 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [pendingAnalysisCount, setPendingAnalysisCount] = useState(0);
   const [syncMode, setSyncMode] = useState<SyncMode>(isSupabaseConfigured ? 'syncing' : 'local');
   const loadedDayRef = useRef(localDateKey());
+  // Each new input invalidates every older async analysis. The provider call
+  // may still finish (and its successful quota spend still has to be counted),
+  // but a late response must never replace a newer meal on screen.
+  const analysisGenerationRef = useRef(0);
+  // Separate from screen-generation: a successful request may spend a credit
+  // after the user starts another scan, but never after the Supabase identity
+  // changes underneath it.
+  const analysisIdentityGenerationRef = useRef(0);
+  const inFlightAnalysisIdsRef = useRef<Set<string>>(new Set());
 
   /** Raises the persisted lifetime counter to whatever we just observed. */
   const adoptScanCount = useCallback(async (observedScans: number) => {
@@ -178,6 +196,170 @@ export function AppProvider({ children }: PropsWithChildren) {
     const next = Math.max(stored, observedScans);
     setLifetimeScanCount(next > stored ? await saveLifetimeScanCount(next) : stored);
   }, []);
+
+  /** Adopt age privacy policy before exposing or persisting a hydrated profile. */
+  const adoptProfile = useCallback(async (nextProfile: UserProfile) => {
+    await applyAnalyticsAgePolicy(nextProfile.completedAt ? nextProfile.age : null);
+    await saveProfile(nextProfile);
+    setProfile(nextProfile);
+  }, []);
+
+  const adoptExistingAccountState = useCallback(async (cloudState: NonNullable<Awaited<ReturnType<typeof hydrateExistingCloudAccount>>>) => {
+    const observedScans = Math.max(countScans(cloudState.mealHistory), cloudState.hasEverLoggedScan ? 1 : 0);
+    const storedCount = await replaceLocalAccountData(cloudState.profile, cloudState.mealHistory, observedScans);
+    await Promise.all([
+      clearLocalWellnessConsent(),
+      clearRemindersForAccountSwitch(),
+    ]);
+    setMeals(cloudState.meals);
+    setMealHistory(cloudState.mealHistory);
+    setLifetimeScanCount(storedCount);
+    setWeightEntries([]);
+    setTargets(cloudState.targets);
+    await adoptProfile(cloudState.profile);
+    setPendingAnalysisCount(0);
+    setWellnessConsentGranted(false);
+    setSyncMode('local');
+    await completeLocalAccountSwitch();
+  }, [adoptProfile]);
+
+  const restoreLocalStateAfterFailedLogin = useCallback(async () => {
+    const [storedMeals, storedHistory, queue, storedProfile, storedWeights, storedScanCount, hasConsent] = await Promise.all([
+      loadMeals(),
+      loadAllStoredScans(),
+      loadAnalysisQueue(),
+      loadProfile(),
+      loadWeightEntries(),
+      loadLifetimeScanCount(),
+      hasCurrentWellnessConsent(),
+    ]);
+    setMeals(storedMeals);
+    setMealHistory(storedHistory);
+    setLifetimeScanCount(Math.max(storedScanCount, countScans(storedHistory)));
+    setPendingAnalysisCount(queue.length);
+    setProfile(storedProfile);
+    setWeightEntries(storedWeights);
+    setTargets(storedProfile.completedAt ? calculateDailyTargets(storedProfile) : DEFAULT_TARGETS);
+    await applyAnalyticsAgePolicy(storedProfile.completedAt ? storedProfile.age : null);
+    setWellnessConsentGranted(hasConsent);
+    setSyncMode('local');
+  }, []);
+
+  const retryAccountRecovery = useCallback(async () => {
+    analysisGenerationRef.current += 1;
+    analysisIdentityGenerationRef.current += 1;
+    setHydrationReady(false);
+    setWellnessConsentGranted(false);
+    setSyncMode('syncing');
+    let destinationConfirmed = false;
+    try {
+      const [pendingSwitch, currentUserId] = await Promise.all([
+        loadLocalAccountSwitch(),
+        getCurrentSessionUserId(),
+      ]);
+      if (!pendingSwitch) {
+        throw new Error(getDictionary().errors.permanentAccountNotLoaded);
+      }
+      if (!currentUserId || currentUserId === pendingSwitch.previousUserId) {
+        // The first cold-start session read may have failed even though auth
+        // never changed. A successful retry can now prove that this was only a
+        // pre-login interruption, so restore A's local state and retire the
+        // crash marker instead of trapping the user in the recovery gate.
+        await restoreLocalStateAfterFailedLogin();
+        await completeLocalAccountSwitch();
+        setHydrationReady(true);
+        return;
+      }
+      destinationConfirmed = true;
+      await clearTelemetryForAccountSwitch();
+      await Promise.all([clearLocalWellnessConsent(), clearRemindersForAccountSwitch()]);
+      const cloudState = await hydrateExistingCloudAccount();
+      if (!cloudState) throw new Error(getDictionary().errors.permanentAccountNotLoaded);
+      await adoptExistingAccountState(cloudState);
+      setHydrationReady(true);
+    } catch (error) {
+      // Keep the durable switch marker. A transient fetch failure after auth
+      // must never open onboarding under the new identity, where defaults from
+      // this device could overwrite the account being restored.
+      if (destinationConfirmed) {
+        await Promise.all([
+          clearLocalKandroData(),
+          clearLocalWellnessConsent(),
+          clearRemindersForAccountSwitch(),
+          clearTelemetryForAccountSwitch(),
+        ]).catch(() => undefined);
+      }
+      setProfile(DEFAULT_PROFILE);
+      setTargets(DEFAULT_TARGETS);
+      setMeals([]);
+      setMealHistory([]);
+      setLifetimeScanCount(0);
+      setWeightEntries([]);
+      setPendingAnalysisCount(0);
+      setWellnessConsentGranted(false);
+      setSyncMode('error');
+      setHydrationReady(false);
+      throw error;
+    }
+  }, [adoptExistingAccountState, restoreLocalStateAfterFailedLogin]);
+
+  const loadExistingAccount = useCallback(async (email: string, password: string) => {
+    const previousUserId = await getCurrentSessionUserId();
+    if (!previousUserId) throw new Error(getDictionary().errors.sessionNotLoaded);
+    analysisGenerationRef.current += 1;
+    analysisIdentityGenerationRef.current += 1;
+    setHydrationReady(false);
+    setWellnessConsentGranted(false);
+    setSyncMode('syncing');
+    // A durable marker precedes the auth mutation. Launch recovery then knows
+    // that the local data belongs to the previous identity even after a crash.
+    let identityChanged = false;
+    try {
+      await beginLocalAccountSwitch(previousUserId);
+      await clearTelemetryForAccountSwitch();
+      const account = await signInToExistingAccount(email, password);
+      identityChanged = true;
+      // Stop exposing the old identity synchronously before the first cloud
+      // read under the new Supabase session.
+      deleteTemporaryPhoto(photoUriRef.current);
+      photoUriRef.current = null;
+      scanModeRef.current = 'demo';
+      setProfile(DEFAULT_PROFILE);
+      setTargets(DEFAULT_TARGETS);
+      setMeals([]);
+      setMealHistory([]);
+      setLifetimeScanCount(0);
+      setWeightEntries([]);
+      setPhotoUri(null);
+      setQueuedInput(null);
+      setPendingAnalysisCount(0);
+
+      await retryAccountRecovery();
+      setDetectedItems(DETECTED_ITEMS);
+      setMealTitle(getDictionary().errors.demoMealTitle);
+      setScanId(makeScanId());
+      setScanMode('demo');
+      setDescriptionInput('');
+      setBarcodeInput('');
+      setMealPortionState(1);
+      setAnalysisStatus('idle');
+      setAnalysisError(null);
+      setAnalysisMessage(null);
+      setHydrationReady(true);
+      return account;
+    } catch (error) {
+      if (identityChanged) {
+        // retryAccountRecovery already cleared the old local state and kept
+        // the crash marker. Leave hydration closed until retry succeeds.
+        setHydrationReady(false);
+      } else {
+        await completeLocalAccountSwitch().catch(() => undefined);
+        await restoreLocalStateAfterFailedLogin();
+        setHydrationReady(true);
+      }
+      throw error;
+    }
+  }, [restoreLocalStateAfterFailedLogin, retryAccountRecovery]);
 
   const refreshCloudState = useCallback(async () => {
     if (!wellnessConsentGranted) {
@@ -199,21 +381,20 @@ export function AppProvider({ children }: PropsWithChildren) {
       setMealHistory(cloudState.mealHistory);
       await adoptScanCount(Math.max(countScans(cloudState.mealHistory), cloudState.hasEverLoggedScan ? 1 : 0));
       setTargets(cloudState.targets);
-      setProfile(cloudState.profile);
-      await saveProfile(cloudState.profile);
+      await adoptProfile(cloudState.profile);
       setSyncMode('cloud');
     } catch (error) {
       setSyncMode('error');
       captureOperationalError(error, { area: 'cloud_sync', operation: 'refresh_cloud_state' });
       throw error;
     }
-  }, [adoptScanCount, wellnessConsentGranted]);
+  }, [adoptProfile, adoptScanCount, wellnessConsentGranted]);
 
   useEffect(() => {
     let active = true;
     let stopAuthLifecycle: () => void = () => undefined;
     void (async () => {
-      const [storedMeals, storedHistory, queue, storedProfile, storedWeights, storedScanCount, hasConsent] = await Promise.all([
+      const [storedMeals, storedHistory, queue, storedProfile, storedWeights, storedScanCount, hasConsent, pendingAccountSwitch] = await Promise.all([
         loadMeals(),
         loadAllStoredScans(),
         loadAnalysisQueue(),
@@ -221,8 +402,37 @@ export function AppProvider({ children }: PropsWithChildren) {
         loadWeightEntries(),
         loadLifetimeScanCount(),
         hasCurrentWellnessConsent(),
+        loadLocalAccountSwitch(),
       ]);
       if (!active) return;
+      if (pendingAccountSwitch) {
+        let currentUserId: string | null;
+        try {
+          currentUserId = await getCurrentSessionUserId();
+        } catch (error) {
+          // An unreadable session is not evidence that auth never changed.
+          // Preserve the marker and block every account-scoped mutation until
+          // the user retries from the recovery gate.
+          setSyncMode('error');
+          setHydrationReady(false);
+          captureOperationalError(error, { area: 'cloud_sync', operation: 'read_account_switch_session' });
+          return;
+        }
+        // Auth never changed (or no destination session survived), so this was
+        // a pre-login interruption. Keep the old local data instead of treating
+        // its anonymous account as the destination.
+        if (!currentUserId || currentUserId === pendingAccountSwitch.previousUserId) {
+          await completeLocalAccountSwitch();
+        } else {
+        stopAuthLifecycle = startSupabaseAuthLifecycle();
+        try {
+          await retryAccountRecovery();
+        } catch (error) {
+          captureOperationalError(error, { area: 'cloud_sync', operation: 'recover_account_switch' });
+        }
+        return;
+        }
+      }
       setMeals(storedMeals);
       setMealHistory(storedHistory);
       setLifetimeScanCount(Math.max(storedScanCount, countScans(storedHistory)));
@@ -234,6 +444,8 @@ export function AppProvider({ children }: PropsWithChildren) {
       if (storedProfile.completedAt) setTargets(calculateDailyTargets(storedProfile));
 
       if (!isSupabaseConfigured || !hasConsent) {
+        await applyAnalyticsAgePolicy(storedProfile.completedAt ? storedProfile.age : null);
+        if (!active) return;
         setSyncMode('local');
         setHydrationReady(true);
         return;
@@ -250,8 +462,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         setMealHistory(cloudState.mealHistory);
         await adoptScanCount(Math.max(countScans(cloudState.mealHistory), cloudState.hasEverLoggedScan ? 1 : 0));
         setTargets(cloudState.targets);
-        setProfile(cloudState.profile);
-        await saveProfile(cloudState.profile);
+        await adoptProfile(cloudState.profile);
         setSyncMode('cloud');
       } catch (error) {
         captureOperationalError(error, { area: 'cloud_sync', operation: 'initial_hydration' });
@@ -265,7 +476,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       active = false;
       stopAuthLifecycle();
     };
-  }, []);
+  }, [adoptProfile, adoptScanCount, retryAccountRecovery]);
 
   const grantWellnessConsent = useCallback(async (consentingAge = profile.age) => {
     await recordWellnessConsent(consentingAge);
@@ -280,8 +491,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           setMealHistory(cloudState.mealHistory);
           await adoptScanCount(Math.max(countScans(cloudState.mealHistory), cloudState.hasEverLoggedScan ? 1 : 0));
           setTargets(cloudState.targets);
-          setProfile(cloudState.profile);
-          await saveProfile(cloudState.profile);
+          await adoptProfile(cloudState.profile);
           setSyncMode('cloud');
         }
       } catch (error) {
@@ -291,9 +501,10 @@ export function AppProvider({ children }: PropsWithChildren) {
         captureOperationalError(error, { area: 'cloud_sync', operation: 'hydrate_after_consent' });
       }
     }
-  }, [adoptScanCount, profile.age, profile.completedAt]);
+  }, [adoptProfile, adoptScanCount, profile.age, profile.completedAt]);
 
   const withdrawWellnessConsent = useCallback(async () => {
+    analysisGenerationRef.current += 1;
     await withdrawStoredWellnessConsent();
     deleteTemporaryPhoto(photoUriRef.current);
     await clearAnalysisQueue();
@@ -340,13 +551,9 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const completeOnboarding = useCallback(async (nextProfile: UserProfile) => {
     const completedProfile = { ...nextProfile, completedAt: nextProfile.completedAt ?? new Date().toISOString() };
-    // Optional product analytics are unnecessary for minors. If someone edits
-    // an adult profile to their correct teen age, an earlier opt-in is removed.
-    if (completedProfile.age < 18) await setAnalyticsCollectionEnabled(false);
     const nextTargets = calculateDailyTargets(completedProfile);
     const weights = await saveWeightEntry({ date: localDateKey(), weightKg: completedProfile.weightKg });
-    await saveProfile(completedProfile);
-    setProfile(completedProfile);
+    await adoptProfile(completedProfile);
     setTargets(nextTargets);
     setWeightEntries(weights);
     setHydrationReady(true);
@@ -360,7 +567,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           captureOperationalError(error, { area: 'cloud_sync', operation: 'save_personalization' });
         });
     }
-  }, []);
+  }, [adoptProfile]);
 
   /**
    * Units are presentation only, so this writes the profile and syncs it
@@ -400,6 +607,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [profile]);
 
   const setCapturedPhoto = useCallback((uri: string) => {
+    analysisGenerationRef.current += 1;
     photoUriRef.current = uri;
     scanModeRef.current = 'live';
     setPhotoUri(uri);
@@ -413,6 +621,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   const startDemoScan = useCallback(() => {
+    analysisGenerationRef.current += 1;
     deleteTemporaryPhoto(photoUri);
     photoUriRef.current = null;
     scanModeRef.current = 'demo';
@@ -431,6 +640,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [photoUri]);
 
   const startDescriptionScan = useCallback((description: string) => {
+    analysisGenerationRef.current += 1;
     deleteTemporaryPhoto(photoUriRef.current);
     photoUriRef.current = null;
     scanModeRef.current = 'description';
@@ -452,6 +662,7 @@ export function AppProvider({ children }: PropsWithChildren) {
    * result straight on the confirm screen.
    */
   const applySearchResult = useCallback((result: FoodSearchResult, grams: number) => {
+    analysisGenerationRef.current += 1;
     deleteTemporaryPhoto(photoUriRef.current);
     photoUriRef.current = null;
     scanModeRef.current = 'search';
@@ -472,6 +683,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   const startBarcodeScan = useCallback((barcode: string) => {
+    analysisGenerationRef.current += 1;
     deleteTemporaryPhoto(photoUriRef.current);
     photoUriRef.current = null;
     scanModeRef.current = 'barcode';
@@ -488,89 +700,129 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   const analyzeCurrentPhoto = useCallback(async (forceDemo = false) => {
-    setAnalysisStatus('analyzing');
-    setAnalysisError(null);
-    setAnalysisMessage(null);
-
+    const invocationScanId = scanId;
+    const invocationIdentityGeneration = analysisIdentityGenerationRef.current;
+    // A double tap must join the existing attempt rather than send a second
+    // request with the same idempotency key and let a fast 409 beat the real
+    // result back to the UI.
+    if (inFlightAnalysisIdsRef.current.has(invocationScanId)) return;
+    inFlightAnalysisIdsRef.current.add(invocationScanId);
+    const invocationGeneration = ++analysisGenerationRef.current;
+    const isCurrentInvocation = () => analysisGenerationRef.current === invocationGeneration;
     const activeScanMode = scanModeRef.current;
-    if (forceDemo || activeScanMode === 'demo') {
-      await new Promise((resolve) => setTimeout(resolve, 1900));
-      setDetectedItems(DETECTED_ITEMS);
-      setMealTitle(getDictionary().errors.demoMealTitle);
-      setAnalysisStatus('ready');
-      trackEvent('meal analysis completed', {
-        confidence: DETECTED_ITEMS.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
-        detected_item_count: countBucket(DETECTED_ITEMS.length),
-        scan_source: 'demo',
-        warning_present: false,
-      });
-      return;
-    }
-
-    let input = queuedInput;
     try {
-      if ((activeScanMode === 'live' || activeScanMode === 'queued') && !input) {
-        const originalUri = photoUriRef.current ?? photoUri;
-        if (!originalUri) throw new MealAnalysisError('unclear-image', getDictionary().errors.retakeWholePlate);
-        const prepared = await prepareMealPhoto(originalUri);
-        input = prepared;
-        photoUriRef.current = prepared.previewUri;
-        setPhotoUri(prepared.previewUri);
-        if (prepared.previewUri !== originalUri) deleteTemporaryPhoto(originalUri);
+      setAnalysisStatus('analyzing');
+      setAnalysisError(null);
+      setAnalysisMessage(null);
+
+      if (forceDemo || activeScanMode === 'demo') {
+        await new Promise((resolve) => setTimeout(resolve, 1900));
+        if (!isCurrentInvocation()) return;
+        setDetectedItems(DETECTED_ITEMS);
+        setMealTitle(getDictionary().errors.demoMealTitle);
+        setAnalysisStatus('ready');
+        trackEvent('meal analysis completed', {
+          confidence: DETECTED_ITEMS.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
+          detected_item_count: countBucket(DETECTED_ITEMS.length),
+          scan_source: 'demo',
+          warning_present: false,
+        });
+        return;
       }
 
-      const result = activeScanMode === 'description'
-        ? await analyzeDescription(descriptionInput)
-        : activeScanMode === 'barcode'
-          ? await analyzeBarcode(barcodeInput)
-          : await analyzePreparedPhoto(input!);
-      setDetectedItems(result.items);
-      setMealTitle(result.title);
-      setMealPortionState(1);
-      setAnalysisMessage(result.warnings[0] ?? null);
-      setAnalysisStatus('ready');
-      trackEvent('meal analysis completed', {
-        confidence: result.items.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
-        detected_item_count: countBucket(result.items.length),
-        scan_source: telemetryScanSource(activeScanMode),
-        warning_present: result.warnings.length > 0,
-      });
-      if (activeScanMode === 'queued') {
-        setPendingAnalysisCount(await removeQueuedAnalysis(scanId));
+      let input = queuedInput;
+      try {
+        if ((activeScanMode === 'live' || activeScanMode === 'queued') && !input) {
+          const originalUri = photoUriRef.current ?? photoUri;
+          if (!originalUri) throw new MealAnalysisError('unclear-image', getDictionary().errors.retakeWholePlate);
+          const prepared = await prepareMealPhoto(originalUri);
+          if (!isCurrentInvocation()) {
+            if (prepared.previewUri !== originalUri) deleteTemporaryPhoto(prepared.previewUri);
+            return;
+          }
+          input = prepared;
+          photoUriRef.current = prepared.previewUri;
+          setPhotoUri(prepared.previewUri);
+          if (prepared.previewUri !== originalUri) deleteTemporaryPhoto(originalUri);
+        }
+
+        const result = activeScanMode === 'description'
+          ? await analyzeDescription(descriptionInput, invocationScanId)
+          : activeScanMode === 'barcode'
+            ? await analyzeBarcode(barcodeInput)
+            : await analyzePreparedPhoto(input!, invocationScanId);
+        // The provider success spends the free analysis, not the later decision
+        // to save the meal. This bookkeeping remains valid even if the user has
+        // already started another scan, but the stale result never reaches UI.
+        const nextLifetimeCount = !FREE_ANALYSIS_MODES.has(activeScanMode)
+          && analysisIdentityGenerationRef.current === invocationIdentityGeneration
+          ? await countLifetimeScanOnce(invocationScanId)
+          : null;
+        const nextPendingCount = activeScanMode === 'queued'
+          ? await removeQueuedAnalysis(invocationScanId)
+          : null;
+        if (!isCurrentInvocation()) return;
+        if (nextLifetimeCount !== null) setLifetimeScanCount(nextLifetimeCount);
+        if (nextPendingCount !== null) setPendingAnalysisCount(nextPendingCount);
+        setDetectedItems(result.items);
+        setMealTitle(result.title);
+        setMealPortionState(1);
+        setAnalysisMessage(result.warnings[0] ?? null);
+        setAnalysisStatus('ready');
+        trackEvent('meal analysis completed', {
+          confidence: result.items.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
+          detected_item_count: countBucket(result.items.length),
+          scan_source: telemetryScanSource(activeScanMode),
+          warning_present: result.warnings.length > 0,
+        });
+      } catch (error) {
+        if (!isCurrentInvocation()) return;
+        // The gateway is the authority here. If it says there is no consent,
+        // the local record is stale: keeping it would leave the user looking at
+        // "Consent is active" with only a "Withdraw" button and no way back.
+        if (error instanceof MealAnalysisError && error.kind === 'consent-required') {
+          await forgetLocalWellnessConsent();
+          if (!isCurrentInvocation()) return;
+          setWellnessConsentGranted(false);
+        }
+        const failure = error instanceof MealAnalysisError
+          ? error
+          : new MealAnalysisError('provider-error', getDictionary().errors.analysisFailed);
+        if (failure.kind === 'request-expired' && activeScanMode === 'queued') {
+          const count = await removeQueuedAnalysis(invocationScanId);
+          if (!isCurrentInvocation()) return;
+          setPendingAnalysisCount(count);
+        }
+        const shouldQueue = activeScanMode === 'live' || activeScanMode === 'queued'
+          ? input && (failure.kind === 'offline' || failure.kind === 'provider-error')
+          : false;
+        if (shouldQueue && input) {
+          const count = await queueAnalysis({ ...input, id: invocationScanId, createdAt: new Date().toISOString() });
+          if (!isCurrentInvocation()) {
+            await removeQueuedAnalysis(invocationScanId);
+            return;
+          }
+          setPendingAnalysisCount(count);
+          setAnalysisStatus('queued');
+        } else {
+          if (!isCurrentInvocation()) return;
+          setAnalysisStatus('error');
+        }
+        setAnalysisError(failure.kind);
+        setAnalysisMessage(failure.message);
+        trackEvent('meal analysis failed', {
+          failure_reason: failure.kind,
+          queued_for_retry: Boolean(shouldQueue),
+          scan_source: telemetryScanSource(activeScanMode),
+        });
+        captureOperationalError(failure, {
+          area: 'analysis',
+          operation: `analyze_${telemetryScanSource(activeScanMode)}`,
+          code: failure.kind,
+        });
       }
-    } catch (error) {
-      // The gateway is the authority here. If it says there is no consent,
-      // the local record is stale: keeping it would leave the user looking at
-      // "Consent is active" with only a "Withdraw" button and no way back.
-      if (error instanceof MealAnalysisError && error.kind === 'consent-required') {
-        await forgetLocalWellnessConsent();
-        setWellnessConsentGranted(false);
-      }
-      const failure = error instanceof MealAnalysisError
-        ? error
-        : new MealAnalysisError('provider-error', getDictionary().errors.analysisFailed);
-      const shouldQueue = activeScanMode === 'live' || activeScanMode === 'queued'
-        ? input && (failure.kind === 'offline' || failure.kind === 'provider-error')
-        : false;
-      if (shouldQueue && input) {
-        const count = await queueAnalysis({ ...input, id: scanId, createdAt: new Date().toISOString() });
-        setPendingAnalysisCount(count);
-        setAnalysisStatus('queued');
-      } else {
-        setAnalysisStatus('error');
-      }
-      setAnalysisError(failure.kind);
-      setAnalysisMessage(failure.message);
-      trackEvent('meal analysis failed', {
-        failure_reason: failure.kind,
-        queued_for_retry: Boolean(shouldQueue),
-        scan_source: telemetryScanSource(activeScanMode),
-      });
-      captureOperationalError(failure, {
-        area: 'analysis',
-        operation: `analyze_${telemetryScanSource(activeScanMode)}`,
-        code: failure.kind,
-      });
+    } finally {
+      inFlightAnalysisIdsRef.current.delete(invocationScanId);
     }
   }, [barcodeInput, descriptionInput, photoUri, queuedInput, scanId]);
 
@@ -578,6 +830,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     const queue = await loadAnalysisQueue();
     const latest = queue.at(-1);
     if (!latest) return false;
+    analysisGenerationRef.current += 1;
     const queuedPhotoUri = `data:${latest.mimeType};base64,${latest.imageBase64}`;
     scanModeRef.current = 'queued';
     photoUriRef.current = queuedPhotoUri;
@@ -628,6 +881,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   };
 
   const resetScan = useCallback(() => {
+    analysisGenerationRef.current += 1;
     deleteTemporaryPhoto(photoUri);
     photoUriRef.current = null;
     scanModeRef.current = 'demo';
@@ -648,6 +902,8 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [photoUri]);
 
   const resetAfterAccountDeletion = useCallback(() => {
+    analysisGenerationRef.current += 1;
+    analysisIdentityGenerationRef.current += 1;
     deleteTemporaryPhoto(photoUriRef.current);
     photoUriRef.current = null;
     scanModeRef.current = 'demo';
@@ -695,12 +951,10 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const logScannedMeal = useCallback(async () => {
     const existing = mealHistory.find((meal) => meal.id === scannedMeal.id);
-    const alreadyLogged = Boolean(existing);
     const now = new Date();
-    // The free allowance is derived from how many meals carry origin 'scan',
-    // so the origin has to be honest about whether an analysis actually ran.
-    // A food picked from search is a chosen known value, like a planned meal,
-    // and the sheet promises it is free.
+    // Origin remains honest for history/cloud recovery. The allowance itself
+    // was already spent when the AI result arrived, even if this confirmation
+    // is abandoned. Search/barcode are known values and remain free.
     const costsAnalysis = !FREE_ANALYSIS_MODES.has(scanModeRef.current);
     // The clock guesses the slot; tapping "+" next to breakfast states it. A
     // correction re-saves the same id, and the choice is spent by then, so the
@@ -718,11 +972,6 @@ export function AppProvider({ children }: PropsWithChildren) {
     await saveSyncedMeal(persistedMeal);
     setMeals((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
     setMealHistory((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
-    // Corrections re-save the same scan id; only a genuinely new meal spends
-    // part of the free allowance.
-    if (!alreadyLogged && costsAnalysis) {
-      setLifetimeScanCount(await countLifetimeScanOnce(scannedMeal.id));
-    }
   }, [detectedItems, mealHistory, scannedMeal]);
 
   /**
@@ -844,6 +1093,8 @@ export function AppProvider({ children }: PropsWithChildren) {
       pendingAnalysisCount,
       syncMode,
       refreshCloudState,
+      loadExistingAccount,
+      retryAccountRecovery,
       grantWellnessConsent,
       withdrawWellnessConsent,
       completeOnboarding,
@@ -868,7 +1119,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       adjustLoggedMealPortion,
       setLoggedMealType,
     }),
-    [addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
+    [addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, isCurrentScanLogged, loadExistingAccount, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, retryAccountRecovery, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

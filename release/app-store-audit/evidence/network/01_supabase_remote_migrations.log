@@ -1,0 +1,7 @@
+
+> kandro@1.0.0 db:remote:list
+> SUPABASE_HOME=./supabase/.cli-home supabase migration list --linked --profile ./supabase/kandro.profile.yml
+
+Initialising login role...
+Connecting to remote database...
+{"_tag":"Error","error":{"code":"LegacyDbConnectError","message":"failed to connect to postgres: failed to connect to `host=db.omtmxqzwxvthycyfkggv.supabase.co user=cli_login_postgres database=postgres`: server error (FATAL: password authentication failed for user \"cli_login_postgres\" (SQLSTATE 28P01))","suggestion":"Connect to your database by setting the env var correctly: SUPABASE_DB_PASSWORD"}}

@@ -1,0 +1,16 @@
+Timestamp: 2026-09-04 22:17 CEST
+Command: npm run db:remote:check
+Exit code: 0
+Mode: linked remote dry run; no database changes performed
+
+Supabase CLI result:
+- Initialised login role.
+- Connected to the linked remote database.
+- `dryRun`: true
+- `upToDate`: false
+- Would push `20260904184701_add_waitlist_retention.sql`.
+- Would push `20260904185227_server_authoritative_analysis_access.sql`.
+- Seeds: none.
+- Roles: none.
+
+Release consequence: both migrations remain unapplied in production. Local tests and a syntactically accepted dry run are not deployment or live concurrency evidence.

@@ -1,0 +1,12 @@
+
+> kandro@1.0.0 db:remote:check
+> SUPABASE_HOME=./supabase/.cli-home supabase db push --linked --dry-run --profile ./supabase/kandro.profile.yml
+
+Initialising login role...
+DRY RUN: migrations will *not* be pushed to the database.
+Connecting to remote database...
+Would push these migrations:
+ • 20260904184701_add_waitlist_retention.sql
+ • 20260904185227_server_authoritative_analysis_access.sql
+ • 20260904212500_rate_limit_nutrition_providers.sql
+{"upToDate":false,"dryRun":true,"migrations":["20260904184701_add_waitlist_retention.sql","20260904185227_server_authoritative_analysis_access.sql","20260904212500_rate_limit_nutrition_providers.sql"],"seeds":[],"roles":[],"message":"Finished supabase db push."}

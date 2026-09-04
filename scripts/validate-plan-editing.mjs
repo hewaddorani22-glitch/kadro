@@ -41,7 +41,7 @@ for (const [state, source] of prefilled) {
 if (!/completedAt: editing \? profile\.completedAt : null/.test(onboarding)) {
   problems.push('onboarding: editing would overwrite completedAt and look like a fresh install');
 }
-if (!/EDIT_STEPS = STEPS\.filter\(\(id\) => id !== 'building'\)/.test(onboarding)) {
+if (!/EDIT_STEPS = STEPS\.filter\(\(id\) => id !== 'building' && id !== 'age'\)/.test(onboarding)) {
   problems.push("onboarding: edit mode still plays the first-run 'building' beat");
 }
 // Adult editing must not re-open consent. Moving a profile below 16 is the

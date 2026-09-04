@@ -77,7 +77,7 @@ const gatewaySources = [
 ].join('\n');
 const emitted = new Set([...gatewaySources.matchAll(/code: '([a-z_]+)'/g)].map((match) => match[1]));
 assert.ok(emitted.size >= 10, `expected the gateway to emit many codes, found ${emitted.size}`);
-const mapped = new Set([...mealAnalysis.matchAll(/^\s{4}([a-z_]+): t\./gm)].map((match) => match[1]));
+const mapped = new Set([...mealAnalysis.matchAll(/^\s{4}([a-z_]+):/gm)].map((match) => match[1]));
 // 'unmatched' is a source marker on an item, translated separately.
 const unmapped = [...emitted].filter((code) => code !== 'unmatched' && !mapped.has(code));
 assert.deepEqual(unmapped, [], `gateway codes with no translation in the app: ${unmapped.join(', ')}`);

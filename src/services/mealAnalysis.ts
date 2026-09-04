@@ -51,15 +51,24 @@ function localizeResult(result: MealAnalysisResult): MealAnalysisResult {
 }
 
 function gatewayMessage(code: string | undefined, fallback: string | undefined) {
-  const t = getDictionary().errors;
+  const dictionary = getDictionary();
+  const t = dictionary.errors;
   const byCode: Record<string, string> = {
     invalid_input: t.gatewayInvalidInput,
+    invalid_request: t.gatewayInvalidInput,
     invalid_barcode: t.gatewayInvalidBarcode,
     product_not_found: t.gatewayProductNotFound,
     missing_nutrition: t.gatewayMissingNutrition,
     unauthorized: t.gatewayUnauthorized,
     provider_error: t.gatewayProviderError,
+    provider_rate_limited: t.gatewayProviderError,
     daily_limit_reached: t.gatewayDailyLimit,
+    subscription_required: dictionary.paywall.blockedSub,
+    analysis_in_progress: t.analysisFailed,
+    request_completed: t.gatewayRequestExpired,
+    access_unavailable: t.gatewayProviderError,
+    entitlement_verification_unavailable: t.gatewayProviderError,
+    entitlement_rate_limited: t.gatewayProviderError,
     consent_required: t.gatewayConsentRequired,
     unclear_image: t.noClearMeal,
     multiple_dishes: t.gatewayMultipleDishes,
@@ -182,8 +191,11 @@ export function deleteTemporaryPhoto(uri: string | null | undefined) {
   }
 }
 
-export async function analyzePreparedPhoto(input: MealAnalysisInput): Promise<MealAnalysisResult> {
-  return readAnalysisResponse(await gatewayFetch('/v1/analyze', { method: 'POST', body: input }));
+export async function analyzePreparedPhoto(input: MealAnalysisInput, requestId: string): Promise<MealAnalysisResult> {
+  return readAnalysisResponse(await gatewayFetch('/v1/analyze', {
+    method: 'POST',
+    body: { ...input, requestId },
+  }));
 }
 
 async function readAnalysisResponse(response: Response): Promise<MealAnalysisResult> {
@@ -197,6 +209,12 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
           ? 'not-configured'
           : payload?.code === 'consent_required'
             ? 'consent-required'
+            : payload?.code === 'subscription_required'
+              ? 'subscription-required'
+              : payload?.code === 'daily_limit_reached'
+                ? 'daily-limit'
+                : payload?.code === 'request_completed'
+                  ? 'request-expired'
             : payload?.code === 'invalid_input'
               ? 'invalid-input'
           : 'provider-error';
@@ -206,10 +224,10 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
   return localizeResult(payload);
 }
 
-export async function analyzeDescription(description: string): Promise<MealAnalysisResult> {
+export async function analyzeDescription(description: string, requestId: string): Promise<MealAnalysisResult> {
   return readAnalysisResponse(await gatewayFetch('/v1/describe', {
     method: 'POST',
-    body: { description: description.trim(), language: getLanguage(), locale: getLocale() },
+    body: { description: description.trim(), language: getLanguage(), locale: getLocale(), requestId },
   }));
 }
 

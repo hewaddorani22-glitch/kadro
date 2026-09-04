@@ -170,7 +170,7 @@ export default function PaywallScreen() {
           <View style={styles.progressCard}>
             <Text style={styles.progressLabel}>{t.paywall.progressLabel}</Text>
             <Text style={styles.progressValue}>
-              {t.paywall.progressValue(lifetimeScanCount, lifetimeScanCount === 1 ? t.paywall.meal : t.paywall.meals)}
+              {t.paywall.progressValue(lifetimeScanCount, lifetimeScanCount === 1 ? t.paywall.analysis : t.paywall.analyses)}
               {meals.length ? t.paywall.progressToday(formatNumber(consumed.calories, locale)) : ''}
             </Text>
           </View>
@@ -251,7 +251,7 @@ function Benefit({ detail, icon, title }: { detail: string; icon: keyof typeof I
 
 function PlanCard({ badge, detail, disabled, label, onPress, price, selected }: { badge?: string; detail: string; disabled?: boolean; label: string; onPress: () => void; price: string; selected: boolean }) {
   return (
-    <Pressable accessibilityRole="radio" accessibilityState={{ disabled: Boolean(disabled), selected }} disabled={disabled} onPress={onPress} style={[styles.planCard, selected && styles.planCardSelected, disabled && styles.planCardDisabled]}>
+    <Pressable aria-checked={selected} accessibilityRole="radio" accessibilityState={{ checked: selected, disabled: Boolean(disabled) }} disabled={disabled} onPress={onPress} style={[styles.planCard, selected && styles.planCardSelected, disabled && styles.planCardDisabled]}>
       <View style={[styles.radio, selected && styles.radioSelected]}>
         {selected ? <View style={styles.radioDot} /> : null}
       </View>

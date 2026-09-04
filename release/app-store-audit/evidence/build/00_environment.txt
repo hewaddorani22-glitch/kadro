@@ -1,0 +1,19 @@
+UTC 2026-09-04T18:05:43Z
+LOCAL 2026-09-04T20:05:43+0200 CEST
+ProductName:		macOS
+ProductVersion:		13.4
+BuildVersion:		22F2063
+ARCH=arm64
+NODE=v24.14.1
+NPM=11.11.0
+NPX=11.11.0
+EXPO=54.0.27
+EAS=eas-cli/23.2.0 darwin-arm64 node-v24.14.1
+SUPABASE=2.116.0
+RUBY=ruby 2.6.10p210 (2022-04-12 revision 67958) [universal.arm64e-darwin22]
+POD=NOT_INSTALLED
+JAVA=java version "23" 2024-09-17
+XCODE_SELECT=/Library/Developer/CommandLineTools
+XCODEBUILD=xcode-select: error: tool 'xcodebuild' requires Xcode, but active developer directory '/Library/Developer/CommandLineTools' is a command line tools instance
+SWIFT=Apple Swift version 5.8.1 (swiftlang-5.8.0.124.5 clang-1403.0.22.11.100)
+XCODE_APPS=SIMCTL=xcrun: error: unable to find utility "simctl", not a developer tool or in PATH

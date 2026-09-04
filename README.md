@@ -123,7 +123,7 @@ EXPO_PUBLIC_REVENUECAT_TEST_API_KEY=test_...
 EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID=kandro_pro
 ```
 
-Expo Go then displays the RevenueCat Test Store offering and safely simulates purchase and restore without a real charge. Real Apple or Google sandbox purchases require the corresponding public platform SDK key plus a development/TestFlight build; Expo Go cannot execute native StoreKit or Play Billing transactions.
+Expo Go then displays the RevenueCat Test Store offering and safely simulates purchase, failure, cancellation and restore UI without a real charge. That simulation deliberately cannot unlock the hosted Pro gateway. Real Apple sandbox purchase and server-entitlement E2E requires the public iOS SDK key plus a development/TestFlight build; Expo Go cannot execute native StoreKit transactions.
 
 The app uses the current Supabase user ID as RevenueCat's App User ID, so an email-upgraded Kandro account keeps a stable purchase identity. Only public SDK keys belong in `EXPO_PUBLIC_` variables—never a RevenueCat secret API key.
 
@@ -155,7 +155,7 @@ The complete plan audit, including the external TestFlight and legal gates, live
 
 ## Prepare TestFlight
 
-The repository is linked to the Expo EAS project `@hewad/kandro` and includes explicit preview and production profiles. Public Supabase values are configured for both environments; PostHog and RevenueCat Test Store values are configured for preview. The production analysis gateway is live, while production billing remains unset until the real App Store products exist. Apple Developer Program activation is currently pending Apple's identity approval. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
+The repository is linked to the Expo EAS project `@hewad/kandro` and includes explicit preview and production profiles. Public Supabase values are configured for both environments; PostHog and RevenueCat Test Store values are configured for preview, and the production RevenueCat iOS client key is configured for production. Apple Developer Program membership is active and the monthly and annual App Store products exist. The server-authoritative entitlement, provider-rate and retention remediations remain local until their controlled Supabase rollout and sandbox verification; they are release gates, not production claims. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
 
 The in-app privacy policy, terms and public website share the same generated bilingual source. The authenticated Supabase deletion function is live and its regression test confirms account deletion, profile cascade, and refresh-token revocation. The exact App Store privacy answers and reviewer notes live in `docs/APP_PRIVACY.md` and `docs/APP_REVIEW_NOTES.md`.
 

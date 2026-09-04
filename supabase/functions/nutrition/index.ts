@@ -11,6 +11,7 @@ import {
   isUsableSearchTerm,
   rankFoodMatches,
   requestedLanguage,
+  safeGatewayFailureCode,
   searchTermVariants,
   usdaPortions,
   validateAnalysisInput,
@@ -23,6 +24,10 @@ import {
   detectionSchema,
   photoDetectionPrompt,
 } from '../_shared/detection.mjs';
+import {
+  fetchRevenueCatEntitlement,
+  isAnalysisRequestId,
+} from '../_shared/revenuecat.mjs';
 
 const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
@@ -39,10 +44,28 @@ const visionModel = Deno.env.get('OPENROUTER_VISION_MODEL') || 'openai/gpt-4.1-m
 const configuredImageDetail = (Deno.env.get('VISION_IMAGE_DETAIL') || 'high').toLowerCase();
 const imageDetail = ['low', 'high', 'auto'].includes(configuredImageDetail) ? configuredImageDetail : 'high';
 const usdaApiKey = Deno.env.get('USDA_API_KEY') || 'DEMO_KEY';
+const nutritionRateLimitSalt = Deno.env.get('NUTRITION_RATE_LIMIT_SALT') ?? '';
 const configuredDailyLimit = Number(Deno.env.get('ANALYSIS_DAILY_LIMIT') || '60');
 const dailyLimit = Number.isSafeInteger(configuredDailyLimit) && configuredDailyLimit > 0
   ? configuredDailyLimit
   : 60;
+const configuredGlobalDailyLimit = Number(Deno.env.get('GLOBAL_ANALYSIS_DAILY_LIMIT') || '1000');
+const globalDailyLimit = Number.isSafeInteger(configuredGlobalDailyLimit) && configuredGlobalDailyLimit > 0
+  ? configuredGlobalDailyLimit
+  : 1000;
+const configuredProDailyLimit = Number(Deno.env.get('PRO_ANALYSIS_DAILY_LIMIT') || '60');
+const proDailyLimit = Number.isSafeInteger(configuredProDailyLimit) && configuredProDailyLimit > 0
+  ? configuredProDailyLimit
+  : 60;
+const revenueCatProjectId = Deno.env.get('REVENUECAT_PROJECT_ID') ?? '';
+const revenueCatEntitlementResourceId = Deno.env.get('REVENUECAT_ENTITLEMENT_RESOURCE_ID') ?? '';
+const revenueCatIosAppId = Deno.env.get('REVENUECAT_APP_ID') ?? '';
+const revenueCatIosProductResourceIds = (Deno.env.get('REVENUECAT_IOS_PRODUCT_RESOURCE_IDS') ?? '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
+const revenueCatSecretApiKey = Deno.env.get('REVENUECAT_SECRET_API_KEY') ?? '';
+const ENTITLEMENT_REFRESH_COOLDOWN_SECONDS = 20;
 const REQUIRED_PRIVACY_VERSION = '2026-09-04-ai-v2';
 const REQUIRED_GUARDIAN_VERSION = '2026-09-04-guardian-v1';
 
@@ -80,10 +103,208 @@ function rememberInMemory(term: string, facts: FoodFacts | null) {
   memoryCache.set(term, facts);
 }
 
-type Result = { status: number; body: Record<string, unknown> };
+type Result = { status: number; body: Record<string, unknown>; headers?: Record<string, string> };
+type ProviderRoute = 'usda_search' | 'usda_analysis' | 'off_search' | 'off_barcode';
+
+type AccessDecision = {
+  status?: string;
+  active?: boolean;
+  accessKind?: 'free' | 'pro';
+  graceEligible?: boolean;
+  retryAfter?: number;
+  result?: Record<string, unknown>;
+};
 
 function reply(result: Result) {
-  return Response.json(result.body, { status: result.status, headers: corsHeaders });
+  return Response.json(result.body, { status: result.status, headers: { ...corsHeaders, ...result.headers } });
+}
+
+// deno-lint-ignore no-explicit-any
+async function accessRpc(admin: any, name: string, args: Record<string, unknown>): Promise<AccessDecision | null> {
+  const { data, error } = await admin.rpc(name, args);
+  return error || !data || typeof data !== 'object' ? null : data as AccessDecision;
+}
+
+// deno-lint-ignore no-explicit-any
+async function reserveAnalysis(admin: any, userId: string, requestId: string, allowStaleGrace = false) {
+  return accessRpc(admin, 'reserve_analysis_access', {
+    p_user_id: userId,
+    p_request_id: requestId,
+    p_pro_daily_limit: proDailyLimit,
+    p_allow_stale_grace: allowStaleGrace,
+  });
+}
+
+// deno-lint-ignore no-explicit-any
+async function refundAnalysis(admin: any, userId: string, requestId: string) {
+  await accessRpc(admin, 'refund_analysis_request', {
+    p_user_id: userId,
+    p_request_id: requestId,
+  });
+}
+
+function accessFailure(decision: AccessDecision | null): Result | null {
+  if (!decision) {
+    return { status: 503, body: { code: 'access_unavailable', message: 'Die Analyse ist gerade nicht erreichbar.' } };
+  }
+  if (decision.status === 'reserved' || decision.status === 'replay') return null;
+  if (decision.status === 'subscription_required') {
+    return { status: 402, body: { code: 'subscription_required', message: 'Für weitere Analysen ist Kandro Pro erforderlich.' } };
+  }
+  if (decision.status === 'daily_limit_reached') {
+    return { status: 429, body: { code: 'daily_limit_reached', message: 'Du hast das heutige Analyselimit erreicht.' } };
+  }
+  if (decision.status === 'in_progress') {
+    return { status: 409, body: { code: 'analysis_in_progress', message: 'Diese Analyse läuft bereits.' } };
+  }
+  if (decision.status === 'request_completed') {
+    return { status: 409, body: { code: 'request_completed', message: 'Diese Anfrage wurde bereits abgeschlossen.' } };
+  }
+  if (decision.status === 'verification_required') {
+    return { status: 503, body: { code: 'entitlement_verification_unavailable', message: 'Kandro Pro konnte gerade nicht geprüft werden.' } };
+  }
+  return { status: 400, body: { code: 'invalid_request', message: 'Ungültige Analyseanfrage.' } };
+}
+
+// Search remains free and does not consume a scan. This separate, short
+// provider quota only prevents one authenticated account from exhausting the
+// shared USDA/Open Food Facts capacity used by everyone else's analyses.
+// deno-lint-ignore no-explicit-any
+async function providerQuotaFailure(
+  admin: any,
+  userId: string,
+  route: ProviderRoute,
+  networkHash: string | null,
+): Promise<Result | null> {
+  // Missing trustworthy provenance or a missing server-only salt must not turn
+  // the global provider circuit breaker into a two-account denial-of-service.
+  if (!networkHash) {
+    return {
+      status: 503,
+      body: { code: 'provider_error', message: 'Die Lebensmittelsuche ist gerade nicht erreichbar.' },
+    };
+  }
+  const decision = await accessRpc(admin, 'consume_nutrition_provider_quota', {
+    p_user_id: userId,
+    p_route: route,
+    p_network_hash: networkHash,
+  });
+  if (decision?.status === 'allowed') return null;
+  if (decision?.status === 'rate_limited') {
+    const retryAfter = Number.isSafeInteger(decision.retryAfter) && Number(decision.retryAfter) > 0
+      ? Number(decision.retryAfter)
+      : 60;
+    return {
+      status: 429,
+      headers: { 'Retry-After': String(retryAfter) },
+      body: {
+        code: 'provider_rate_limited',
+        message: 'Zu viele Abfragen. Bitte warte kurz und versuche es erneut.',
+      },
+    };
+  }
+  return {
+    status: 503,
+    body: { code: 'provider_error', message: 'Die Lebensmittelsuche ist gerade nicht erreichbar.' },
+  };
+}
+
+class ProviderQuotaError extends Error {
+  constructor(readonly result: Result) {
+    super(String(result.body.code ?? 'provider_rate_limited'));
+    this.name = 'ProviderQuotaError';
+  }
+}
+
+// Called immediately before every external USDA/OFF fetch, not once per app
+// route: a single search or meal can fan out to multiple provider requests.
+// deno-lint-ignore no-explicit-any
+async function claimProviderRequest(admin: any, userId: string, route: ProviderRoute, networkHash: string | null) {
+  const failure = await providerQuotaFailure(admin, userId, route, networkHash);
+  if (failure) throw new ProviderQuotaError(failure);
+}
+
+/** The edge proxy appends the connection address; never trust the first XFF hop. */
+function trustedClientIp(request: Request) {
+  const dedicated = request.headers.get('cf-connecting-ip')
+    ?? request.headers.get('x-real-ip');
+  if (dedicated?.trim()) return dedicated.trim();
+  const chain = (request.headers.get('x-forwarded-for') ?? '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+  return chain.at(-1) ?? null;
+}
+
+async function providerNetworkHash(request: Request) {
+  const address = trustedClientIp(request);
+  if (!address || !nutritionRateLimitSalt) return null;
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(`${nutritionRateLimitSalt}:nutrition-provider:${address}`),
+  );
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// deno-lint-ignore no-explicit-any
+async function claimRevenueCatRequest(admin: any, userId: string, networkHash: string | null) {
+  if (!networkHash) {
+    throw new ProviderQuotaError({
+      status: 503,
+      body: {
+        code: 'entitlement_verification_unavailable',
+        message: 'Kandro Pro konnte gerade nicht bestätigt werden.',
+      },
+    });
+  }
+  const decision = await accessRpc(admin, 'consume_revenuecat_provider_quota', {
+    p_user_id: userId,
+    p_network_hash: networkHash,
+    p_request_units: 1,
+  });
+  if (decision?.status === 'allowed') return;
+  if (decision?.status === 'rate_limited') {
+    const retryAfter = Number.isSafeInteger(decision.retryAfter) && Number(decision.retryAfter) > 0
+      ? Number(decision.retryAfter)
+      : 60;
+    throw new ProviderQuotaError({
+      status: 429,
+      headers: { 'Retry-After': String(retryAfter) },
+      body: {
+        code: 'entitlement_rate_limited',
+        message: 'Kandro Pro wurde gerade sehr oft geprüft. Bitte versuche es gleich erneut.',
+      },
+    });
+  }
+  throw new ProviderQuotaError({
+    status: 503,
+    body: {
+      code: 'entitlement_verification_unavailable',
+      message: 'Kandro Pro konnte gerade nicht bestätigt werden.',
+    },
+  });
+}
+
+// deno-lint-ignore no-explicit-any
+async function refreshRevenueCatAccess(admin: any, userId: string, networkHash: string | null) {
+  // Captured before the network call. SQL rejects this result if a newer
+  // webhook/REST observation was committed while the request was in flight.
+  const checkedAt = new Date().toISOString();
+  const entitlement = await fetchRevenueCatEntitlement({
+    projectId: revenueCatProjectId,
+    userId,
+    entitlementResourceId: revenueCatEntitlementResourceId,
+    iosAppId: revenueCatIosAppId,
+    productResourceIds: revenueCatIosProductResourceIds,
+    secretApiKey: revenueCatSecretApiKey,
+    claimRequest: () => claimRevenueCatRequest(admin, userId, networkHash),
+  });
+  return accessRpc(admin, 'sync_revenuecat_entitlement', {
+    p_user_id: userId,
+    p_active: entitlement.active,
+    p_expires_at: entitlement.expiresAt,
+    p_checked_at: checkedAt,
+  });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -126,13 +347,16 @@ async function requestDetection(content: unknown[]): Promise<any> {
   });
 
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`${aiProvider}_${response.status}:${detail.slice(0, 300)}`);
+    throw new Error(`${aiProvider}_${response.status}`);
   }
   return JSON.parse(extractResponseText(await response.json()));
 }
 
-async function searchUsdaOnce(term: string): Promise<{ facts: FoodFacts | null; cacheable: boolean }> {
+async function searchUsdaOnce(
+  term: string,
+  claimUsda?: () => Promise<void>,
+): Promise<{ facts: FoodFacts | null; cacheable: boolean }> {
+  await claimUsda?.();
   const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -149,11 +373,14 @@ async function searchUsdaOnce(term: string): Promise<{ facts: FoodFacts | null; 
  * right, but leaving the ingredient unpriced when a good row exists under
  * USDA's own wording is not.
  */
-async function searchUsda(term: string): Promise<{ facts: FoodFacts | null; cacheable: boolean }> {
-  const first = await searchUsdaOnce(term);
+async function searchUsda(
+  term: string,
+  claimUsda?: () => Promise<void>,
+): Promise<{ facts: FoodFacts | null; cacheable: boolean }> {
+  const first = await searchUsdaOnce(term, claimUsda);
   if (first.facts) return first;
   for (const variant of searchTermVariants(term)) {
-    const retry = await searchUsdaOnce(variant);
+    const retry = await searchUsdaOnce(variant, claimUsda);
     if (retry.facts) return retry;
   }
   return first;
@@ -164,7 +391,11 @@ async function searchUsda(term: string): Promise<{ facts: FoodFacts | null; cach
  * terms that are neither in this instance's memory nor in the shared table.
  */
 // deno-lint-ignore no-explicit-any
-async function resolveFacts(terms: string[], admin: any): Promise<Map<string, FoodFacts | null>> {
+async function resolveFacts(
+  terms: string[],
+  admin: any,
+  claimUsda?: () => Promise<void>,
+): Promise<Map<string, FoodFacts | null>> {
   const resolved = new Map<string, FoodFacts | null>();
   const unknown: string[] = [];
 
@@ -206,7 +437,10 @@ async function resolveFacts(terms: string[], admin: any): Promise<Map<string, Fo
   }
 
   const missing = [...new Set(unknown.filter((term) => !resolved.has(term)))];
-  const fetched = await Promise.all(missing.map(async (term) => ({ term, ...await searchUsda(term) })));
+  // Sequential requests keep quota claims and provider traffic bounded even
+  // when a model returns several uncached ingredients in one meal.
+  const fetched: { term: string; facts: FoodFacts | null; cacheable: boolean }[] = [];
+  for (const term of missing) fetched.push({ term, ...await searchUsda(term, claimUsda) });
 
   for (const { term, facts, cacheable } of fetched) {
     resolved.set(term, facts);
@@ -235,7 +469,12 @@ async function resolveFacts(terms: string[], admin: any): Promise<Map<string, Fo
 }
 
 // deno-lint-ignore no-explicit-any
-async function resolveDetection(detection: any, admin: any, source: 'photo' | 'text' = 'photo'): Promise<Result> {
+async function resolveDetection(
+  detection: any,
+  admin: any,
+  source: 'photo' | 'text' = 'photo',
+  claimUsda?: () => Promise<void>,
+): Promise<Result> {
   const classificationError = classifyDetection(detection, source);
   if (classificationError) return classificationError;
 
@@ -246,7 +485,7 @@ async function resolveDetection(detection: any, admin: any, source: 'photo' | 't
     // A term that names no food would be looked up, cached, and then reused for
     // every other ingredient that produced the same placeholder.
     .filter(isUsableSearchTerm);
-  const facts = await resolveFacts(terms, admin);
+  const facts = await resolveFacts(terms, admin, claimUsda);
   // deno-lint-ignore no-explicit-any
   const items = detection.items.map((item: any, index: number) => {
     const blsFacts = resolveBlsFacts(item);
@@ -259,7 +498,7 @@ async function resolveDetection(detection: any, admin: any, source: 'photo' | 't
 }
 
 // deno-lint-ignore no-explicit-any
-async function analyzePhoto(input: any, admin: any): Promise<Result> {
+async function analyzePhoto(input: any, admin: any, claimUsda?: () => Promise<void>): Promise<Result> {
   if (!validateAnalysisInput(input)) {
     return { status: 400, body: { code: 'invalid_input', message: 'Ungültiges Fotoformat.' } };
   }
@@ -269,11 +508,11 @@ async function analyzePhoto(input: any, admin: any): Promise<Result> {
   return resolveDetection(await requestDetection([
     { type: 'input_text', text: photoDetectionPrompt(requestedLanguage(input)) },
     { type: 'input_image', image_url: `data:${input.mimeType};base64,${input.imageBase64}`, detail: imageDetail },
-  ]), admin);
+  ]), admin, 'photo', claimUsda);
 }
 
 // deno-lint-ignore no-explicit-any
-async function analyzeDescription(input: any, admin: any): Promise<Result> {
+async function analyzeDescription(input: any, admin: any, claimUsda?: () => Promise<void>): Promise<Result> {
   const description = typeof input?.description === 'string' ? input.description.trim() : '';
   if (description.length < 3 || description.length > 500) {
     return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
@@ -281,7 +520,7 @@ async function analyzeDescription(input: any, admin: any): Promise<Result> {
   return resolveDetection(await requestDetection([{
     type: 'input_text',
     text: descriptionDetectionPrompt(description, requestedLanguage(input)),
-  }]), admin, 'text');
+  }]), admin, 'text', claimUsda);
 }
 
 /**
@@ -294,7 +533,11 @@ async function analyzeDescription(input: any, admin: any): Promise<Result> {
  * reader's language. USDA and Open Food Facts remain fallbacks for products
  * the reference catalogue does not contain.
  */
-async function searchFoods(query: string, language: string): Promise<Result> {
+async function searchFoods(
+  query: string,
+  language: string,
+  claimProvider?: (route: ProviderRoute) => Promise<void>,
+): Promise<Result> {
   const term = normalizeSearchTerm(query);
   if (!isUsableSearchTerm(term)) {
     return { status: 400, body: { code: 'invalid_input', message: 'Query too short.' } };
@@ -333,11 +576,16 @@ async function searchFoods(query: string, language: string): Promise<Result> {
   // the localization bug this catalogue is meant to remove.
   if (language === 'de') {
     try {
-      for (const product of await searchOpenFoodFacts(term, language)) {
+      for (const product of await searchOpenFoodFacts(
+        term,
+        language,
+        claimProvider ? () => claimProvider('off_search') : undefined,
+      )) {
         // deno-lint-ignore no-explicit-any
         add(product, `off-${String((product as any)?.source?.referenceId ?? '')}`);
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof ProviderQuotaError) throw error;
       // A missing brand result is an empty search, not a broken German UI.
     }
     return { status: 200, body: { query: term, results: results.slice(0, 15) } };
@@ -345,8 +593,9 @@ async function searchFoods(query: string, language: string): Promise<Result> {
 
   let foods: unknown[] = [];
   try {
-    foods = await searchUsdaFoods(term);
-  } catch {
+    foods = await searchUsdaFoods(term, claimProvider ? () => claimProvider('usda_search') : undefined);
+  } catch (error) {
+    if (error instanceof ProviderQuotaError) throw error;
     foods = [];
   }
 
@@ -377,11 +626,16 @@ async function searchFoods(query: string, language: string): Promise<Result> {
   // too, so it also answers the queries the translation above misses.
   if (results.length < 12) {
     try {
-      for (const product of await searchOpenFoodFacts(term, language)) {
+      for (const product of await searchOpenFoodFacts(
+        term,
+        language,
+        claimProvider ? () => claimProvider('off_search') : undefined,
+      )) {
         // deno-lint-ignore no-explicit-any
         add(product, `off-${String((product as any)?.source?.referenceId ?? '')}`);
       }
-    } catch {
+    } catch (error) {
+      if (error instanceof ProviderQuotaError) throw error;
       // An extra source going down is not a failed search.
     }
   }
@@ -396,9 +650,14 @@ async function searchFoods(query: string, language: string): Promise<Result> {
  * a sign-in page; the Search-a-licious service does not, and it takes a
  * fields list so the response stays small.
  */
-async function searchOpenFoodFacts(term: string, language: string): Promise<unknown[]> {
+async function searchOpenFoodFacts(
+  term: string,
+  language: string,
+  claimOff?: () => Promise<void>,
+): Promise<unknown[]> {
   const fields = 'code,lang,lc,product_name,product_name_de,product_name_en,brands,nutriments,serving_quantity,serving_size';
   const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(term)}&page_size=10&fields=${fields}`;
+  await claimOff?.();
   const response = await fetch(url, {
     headers: { 'User-Agent': 'Kandro/1.0 (https://getkandro.com; hewaddorani22@gmail.com)' },
     signal: AbortSignal.timeout(4000),
@@ -445,7 +704,8 @@ async function searchOpenFoodFacts(term: string, language: string): Promise<unkn
   return out;
 }
 
-async function usdaRows(query: string): Promise<unknown[]> {
+async function usdaRows(query: string, claimUsda?: () => Promise<void>): Promise<unknown[]> {
+  await claimUsda?.();
   const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -464,7 +724,7 @@ async function usdaRows(query: string): Promise<unknown[]> {
  * twenty-five results at all. Asking again for "rice cooked" finds it. The
  * merged rows are then ranked against what the user actually typed.
  */
-async function searchUsdaFoods(term: string): Promise<unknown[]> {
+async function searchUsdaFoods(term: string, claimUsda?: () => Promise<void>): Promise<unknown[]> {
   // A German word reaches an English database as nothing at all: "banane"
   // returned an empty list and a hint telling the user to translate it
   // themselves. Everything below this line works in English, ranking
@@ -478,7 +738,7 @@ async function searchUsdaFoods(term: string): Promise<unknown[]> {
   const rows: unknown[] = [];
   const seen = new Set<string>();
   for (const probe of probes) {
-    for (const row of await usdaRows(probe)) {
+    for (const row of await usdaRows(probe, claimUsda)) {
       // deno-lint-ignore no-explicit-any
       const id = String((row as any)?.fdcId ?? '');
       if (!id || seen.has(id)) continue;
@@ -508,11 +768,12 @@ function localizedProductName(product: any, language: string, strict = false): s
   return ordered.map((value) => (typeof value === 'string' ? value.trim() : '')).find(Boolean) ?? '';
 }
 
-async function lookupBarcode(barcode: string, language: string): Promise<Result> {
+async function lookupBarcode(barcode: string, language: string, claimOff?: () => Promise<void>): Promise<Result> {
   if (!/^\d{7,14}$/.test(barcode)) {
     return { status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } };
   }
   const fields = 'code,product_name_de,product_name_en,product_name,nutriments,serving_size,serving_quantity';
+  await claimOff?.();
   const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`, {
     // Open Food Facts asks callers to identify themselves and throttles the
     // ones that do not. A generic agent is how you get rate limited at scale.
@@ -619,24 +880,85 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
   }
 
   const route = routeOf(request);
+  const networkHash = await providerNetworkHash(request);
 
-  // Barcode lookups are free for us, so they stay outside the paid quota.
+  // Barcode and search stay outside the paid quota, but not outside the
+  // provider-abuse boundary: Open Food Facts publishes strict read limits.
   if (request.method === 'GET') {
     const match = route.match(/^\/v1\/barcode\/(\d{7,14})$/);
     // A GET carries no body, so the language rides along in the query string.
     if (match) {
       const requested = new URL(request.url).searchParams.get('language');
-      return reply(await lookupBarcode(match[1], requestedLanguage({ language: requested })));
+      try {
+        return reply(await lookupBarcode(
+          match[1],
+          requestedLanguage({ language: requested }),
+          () => claimProviderRequest(context.supabaseAdmin, data.user.id, 'off_barcode', networkHash),
+        ));
+      } catch (error) {
+        if (error instanceof ProviderQuotaError) return reply(error.result);
+        throw error;
+      }
     }
     if (route === '/v1/search') {
       const params = new URL(request.url).searchParams;
-      return reply(await searchFoods(params.get('q') ?? '', requestedLanguage({ language: params.get('language') })));
+      try {
+        return reply(await searchFoods(
+          params.get('q') ?? '',
+          requestedLanguage({ language: params.get('language') }),
+          (providerRoute) => claimProviderRequest(
+            context.supabaseAdmin,
+            data.user.id,
+            providerRoute,
+            networkHash,
+          ),
+        ));
+      } catch (error) {
+        if (error instanceof ProviderQuotaError) return reply(error.result);
+        throw error;
+      }
     }
     return reply({ status: 404, body: { code: 'not_found', message: 'Route nicht gefunden.' } });
   }
 
   if (request.method !== 'POST') {
     return reply({ status: 405, body: { code: 'method_not_allowed', message: 'Methode nicht erlaubt.' } });
+  }
+  if (route === '/v1/entitlement/refresh') {
+    try {
+      const claim = await accessRpc(context.supabaseAdmin, 'claim_revenuecat_refresh', {
+        p_user_id: data.user.id,
+        p_cooldown_seconds: ENTITLEMENT_REFRESH_COOLDOWN_SECONDS,
+      });
+      if (claim?.status === 'rate_limited') {
+        // Another refresh started inside the short lease. Its cached value may
+        // predate a just-finished purchase or refund, so never present that
+        // value as a completed authoritative check. The client performs a
+        // bounded retry after the lease.
+        return reply({
+          status: 503,
+          body: {
+            code: 'entitlement_verification_unavailable',
+            message: 'Kandro Pro wird gerade bestätigt.',
+          },
+        });
+      }
+      if (claim?.status !== 'claimed') throw new Error('entitlement_refresh_invalid');
+      const synced = await refreshRevenueCatAccess(context.supabaseAdmin, data.user.id, networkHash);
+      if (!['synced', 'stale'].includes(synced?.status ?? '') || typeof synced?.active !== 'boolean') {
+        throw new Error('entitlement_refresh_invalid');
+      }
+      return reply({ status: 200, body: { active: synced.active } });
+    } catch (error) {
+      if (error instanceof ProviderQuotaError) return reply(error.result);
+      return reply({
+        status: 503,
+        body: {
+          code: 'entitlement_verification_unavailable',
+          message: 'Kandro Pro konnte gerade nicht bestätigt werden.',
+        },
+      });
+    }
   }
   if (route !== '/v1/analyze' && route !== '/v1/describe') {
     return reply({ status: 404, body: { code: 'not_found', message: 'Route nicht gefunden.' } });
@@ -657,20 +979,118 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     }
   }
 
+  const requestId = typeof payload?.requestId === 'string' ? payload.requestId : '';
+  if (!isAnalysisRequestId(requestId)) {
+    return reply({ status: 400, body: { code: 'invalid_request', message: 'Ungültige Analyseanfrage.' } });
+  }
+  if (!networkHash) {
+    return reply({
+      status: 503,
+      body: { code: 'provider_error', message: 'Die Analyse ist gerade nicht erreichbar.' },
+    });
+  }
+
+  let access = await reserveAnalysis(context.supabaseAdmin, data.user.id, requestId);
+  if (access?.status === 'verification_required') {
+    try {
+      const synced = await refreshRevenueCatAccess(context.supabaseAdmin, data.user.id, networkHash);
+      if (!['synced', 'stale'].includes(synced?.status ?? '')) {
+        return reply({ status: 503, body: { code: 'entitlement_verification_unavailable', message: 'Kandro Pro konnte gerade nicht geprüft werden.' } });
+      }
+      access = await reserveAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    } catch {
+      // Never grant an unknown/non-paying account during an outage. Only a
+      // customer last confirmed active within the documented 6-hour grace can
+      // continue, and SQL enforces that timestamp rather than trusting this flag.
+      access = access.graceEligible
+        ? await reserveAnalysis(context.supabaseAdmin, data.user.id, requestId, true)
+        : access;
+    }
+  }
+  if (access?.status === 'replay' && access.result) {
+    return reply({ status: 200, body: access.result });
+  }
+  const denied = accessFailure(access);
+  if (denied) return reply(denied);
+
   const { data: used, error: quotaError } = await context.supabase.rpc('consume_analysis_quota');
-  if (quotaError) {
+  if (quotaError || !Number.isSafeInteger(used) || used < 1) {
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
     return reply({ status: 503, body: { code: 'provider_error', message: 'Die Analyse ist gerade nicht erreichbar.' } });
   }
-  if (typeof used === 'number' && used > dailyLimit) {
+  if (used > dailyLimit) {
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
     return reply({
       status: 429,
       body: { code: 'daily_limit_reached', message: 'Du hast heute sehr viele Mahlzeiten erfasst. Morgen geht es normal weiter.' },
     });
   }
 
-  const result = route === '/v1/analyze'
-    ? await analyzePhoto(payload, context.supabaseAdmin)
-    : await analyzeDescription(payload, context.supabaseAdmin);
+  // Reserve the first USDA unit before paying for model inference. Cached/BLS
+  // meals may not use it, but an exhausted nutrition budget can never consume
+  // the non-refundable global AI-day breaker or become a paid model call.
+  try {
+    await claimProviderRequest(context.supabaseAdmin, data.user.id, 'usda_analysis', networkHash);
+  } catch (error) {
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    if (error instanceof ProviderQuotaError) return reply(error.result);
+    throw error;
+  }
+  let prepaidUsdaUnit = true;
+
+  const globalQuota = await accessRpc(context.supabaseAdmin, 'consume_global_analysis_quota', {
+    p_daily_limit: globalDailyLimit,
+  });
+  if (globalQuota?.status !== 'allowed') {
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    return reply({
+      status: 503,
+      body: { code: 'provider_error', message: 'Die Analyse ist gerade ausgelastet. Bitte versuche es später erneut.' },
+    });
+  }
+
+  const claimAnalysisUsda = async () => {
+    if (prepaidUsdaUnit) {
+      prepaidUsdaUnit = false;
+      return;
+    }
+    await claimProviderRequest(context.supabaseAdmin, data.user.id, 'usda_analysis', networkHash);
+  };
+
+  const started = await accessRpc(context.supabaseAdmin, 'mark_analysis_request_started', {
+    p_user_id: data.user.id,
+    p_request_id: requestId,
+  });
+  if (started?.status !== 'started') {
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    return reply({ status: 503, body: { code: 'access_unavailable', message: 'Die Analyse ist gerade nicht erreichbar.' } });
+  }
+
+  let result: Result;
+  try {
+    result = route === '/v1/analyze'
+      ? await analyzePhoto(payload, context.supabaseAdmin, claimAnalysisUsda)
+      : await analyzeDescription(payload, context.supabaseAdmin, claimAnalysisUsda);
+  } catch (error) {
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    if (error instanceof ProviderQuotaError) return reply(error.result);
+    throw error;
+  }
+  if (result.status !== 200) {
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    return reply(result);
+  }
+
+  const completed = await accessRpc(context.supabaseAdmin, 'complete_analysis_request', {
+    p_user_id: data.user.id,
+    p_request_id: requestId,
+    p_result: result.body,
+  });
+  if (completed?.status !== 'completed') {
+    // Do not refund a provider success: a transient commit failure must not
+    // create an unlimited cost loop. The stale reservation expires after 15m.
+    return reply({ status: 503, body: { code: 'access_unavailable', message: 'Die Analyse konnte nicht gespeichert werden.' } });
+  }
   return reply(result);
 });
 
@@ -678,10 +1098,11 @@ export default {
   fetch(request: Request) {
     if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
     return handler(request).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'unknown_error';
-      const setupError = message === 'ai_key_missing' || message === 'ai_provider_invalid';
-      // Never echo the provider's raw error back to the device.
-      console.error('nutrition gateway failure', message.slice(0, 300));
+      const safeCode = safeGatewayFailureCode(error);
+      const setupError = safeCode === 'ai_key_missing' || safeCode === 'ai_provider_invalid';
+      // Logs receive only a fixed code. Provider bodies, prompts and model output
+      // are never attached to exceptions and can therefore not enter Supabase logs.
+      console.error('nutrition gateway failure', safeCode);
       return reply({
         status: setupError ? 503 : 502,
         body: {

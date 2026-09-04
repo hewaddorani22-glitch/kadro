@@ -11,8 +11,12 @@ import { clearTelemetryAfterAccountDeletion } from '@/services/telemetry';
 import { getDictionary } from '@/i18n/active';
 
 export async function deleteKandroAccount() {
+  // Erase analytics before the irreversible server mutation. If current
+  // AsyncStorage or the SDK cannot be drained, deletion stays retryable and no
+  // stale adult opt-in/queue can survive into the replacement account.
+  await clearTelemetryAfterAccountDeletion();
   if (!supabase || !isSupabaseConfigured) {
-    await Promise.all([clearLocalKandroData(), clearLocalWellnessConsent(), clearTelemetryAfterAccountDeletion(), clearRemindersAfterAccountDeletion()]);
+    await Promise.all([clearLocalKandroData(), clearLocalWellnessConsent(), clearRemindersAfterAccountDeletion()]);
     return;
   }
 
@@ -29,7 +33,6 @@ export async function deleteKandroAccount() {
   await Promise.all([
     clearLocalKandroData(),
     clearLocalWellnessConsent(),
-    clearTelemetryAfterAccountDeletion(),
     clearRemindersAfterAccountDeletion(),
   ]);
 }

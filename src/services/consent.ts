@@ -24,16 +24,18 @@ export async function recordWellnessConsent(age: number): Promise<StoredConsent>
 
   if (supabase && isSupabaseConfigured) {
     const user = await ensureSupabaseUser();
-    if (user) {
-      const { error } = await supabase.from('profiles').upsert({
-        user_id: user.id,
-        age,
-        privacy_version: consent.version,
-        wellness_consent_at: consent.acceptedAt,
-        updated_at: consent.acceptedAt,
-      }, { onConflict: 'user_id' });
-      if (error) throw error;
-    }
+    // Cloud-disabled after deletion is not the same as a local-only build. A
+    // local success here would show active consent while the hosted gateway
+    // correctly rejects every request for lack of a server profile.
+    if (!user) throw new Error('cloud_account_disabled');
+    const { error } = await supabase.from('profiles').upsert({
+      user_id: user.id,
+      age,
+      privacy_version: consent.version,
+      wellness_consent_at: consent.acceptedAt,
+      updated_at: consent.acceptedAt,
+    }, { onConflict: 'user_id' });
+    if (error) throw error;
   }
 
   // Persist locally only after the server accepted the same consent version.

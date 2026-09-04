@@ -84,6 +84,21 @@ begin
        or new.guardian_consent_version is distinct from old.guardian_consent_version then
       raise exception 'guardian consent fields are server managed';
     end if;
+
+    -- Age is self-declared on first onboarding. Once recorded, crossing either
+    -- the guardian boundary (16) or Kandro's analytics-minor boundary (18) is
+    -- server-managed. Guardian approval authorises the current minor profile;
+    -- it must not let the client promote that profile to an adult age. A real
+    -- birthday or correction therefore needs a trusted service/support path
+    -- that can update consent and analytics state together.
+    if tg_op = 'UPDATE' and old.age is not null and new.age is distinct from old.age then
+      if new.age is null then
+        raise exception 'declared age cannot be cleared by the client';
+      elsif (old.age < 16) is distinct from (new.age < 16)
+         or (old.age < 18) is distinct from (new.age < 18) then
+        raise exception 'minor age boundary is server managed';
+      end if;
+    end if;
   end if;
   return new;
 end;

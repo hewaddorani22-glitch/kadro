@@ -1,0 +1,60 @@
+Timestamp: 2026-09-04 22:16 CEST
+Command: npm run verify
+Working branch: audit/app-store-release-gate-20260904
+Base commit before local remediation: 22b1bf91af7824ffb976389e8bf259a0c8c1ccb5
+Exit code: 0
+
+Successful stages, in command order:
+- tsc --noEmit
+- validate:state-integrity
+- validate:allowance
+- validate:entitlements
+- validate:offline-copy
+- validate:i18n (64 source files, matching dictionaries, English default)
+- validate:language-memos (25 language-aware services)
+- validate:privacy
+- validate:units
+- validate:formatting
+- validate:consent-recovery
+- validate:reveal
+- validate:accessibility (31 screens)
+- validate:eas
+- validate:targets (199,800 target profiles; 3,888 onboarding profiles)
+- validate:plan-builder
+- validate:day-complete
+- validate:portions
+- validate:plan-editing
+- validate:camera
+- validate:german-search (338 translated terms)
+- validate:bls-search (7,140 bilingual BLS foods)
+- validate:recipes (67 recipes, 85 sourced ingredients)
+- validate:meal-slots
+- validate:preferences (756 suggestions, 966 bilingual answers)
+- validate:meals (30 representative cases)
+- validate:german (64 BLS meal references)
+- validate:catalog (200 meals, 216 deterministic sets)
+- validate:analysis-language
+- validate:barcode
+- validate:search
+- validate:cache
+- validate:matching (13 captured USDA rankings)
+- validate:product
+- validate:loop
+- validate:supabase
+- validate:subscription
+- validate:site (17 pages)
+- validate:site-images (10 screenshots)
+- validate:store-listing (2 localisations)
+- validate:store-screenshots (10 images, 1320x2868, no alpha)
+- validate:waitlist
+- validate:language-routing
+- node --check server/index.mjs
+- expo-doctor: 18/18 checks passed
+- expo export --platform web: succeeded; 1,067 modules
+
+Selected security regression output:
+- RevenueCat entitlement checks passed for signed multi-user TRANSFER, exact Apple app/product/entitlement allowlists, Apple sandbox/production, Test Store rejection, atomic refresh cooldown, three-success lifetime allowance, Pro cap and idempotent replay.
+- Guardian/privacy checks passed for explicit AI consent, withdrawal, minor gate, atomic guardian delivery claim, bounded bodies and minimal native permissions.
+- Waitlist checks passed for service-role-only access, double opt-in, atomic recipient/network limits, actual deletion on unsubscribe and bilingual policy parity.
+
+This is a local/source verification. It does not prove that the pending Supabase functions/migrations or generated legal pages are deployed, nor that StoreKit, camera, VoiceOver or Dynamic Type pass on a physical device.

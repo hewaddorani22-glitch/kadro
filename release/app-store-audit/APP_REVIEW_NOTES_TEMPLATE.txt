@@ -1,0 +1,47 @@
+Kandro 1.0.0 (build [FINAL_BUILD])
+EAS build: [FINAL_EAS_BUILD_URL]
+
+Kandro is a general-wellness nutrition planning app for users aged 14 and over. It does not diagnose or treat any condition and is not submitted in the Kids category.
+
+ACCESS
+No username or password is required. On first launch, complete onboarding. Kandro creates an anonymous Supabase session after the user gives explicit consent; this is the same production path used by customers.
+
+CORE FLOW
+Open the central Scan tab. It provides Photo, Describe, Barcode and Search:
+1. Photo asks for camera permission only after Photo is chosen. Photograph one meal and tap the shutter.
+2. Describe accepts a typed meal.
+3. Barcode scans a packaged-food barcode and includes a flashlight control on supported devices.
+4. Search selects food from the database without an AI call.
+
+Photo and description results always open a confirmation screen before saving. Ingredients and gram amounts can be edited or removed. Saving updates Today, Progress and the three next-meal options.
+
+CONSENT AND PRIVACY
+Analysis consent can be withdrawn at You > Analysis & data use. Account and local/cloud data deletion is available at You > Delete account and data and does not require contacting support. Deleting the Kandro account does not cancel an Apple subscription; the app states this before deletion.
+
+For ages 14–15, analysis remains locked until a parent or legal guardian confirms the emailed request. Ages 16–17 can consent themselves. Optional product analytics is off by default and cannot be enabled for users under 18. Teen calorie planning includes normal growth and applies neither a weight-loss deficit nor a weight-gain surplus.
+
+SUBSCRIPTIONS
+The first three successful AI results are free and count when the result is returned, even if the confirmation screen is later abandoned. Search and barcode lookup remain free. Afterwards Pro permits up to 60 photo or text analyses per UTC day. The paywall offers the App Store products below and includes localized price, duration, auto-renewal information, Privacy Policy, Terms and Restore Purchases. Kandro only displays Pro as active after its authenticated server verifies the Apple App Store subscription against the submitted app, product and entitlement IDs. The app performs a bounded retry if RevenueCat has not yet observed the Apple transaction; Restore Purchases repeats the same server verification and never grants access from the device alone:
+- com.hewaddorani.kandro.pro.monthly
+- com.hewaddorani.kandro.pro.annual
+- RevenueCat entitlement: kandro_pro
+
+Use Apple's sandbox purchase sheet. Apple sandbox is accepted for TestFlight/App Review; RevenueCat Test Store purchases from Expo Go cannot unlock hosted Pro. There is no external purchase method or link. If the purchase sheet does not appear, contact [REVIEW_CONTACT] and include the build number and time.
+
+NON-OBVIOUS DETAILS
+- Original meal photos are discarded after compression/analysis and are not attached to saved meals.
+- Kandro visibly labels nutrition output as an estimate and exposes its data sources.
+- The Example meal is a deterministic fallback for orientation; production AI and database endpoints are expected to remain available during review.
+- Camera denial leaves Describe, Barcode where camera access is later granted, Search and Example meal available.
+
+PUBLIC URLS
+Support: https://getkandro.com/en/support
+Privacy: https://getkandro.com/en/privacy
+Terms: https://getkandro.com/en/terms
+
+FINAL INTERNAL EVIDENCE (do not paste this checklist into App Store Connect)
+[ ] This exact build passed production gateway, account deletion and email-link tests.
+[ ] Monthly and annual sandbox purchase plus Restore Purchases passed on a physical iPhone.
+[ ] The final App Privacy answers and final archive privacy report match.
+[ ] Both subscriptions and their review screenshots are attached to version 1.0.0.
+[ ] Replace every bracketed placeholder before copying these notes.

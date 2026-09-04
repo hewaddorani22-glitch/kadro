@@ -24,6 +24,14 @@ export default function ConfirmScreen() {
   const singleItem = detectedItems.length === 1 ? detectedItems[0] : null;
   const { locale, t } = useLanguage();
 
+  const changeInput = () => {
+    if (scanMode === 'search') {
+      router.replace('/(tabs)/scan?mode=search');
+      return;
+    }
+    router.replace('/(tabs)/scan');
+  };
+
   const confirm = () => {
     void successHaptic();
     const includedItems = detectedItems.filter((item) => item.included);
@@ -119,8 +127,9 @@ export default function ConfirmScreen() {
             const active = mealPortion === choice.factor;
             return (
               <Pressable
+                aria-checked={active}
                 accessibilityRole="radio"
-                accessibilityState={{ selected: active }}
+                accessibilityState={{ checked: active }}
                 key={choice.label}
                 onPress={() => setMealPortion(choice.factor)}
                 style={[styles.portionChoice, active && styles.portionChoiceActive]}
@@ -212,7 +221,11 @@ export default function ConfirmScreen() {
       </Card>
 
       <PrimaryButton icon="arrow-forward" label={t.confirm.proceed} onPress={confirm} />
-      <PrimaryButton label={t.confirm.retake} onPress={() => router.replace('/(tabs)/scan')} variant="ghost" />
+      <PrimaryButton
+        label={scanMode === 'search' ? t.confirm.searchAgain : t.confirm.retake}
+        onPress={changeInput}
+        variant="ghost"
+      />
     </Screen>
   );
 }
