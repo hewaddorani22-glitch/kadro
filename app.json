@@ -19,6 +19,7 @@
     },
     "ios": {
       "supportsTablet": false,
+      "appleTeamId": "85S69CVRAY",
       "bundleIdentifier": "com.hewaddorani.kandro",
       "infoPlist": {
         "NSCameraUsageDescription": "Kandro uses the camera to photograph your meal and estimate nutrition. The original photo is discarded after analysis and is not stored.",

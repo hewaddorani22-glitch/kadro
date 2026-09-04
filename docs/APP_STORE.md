@@ -8,6 +8,8 @@ This file is the source of truth for Kandro's first iOS release. English is the 
 - **Subtitle:** Know what to eat next
 - **Primary category:** Health & Fitness
 - **Bundle ID:** `com.hewaddorani.kandro`
+- **Apple Team ID:** `85S69CVRAY`
+- **App Store Connect Apple ID:** `6808622187`
 - **Version:** `1.0.0`
 - **SKU suggestion:** `kandro-ios-001`
 - **Copyright:** `2026 Hewad Dorani`
@@ -65,7 +67,7 @@ Capture native screenshots from the production/TestFlight build, not the web pre
 
 1. [x] Sign in to Expo and link the EAS project `@hewad/kandro`.
 2. [x] Add the public Supabase production values in EAS and keep the local gateway override absent. AI/USDA secrets are live behind the authenticated Supabase gateway, never in the iOS bundle.
-3. Create the App Store Connect app record for bundle ID `com.hewaddorani.kandro`. Store metadata is versioned in `store.config.json`; review-contact details, subscription metadata, privacy nutrition labels, regulated-medical-device status, DSA trader details, and screenshots remain dashboard-only checks.
+3. [x] Create the App Store Connect app record for bundle ID `com.hewaddorani.kandro`. Store metadata is versioned in `store.config.json`; review-contact details, subscription metadata, privacy nutrition labels, regulated-medical-device status, DSA trader details, and screenshots remain dashboard-only checks.
 4. Create `com.hewaddorani.kandro.pro.monthly` and `com.hewaddorani.kandro.pro.annual` as auto-renewable subscriptions, connect them to RevenueCat's `kandro_pro` entitlement, and add the public iOS RevenueCat SDK key to the production EAS environment.
 5. Build with the checked-in `production` profile and submit to TestFlight.
 6. Run a sandbox purchase, cancellation, entitlement refresh, and restore on a physical iPhone.
