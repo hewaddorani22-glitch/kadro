@@ -28,7 +28,7 @@
 <body>
 <header class="site"><div class="wrap wide"><a class="brand" href="../../"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="../support/">Support</a><a href="../privacy/">Privacy</a><a href="../terms/">Terms</a><a href="../sources/">Data sources</a><a href="../../impressum/">Imprint</a><a class="lang" href="../../privacy/" hreflang="de">Deutsch</a></nav></div></header>
 <main><div class="wrap">
-  <p class="eyebrow">Version 1.1 · Last updated 2 September 2026</p>
+  <p class="eyebrow">Version 1.2 · Last updated 4 September 2026</p>
   <h1>Privacy notice</h1>
   <p class="lead">This notice explains in plain language which data Kandro processes, why, and how you can delete it again at any time.</p>
 
@@ -39,6 +39,7 @@
   <h2>2. What data is processed</h2>
   <p>On your device, Kandro processes your profile, your targets, weight entries, confirmed meals and at most three failed, compressed photo scans kept for a retry you trigger yourself.</p>
   <p>When the cloud is active, Supabase stores in the EU a random account ID, your profile, your current targets, confirmed meals, ingredients, recommendations and feedback. Weight entries stay on your device; an email address is only stored if you deliberately secure your guest account.</p>
+  <p>For a user aged 14 or 15, a parent or legal guardian must confirm an emailed link before wellness processing is enabled. Kandro uses the guardian email only to send that request and clears it from the Kandro database immediately after sending. Supabase stores the request, confirmation time and notice version as evidence; Resend processes the address to deliver the mail.</p>
   <p>PostHog only receives anonymous feature events and sanitised errors, and only if you switch them on. Photos, email addresses, foods, calories, macros and Supabase IDs are not sent to PostHog.</p>
 
   <h2>3. Photo analysis and recipients</h2>
@@ -47,6 +48,7 @@
 
   <h2>4. Purpose, legal basis and retention</h2>
   <p>Nutrition and goal data are health data within the meaning of Art. 9 GDPR. The legal basis is your explicit consent under Art. 9(2)(a) GDPR, which you give during onboarding and can withdraw at any time under “You → Analysis &amp; data use” with effect for the future. After withdrawal, Kandro sends no analysis, body or nutrition data to the named recipients. Consent is stored with a timestamp and notice version on your device and, when the cloud is active, in your protected profile.</p>
+  <p>Kandro is available from age 14. In Germany, users aged 14 or 15 need authorization from a parent or legal guardian under Art. 8 GDPR before the explicit wellness-data consent can take effect; from age 16 the user can consent for themselves. The guardian confirms the disclosed recipients and purposes through a single-use link that expires after 48 hours. They can withdraw authorization through the contact address above; the user can also stop future processing in the app at any time.</p>
   <p>Local data remains until you delete the app data or your account. Confirmed meals are stored locally for your history; for the cloud history the app currently loads at most 90 days. Cloud data remains until the account is deleted. Technically necessary backups may expire according to the retention periods of the respective processor.</p>
 
   <h2>5. Your rights</h2>
@@ -55,7 +57,7 @@
   <p>You have the right to lodge a complaint with a supervisory authority; for North Rhine-Westphalia this is the State Commissioner for Data Protection and Freedom of Information NRW.</p>
 
   <h2>6. Processors and transfers</h2>
-  <p>We use Supabase (database and account, EU region), OpenRouter in the United States and Microsoft Azure with the OpenAI GPT-4.1 mini model (image and text analysis), USDA FoodData Central and Open Food Facts (nutrition matching), RevenueCat (subscription management) and optionally PostHog (anonymous usage analytics, EU).</p>
+  <p>We use Supabase (database and account, EU region), OpenRouter in the United States and Microsoft Azure with the OpenAI GPT-4.1 mini model (image and text analysis), USDA FoodData Central and Open Food Facts (nutrition matching), RevenueCat (subscription management), Resend (guardian and waiting-list email delivery) and optionally PostHog (anonymous usage analytics, EU). Optional product analytics stay disabled for users under 18.</p>
   <p>The AI data path is restricted to OpenRouter and ZDR-capable Microsoft Azure endpoints without fallback. Requests are configured with “store: false”, data collection denied and Zero Data Retention: content is not used for training and is not stored permanently by the AI provider. Photos are processed solely for the duration of the analysis. OpenRouter and USDA FoodData Central process data in the United States; USDA receives normalized food terms only, not photos, account IDs or body data.</p>
 
   <h2>7. Waiting list on getkandro.com</h2>

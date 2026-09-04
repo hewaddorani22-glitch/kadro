@@ -15,7 +15,7 @@ This file is the source of truth for Kandro's first iOS release. English is the 
 - **Copyright:** `2026 Hewad Dorani`
 - **Support URL:** `https://getkandro.com/en/support`
 - **Privacy Policy URL:** `https://getkandro.com/en/privacy`
-- **Age rating:** answer the current App Store Connect questionnaire with no objectionable-content descriptors, then override to **18+** because Kandro's EULA and onboarding are restricted to adults. Do not push the legacy EAS Metadata `SEVENTEEN_PLUS` advisory.
+- **Age rating:** answer the current questionnaire truthfully with **Health or Wellness Topics** present and no medical-treatment or objectionable-content descriptors. Set the developer minimum to **13+**, the closest Apple tier below Kandro's enforced 14+ onboarding minimum. Do not select the Kids category.
 
 ### Promotional text
 
@@ -33,7 +33,7 @@ How it works:
 - Get a recalculated daily balance.
 - Choose from exactly three ideas for home, the supermarket or on the go.
 
-Kandro shows estimates honestly and keeps every ingredient and portion editable. Original photos are discarded after analysis and are not saved with your meal. Kandro is a general wellness tool for adults and does not replace medical advice.
+Kandro shows estimates honestly and keeps every ingredient and portion editable. Original photos are discarded after analysis and are not saved with your meal. Kandro is a general wellness tool from age 14 and does not replace medical advice. Ages 14–15 require guardian confirmation; ages 14–17 receive no prescribed calorie deficit or surplus.
 
 ### Keywords
 
@@ -50,7 +50,7 @@ Meet Kandro: meal photo, description, barcode and food search; ingredient and po
 - **Keywords:** Ernährung,Kalorien,Makros,Mahlzeit,Protein,Essensplan,Foto,Wellness,Tagesplan
 - **Support URL:** `https://getkandro.com/support`
 - **Privacy Policy URL:** `https://getkandro.com/privacy`
-- Use the German description from the current in-app positioning, with the same 18+, estimate and non-medical disclosures as the English description.
+- Use the German description from `store.config.json`, with the same 14+, guardian, growth-safe estimate and non-medical disclosures as the English description.
 
 ## Screenshot storyboard
 

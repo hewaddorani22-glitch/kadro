@@ -14,11 +14,11 @@ Use this as the source of truth when completing **App Privacy** in App Store Con
 | Health & Fitness → Health | App Functionality | Body measurements, nutrition targets, confirmed meals and macros are stored under the user's Supabase account. |
 | Identifiers → User ID | App Functionality | Supabase anonymous or secured account ID; also used as the RevenueCat App User ID. |
 | Purchases → Purchase History | App Functionality | RevenueCat and Apple maintain subscription entitlement state. |
-| Contact Info → Email Address | App Functionality, Account Management | Only when the user voluntarily secures or restores the guest account by email. |
+| Contact Info → Email Address | App Functionality, Account Management | When the user voluntarily secures/restores the guest account, or when a 14–15-year-old asks a parent/guardian to confirm permission. The guardian address is cleared from Kandro's database immediately after Resend accepts the mail. |
 
 ## Optional analytics
 
-If production PostHog remains enabled, declare **Usage Data → Product Interaction** for Analytics. Collection is off by default and the user must opt in. Kandro sends only bucketed feature events; no food, nutrition value, photo, email or Supabase ID is included. Treat the SDK's random installation identifier conservatively as linked to the user/device in App Store Connect.
+If production PostHog remains enabled, declare **Usage Data → Product Interaction** for Analytics. Collection is off by default and an adult user must opt in. It cannot be enabled on a profile under 18. Kandro sends only bucketed feature events; no food, nutrition value, photo, email or Supabase ID is included. Treat the SDK's random installation identifier conservatively as linked to the user/device in App Store Connect.
 
 If PostHog is disabled in the submitted production environment, do not declare Product Interaction merely because the dormant SDK is present; confirm with a packet/log test that nothing is transmitted.
 

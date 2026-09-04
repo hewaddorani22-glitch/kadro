@@ -44,13 +44,17 @@ if (!/completedAt: editing \? profile\.completedAt : null/.test(onboarding)) {
 if (!/EDIT_STEPS = STEPS\.filter\(\(id\) => id !== 'building'\)/.test(onboarding)) {
   problems.push("onboarding: edit mode still plays the first-run 'building' beat");
 }
-// Editing must not re-open the consent sheet.
+// Adult editing must not re-open consent. Moving a profile below 16 is the
+// exception: server-approved guardian permission has to exist before saving.
 const saveBlock = onboarding.slice(onboarding.indexOf('const saveEdits'), onboarding.indexOf('const showFooterButton'));
 if (!saveBlock.includes('completeOnboarding(draftProfile)')) {
   problems.push('onboarding: saving edits does not go through completeOnboarding');
 }
-if (/setShowConsent\(true\)/.test(saveBlock.slice(0, saveBlock.indexOf('if (editing)')))) {
-  problems.push('onboarding: editing re-asks for consent that was already given');
+if (!/draftProfile\.age < 16 && !await getGuardianConsentStatus/.test(saveBlock)) {
+  problems.push('onboarding: editing an age to 14–15 bypasses guardian approval');
+}
+if (!/else \{\s*await saveEdits\(\);/.test(saveBlock)) {
+  problems.push('onboarding: an adult edit no longer saves directly');
 }
 
 if (!profile.includes("router.push('/onboarding?edit=1' as never)")) {
@@ -70,4 +74,4 @@ if (problems.length) {
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
-console.log('Plan editing reuses onboarding, prefilled and without a second consent prompt.');
+console.log('Plan editing reuses onboarding, stays prefilled, and only re-checks guardian approval for ages 14–15.');

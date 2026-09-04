@@ -42,7 +42,8 @@ const configuredDailyLimit = Number(Deno.env.get('ANALYSIS_DAILY_LIMIT') || '60'
 const dailyLimit = Number.isSafeInteger(configuredDailyLimit) && configuredDailyLimit > 0
   ? configuredDailyLimit
   : 60;
-const REQUIRED_PRIVACY_VERSION = '2026-09-02-ai-v1';
+const REQUIRED_PRIVACY_VERSION = '2026-09-04-ai-v2';
+const REQUIRED_GUARDIAN_VERSION = '2026-09-04-guardian-v1';
 
 /** Largest base64 payload we accept. The client sends a 1600px JPEG at q0.82. */
 const MAX_IMAGE_BASE64 = 3_000_000;
@@ -556,13 +557,25 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
   // consent before any request can reach AI or a nutrition provider.
   const { data: consent, error: consentError } = await context.supabase
     .from('profiles')
-    .select('privacy_version, wellness_consent_at')
+    .select('age,privacy_version,wellness_consent_at,guardian_consent_at,guardian_consent_version')
     .eq('user_id', data.user.id)
     .maybeSingle();
   if (consentError) {
     return reply({ status: 503, body: { code: 'provider_error', message: 'Die Einwilligung konnte nicht geprüft werden.' } });
   }
-  if (consent?.privacy_version !== REQUIRED_PRIVACY_VERSION || !consent.wellness_consent_at) {
+  const age = Number(consent?.age);
+  const guardianApproved = age >= 16 || (
+    age >= 14
+    && consent?.guardian_consent_at
+    && consent.guardian_consent_version === REQUIRED_GUARDIAN_VERSION
+  );
+  if (
+    !Number.isInteger(age)
+    || age < 14
+    || !guardianApproved
+    || consent?.privacy_version !== REQUIRED_PRIVACY_VERSION
+    || !consent.wellness_consent_at
+  ) {
     return reply({ status: 403, body: { code: 'consent_required', message: 'Bitte bestätige zuerst die aktuelle Datenschutzeinwilligung.' } });
   }
 

@@ -10,7 +10,8 @@ import { PlanBuilder, BUILDING_MS } from '@/components/PlanBuilder';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { colors, radii, spacing } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { BIOLOGICAL_SEXES, calculateDailyTargets, estimatedPace, isRateLimited, weeklyRateLabel } from '@/services/personalization';
+import { BIOLOGICAL_SEXES, calculateDailyTargets, estimatedPace, isRateLimited, isTeenProfile, weeklyRateLabel } from '@/services/personalization';
+import { getGuardianConsentStatus, requestGuardianConsent } from '@/services/guardianConsent';
 import { trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
@@ -31,7 +32,7 @@ import type { BiologicalSex } from '@/types/nutrition';
 type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap };
 
 
-const STEPS = ['goal', 'rate', 'name', 'sex', 'age', 'height', 'weight', 'activity', 'preferences', 'building', 'plan'] as const;
+const STEPS = ['goal', 'name', 'sex', 'age', 'rate', 'height', 'weight', 'activity', 'preferences', 'building', 'plan'] as const;
 // The same questions, minus the first-run theatre: someone changing from
 // losing weight to building muscle has already seen the plan being built.
 const EDIT_STEPS = STEPS.filter((id) => id !== 'building');
@@ -100,7 +101,7 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { completeOnboarding, grantWellnessConsent, profile } = useApp();
-  const { locale, t } = useLanguage();
+  const { language, locale, t } = useLanguage();
   const copy = copyFor(t);
   const goalChoices = goalChoicesFor(t);
   const sexChoices = sexChoicesFor(t);
@@ -125,10 +126,14 @@ export default function OnboardingScreen() {
   const [showConsent, setShowConsent] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
+  const [guardianEmail, setGuardianEmail] = useState('');
+  const [guardianRequestSent, setGuardianRequestSent] = useState(false);
   const [skippedAnything, setSkippedAnything] = useState(false);
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const goalRef = useRef(goal);
   goalRef.current = goal;
+  const ageRef = useRef(age);
+  ageRef.current = age;
 
   const step = steps[stepIndex];
 
@@ -144,7 +149,7 @@ export default function OnboardingScreen() {
     setStepIndex((current) => {
       let next = Math.min(steps.length - 1, current + 1);
       // Holding weight has no rate to choose.
-      if (steps[next] === 'rate' && goalRef.current === 'maintain') next += 1;
+      if (steps[next] === 'rate' && (goalRef.current === 'maintain' || ageRef.current < 18)) next += 1;
       return Math.min(steps.length - 1, next);
     });
   }, [clearAdvance, steps]);
@@ -154,7 +159,7 @@ export default function OnboardingScreen() {
     clearAdvance();
     setStepIndex((current) => {
       let previous = Math.max(0, current - 1);
-      if (steps[previous] === 'rate' && goalRef.current === 'maintain') previous -= 1;
+      if (steps[previous] === 'rate' && (goalRef.current === 'maintain' || ageRef.current < 18)) previous -= 1;
       return Math.max(0, previous);
     });
   };
@@ -208,19 +213,40 @@ export default function OnboardingScreen() {
   }), [activity, editing, profile.completedAt, age, displayName, goal, height, preferences, sex, unitSystem, weeklyRate, weight]);
   const startingTargets = useMemo(() => calculateDailyTargets(draftProfile), [draftProfile]);
 
+  const finishOnboarding = async () => {
+    await grantWellnessConsent(draftProfile.age);
+    await completeOnboarding(draftProfile);
+    trackEvent('onboarding completed', { completion: skippedAnything ? 'skipped' : 'finished' });
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowConsent(false);
+    router.replace('/(tabs)/scan');
+  };
+
   const acceptConsent = async () => {
     setConsentBusy(true);
     setConsentError(null);
     try {
-      await grantWellnessConsent();
-      await completeOnboarding(draftProfile);
-      trackEvent('onboarding completed', { completion: skippedAnything ? 'skipped' : 'finished' });
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setShowConsent(false);
-      router.replace('/(tabs)/scan');
+      if (draftProfile.age < 16) {
+        if (!guardianRequestSent) {
+          const normalized = guardianEmail.trim().toLowerCase();
+          if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(normalized)) {
+            setConsentError(t.onboarding.guardianInvalidEmail);
+            return;
+          }
+          const status = await requestGuardianConsent(normalized, draftProfile.age, language);
+          if (status === 'approved') await finishOnboarding();
+          else setGuardianRequestSent(true);
+          return;
+        }
+        if (!await getGuardianConsentStatus()) {
+          setConsentError(t.onboarding.guardianPending);
+          return;
+        }
+      }
+      await finishOnboarding();
     } catch {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setConsentError(t.onboarding.consentError);
+      setConsentError(draftProfile.age < 16 ? t.onboarding.guardianCloudRequired : t.onboarding.consentError);
     } finally {
       setConsentBusy(false);
     }
@@ -236,13 +262,21 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)/profile');
   };
 
-  const primaryAction = () => {
+  const primaryAction = async () => {
     void Haptics.selectionAsync();
     if (step === 'plan') {
       if (editing) {
-        void saveEdits();
+        if (draftProfile.age < 16 && !await getGuardianConsentStatus().catch(() => false)) {
+          setGuardianRequestSent(false);
+          setConsentError(null);
+          setShowConsent(true);
+        } else {
+          await saveEdits();
+        }
         return;
       }
+      setGuardianRequestSent(false);
+      setConsentError(null);
       setShowConsent(true);
       return;
     }
@@ -374,7 +408,7 @@ export default function OnboardingScreen() {
               />
             ) : null}
             {step === 'age' ? (
-              <NumberStep max={80} min={18} onChange={setAge} step={1} unit={t.onboarding.years} value={age} />
+              <NumberStep max={80} min={14} onChange={setAge} step={1} unit={t.onboarding.years} value={age} />
             ) : null}
             {step === 'height' ? (
               <View style={styles.unitStep}>
@@ -466,7 +500,7 @@ export default function OnboardingScreen() {
             <PrimaryButton
               icon={step === 'plan' ? 'camera' : 'arrow-forward'}
               label={footerLabel}
-              onPress={primaryAction}
+              onPress={() => void primaryAction()}
             />
           </View>
         ) : null}
@@ -476,14 +510,45 @@ export default function OnboardingScreen() {
         <View style={styles.modalScrim}>
           <View accessibilityViewIsModal style={[styles.consentSheet, { paddingBottom: insets.bottom + 18 }]}>
             <View style={styles.consentIcon}><Ionicons color={colors.text} name="shield-checkmark-outline" size={26} /></View>
-            <Text accessibilityRole="header" style={styles.consentTitle}>{t.onboarding.consentTitle}</Text>
-            <Text style={styles.consentText}>{t.onboarding.consentBody}</Text>
+            <Text accessibilityRole="header" style={styles.consentTitle}>
+              {draftProfile.age < 16 ? t.onboarding.guardianTitle : t.onboarding.consentTitle}
+            </Text>
+            <Text style={styles.consentText}>
+              {draftProfile.age < 16 ? t.onboarding.guardianBody : t.onboarding.consentBody}
+            </Text>
+            {draftProfile.age < 16 ? (
+              <View style={styles.guardianBlock}>
+                <Text style={styles.guardianLabel}>{t.onboarding.guardianEmail}</Text>
+                <TextInput
+                  accessibilityLabel={t.onboarding.guardianEmail}
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  editable={!guardianRequestSent && !consentBusy}
+                  inputMode="email"
+                  onChangeText={setGuardianEmail}
+                  placeholder={t.onboarding.guardianPlaceholder}
+                  placeholderTextColor={colors.muted}
+                  style={styles.guardianInput}
+                  value={guardianEmail}
+                />
+                {guardianRequestSent ? <Text style={styles.guardianSent}>{t.onboarding.guardianSent}</Text> : null}
+              </View>
+            ) : null}
             <View style={styles.consentLinks}>
               <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/privacy'); }}><Text style={styles.consentLink}>{t.onboarding.consentPrivacy}</Text></Pressable>
               <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/terms'); }}><Text style={styles.consentLink}>{t.onboarding.consentTerms}</Text></Pressable>
             </View>
             {consentError ? <Text accessibilityLiveRegion="assertive" style={styles.consentError}>{consentError}</Text> : null}
-            <PrimaryButton disabled={consentBusy} icon="checkmark" label={consentBusy ? t.common.moment : t.onboarding.consentAccept} onPress={() => void acceptConsent()} />
+            <PrimaryButton
+              disabled={consentBusy}
+              icon={draftProfile.age < 16 && !guardianRequestSent ? 'mail-outline' : 'checkmark'}
+              label={consentBusy
+                ? t.common.moment
+                : draftProfile.age < 16
+                  ? (guardianRequestSent ? t.onboarding.guardianCheck : t.onboarding.guardianSend)
+                  : t.onboarding.consentAccept}
+              onPress={() => void acceptConsent()}
+            />
             <PrimaryButton disabled={consentBusy} label={t.common.back} onPress={() => setShowConsent(false)} variant="ghost" />
           </View>
         </View>
@@ -656,7 +721,11 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
           <Text style={styles.planStatLabel}>{t.common.protein}</Text>
         </View>
         <View style={styles.planStat}>
-          <Text numberOfLines={2} style={styles.planStatValue}>{estimatedPace(profile.goal, profile.weeklyRateKg, t.common, profile.unitSystem)}</Text>
+          <Text numberOfLines={2} style={styles.planStatValue}>
+            {isTeenProfile(profile)
+              ? t.onboarding.teenPace
+              : estimatedPace(profile.goal, profile.weeklyRateKg, t.common, profile.unitSystem)}
+          </Text>
           <Text style={styles.planStatLabel}>{t.onboarding.estimatedPace}</Text>
         </View>
         <View style={styles.planStat}>
@@ -674,6 +743,12 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
           <Text style={styles.limitText}>
             {t.onboarding.rateLimited}
           </Text>
+        </View>
+      ) : null}
+      {isTeenProfile(profile) ? (
+        <View style={styles.teenRow}>
+          <Ionicons color={colors.accentDeep} name="shield-checkmark-outline" size={16} />
+          <Text style={styles.teenText}>{t.onboarding.teenPlanNotice}</Text>
         </View>
       ) : null}
       <Text style={styles.safetyText}>{t.onboarding.safety}</Text>
@@ -761,7 +836,13 @@ const styles = StyleSheet.create({
   consentIcon: { width: 50, height: 50, borderRadius: 18, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   consentTitle: { color: colors.text, fontSize: 25, lineHeight: 30, fontWeight: '700' },
   consentText: { color: colors.muted, fontSize: 13, lineHeight: 20 },
+  guardianBlock: { gap: 7 },
+  guardianLabel: { color: colors.text, fontSize: 12, fontWeight: '700' },
+  guardianInput: { minHeight: 52, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, color: colors.text, fontSize: 16, paddingHorizontal: 15 },
+  guardianSent: { color: colors.accentDeep, fontSize: 12, lineHeight: 18, fontWeight: '600' },
   consentLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
   consentLink: { color: colors.accentDeep, fontSize: 12, fontWeight: '800', textDecorationLine: 'underline' },
   consentError: { color: colors.attention, fontSize: 12, lineHeight: 18 },
+  teenRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 16, backgroundColor: colors.neutralSoft, borderRadius: 14, padding: 11 },
+  teenText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },
 });

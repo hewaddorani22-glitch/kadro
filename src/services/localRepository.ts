@@ -143,7 +143,7 @@ export async function loadProfile(): Promise<UserProfile> {
     ...stored,
     goal: oneOf(stored.goal, ['lose', 'maintain', 'gain'], DEFAULT_PROFILE.goal),
     activityLevel: oneOf(stored.activityLevel, ['low', 'light', 'high'], DEFAULT_PROFILE.activityLevel),
-    age: numberInRange(stored.age, 18, 100, DEFAULT_PROFILE.age),
+    age: numberInRange(stored.age, 14, 100, DEFAULT_PROFILE.age),
     heightCm: positiveNumber(stored.heightCm, DEFAULT_PROFILE.heightCm),
     weightKg: positiveNumber(stored.weightKg, DEFAULT_PROFILE.weightKg),
     // Profiles written before the rate existed must not deserialize as undefined.

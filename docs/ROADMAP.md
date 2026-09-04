@@ -86,6 +86,7 @@ Acceptance criteria:
 - [x] RevenueCat Test Store purchase, entitlement, and restore smoke test
 - [ ] App Store Connect products plus native StoreKit sandbox purchase/restore in the TestFlight build
 - [x] Versioned explicit AI/wellness consent, in-app withdrawal, server enforcement, bilingual privacy/terms, non-medical guardrails, and live Supabase account-deletion test
+- [x] 14+ access with server-enforced guardian email confirmation for ages 14–15, adolescent growth-aware energy balance for 14–17, and analytics disabled for minors
 - [x] Add legal controller/contact details, public support/privacy URLs, provider/transfer disclosure and ZDR configuration
 - [x] Responsive Kandro landing page with private deployment plus privacy and terms routes
 - [x] Publish the landing page and generated bilingual legal pages at getkandro.com

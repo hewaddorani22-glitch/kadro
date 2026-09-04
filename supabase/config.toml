@@ -253,6 +253,11 @@ verify_jwt = true
 [functions.waitlist]
 verify_jwt = false
 
+# Confirmation links are public, while request/status calls validate the
+# anonymous Supabase user's JWT inside the function before touching a row.
+[functions.guardian-consent]
+verify_jwt = false
+
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true

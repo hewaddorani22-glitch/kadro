@@ -4,7 +4,7 @@ Paste the relevant section into App Store Connect after replacing the bracketed 
 
 ## Review notes (English)
 
-Kandro is a general wellness nutrition-planning app for adults aged 18 and over. It does not diagnose or treat a medical condition.
+Kandro is a general wellness nutrition-planning app for users aged 14 and over. It does not diagnose or treat a medical condition and is not submitted in the Kids category.
 
 No login is required. On first launch, the reviewer completes onboarding and gives explicit consent before any nutrition, body, photo or text data is transferred. Consent can be withdrawn under **You → Analysis & data use**. The app then blocks all analysis and cloud processing while preserving existing data. **You → Delete account and data** permanently deletes the Supabase account and local Kandro data without contacting support.
 
@@ -19,7 +19,9 @@ Every photo or text estimate goes to a confirmation screen before it is saved. T
 
 The first three AI analyses are free. Afterwards the paywall offers the live App Store monthly and annual subscriptions. Prices, period, auto-renewal, cancellation, Privacy Policy, Terms and Restore Purchases are visible before purchase. Search, previously logged meals and account deletion do not require a subscription.
 
-**Calorie targets cannot be driven to an unsafe level.** The daily target is Mifflin-St Jeor times an activity factor, and it never falls below 1,300 kcal or below 70% of the reviewer's own maintenance estimate, whichever is higher — the onboarding names the floor when it applies. The weekly rate is limited to 0.25 kg or 0.5 kg; there is no "aggressive" option, no fasting mode and no streak or punishment mechanic. Ages under 18 cannot be entered, and the database enforces the same boundary.
+**Age and calorie safety are enforced in both the client and database.** Ages below 14 cannot be entered. Ages 14–15 remain locked until a parent or legal guardian affirmatively confirms a single-use emailed link; the protected analysis gateway independently verifies that record before any provider receives data. Ages 16–17 can consent themselves. Optional PostHog analytics remain disabled for every user under 18.
+
+For ages 14–17, Kandro uses the 2023 Dietary Reference Intake adolescent Estimated Energy Requirement equation, which includes normal growth. Their goal may change meal ranking, but Kandro applies neither a calorie deficit nor a surplus and shows no weight-change pace. Adults use Mifflin-St Jeor times an activity factor. Adult targets never fall below 1,300 kcal or 70% of maintenance, whichever is higher. There is no aggressive option, fasting mode, streak or punishment mechanic.
 
 Test account: none required; Kandro creates an anonymous Supabase session only after consent.
 
@@ -31,7 +33,9 @@ Subscription products submitted with this version:
 
 For review, use the App Store sandbox purchase sheet. If analysis is temporarily unavailable, the deterministic **Example meal** remains available, but the production endpoint is expected to be live during review.
 
-**Age policy.** The Terms, the onboarding and the database all require the user to be 18 or over. This is our own policy for a nutrition-planning product, not a statement about the content, which is food, numbers and recipes.
+**Age policy.** The Terms, onboarding and database consistently require age 14 or over. Apple’s questionnaire should disclose Health or Wellness Topics and a 13+ developer age tier; the app itself blocks age 13 and below. This is not a Kids-category app. Guardian confirmation for ages 14–15 is described in the privacy notice and can be withdrawn through support.
+
+Adolescent EER methodology: `https://www.canada.ca/en/health-canada/services/food-nutrition/healthy-eating/dietary-reference-intakes/tables/equations-estimate-energy-requirement.html`
 
 Support: `https://getkandro.com/en/support`
 Privacy: `https://getkandro.com/en/privacy`

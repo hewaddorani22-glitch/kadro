@@ -20,7 +20,7 @@ import {
   isTelemetryConfigured,
   setAnalyticsCollectionEnabled,
 } from '@/services/telemetry';
-import { activityLabel, goalLabel, weeklyRateLabel } from '@/services/personalization';
+import { activityLabel, goalLabel, isTeenProfile, weeklyRateLabel } from '@/services/personalization';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber } from '@/utils/format';
 import type { Language } from '@/i18n';
@@ -42,6 +42,7 @@ export default function ProfileScreen() {
   const { language, locale, setLanguage, t } = useLanguage();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
   const [reminderEnabled, setReminderEnabled] = useState(false);
+  const isMinor = profile.age < 18;
   const reminderTime = `${String(REMINDER_HOUR).padStart(2, '0')}:${String(REMINDER_MINUTE).padStart(2, '0')}`;
 
   useEffect(() => {
@@ -56,6 +57,11 @@ export default function ProfileScreen() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isMinor) return;
+    void setAnalyticsCollectionEnabled(false).then(() => setAnalyticsEnabled(false));
+  }, [isMinor]);
 
   const updateAnalytics = async (enabled: boolean) => {
     setAnalyticsEnabled(await setAnalyticsCollectionEnabled(enabled));
@@ -109,7 +115,9 @@ export default function ProfileScreen() {
             <PlanStat label={t.profile.calories} value={formatNumber(targets.calories, locale)} />
             <PlanStat label={t.common.protein} value={`${targets.protein} g`} />
             <PlanStat label={t.profile.goal} value={goalLabel(profile.goal, t.common)} />
-            <PlanStat label={t.profile.pace} value={weeklyRateLabel(profile.goal, profile.weeklyRateKg, t.common, profile.unitSystem)} />
+            <PlanStat label={t.profile.pace} value={isTeenProfile(profile)
+              ? t.onboarding.teenPace
+              : weeklyRateLabel(profile.goal, profile.weeklyRateKg, t.common, profile.unitSystem)} />
             <PlanStat label={t.profile.activity} value={activityLabel(profile.activityLevel, t.common)} />
           </View>
           <View style={styles.divider} />
@@ -153,10 +161,12 @@ export default function ProfileScreen() {
           />
           <View style={styles.divider} />
           <ToggleRow
-            detail={isTelemetryConfigured
-              ? t.profile.analyticsOn
-              : t.profile.analyticsOff}
-            disabled={!isTelemetryConfigured}
+            detail={isMinor
+              ? t.profile.analyticsMinor
+              : isTelemetryConfigured
+                ? t.profile.analyticsOn
+                : t.profile.analyticsOff}
+            disabled={isMinor || !isTelemetryConfigured}
             icon="analytics-outline"
             label={t.profile.analytics}
             onValueChange={(enabled) => void updateAnalytics(enabled)}

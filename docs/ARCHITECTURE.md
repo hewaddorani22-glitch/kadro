@@ -4,6 +4,7 @@
 
 ```text
 Versioned explicit AI/wellness consent
+   ↳ age 14–15: emailed guardian confirmation first
    ↓
 Onboarding
    ↓
@@ -117,6 +118,8 @@ The current analysis pipeline:
 4. keeps at most three failed scans locally for explicit retry;
 5. persists only the user-confirmed structured meal;
 6. never retains photos as part of saved meal records.
+
+Age is part of the processing boundary, not display copy. Profiles below 14 are rejected in the UI and database. Ages 14–15 can only set the current wellness consent after `guardian-consent` has recorded the current guardian notice version; those server-owned columns cannot be written by an authenticated client. The nutrition gateway checks age, guardian approval and the current privacy version before any barcode, search, text or photo request. Ages 14–17 use the adolescent EER maintenance path with no goal offset, and PostHog opt-in is disabled for them.
 
 The compressed preview lives only in the app cache during the active flow. The production gateway is authenticated and metered, sends the image directly to the configured model provider with storage disabled, and does not persist it in Supabase. Final legal/provider disclosure and retention review remain launch gates.
 

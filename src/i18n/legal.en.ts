@@ -23,7 +23,7 @@ function contact() {
 }
 
 export const legalEn: LegalCopySet = {
-  version: '1.1 · Last updated 2 September 2026',
+  version: '1.2 · Last updated 4 September 2026',
   privacy: {
     title: 'Privacy notice',
     intro: 'This notice explains in plain language which data Kandro processes, why, and how you can delete it again at any time.',
@@ -40,6 +40,7 @@ export const legalEn: LegalCopySet = {
         paragraphs: [
           'On your device, Kandro processes your profile, your targets, weight entries, confirmed meals and at most three failed, compressed photo scans kept for a retry you trigger yourself.',
           'When the cloud is active, Supabase stores in the EU a random account ID, your profile, your current targets, confirmed meals, ingredients, recommendations and feedback. Weight entries stay on your device; an email address is only stored if you deliberately secure your guest account.',
+          'For a user aged 14 or 15, a parent or legal guardian must confirm an emailed link before wellness processing is enabled. Kandro uses the guardian email only to send that request and clears it from the Kandro database immediately after sending. Supabase stores the request, confirmation time and notice version as evidence; Resend processes the address to deliver the mail.',
           'PostHog only receives anonymous feature events and sanitised errors, and only if you switch them on. Photos, email addresses, foods, calories, macros and Supabase IDs are not sent to PostHog.',
         ],
       },
@@ -54,6 +55,7 @@ export const legalEn: LegalCopySet = {
         title: '4. Purpose, legal basis and retention',
         paragraphs: [
           'Nutrition and goal data are health data within the meaning of Art. 9 GDPR. The legal basis is your explicit consent under Art. 9(2)(a) GDPR, which you give during onboarding and can withdraw at any time under “You → Analysis & data use” with effect for the future. After withdrawal, Kandro sends no analysis, body or nutrition data to the named recipients. Consent is stored with a timestamp and notice version on your device and, when the cloud is active, in your protected profile.',
+          'Kandro is available from age 14. In Germany, users aged 14 or 15 need authorization from a parent or legal guardian under Art. 8 GDPR before the explicit wellness-data consent can take effect; from age 16 the user can consent for themselves. The guardian confirms the disclosed recipients and purposes through a single-use link that expires after 48 hours. They can withdraw authorization through the contact address above; the user can also stop future processing in the app at any time.',
           'Local data remains until you delete the app data or your account. Confirmed meals are stored locally for your history; for the cloud history the app currently loads at most 90 days. Cloud data remains until the account is deleted. Technically necessary backups may expire according to the retention periods of the respective processor.',
         ],
       },
@@ -68,7 +70,7 @@ export const legalEn: LegalCopySet = {
       {
         title: '6. Processors and transfers',
         paragraphs: [
-          'We use Supabase (database and account, EU region), OpenRouter in the United States and Microsoft Azure with the OpenAI GPT-4.1 mini model (image and text analysis), USDA FoodData Central and Open Food Facts (nutrition matching), RevenueCat (subscription management) and optionally PostHog (anonymous usage analytics, EU).',
+          'We use Supabase (database and account, EU region), OpenRouter in the United States and Microsoft Azure with the OpenAI GPT-4.1 mini model (image and text analysis), USDA FoodData Central and Open Food Facts (nutrition matching), RevenueCat (subscription management), Resend (guardian and waiting-list email delivery) and optionally PostHog (anonymous usage analytics, EU). Optional product analytics stay disabled for users under 18.',
           'The AI data path is restricted to OpenRouter and ZDR-capable Microsoft Azure endpoints without fallback. Requests are configured with “store: false”, data collection denied and Zero Data Retention: content is not used for training and is not stored permanently by the AI provider. Photos are processed solely for the duration of the analysis. OpenRouter and USDA FoodData Central process data in the United States; USDA receives normalized food terms only, not photos, account IDs or body data.',
         ],
       },
@@ -90,7 +92,7 @@ export const legalEn: LegalCopySet = {
       {
         title: '1. What the app does',
         paragraphs: [
-          'Kandro is a general wellness and planning tool for adults aged 18 and over. The app structures foods you photograph or describe, or packaged products via barcode, estimates their nutrition values, calculates a daily frame and suggests suitable next meals from a curated catalogue of typical reference values.',
+          'Kandro is a general wellness and planning tool for users aged 14 and over. Users aged 14 or 15 need permission from a parent or legal guardian before body, meal, photo or text data is processed. The app structures foods you photograph or describe, or packaged products via barcode, estimates their nutrition values, calculates a daily frame and suggests suitable next meals from a curated catalogue of typical reference values.',
           'All values are estimates. You can correct detected ingredients and portion sizes before saving.',
         ],
       },
@@ -98,6 +100,7 @@ export const legalEn: LegalCopySet = {
         title: '2. Not a medical service',
         paragraphs: [
           'Kandro does not diagnose, does not treat any condition and does not replace medical or dietetic advice. Do not make medical decisions on the basis of the app alone.',
+          'For users aged 14–17, Kandro uses an adolescent energy-balance equation that includes normal growth and does not prescribe a calorie deficit or surplus. Goals affect meal suggestions, not a weight-change target. If weight or growth is a concern, involve a parent or guardian and seek qualified advice.',
           'If you have health complaints, are pregnant, have an eating disorder or a metabolic condition, or follow a medically prescribed diet, please seek qualified advice before you change your targets.',
         ],
       },
@@ -112,6 +115,7 @@ export const legalEn: LegalCopySet = {
         title: '4. Subscriptions',
         paragraphs: [
           'Price, duration, trial period and renewal are shown before the purchase. Subscriptions renew automatically for the selected period until you cancel them. Payment is charged to your Apple ID; you can cancel at any time up to 24 hours before the period ends in your Apple ID settings.',
+          'Purchases by a minor require the authorization applicable to their Apple account, such as Ask to Buy or approval by the family organizer. Kandro does not bypass Apple’s purchase controls.',
           'Deleting your Kandro account does not automatically end an Apple subscription. Purchases can be restored from the paywall.',
         ],
       },

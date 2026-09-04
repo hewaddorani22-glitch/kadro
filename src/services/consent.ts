@@ -6,7 +6,7 @@ import { ensureSupabaseUser, isSupabaseConfigured, supabase } from '@/services/s
  * Bump this whenever the recipients or purposes in the explicit consent text
  * change. Older consent must not silently cover a newly disclosed transfer.
  */
-export const PRIVACY_VERSION = '2026-09-02-ai-v1';
+export const PRIVACY_VERSION = '2026-09-04-ai-v2';
 const CONSENT_KEY = '@kandro/wellness-consent:v1';
 
 type StoredConsent = {
@@ -14,14 +14,20 @@ type StoredConsent = {
   acceptedAt: string;
 };
 
-export async function recordWellnessConsent(): Promise<StoredConsent> {
+export async function recordWellnessConsent(age: number): Promise<StoredConsent> {
   const consent = { version: PRIVACY_VERSION, acceptedAt: new Date().toISOString() };
+
+  if (!Number.isInteger(age) || age < 14 || age > 100) throw new Error('invalid_consent_age');
+  // Guardian approval is verified server-side. An under-16 profile must never
+  // fall back to a local-only consent that a modified client could mint.
+  if (age < 16 && (!supabase || !isSupabaseConfigured)) throw new Error('guardian_cloud_required');
 
   if (supabase && isSupabaseConfigured) {
     const user = await ensureSupabaseUser();
     if (user) {
       const { error } = await supabase.from('profiles').upsert({
         user_id: user.id,
+        age,
         privacy_version: consent.version,
         wellness_consent_at: consent.acceptedAt,
         updated_at: consent.acceptedAt,

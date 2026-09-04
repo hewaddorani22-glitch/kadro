@@ -31,7 +31,7 @@ import { calculateDailyTargets, DEFAULT_PROFILE } from '@/services/personalizati
 import { availableRepeats, RepeatCandidate } from '@/services/repeatMeals';
 import { deleteSyncedMeal, hydrateCloudState, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
 import { isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/supabaseClient';
-import { captureOperationalError, countBucket, trackEvent } from '@/services/telemetry';
+import { captureOperationalError, countBucket, setAnalyticsCollectionEnabled, trackEvent } from '@/services/telemetry';
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 import { getDictionary } from '@/i18n/active';
@@ -86,7 +86,7 @@ type AppContextValue = {
   pendingAnalysisCount: number;
   syncMode: SyncMode;
   refreshCloudState: () => Promise<void>;
-  grantWellnessConsent: () => Promise<void>;
+  grantWellnessConsent: (age?: number) => Promise<void>;
   withdrawWellnessConsent: () => Promise<void>;
   completeOnboarding: (profile: UserProfile) => Promise<void>;
   setUnitSystem: (unitSystem: UnitSystem) => Promise<void>;
@@ -266,8 +266,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
-  const grantWellnessConsent = useCallback(async () => {
-    await recordWellnessConsent();
+  const grantWellnessConsent = useCallback(async (consentingAge = profile.age) => {
+    await recordWellnessConsent(consentingAge);
     setWellnessConsentGranted(true);
     // Returning users may have kept cloud history while consent was paused.
     // New onboarding users do not hydrate the consent-only placeholder row.
@@ -290,7 +290,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         captureOperationalError(error, { area: 'cloud_sync', operation: 'hydrate_after_consent' });
       }
     }
-  }, [adoptScanCount, profile.completedAt]);
+  }, [adoptScanCount, profile.age, profile.completedAt]);
 
   const withdrawWellnessConsent = useCallback(async () => {
     await withdrawStoredWellnessConsent();
@@ -339,6 +339,9 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const completeOnboarding = useCallback(async (nextProfile: UserProfile) => {
     const completedProfile = { ...nextProfile, completedAt: nextProfile.completedAt ?? new Date().toISOString() };
+    // Optional product analytics are unnecessary for minors. If someone edits
+    // an adult profile to their correct teen age, an earlier opt-in is removed.
+    if (completedProfile.age < 18) await setAnalyticsCollectionEnabled(false);
     const nextTargets = calculateDailyTargets(completedProfile);
     const weights = await saveWeightEntry({ date: localDateKey(), weightKg: completedProfile.weightKg });
     await saveProfile(completedProfile);

@@ -41,7 +41,7 @@ function contact() {
 }
 
 export const legalDe: LegalCopySet = {
-  version: '1.1 · Stand 2. September 2026',
+  version: '1.2 · Stand 4. September 2026',
   privacy: {
     title: 'Datenschutzhinweise',
     intro: 'Diese Hinweise erklären in klarer Sprache, welche Daten Kandro verarbeitet, warum, und wie du sie jederzeit wieder löschen kannst.',
@@ -58,6 +58,7 @@ export const legalDe: LegalCopySet = {
         paragraphs: [
           'Auf deinem Gerät verarbeitet Kandro dein Profil, Zielwerte, Gewichtseinträge, bestätigte Mahlzeiten und höchstens drei fehlgeschlagene, komprimierte Fotoscans für einen von dir ausgelösten Wiederholungsversuch.',
           'Wenn die Cloud aktiv ist, speichert Supabase in der EU eine zufällige Account-ID, dein Profil, deine aktuellen Zielwerte, bestätigte Mahlzeiten, Zutaten, Empfehlungen und Feedback. Gewichtseinträge bleiben auf deinem Gerät; eine E-Mail-Adresse wird nur gespeichert, wenn du deinen Gast-Account bewusst sicherst.',
+          'Bei 14- oder 15-jährigen Nutzern muss ein Elternteil oder eine sorgeberechtigte Person einen Link per E-Mail bestätigen, bevor die Wellness-Verarbeitung freigeschaltet wird. Kandro nutzt die Eltern-E-Mail nur für diese Anfrage und löscht sie unmittelbar nach dem Versand aus der Kandro-Datenbank. Supabase speichert Anfrage, Bestätigungszeitpunkt und Hinweisversion als Nachweis; Resend verarbeitet die Adresse für die Zustellung.',
           'PostHog erhält nur freiwillig aktivierte, anonyme Funktionsereignisse und bereinigte Fehler. Fotos, E-Mail-Adressen, Lebensmittel, Kalorien, Makros und Supabase-IDs werden nicht an PostHog gesendet.',
         ],
       },
@@ -72,6 +73,7 @@ export const legalDe: LegalCopySet = {
         title: '4. Zweck, Rechtsgrundlage und Speicherdauer',
         paragraphs: [
           'Ernährungs- und Zieldaten sind Gesundheitsdaten im Sinne von Art. 9 DSGVO. Rechtsgrundlage ist deine ausdrückliche Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO, die du im Onboarding erteilst und unter „Du → Analyse & Datennutzung“ jederzeit für die Zukunft widerrufen kannst. Nach dem Widerruf sendet Kandro keine Analyse-, Körper- oder Ernährungsdaten mehr an die genannten Empfänger. Die Einwilligung wird mit Zeitstempel und Hinweisversion auf deinem Gerät und bei aktiver Cloud in deinem geschützten Profil gespeichert.',
+          'Kandro ist ab 14 Jahren verfügbar. In Deutschland brauchen 14- und 15-Jährige nach Art. 8 DSGVO die Erlaubnis eines Elternteils oder einer sorgeberechtigten Person, bevor die ausdrückliche Wellness-Dateneinwilligung wirksam werden kann; ab 16 kann der Nutzer selbst einwilligen. Das Elternteil bestätigt die offengelegten Empfänger und Zwecke über einen einmal verwendbaren Link, der nach 48 Stunden abläuft. Die Erlaubnis kann über die oben genannte Kontaktadresse widerrufen werden; der Nutzer kann die künftige Verarbeitung zusätzlich jederzeit in der App stoppen.',
           'Lokale Daten bleiben bis zur Löschung der App-Daten oder deines Accounts erhalten. Bestätigte Mahlzeiten werden lokal für den Verlauf gespeichert; die App lädt für den Cloud-Verlauf derzeit höchstens 90 Tage. Cloud-Daten bleiben bis zur Accountlöschung erhalten. Technisch notwendige Sicherungskopien können nach den Fristen des jeweiligen Auftragsverarbeiters auslaufen.',
         ],
       },
@@ -86,7 +88,7 @@ export const legalDe: LegalCopySet = {
       {
         title: '6. Auftragsverarbeiter und Übermittlung',
         paragraphs: [
-          'Wir setzen Supabase (Datenbank und Konto, EU-Region), OpenRouter in den USA und Microsoft Azure mit dem OpenAI-Modell GPT-4.1 mini (Bild- und Textanalyse), USDA FoodData Central und Open Food Facts (Nährwertabgleich), RevenueCat (Abo-Verwaltung) sowie optional PostHog (anonyme Nutzungsanalyse, EU) ein.',
+          'Wir setzen Supabase (Datenbank und Konto, EU-Region), OpenRouter in den USA und Microsoft Azure mit dem OpenAI-Modell GPT-4.1 mini (Bild- und Textanalyse), USDA FoodData Central und Open Food Facts (Nährwertabgleich), RevenueCat (Abo-Verwaltung), Resend (Eltern- und Wartelisten-E-Mails) sowie optional PostHog (anonyme Nutzungsanalyse, EU) ein. Für Nutzer unter 18 bleibt die optionale Nutzungsanalyse ausgeschaltet.',
           'Der KI-Datenweg ist auf OpenRouter und ZDR-fähige Microsoft-Azure-Endpunkte ohne Fallback begrenzt. Analyseanfragen sind mit „store: false“, untersagter Datensammlung und Zero Data Retention konfiguriert: Inhalte werden nicht zum Training verwendet und beim KI-Anbieter nicht dauerhaft gespeichert. Fotos werden ausschließlich für die Dauer der Analyse verarbeitet. OpenRouter und USDA FoodData Central verarbeiten Daten in den USA; USDA erhält nur normalisierte Lebensmittelbegriffe, keine Fotos, Account-ID oder Körperdaten.',
         ],
       },
@@ -108,7 +110,7 @@ export const legalDe: LegalCopySet = {
       {
         title: '1. Leistungsumfang',
         paragraphs: [
-          'Kandro ist ein allgemeines Wellness- und Planungstool für Erwachsene ab 18 Jahren. Die App strukturiert fotografierte oder beschriebene Lebensmittel beziehungsweise verpackte Produkte per Barcode, schätzt Nährwerte, berechnet einen Tagesrahmen und schlägt passende nächste Mahlzeiten aus einem kuratierten Katalog mit typischen Richtwerten vor.',
+          'Kandro ist ein allgemeines Wellness- und Planungstool für Nutzer ab 14 Jahren. Bei 14- oder 15-Jährigen muss ein Elternteil oder eine sorgeberechtigte Person zustimmen, bevor Körper-, Mahlzeiten-, Foto- oder Textdaten verarbeitet werden. Die App strukturiert fotografierte oder beschriebene Lebensmittel beziehungsweise verpackte Produkte per Barcode, schätzt Nährwerte, berechnet einen Tagesrahmen und schlägt passende nächste Mahlzeiten aus einem kuratierten Katalog mit typischen Richtwerten vor.',
           'Alle Angaben sind Schätzungen. Du kannst erkannte Zutaten und Portionsgrößen vor dem Speichern korrigieren.',
         ],
       },
@@ -116,6 +118,7 @@ export const legalDe: LegalCopySet = {
         title: '2. Kein medizinischer Dienst',
         paragraphs: [
           'Kandro stellt keine Diagnose, behandelt keine Erkrankung und ersetzt keine medizinische oder ernährungstherapeutische Beratung. Triff keine medizinischen Entscheidungen allein auf Grundlage der App.',
+          'Für 14- bis 17-Jährige verwendet Kandro eine Jugend-Energiebilanz, die normales Wachstum berücksichtigt, und gibt weder Kaloriendefizit noch -überschuss vor. Ziele beeinflussen Mahlzeitenideen, nicht ein Gewichtsänderungstempo. Bei Sorgen um Gewicht oder Wachstum beziehe ein Elternteil ein und hole qualifizierten Rat ein.',
           'Bei Beschwerden, Schwangerschaft, Essstörungen, Stoffwechselerkrankungen oder einem medizinisch angeordneten Ernährungsplan hole bitte qualifizierten Rat ein, bevor du Ziele veränderst.',
         ],
       },
@@ -130,6 +133,7 @@ export const legalDe: LegalCopySet = {
         title: '4. Abonnements',
         paragraphs: [
           'Preise, Laufzeit, Testzeitraum und Verlängerung werden vor dem Kauf angezeigt. Abonnements verlängern sich automatisch um die gewählte Laufzeit, bis du sie kündigst. Die Abbuchung erfolgt über deine Apple-ID; kündigen kannst du jederzeit bis 24 Stunden vor Ablauf in den Einstellungen deiner Apple-ID.',
+          'Käufe Minderjähriger brauchen die für ihre Apple-ID geltende Freigabe, etwa „Kaufanfrage“ oder die Zustimmung des Familienorganisators. Kandro umgeht Apples Kaufkontrollen nicht.',
           'Die Löschung des Kandro-Accounts beendet ein Apple-Abonnement nicht automatisch. Käufe können über die Paywall wiederhergestellt werden.',
         ],
       },

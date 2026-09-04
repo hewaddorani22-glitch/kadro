@@ -129,6 +129,21 @@ assert.ok(Number.isFinite(midpoint.calories) && midpoint.calories > 1_300);
 const missing = calculateDailyTargets({ ...person, sex: undefined });
 assert.equal(missing.calories, midpoint.calories, 'a profile saved before the question existed must keep the midpoint');
 
+// --- Ages 14–17 use the adolescent energy-balance path --------------------
+// The goal must never create a deficit or surplus while normal growth is
+// still part of the estimate. Only the meal-ranking emphasis may change.
+const teenBase = { age: 15, heightCm: 170, weightKg: 62, activityLevel: 'light', weeklyRateKg: 0.5, sex: 'male', displayName: '', preferences: [], completedAt: null, unitSystem: 'metric' };
+const teenLose = calculateDailyTargets({ ...teenBase, goal: 'lose' });
+const teenMaintain = calculateDailyTargets({ ...teenBase, goal: 'maintain' });
+const teenGain = calculateDailyTargets({ ...teenBase, goal: 'gain' });
+assert.equal(teenLose.calories, teenMaintain.calories, 'a 15-year-old must not receive a calorie deficit');
+assert.equal(teenGain.calories, teenMaintain.calories, 'a 15-year-old must not receive a calorie surplus');
+const expectedTeenEer = Math.round((19.12 + 3.68 * 15 + 8.62 * 170 + 20.28 * 62 + 20) / 10) * 10;
+assert.equal(teenMaintain.calories, expectedTeenEer, 'the 14–18 male low-active EER equation drifted');
+const teenMacroEnergy = teenMaintain.protein * 4 + teenMaintain.carbs * 4 + teenMaintain.fat * 9;
+assert.ok(Math.abs(teenMacroEnergy - teenMaintain.calories) <= 40, 'teen macros no longer describe the teen energy balance');
+assert.ok(teenMaintain.protein * 4 / teenMaintain.calories <= 0.25, 'teen protein exceeds the explicit 25% energy ceiling');
+
 const raw = await readFile(resolve(projectRoot, 'src/services/personalization.ts'), 'utf8');
 assert.match(raw, /male: 5,/, 'the male Mifflin-St Jeor constant must not change silently');
 assert.match(raw, /female: -161,/, 'the female Mifflin-St Jeor constant must not change silently');
@@ -141,6 +156,9 @@ assert.equal(
   'the resting estimate must exist once, or the safety floor will drift from the target',
 );
 assert.match(raw, /export function maintenanceCalories/, 'the shared estimate must be named');
+assert.match(raw, /isTeenProfile/, 'teen profiles must have an explicit calculation path');
+assert.match(raw, /age >= 14 && profile\.age < 18/, 'the teen path must cover every promised age from 14 through 17');
+assert.match(raw, /const offset = teen \? 0 :/, 'teen goals must not apply an adult weight-change offset');
 
 console.log(`Validated ${checked} target profiles: macros always describe the calorie figure, protein stays under 40% of energy, and the estimate tracks weight, age and activity.`);
 

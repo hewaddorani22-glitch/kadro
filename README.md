@@ -22,6 +22,8 @@ The demo meal remains available as a deterministic fallback. Real scans use GPT-
 
 The first three complete AI analyses are free. Every estimate must be confirmed before it is saved, so the user can correct ingredients and portions. Further analyses require an active `kandro_pro` RevenueCat entitlement; search and the user's existing history remain available.
 
+Kandro accepts profiles from age 14. Users aged 14–15 require an emailed parent/guardian confirmation before any wellness-data processing is enabled; the hosted gateway re-checks it. For ages 14–17 the target uses an adolescent energy-balance equation that includes growth and never applies a calorie deficit or surplus. Optional product analytics remain disabled under 18.
+
 When configured, Supabase provides an anonymous authenticated session, RLS-isolated profiles, daily targets, confirmed meals, ingredients, recommendation impressions, and acceptance/rejection feedback. The profile screen can upgrade that same anonymous user ID to a verified email/password account without placing a login wall before the first scan. Without Supabase configuration the app remains fully local-first.
 
 ## Open with Expo Go

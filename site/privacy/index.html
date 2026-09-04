@@ -28,7 +28,7 @@
 <body>
 <header class="site"><div class="wrap wide"><a class="brand" href="../"><svg width="30" height="30" viewBox="0 0 64 64" aria-hidden="true"><path d="M 47.56 16.44 A 22 22 0 1 1 16.44 16.44" fill="none" stroke="#3F5233" stroke-linecap="round" stroke-width="6.5"/><circle cx="32" cy="7.5" r="4.8" fill="#BBDC8E"/></svg><span>Kandro</span></a><nav class="site"><a href="../support/">Support</a><a href="../privacy/">Datenschutz</a><a href="../terms/">Bedingungen</a><a href="../sources/">Datenquellen</a><a href="../impressum/">Impressum</a><a class="lang" href="../en/privacy/" hreflang="en">English</a></nav></div></header>
 <main><div class="wrap">
-  <p class="eyebrow">Version 1.1 · Stand 2. September 2026</p>
+  <p class="eyebrow">Version 1.2 · Stand 4. September 2026</p>
   <h1>Datenschutzhinweise</h1>
   <p class="lead">Diese Hinweise erklären in klarer Sprache, welche Daten Kandro verarbeitet, warum, und wie du sie jederzeit wieder löschen kannst.</p>
 
@@ -39,6 +39,7 @@
   <h2>2. Welche Daten verarbeitet werden</h2>
   <p>Auf deinem Gerät verarbeitet Kandro dein Profil, Zielwerte, Gewichtseinträge, bestätigte Mahlzeiten und höchstens drei fehlgeschlagene, komprimierte Fotoscans für einen von dir ausgelösten Wiederholungsversuch.</p>
   <p>Wenn die Cloud aktiv ist, speichert Supabase in der EU eine zufällige Account-ID, dein Profil, deine aktuellen Zielwerte, bestätigte Mahlzeiten, Zutaten, Empfehlungen und Feedback. Gewichtseinträge bleiben auf deinem Gerät; eine E-Mail-Adresse wird nur gespeichert, wenn du deinen Gast-Account bewusst sicherst.</p>
+  <p>Bei 14- oder 15-jährigen Nutzern muss ein Elternteil oder eine sorgeberechtigte Person einen Link per E-Mail bestätigen, bevor die Wellness-Verarbeitung freigeschaltet wird. Kandro nutzt die Eltern-E-Mail nur für diese Anfrage und löscht sie unmittelbar nach dem Versand aus der Kandro-Datenbank. Supabase speichert Anfrage, Bestätigungszeitpunkt und Hinweisversion als Nachweis; Resend verarbeitet die Adresse für die Zustellung.</p>
   <p>PostHog erhält nur freiwillig aktivierte, anonyme Funktionsereignisse und bereinigte Fehler. Fotos, E-Mail-Adressen, Lebensmittel, Kalorien, Makros und Supabase-IDs werden nicht an PostHog gesendet.</p>
 
   <h2>3. Fotoanalyse und Empfänger</h2>
@@ -47,6 +48,7 @@
 
   <h2>4. Zweck, Rechtsgrundlage und Speicherdauer</h2>
   <p>Ernährungs- und Zieldaten sind Gesundheitsdaten im Sinne von Art. 9 DSGVO. Rechtsgrundlage ist deine ausdrückliche Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO, die du im Onboarding erteilst und unter „Du → Analyse &amp; Datennutzung“ jederzeit für die Zukunft widerrufen kannst. Nach dem Widerruf sendet Kandro keine Analyse-, Körper- oder Ernährungsdaten mehr an die genannten Empfänger. Die Einwilligung wird mit Zeitstempel und Hinweisversion auf deinem Gerät und bei aktiver Cloud in deinem geschützten Profil gespeichert.</p>
+  <p>Kandro ist ab 14 Jahren verfügbar. In Deutschland brauchen 14- und 15-Jährige nach Art. 8 DSGVO die Erlaubnis eines Elternteils oder einer sorgeberechtigten Person, bevor die ausdrückliche Wellness-Dateneinwilligung wirksam werden kann; ab 16 kann der Nutzer selbst einwilligen. Das Elternteil bestätigt die offengelegten Empfänger und Zwecke über einen einmal verwendbaren Link, der nach 48 Stunden abläuft. Die Erlaubnis kann über die oben genannte Kontaktadresse widerrufen werden; der Nutzer kann die künftige Verarbeitung zusätzlich jederzeit in der App stoppen.</p>
   <p>Lokale Daten bleiben bis zur Löschung der App-Daten oder deines Accounts erhalten. Bestätigte Mahlzeiten werden lokal für den Verlauf gespeichert; die App lädt für den Cloud-Verlauf derzeit höchstens 90 Tage. Cloud-Daten bleiben bis zur Accountlöschung erhalten. Technisch notwendige Sicherungskopien können nach den Fristen des jeweiligen Auftragsverarbeiters auslaufen.</p>
 
   <h2>5. Deine Rechte</h2>
@@ -55,7 +57,7 @@
   <p>Dir steht ein Beschwerderecht bei einer Aufsichtsbehörde zu, für Nordrhein-Westfalen bei der Landesbeauftragten für Datenschutz und Informationsfreiheit NRW.</p>
 
   <h2>6. Auftragsverarbeiter und Übermittlung</h2>
-  <p>Wir setzen Supabase (Datenbank und Konto, EU-Region), OpenRouter in den USA und Microsoft Azure mit dem OpenAI-Modell GPT-4.1 mini (Bild- und Textanalyse), USDA FoodData Central und Open Food Facts (Nährwertabgleich), RevenueCat (Abo-Verwaltung) sowie optional PostHog (anonyme Nutzungsanalyse, EU) ein.</p>
+  <p>Wir setzen Supabase (Datenbank und Konto, EU-Region), OpenRouter in den USA und Microsoft Azure mit dem OpenAI-Modell GPT-4.1 mini (Bild- und Textanalyse), USDA FoodData Central und Open Food Facts (Nährwertabgleich), RevenueCat (Abo-Verwaltung), Resend (Eltern- und Wartelisten-E-Mails) sowie optional PostHog (anonyme Nutzungsanalyse, EU) ein. Für Nutzer unter 18 bleibt die optionale Nutzungsanalyse ausgeschaltet.</p>
   <p>Der KI-Datenweg ist auf OpenRouter und ZDR-fähige Microsoft-Azure-Endpunkte ohne Fallback begrenzt. Analyseanfragen sind mit „store: false“, untersagter Datensammlung und Zero Data Retention konfiguriert: Inhalte werden nicht zum Training verwendet und beim KI-Anbieter nicht dauerhaft gespeichert. Fotos werden ausschließlich für die Dauer der Analyse verarbeitet. OpenRouter und USDA FoodData Central verarbeiten Daten in den USA; USDA erhält nur normalisierte Lebensmittelbegriffe, keine Fotos, Account-ID oder Körperdaten.</p>
 
   <h2>7. Warteliste auf getkandro.com</h2>

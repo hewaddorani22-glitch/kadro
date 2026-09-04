@@ -22,6 +22,10 @@ const activityMultipliers: Record<ActivityLevel, number> = {
   high: 1.6,
 };
 
+export function isTeenProfile(profile: Pick<UserProfile, 'age'>) {
+  return profile.age >= 14 && profile.age < 18;
+}
+
 /**
  * Roughly 7700 kcal are stored in a kilogram of body fat, so a weekly rate
  * converts to a daily offset by (rate * 7700) / 7 = rate * 1100.
@@ -96,6 +100,24 @@ function roundTo(value: number, step: number) {
  * maintenance means.
  */
 export function maintenanceCalories(profile: UserProfile) {
+  if (isTeenProfile(profile)) {
+    // 2023 Dietary Reference Intake EER equations for ages 14–18. Unlike
+    // Mifflin-St Jeor, these include energy for growth. Kandro maps its three
+    // deliberately simple activity answers to inactive, low-active and active.
+    const male = {
+      low: -447.51 + 3.68 * profile.age + 13.01 * profile.heightCm + 13.15 * profile.weightKg + 20,
+      light: 19.12 + 3.68 * profile.age + 8.62 * profile.heightCm + 20.28 * profile.weightKg + 20,
+      high: -388.19 + 3.68 * profile.age + 12.66 * profile.heightCm + 20.46 * profile.weightKg + 20,
+    }[profile.activityLevel];
+    const female = {
+      low: 55.59 - 22.25 * profile.age + 8.43 * profile.heightCm + 17.07 * profile.weightKg + 20,
+      light: -297.54 - 22.25 * profile.age + 12.77 * profile.heightCm + 14.73 * profile.weightKg + 20,
+      high: -189.55 - 22.25 * profile.age + 11.74 * profile.heightCm + 18.34 * profile.weightKg + 20,
+    }[profile.activityLevel];
+    if (profile.sex === 'male') return male;
+    if (profile.sex === 'female') return female;
+    return (male + female) / 2;
+  }
   const resting = 10 * profile.weightKg + 6.25 * profile.heightCm - 5 * profile.age
     + SEX_CONSTANT[profile.sex ?? 'unspecified'];
   return resting * activityMultipliers[profile.activityLevel];
@@ -103,12 +125,25 @@ export function maintenanceCalories(profile: UserProfile) {
 
 export function calculateDailyTargets(profile: UserProfile): DailyTargets {
   const maintenance = maintenanceCalories(profile);
-  const offset = dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
+  // Teen profiles get an energy-balance estimate that includes growth. Kandro
+  // does not prescribe a calorie deficit or surplus to a 14–17-year-old.
+  const teen = isTeenProfile(profile);
+  const offset = teen ? 0 : dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
   // Never cut below 1300 kcal and never below 70% of maintenance, whichever is
   // higher. A fast rate on a light person would otherwise produce a target that
   // no responsible app should show.
   const floor = Math.max(1_300, maintenance * 0.7);
   const calories = Math.min(4_000, Math.max(floor, roundTo(maintenance + offset, 10)));
+  if (teen) {
+    // A moderate protein planning target and 30% fat keep the day balanced;
+    // carbohydrates take the remaining energy. These are planning references,
+    // not a weight-change prescription.
+    const proteinCeiling = Math.floor((calories * 0.25) / 4);
+    const protein = Math.max(50, Math.min(180, proteinCeiling, roundTo(profile.weightKg * 1.2, 5)));
+    const fat = Math.max(50, Math.min(140, roundTo((calories * 0.3) / 9, 5)));
+    const carbs = Math.max(0, roundTo((calories - protein * 4 - fat * 9) / 4, 5));
+    return { calories, protein, carbs, fat };
+  }
   // Protein and fat come from body weight, but the day's energy has to be able
   // to pay for them. Scaling protein from *total* weight meant that a heavy
   // person on a deficit was given macros that added up to far more than their
@@ -135,7 +170,7 @@ export function calculateDailyTargets(profile: UserProfile): DailyTargets {
 }
 
 export type TargetStep = {
-  id: 'resting' | 'activity' | 'goal' | 'floor' | 'cap' | 'protein';
+  id: 'resting' | 'activity' | 'goal' | 'floor' | 'cap' | 'growth' | 'protein';
   /** The number this step arrives at, already rounded for display. */
   value: number;
   unit: 'kcal' | 'g';
@@ -155,6 +190,13 @@ export function explainTargets(profile: UserProfile): TargetStep[] {
   // a second copy of the formula is a second thing to keep in step, and the
   // safety floor is calculated from the first one.
   const maintenance = maintenanceCalories(profile);
+  if (isTeenProfile(profile)) {
+    const targets = calculateDailyTargets(profile);
+    return [
+      { id: 'growth', value: targets.calories, unit: 'kcal' },
+      { id: 'protein', value: targets.protein, unit: 'g' },
+    ];
+  }
   const resting = maintenance / activityMultipliers[profile.activityLevel];
   const offset = dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
   const targets = calculateDailyTargets(profile);
@@ -207,6 +249,7 @@ export function estimatedPace(
 /** True when the safety floor overrode the requested rate. */
 /** True when the safety floor overrode the requested rate. Only a deficit can. */
 export function isRateLimited(profile: UserProfile) {
+  if (isTeenProfile(profile)) return false;
   if (profile.goal !== 'lose') return false;
   const maintenance = maintenanceCalories(profile);
   const requested = maintenance + dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);

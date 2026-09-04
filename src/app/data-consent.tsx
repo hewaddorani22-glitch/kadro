@@ -20,7 +20,7 @@ export default function DataConsentScreen() {
     setError(null);
     try {
       if (grant) {
-        await grantWellnessConsent();
+        await grantWellnessConsent(profile.age);
         router.replace(profile.completedAt ? '/(tabs)/today' : '/onboarding');
       } else {
         await withdrawWellnessConsent();
