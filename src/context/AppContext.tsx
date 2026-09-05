@@ -949,6 +949,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   const logScannedMeal = useCallback(async () => {
+    if (analysisStatus !== 'ready') throw new Error('Cannot save without a ready meal draft');
     if (!detectedItems.some((item) => item.included)) throw new Error('Cannot save an empty meal');
     const existing = mealHistory.find((meal) => meal.id === scannedMeal.id);
     const now = new Date();
@@ -972,7 +973,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     await saveSyncedMeal(persistedMeal);
     setMeals((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
     setMealHistory((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
-  }, [detectedItems, mealHistory, scannedMeal]);
+  }, [analysisStatus, detectedItems, mealHistory, scannedMeal]);
 
   /**
    * Logs a meal the user picked from Kandro's own suggestions. It never touches

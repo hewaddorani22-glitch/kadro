@@ -46,6 +46,15 @@ const tables = [
 ];
 
 const failures = [];
+const decimalMigration = await readFile(resolve(projectRoot, 'supabase/migrations/20260905141007_preserve_decimal_meal_grams.sql'), 'utf8');
+for (const column of ['amount_g', 'base_amount_g']) {
+  if (!decimalMigration.includes(`alter column ${column} type numeric(8, 1) using ${column}::numeric(8, 1)`)) {
+    failures.push(`cloud ${column} must preserve the decimal grams accepted by the app`);
+  }
+}
+if (/drop\s+(table|column|constraint)|disable row level security|grant\s/i.test(decimalMigration.replace(/--[^\n]*/g, ''))) {
+  failures.push('decimal migration must not remove data, range constraints or owner protection');
+}
 for (const table of tables) {
   if (!migration.includes(`create table public.${table}`)) failures.push(`missing table: ${table}`);
   if (!migration.includes(`alter table public.${table} enable row level security`)) failures.push(`RLS not enabled: ${table}`);

@@ -7,6 +7,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { requiresMealDraftRedirect } from '@/utils/mealDraftGuard';
 
 const publicBeforeConsent = new Set(['index', 'onboarding', 'data-consent', 'privacy', 'terms', 'sources', 'account-deletion']);
 
@@ -15,7 +16,8 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const segments = useSegments();
-  const { hydrationReady, profile, retryAccountRecovery, syncMode, wellnessConsentGranted } = useApp();
+  const { analysisStatus, hydrationReady, profile, retryAccountRecovery, syncMode, wellnessConsentGranted } = useApp();
+  const missingMealDraft = requiresMealDraftRedirect(segments[0] ?? 'index', analysisStatus);
   const { t } = useLanguage();
   const [retryBusy, setRetryBusy] = useState(false);
   const [retryError, setRetryError] = useState(false);
@@ -29,8 +31,10 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
     }
     if (wellnessConsentGranted && !profile.completedAt && !publicBeforeConsent.has(rootSegment)) {
       router.replace('/onboarding');
+      return;
     }
-  }, [hydrationReady, profile.completedAt, router, segments, wellnessConsentGranted]);
+    if (missingMealDraft) router.replace('/(tabs)/scan');
+  }, [hydrationReady, missingMealDraft, profile.completedAt, router, segments, wellnessConsentGranted]);
 
   // Do not merely pause redirects while identity hydration is incomplete. The
   // protected tree contains profile setters that write to Supabase and must not
@@ -59,6 +63,9 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
     return <View style={styles.gate}><ActivityIndicator color={colors.accentText} /></View>;
   }
 
+  // Block the result's save-on-arrival effect before it can mount. Redirecting
+  // only in an effect would be too late: child effects may already have run.
+  if (missingMealDraft) return <View style={styles.gate}><ActivityIndicator color={colors.accentText} /></View>;
   return children;
 }
 

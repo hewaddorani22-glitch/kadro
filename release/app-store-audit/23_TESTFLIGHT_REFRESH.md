@@ -29,3 +29,16 @@ The route/interaction coverage and previous fixes are recorded in `22_FULL_APP_Q
 StoreKit purchase/restore/entitlement refresh, camera/flash/barcode, native keyboard and decimal edits, accessibility, first-launch/guardian email delivery, native deletion cleanup and real-food accuracy remain device/operational tests. Browser previews and automated checks do not replace them. DSA status is not freshly verified by this pass.
 
 Build and Apple-processing results will be appended after the candidate is uploaded. No public-release approval is implied by a successful TestFlight upload.
+
+## Follow-up findings: Build 11 supersedes Build 10
+
+Build 10 from `8b6ba79` reached VALID / IN_BETA_TESTING. Further browser QA found two defects, so it is not the final candidate:
+
+- Decimal portions were accepted locally but `meal_items.amount_g` and `base_amount_g` were integers. Saving 40.3 g produced a cloud 400. Migration `20260905141007_preserve_decimal_meal_grams.sql` is deployed, preserving one decimal with existing range constraints and RLS. `node scripts/validate-cloud-portions-live.mjs` passed real insert/read-back of 40.3/110.3, integer compatibility and rejection of out-of-range values, then deleted its disposable account.
+- A cold `/result` route could mount the save effect with initial demo state. The parent route guard now blocks confirm/result until analysis is ready, and the persistence boundary independently rejects missing drafts. Browser reproduction after correction: meal count remained 3 before and after a cold result navigation, which redirected to scan. A deliberately selected demo still reached confirm and result normally.
+
+Full `npm run verify` passed after both corrections (`/tmp/kandro-build11-verify.log`). First-launch adult onboarding and explicit consent were exercised through the browser against the live backend, as were search, decimal correction and confirmation. This remains web runtime evidence, not native hardware evidence.
+
+Supabase security advisors returned warnings, not an all-clear: anonymous-user policies require interpretation because guest users are intentionally authenticated, and leaked-password protection / MFA options remain hardening items. Do not convert this into a claim of zero security warnings.
+
+The cron-table advisor findings were checked against live privileges: both `anon` and `authenticated` lack USAGE on the cron schema. Table SELECT grants alone therefore do not provide access through those roles.

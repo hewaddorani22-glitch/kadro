@@ -16,6 +16,26 @@ const authConfig = read('supabase/config.toml');
 const consent = read('src/services/consent.ts');
 const deletionScreen = read('src/app/account-deletion.tsx');
 
+const draftModule = { exports: {} };
+new Function('module', 'exports', ts.transpileModule(read('src/utils/mealDraftGuard.ts'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS },
+}).outputText)(draftModule, draftModule.exports);
+for (const route of ['confirm', 'result']) {
+  for (const status of ['idle', 'analyzing', 'queued', 'error']) {
+    assert.equal(draftModule.exports.requiresMealDraftRedirect(route, status), true);
+  }
+  assert.equal(draftModule.exports.requiresMealDraftRedirect(route, 'ready'), false);
+}
+for (const route of ['index', 'onboarding', 'scan', '(tabs)', 'privacy', 'account-deletion']) {
+  assert.equal(draftModule.exports.requiresMealDraftRedirect(route, 'idle'), false);
+}
+const guard = read('src/components/AppRouteGuard.tsx');
+assert.match(guard, /const missingMealDraft = requiresMealDraftRedirect/);
+assert.match(guard, /if \(missingMealDraft\) return[\s\S]*return children;/,
+  'cold result routes must not mount their save effect before redirect');
+assert.match(app, /const logScannedMeal = useCallback\(async \(\) => \{\s*if \(analysisStatus !== 'ready'\) throw/,
+  'the persistence boundary must reject initial demo state too');
+
 assert.match(onboarding, /stop\(\);\s*const activeGesture = gesture\.current/,
   'every new stepper gesture must cancel the previous hold timer');
 assert.match(onboarding, /activeGesture !== gesture\.current/,

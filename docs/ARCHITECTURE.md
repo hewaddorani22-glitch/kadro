@@ -159,6 +159,8 @@ The `delete-account` Edge Function requires a valid user JWT, deletes that exact
 
 ## Supabase ownership boundary
 
+Meal ingredient amounts use `numeric(8,1)` for both current and base grams, preserving the one-decimal portion editor through cloud round trips. Existing 1–5000 g constraints remain authoritative. Cold confirm/result routes require a ready in-memory draft before mounting; `logScannedMeal` independently rejects initial demo state.
+
 The mobile app receives only the project URL and publishable key. Supabase Auth supplies a per-user JWT, and Postgres RLS limits product rows to `(select auth.uid()) = user_id`. The client never receives a provider secret or `service_role` key. `profiles`, `daily_targets`, `meals`, `meal_items`, `recommendations`, `recommendation_feedback`, and `analysis_usage` all enable RLS and revoke access from the unauthenticated `anon` role. The quota table additionally has no client policies or table grants.
 
 Anonymous sign-in is used to avoid blocking the first scan. It is an authenticated Supabase user, not unauthenticated public database access. The Profile account card upgrades it with a verified email through `updateUser`, verifies that the returned identity still has the same user ID, and then lets the user set a password. Existing accounts can sign back in and rehydrate their RLS-owned cloud data. Clearing app data before the upgrade can still make an anonymous account inaccessible.
