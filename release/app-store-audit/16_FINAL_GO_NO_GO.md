@@ -1,8 +1,11 @@
 # 16 - Finales GO/NO-GO
 
-> **Update 2026-09-05: NO_GO nach Build-8-Gerätefeedback.** Score und
-> Einschätzung darunter sind historisch. Die korrigierte App muss erneut auf
-> einem iPhone geprüft werden. Siehe `18_BUILD8_FEEDBACK.md`.
+> **Update 2026-09-05: CONDITIONAL_NO_GO für App Review.** Der Score und die
+> Build-8-Matrix darunter sind historisch, keine aktuelle Zertifizierung.
+> Neuer Kandidat: Build 11 aus `fe8c307`, siehe `23_TESTFLIGHT_REFRESH.md`
+> für Prüfungen und Uploadstatus. Der physische iPhone-Pass bleibt offen.
+> DSA wurde nicht erneut bestätigt; es betrifft insbesondere EU-Vertrieb,
+> nicht pauschal die technische TestFlight-Verfügbarkeit.
 
 ## 1. Urteil
 

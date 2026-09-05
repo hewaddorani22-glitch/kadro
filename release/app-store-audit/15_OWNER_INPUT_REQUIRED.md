@@ -6,9 +6,9 @@ stellvertretend auf einem echten iPhone oder gegenüber Apple bestätigen kann.
 
 | ID | Schwere | Verbleibende Handlung | Release-Auswirkung |
 | --- | --- | --- | --- |
-| OWN-01 | P0 | Abwarten, bis Apple den DSA-Händlerstatus von `In Review` auf bestätigt/aktiv setzt | EU-App-Review bleibt bis dahin gesperrt |
-| OWN-02 | P0 | Build 8 nach Apples Processing aus TestFlight auf einem unterstützten iPhone installieren | Der exakte Kandidat muss real ausgeführt werden |
-| OWN-03 | P0 | EN und DE jeweils als frische Installation durchlaufen: 14-17 mit Guardian sowie 18+, Einheiten, Präferenzen, Zielberechnung und Consent | Onboarding-/Teen-/Lokalisierungsgate |
+| OWN-01 | P0 | Aktuellen DSA-Händlerstatus prüfen und erforderliche Bestätigung abschließen; letzter historischer Stand war `In Review` | EU-Vertrieb erfordert die abgeschlossene Händlerprüfung; kein pauschales TestFlight-Verbot |
+| OWN-02 | P0 | Build 11 aus `fe8c307` nach Apples Processing aus TestFlight auf einem unterstützten iPhone installieren | Der exakte Kandidat muss real ausgeführt werden |
+| OWN-03 | P0 | EN und DE jeweils als frische Installation durchlaufen: 14–15 mit Guardian-Bestätigung, 16–17 ohne Defizit/Überschuss sowie 18+, Einheiten, Präferenzen, Zielberechnung und Consent | Onboarding-/Teen-/Lokalisierungsgate |
 | OWN-04 | P0 | Kamera erlauben/verweigern/wieder erlauben; Foto, Mahlzeitslot, Torch, schneller/langsamer Barcode, Beschreibung und Suche testen | Hardware- und Kernproduktgate |
 | OWN-05 | P0 | Apple-Sandbox testen: Monatskauf, Jahreskauf, Cancel, Restore, Pending/Ask to Buy, Ablauf, Erstattung und Kulanzfrist | Guideline-3.1.2-/IAP-Gate |
 | OWN-06 | P0 | Konto-E-Mail verknüpfen, personalisierten Link/Code öffnen, App-Neustart und anschließend Account samt Daten in der App löschen | Auth-/Deletion-E2E-Gate |

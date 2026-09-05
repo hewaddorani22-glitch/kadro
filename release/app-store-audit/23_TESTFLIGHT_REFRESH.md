@@ -42,3 +42,21 @@ Full `npm run verify` passed after both corrections (`/tmp/kandro-build11-verify
 Supabase security advisors returned warnings, not an all-clear: anonymous-user policies require interpretation because guest users are intentionally authenticated, and leaked-password protection / MFA options remain hardening items. Do not convert this into a claim of zero security warnings.
 
 The cron-table advisor findings were checked against live privileges: both `anon` and `authenticated` lack USAGE on the cron schema. Table SELECT grants alone therefore do not provide access through those roles.
+
+The disposable browser QA account was deleted through the actual account-deletion screen. The success screen appeared; local meal count and remaining Supabase auth-storage keys were both zero. A logout request after server deletion returned 403 because that identity was already revoked; cleanup still completed. This is not a native file/Keychain cleanup test.
+
+## Candidate identity
+
+- Source: `fe8c3075667a4d6f30158f94ac095c58d3a934dc`, pushed to both main and the audit branch.
+- Version: 1.0.0 (11).
+- EAS build: `8c4f1e11-0190-45bb-bb25-12d613b12b39`.
+- EAS internal TestFlight upload: `164b36fc-4abd-4953-b3f0-e114f7def3d0`.
+- App Review remains intentionally unsubmitted.
+
+Both GitHub CI runs for the exact candidate passed (`33971372494`, `33971372262`). EAS build completed successfully. The downloaded IPA passes `codesign --verify --deep --strict`; Info.plist identifies 1.0.0 (11), the intended bundle ID, iPhone family, iOS 26 SDK and minimum iOS 15.1. Arbitrary transport loads are disabled. EN/DE camera-purpose localization and the privacy manifest are present, with tracking false. The Hermes bundle points to hosted Supabase and EU PostHog and contains none of the known local OpenRouter, OpenAI or USDA secret values. This is archive inspection, not native execution.
+
+### Final Apple result
+
+Apple build `851668c6-cf44-412e-a490-fae50dbd1ffc` is **VALID / IN_BETA_TESTING**. Upload finished without an EAS submission error. EN/DE What to Test notes are saved and existing internal groups have access. External beta state is READY_FOR_BETA_SUBMISSION; no external beta review was requested. App Store version 1.0.0 remains **PREPARE_FOR_SUBMISSION**. No Add for Review or Submit for Review action was taken.
+
+Decision: ready for the owner's exact-build iPhone test, still CONDITIONAL_NO_GO for public App Review pending the device/operational gates above and in `15_OWNER_INPUT_REQUIRED.md`. No new numerical readiness score is asserted.
