@@ -1,3 +1,5 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -6,7 +8,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { mealPhotoPlaceholder } from '@/utils/format';
 import { Card, ConfidenceBadge, Eyebrow, MealPhoto, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { getRemaining } from '@/services/mockNutrition';
 import {
@@ -20,6 +22,8 @@ import { trackEvent } from '@/services/telemetry';
 import { formatNumber } from '@/utils/format';
 
 export default function ResultScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { consumed, isCurrentScanLogged, lifetimeScanCount, logScannedMeal, photoUri, remaining, scanMode, scannedMeal, targets } = useApp();
   const projected = isCurrentScanLogged
@@ -34,6 +38,7 @@ export default function ResultScreen() {
     ? Math.min(targets.calories, projected.calories + scannedMeal.calories)
     : remaining.calories;
   const calorieCenter = Math.round(Math.min(550, Math.max(380, projected.calories * 0.38)) / 10) * 10;
+  const dayIsDone = projected.calories < 150;
   const proteinCenter = Math.round(Math.min(45, Math.max(28, projected.protein * 0.48)) / 5) * 5;
   // getRemaining() clamps at zero, so the projected values alone can never tell
   // us whether the day went over budget.
@@ -245,7 +250,7 @@ export default function ResultScreen() {
 
       <Card style={styles.dayCard}>
         <View style={styles.dayHeader}>
-          <View style={styles.dayIcon}><Ionicons color={colors.text} name="sunny-outline" size={23} /></View>
+          <View style={styles.dayIcon}><Ionicons color={colors.onAccent} name="sunny-outline" size={23} /></View>
           <View style={styles.dayHeading}>
             <Eyebrow>{t.result.dayAfter}</Eyebrow>
             <Text style={styles.onTrack}>{overBudget ? t.result.overToday : t.result.stillOnTrack}</Text>
@@ -275,9 +280,14 @@ export default function ResultScreen() {
           transform: [{ translateY: recommendationReveal.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
         }}
       >
-      <Card style={styles.nextCard}>
+      {dayIsDone ? (
+        <Card style={styles.nextCard}>
+          <Text style={styles.nextTitle}>{t.today.dayComplete}</Text>
+          <Text style={styles.remainingLabel}>{t.today.dayCompleteText}</Text>
+        </Card>
+      ) : <Card style={styles.nextCard}>
         <View style={styles.nextTop}>
-          <View style={styles.nextBadge}><Ionicons color={colors.text} name="navigate" size={20} /></View>
+          <View style={styles.nextBadge}><Ionicons color={colors.onAccent} name="navigate" size={20} /></View>
           <View style={styles.nextCopy}>
             <Eyebrow>{t.result.nextMeal}</Eyebrow>
             <Text style={styles.nextTitle}>{t.result.nextMealTitle}</Text>
@@ -298,13 +308,13 @@ export default function ResultScreen() {
           </View>
         </View>
         <PrimaryButton icon="arrow-forward" label={t.result.showOptions} onPress={showOptions} />
-      </Card>
+      </Card>}
       </Animated.View>
 
       {offerReminder ? (
         <Card style={styles.reminderCard}>
           <View style={styles.reminderTop}>
-            <View style={styles.reminderIcon}><Ionicons color={colors.text} name="notifications-outline" size={19} /></View>
+            <View style={styles.reminderIcon}><Ionicons color={colors.onAccent} name="notifications-outline" size={19} /></View>
             <View style={styles.reminderCopy}>
               <Eyebrow>{t.result.reminderEyebrow}</Eyebrow>
               <Text style={styles.reminderTitle}>{t.result.reminderTitle}</Text>
@@ -330,6 +340,8 @@ export default function ResultScreen() {
 }
 
 function ImpactRing({ total, value }: { total: number; value: number }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const size = 122;
   const stroke = 7;
   const radius = (size - stroke) / 2;
@@ -357,6 +369,8 @@ function ImpactRing({ total, value }: { total: number; value: number }) {
 }
 
 function MacroResult({ label, unit, value }: { label: string; unit: string; value: number }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.macroResult}>
       <Text style={styles.macroValue}>{value}<Text style={styles.macroUnit}> {unit}</Text></Text>
@@ -365,7 +379,7 @@ function MacroResult({ label, unit, value }: { label: string; unit: string; valu
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   topTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
@@ -393,7 +407,7 @@ const styles = StyleSheet.create({
   ingredientAmount: { color: colors.muted, fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
   ingredientSource: { color: colors.muted, fontSize: 8 },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 46 },
-  dayCard: { backgroundColor: colors.text, borderColor: colors.text, gap: 19 },
+  dayCard: { backgroundColor: colors.camera, borderColor: colors.camera, gap: 19 },
   dayHeader: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   dayIcon: { width: 44, height: 44, borderRadius: 16, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   dayHeading: { flex: 1, gap: 4 },

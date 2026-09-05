@@ -1,10 +1,12 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card, PrimaryButton, Screen } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { accountDeletionErrorMessage, deleteKandroAccount } from '@/services/accountDeletion';
@@ -13,6 +15,8 @@ import { accountLinkErrorMessage, enableNewCloudAccount } from '@/services/accou
 const appleSubscriptionsUrl = 'https://apps.apple.com/account/subscriptions';
 
 export default function AccountDeletionScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { resetAfterAccountDeletion } = useApp();
   const [confirmed, setConfirmed] = useState(false);
@@ -52,7 +56,7 @@ export default function AccountDeletionScreen() {
     return (
       <Screen>
         <View style={styles.success} accessibilityLiveRegion="polite">
-          <View style={styles.successIcon}><Ionicons color={colors.text} name="checkmark" size={28} /></View>
+          <View style={styles.successIcon}><Ionicons color={colors.onAccent} name="checkmark" size={28} /></View>
           <Text accessibilityRole="header" style={styles.title}>{t.deletion.doneTitle}</Text>
           <Text style={styles.copy}>{t.deletion.doneText}</Text>
         </View>
@@ -115,7 +119,7 @@ export default function AccountDeletionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topBar: { flexDirection: 'row' },
   backButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   heading: { gap: 10 },

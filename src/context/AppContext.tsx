@@ -40,6 +40,7 @@ import { getCurrentSessionUserId, isSupabaseConfigured, startSupabaseAuthLifecyc
 import { applyAnalyticsAgePolicy, captureOperationalError, clearTelemetryForAccountSwitch, countBucket, trackEvent } from '@/services/telemetry';
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
+import { itemNutritionPer100g } from '@/utils/portions';
 import { getDictionary } from '@/i18n/active';
 import type { UnitSystem } from '@/utils/units';
 import { clearLocalWellnessConsent, forgetLocalWellnessConsent, hasCurrentWellnessConsent, recordWellnessConsent, withdrawWellnessConsent as withdrawStoredWellnessConsent } from '@/services/consent';
@@ -139,16 +140,18 @@ function makeScanId() {
 function scaleItem(item: MealItem, nextAmount: number): MealItem {
   // A provider that reports a zero amount would otherwise turn every macro into
   // Infinity or NaN on the first correction tap.
-  const ratio = item.amountG > 0 ? nextAmount / item.amountG : 0;
+  const reference = itemNutritionPer100g(item);
+  const ratio = nextAmount / 100;
   return {
     ...item,
     amountG: nextAmount,
+    nutritionPer100g: reference,
     portionFactor: nextAmount / item.baseAmountG,
-    calories: Math.round(item.calories * ratio),
-    protein: Math.round(item.protein * ratio),
-    carbs: Math.round(item.carbs * ratio),
-    fat: Math.round(item.fat * ratio),
-    fiber: Math.round((item.fiber ?? 0) * ratio),
+    calories: Math.round(reference.calories * ratio),
+    protein: Math.round(reference.protein * ratio),
+    carbs: Math.round(reference.carbs * ratio),
+    fat: Math.round(reference.fat * ratio),
+    fiber: Math.round((reference.fiber ?? 0) * ratio),
   };
 }
 
@@ -849,7 +852,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setDetectedItems((current) =>
       current.map((item) => {
         if (item.id !== id) return item;
-        const nextAmount = Math.max(10, item.amountG + direction * 10);
+        const nextAmount = Math.min(5000, Math.max(1, Math.round((item.amountG + direction * 10) * 10) / 10));
         return scaleItem(item, nextAmount);
       }),
     );
@@ -861,7 +864,7 @@ export function AppProvider({ children }: PropsWithChildren) {
    * makes twice.
    */
   const setItemAmount = (id: string, grams: number) => {
-    const amount = Math.round(grams);
+    const amount = Math.round(grams * 10) / 10;
     if (!Number.isFinite(amount) || amount < 1 || amount > 5000) return;
     setMealPortionState(null);
     setDetectedItems((current) => current.map((item) => (item.id === id ? scaleItem(item, amount) : item)));
@@ -950,6 +953,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   const logScannedMeal = useCallback(async () => {
+    if (!detectedItems.some((item) => item.included)) throw new Error('Cannot save an empty meal');
     const existing = mealHistory.find((meal) => meal.id === scannedMeal.id);
     const now = new Date();
     // Origin remains honest for history/cloud recovery. The allowance itself

@@ -330,6 +330,7 @@ export function mealFromSearch(result: FoodSearchResult, grams: number): MealAna
       name: result.name,
       amountG: grams,
       baseAmountG: grams,
+      nutritionPer100g: { ...result.per100g },
       portionFactor: 1,
       calories: scale(result.per100g.calories),
       protein: scale(result.per100g.protein),

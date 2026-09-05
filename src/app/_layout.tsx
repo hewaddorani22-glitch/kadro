@@ -1,3 +1,4 @@
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import * as Notifications from 'expo-notifications';
 import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -8,7 +9,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { AppRouteGuard } from '@/components/AppRouteGuard';
 import { ReminderScheduler } from '@/components/ReminderScheduler';
-import { colors, isDarkMode } from '@/constants/theme';
 import { AppProvider } from '@/context/AppContext';
 import { LanguageProvider } from '@/i18n/LanguageProvider';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
@@ -20,6 +20,11 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
+  return <ThemeProvider><ThemedRootLayout /></ThemeProvider>;
+}
+
+function ThemedRootLayout() {
+  const { colors, mode: themeMode } = useTheme();
   const reduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -40,7 +45,7 @@ export default function RootLayout() {
           <SubscriptionProvider>
             <AppRouteGuard>
               <ReminderScheduler />
-              <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+              <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
               <Stack
               screenOptions={{
                 headerShown: false,

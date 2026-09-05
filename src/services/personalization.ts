@@ -133,7 +133,9 @@ export function calculateDailyTargets(profile: UserProfile): DailyTargets {
   // higher. A fast rate on a light person would otherwise produce a target that
   // no responsible app should show.
   const floor = Math.max(1_300, maintenance * 0.7);
-  const calories = Math.min(4_000, Math.max(floor, roundTo(maintenance + offset, 10)));
+  const calories = teen
+    ? roundTo(maintenance, 10)
+    : Math.min(4_000, Math.max(floor, roundTo(maintenance + offset, 10)));
   if (teen) {
     // A moderate protein planning target and 30% fat keep the day balanced;
     // carbohydrates take the remaining energy. These are planning references,

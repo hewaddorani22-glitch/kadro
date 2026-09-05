@@ -7,6 +7,7 @@
  * the lifetime of that flag tied to the camera's own lifetime.
  */
 import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
 
 const problems = [];
 const scan = readFileSync(new URL('../src/app/(tabs)/scan.tsx', import.meta.url), 'utf8');
@@ -67,4 +68,38 @@ if (problems.length) {
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
-console.log('Camera lifecycle: ready-flag tied to the camera, shutter never dead, no preview behind sheets.');
+// Execute the actual screen handler with a delayed native camera response.
+// Closing must win over both a successful photo and a rejected camera promise.
+const handler = scan.slice(scan.indexOf('const capture = async'), scan.indexOf('// The demo meal'));
+for (const rejectPhoto of [false, true]) {
+  let settle;
+  let calls = 0;
+  const events = [];
+  const refs = { scanFocused: { current: true }, scanVisit: { current: 1 }, captureLock: { current: false } };
+  const dependencies = {
+    ...refs,
+    hasScanAccess: () => true,
+    setCapturing: () => {}, primaryHaptic: () => {},
+    permission: { granted: true },
+    cameraRef: { current: { takePictureAsync: () => {
+      calls += 1;
+      return new Promise((resolve, reject) => { settle = rejectPhoto ? reject : resolve; });
+    } } },
+    Alert: { alert: () => events.push('alert') }, t: { scan: {} },
+    deleteTemporaryPhoto: (uri) => events.push(`delete:${uri}`),
+    setCapturedPhoto: () => events.push('photo'), router: { push: () => events.push('navigate') },
+  };
+  const capturePhoto = new Function(...Object.keys(dependencies), `${handler}; return capture;`)(...Object.values(dependencies));
+  const first = capturePhoto();
+  await capturePhoto();
+  assert.equal(calls, 1, 'two taps in the same frame must take only one photo');
+  refs.scanFocused.current = false;
+  refs.scanVisit.current += 1;
+  settle(rejectPhoto ? new Error('camera unmounted') : { uri: 'file:cancelled.jpg' });
+  await first;
+  assert.deepEqual(events, rejectPhoto ? [] : ['delete:file:cancelled.jpg'], 'a closed scanner must never navigate or alert late');
+}
+assert.match(scan, /hitSlop=\{8\} onPress=\{close\}/);
+assert.match(scan, /scanFocused.current = false;[\s\S]*scanVisit.current \+= 1;/);
+assert.equal((scan.match(/onDismiss=\{finishSheetDismiss\}/g) || []).length, 2);
+console.log('Camera lifecycle: focus reset, duplicate-tap lock, cancelled capture success/error and sheet dismissal checks passed.');

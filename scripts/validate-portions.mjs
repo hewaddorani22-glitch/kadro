@@ -35,10 +35,13 @@ assert.equal(resolveGrams('1.5', banana), 189);
 
 // --- Plain grams ------------------------------------------------------------
 assert.equal(resolveGrams('150'), 150);
-assert.equal(resolveGrams('150,5'), 151);
+assert.equal(resolveGrams('150,5'), 150.5);
+assert.equal(resolveGrams('110.3'), 110.3);
+assert.equal(resolveGrams('110,3'), 110.3);
+assert.deepEqual(initialSelection(110.3, [], { chosen: true }), { unitIndex: -1, amount: '110.3' });
 
 // --- Refusals ---------------------------------------------------------------
-for (const bad of ['', ' ', '0', '-2', 'abc', '99999']) {
+for (const bad of ['', ' ', '0', '-2', 'abc', '99999', '1e3', '0x10', '1,2.3']) {
   assert.equal(resolveGrams(bad), null, `"${bad}" must not become an amount`);
 }
 assert.equal(resolveGrams('100', banana), null, '100 bananas is past the ceiling, not a portion');

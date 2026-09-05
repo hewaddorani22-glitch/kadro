@@ -1,10 +1,12 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { currentLoggingStreak, proteinConsistency } from '@/services/consistency';
@@ -15,6 +17,8 @@ import { formatDateParts } from '@/utils/format';
 
 
 export default function ProgressScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { locale, t } = useLanguage();
   const { addWeightEntry, mealHistory, profile, targets, weightEntries } = useApp();
@@ -176,7 +180,7 @@ export default function ProgressScreen() {
         <SectionTitle>{t.progress.insight}</SectionTitle>
         <Card style={styles.insightCard}>
           <View style={styles.insightIcon}>
-            <Ionicons color={colors.text} name={visibleMeals.length >= 3 ? 'sparkles' : 'leaf-outline'} size={24} />
+            <Ionicons color={colors.onAccent} name={visibleMeals.length >= 3 ? 'sparkles' : 'leaf-outline'} size={24} />
           </View>
           <View style={styles.insightCopy}>
             <Text style={styles.insightTitle}>{visibleMeals.length >= 3 ? t.progress.insightBuilding : t.progress.insightStart}</Text>
@@ -243,6 +247,8 @@ export default function ProgressScreen() {
 }
 
 function WeightChart({ entries }: { entries: { date: string; weightKg: number }[] }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
   if (entries.length < 2) {
     return (
@@ -277,7 +283,7 @@ function WeightChart({ entries }: { entries: { date: string; weightKg: number }[
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   headerCopy: { flex: 1, gap: 8 },
   subtitle: { color: colors.muted, fontSize: 15, lineHeight: 22 },

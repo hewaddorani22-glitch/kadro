@@ -1,3 +1,5 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -5,7 +7,7 @@ import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AccountLinkCard } from '@/components/AccountLinkCard';
 import { Card, Eyebrow, PageTitle, Screen, SectionTitle } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import {
@@ -36,6 +38,8 @@ const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
 ];
 
 export default function ProfileScreen() {
+  const { colors, mode: themeMode, setMode: setThemeMode } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { hydrationReady, profile, setUnitSystem, targets, userName } = useApp();
   const { status: subscriptionStatus } = useSubscription();
@@ -100,7 +104,7 @@ export default function ProfileScreen() {
 
       <Pressable accessibilityLabel={t.profile.proView} accessibilityRole="button" onPress={() => router.push('/paywall')}>
         <Card style={styles.proCard}>
-          <View style={styles.proIcon}><Ionicons color={colors.text} name="infinite" size={26} /></View>
+          <View style={styles.proIcon}><Ionicons color={colors.onAccent} name="infinite" size={26} /></View>
           <View style={styles.proCopy}>
             <Text style={styles.proTitle}>{subscriptionStatus === 'active' ? t.profile.proActive : t.profile.proTitle}</Text>
             <Text style={styles.proText}>{subscriptionStatus === 'active' ? t.profile.proActiveText : t.profile.proText}</Text>
@@ -247,6 +251,18 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.section}>
+        <SectionTitle>{t.profile.appearance}</SectionTitle>
+        <Card>
+          <Text style={[styles.rowDetail, { padding: 16 }]}>{t.profile.appearanceDetail}</Text>
+          <View style={styles.languageChoice}>
+            {(['light', 'dark'] as const).map((mode) => <Pressable key={mode} aria-checked={themeMode === mode} accessibilityRole="radio" accessibilityState={{ checked: themeMode === mode }} onPress={() => setThemeMode(mode)} style={[styles.languageOption, themeMode === mode && styles.languageOptionActive]}>
+              <Text style={[styles.languageLabel, themeMode === mode && styles.languageLabelActive]}>{t.profile[mode]}</Text>
+            </Pressable>)}
+          </View>
+        </Card>
+      </View>
+
+      <View style={styles.section}>
         <SectionTitle>{t.profile.support}</SectionTitle>
         <Card style={styles.listCard}>
           <MenuRow icon="shield-checkmark-outline" label={t.profile.privacy} onPress={() => router.push('/privacy')} />
@@ -270,6 +286,8 @@ export default function ProfileScreen() {
 }
 
 function PlanStat({ label, value }: { label: string; value: string }) {
+  const { colors, mode: themeMode } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.planStat}>
       <Text style={styles.planStatLabel}>{label}</Text>
@@ -279,6 +297,8 @@ function PlanStat({ label, value }: { label: string; value: string }) {
 }
 
 function ToggleRow({ detail, disabled, icon, label, onValueChange, value }: { detail: string; disabled?: boolean; icon: keyof typeof Ionicons.glyphMap; label: string; onValueChange: (value: boolean) => void; value: boolean }) {
+  const { colors, mode: themeMode } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.toggleRow, disabled && styles.disabledRow]}>
       <View style={styles.rowIcon}><Ionicons color={colors.text} name={icon} size={20} /></View>
@@ -305,6 +325,8 @@ function ToggleRow({ detail, disabled, icon, label, onValueChange, value }: { de
 }
 
 function InfoRow({ detail, icon, label }: { detail: string; icon: keyof typeof Ionicons.glyphMap; label: string }) {
+  const { colors, mode: themeMode } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.toggleRow}>
       <View style={styles.rowIcon}><Ionicons color={colors.text} name={icon} size={20} /></View>
@@ -317,6 +339,8 @@ function InfoRow({ detail, icon, label }: { detail: string; icon: keyof typeof I
 }
 
 function MenuRow({ detail, icon, label, onPress }: { detail?: string; icon: keyof typeof Ionicons.glyphMap; label: string; onPress: () => void }) {
+  const { colors, mode: themeMode } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable accessibilityRole="button" onPress={onPress} style={styles.menuRow}>
       <View style={styles.rowIcon}><Ionicons color={colors.text} name={icon} size={20} /></View>
@@ -329,12 +353,12 @@ function MenuRow({ detail, icon, label, onPress }: { detail?: string; icon: keyo
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   menuCopy: { flex: 1, gap: 2 },
   menuDetail: { color: colors.muted, fontSize: 12 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: { width: 58, height: 58, borderRadius: 29, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: colors.white, fontSize: 20, fontWeight: '800' },
+  avatarText: { color: colors.surface, fontSize: 20, fontWeight: '800' },
   headerCopy: { flex: 1, gap: 3 },
   subtitle: { color: colors.muted, fontSize: 13 },
   proCard: { backgroundColor: colors.surface, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16 },
@@ -343,7 +367,7 @@ const styles = StyleSheet.create({
   proTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
   proText: { color: colors.text, opacity: 0.7, fontSize: 11, lineHeight: 15 },
   tryPill: { backgroundColor: colors.text, borderRadius: radii.pill, paddingHorizontal: 9, paddingVertical: 6 },
-  tryText: { color: colors.white, fontSize: 9, fontWeight: '800', letterSpacing: 0.8 },
+  tryText: { color: colors.surface, fontSize: 12, fontWeight: '800', letterSpacing: 0.3 },
   section: { gap: 13 },
   planCard: { padding: 8 },
   planGrid: { flexDirection: 'row', flexWrap: 'wrap' },
@@ -354,7 +378,7 @@ const styles = StyleSheet.create({
   toggleRow: { minHeight: 78, padding: 9, flexDirection: 'row', alignItems: 'center', gap: 11 },
   disabledRow: { opacity: 0.55 },
   languageChoice: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingBottom: 16 },
-  languageOption: { flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  languageOption: { minHeight: 44, flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   languageOptionActive: { borderColor: colors.text, backgroundColor: colors.text },
   languageLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
   languageLabelActive: { color: colors.surface },

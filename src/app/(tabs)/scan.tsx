@@ -1,21 +1,27 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { PortionSheet } from '@/components/PortionSheet';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { FoodSearchResult, MealAnalysisError, searchFoods } from '@/services/mealAnalysis';
+import { deleteTemporaryPhoto, FoodSearchResult, MealAnalysisError, searchFoods } from '@/services/mealAnalysis';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { primaryHaptic, successHaptic } from '@/services/haptics';
 import { formatNumber } from '@/utils/format';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 export default function ScanScreen() {
+  const { colors } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const pathname = usePathname();
   const { applySearchResult, freeScansLeft, hasEverLoggedScan, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan } = useApp();
@@ -42,13 +48,26 @@ export default function ScanScreen() {
   const [barcodeEntry, setBarcodeEntry] = useState('');
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestSearch = useRef('');
+  const searchGeneration = useRef(0);
+  const confirmAfterSearchDismiss = useRef(false);
+  const afterSheetDismiss = useRef<'/analyzing' | '/paywall?reason=blocked' | null>(null);
+  useEffect(() => () => {
+    searchGeneration.current += 1;
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  }, []);
   const [barcodeBusy, setBarcodeBusy] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  const scanVisit = useRef(0);
+  const scanFocused = useRef(false);
+  const captureLock = useRef(false);
+  const barcodeLock = useRef(false);
+  const [scannerClosed, setScannerClosed] = useState(false);
   const insets = useSafeAreaInsets();
   const { locale, t } = useLanguage();
   // The sheets cover the whole screen, so a camera running behind one is a
   // preview nobody can see holding a device nobody else can use.
   const cameraActive = pathname.endsWith('/scan')
+    && !scannerClosed
     && mode !== 'description'
     && mode !== 'search'
     && !showBarcodeEntry
@@ -58,6 +77,11 @@ export default function ScanScreen() {
   // search could leave the next Lunch/Dinner tap behind an invisible sheet and
   // make the camera look frozen.
   useFocusEffect(useCallback(() => {
+    scanVisit.current += 1;
+    scanFocused.current = true;
+    captureLock.current = false;
+    barcodeLock.current = false;
+    setScannerClosed(false);
     const nextMode = requestedMode === 'description'
       ? 'description'
       : requestedMode === 'search'
@@ -71,6 +95,12 @@ export default function ScanScreen() {
     setCapturing(false);
     setBarcodeBusy(false);
     return () => {
+      scanFocused.current = false;
+      scanVisit.current += 1;
+      confirmAfterSearchDismiss.current = false;
+      afterSheetDismiss.current = null;
+      searchGeneration.current += 1;
+      if (searchTimer.current) clearTimeout(searchTimer.current);
       setShowDescription(false);
       setShowSearch(false);
       setShowBarcodeEntry(false);
@@ -96,6 +126,7 @@ export default function ScanScreen() {
   }, [cameraActive, mode]);
 
   const requestCameraAccess = async () => {
+    const visit = scanVisit.current;
     if (permission && !permission.canAskAgain) {
       Alert.alert(
         t.scan.permissionTitle,
@@ -109,6 +140,7 @@ export default function ScanScreen() {
     }
 
     const nextPermission = await requestPermission();
+    if (!scanFocused.current || visit !== scanVisit.current) return;
     if (!nextPermission.granted) {
       Alert.alert(
         t.scan.permissionMissingTitle,
@@ -117,13 +149,43 @@ export default function ScanScreen() {
     }
   };
 
-  const close = () => router.replace('/(tabs)/today');
+  const close = () => {
+    if (!scanFocused.current) return;
+    scanFocused.current = false;
+    scanVisit.current += 1;
+    confirmAfterSearchDismiss.current = false;
+    afterSheetDismiss.current = null;
+    searchGeneration.current += 1;
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    setScannerClosed(true);
+    setTorchOn(false);
+    Keyboard.dismiss();
+    router.replace('/(tabs)/today');
+  };
 
   const subscribed = subscriptionStatus === 'active';
   const subscriptionUncertain = subscriptionStatus === 'loading' || subscriptionStatus === 'error';
   // hasEverLoggedScan is kept so the copy can distinguish a first-time user from
   // someone who has simply used up the allowance.
   const showAllowance = !subscribed && freeScansLeft > 0 && hasEverLoggedScan;
+
+  const navigateAfterSheet = (target: '/analyzing' | '/paywall?reason=blocked') => {
+    Keyboard.dismiss();
+    if (Platform.OS === 'ios' && (showDescription || showBarcodeEntry)) {
+      afterSheetDismiss.current = target;
+      setShowDescription(false);
+      setShowBarcodeEntry(false);
+    } else {
+      setShowDescription(false);
+      setShowBarcodeEntry(false);
+      router.push(target);
+    }
+  };
+  const finishSheetDismiss = () => {
+    const target = afterSheetDismiss.current;
+    afterSheetDismiss.current = null;
+    if (target && scanFocused.current) router.push(target);
+  };
 
   const hasScanAccess = () => {
     // Loading/error is not proof of inactivity. Let the server-authoritative
@@ -132,13 +194,15 @@ export default function ScanScreen() {
     if (subscribed || subscriptionUncertain || freeScansLeft > 0) return true;
     // The paywall reads very differently when it interrupted someone mid-scan
     // than when it was opened out of curiosity.
-    router.push('/paywall?reason=blocked');
+    navigateAfterSheet('/paywall?reason=blocked');
     return false;
   };
 
   const capture = async () => {
-    if (capturing) return;
+    if (!scanFocused.current || captureLock.current) return;
     if (!hasScanAccess()) return;
+    captureLock.current = true;
+    const visit = scanVisit.current;
     setCapturing(true);
     void primaryHaptic();
 
@@ -152,13 +216,22 @@ export default function ScanScreen() {
       // shutter into a dead button; asking the camera and handling the failure
       // costs one retry at worst.
       const result = await cameraRef.current.takePictureAsync({ quality: 0.9 });
+      if (!scanFocused.current || visit !== scanVisit.current) {
+        deleteTemporaryPhoto(result?.uri);
+        return;
+      }
       if (!result?.uri) throw new Error('missing camera uri');
       setCapturedPhoto(result.uri);
       router.push('/analyzing');
     } catch {
-      Alert.alert(t.scan.captureFailedTitle, t.scan.captureFailedBody);
+      if (scanFocused.current && visit === scanVisit.current) {
+        Alert.alert(t.scan.captureFailedTitle, t.scan.captureFailedBody);
+      }
     } finally {
-      setCapturing(false);
+      if (visit === scanVisit.current) {
+        captureLock.current = false;
+        setCapturing(false);
+      }
     }
   };
 
@@ -171,6 +244,8 @@ export default function ScanScreen() {
   };
 
   const chooseMode = (nextMode: 'photo' | 'description' | 'barcode' | 'search') => {
+    if (!scanFocused.current || captureLock.current) return;
+    barcodeLock.current = false;
     setMode(nextMode);
     if (nextMode !== 'barcode') setTorchOn(false);
     if (nextMode === 'description') setShowDescription(true);
@@ -188,6 +263,9 @@ export default function ScanScreen() {
   const runSearch = (value: string) => {
     setSearchQuery(value);
     const term = value.trim();
+    const generation = ++searchGeneration.current;
+    latestSearch.current = term;
+    setSearchResults([]);
     if (searchTimer.current) clearTimeout(searchTimer.current);
     if (term.length < 2) {
       setSearchResults([]);
@@ -201,12 +279,12 @@ export default function ScanScreen() {
       latestSearch.current = request;
       void searchFoods(request)
         .then((results) => {
-          if (latestSearch.current !== request) return;
+          if (latestSearch.current !== request || generation !== searchGeneration.current) return;
           setSearchResults(results);
           setSearching(false);
         })
         .catch((error: unknown) => {
-          if (latestSearch.current !== request) return;
+          if (latestSearch.current !== request || generation !== searchGeneration.current) return;
           setSearchResults([]);
           // Swallowing this showed "nothing found" for a network failure and
           // for a withdrawn consent alike, which tells the user the food does
@@ -223,16 +301,18 @@ export default function ScanScreen() {
    * the only unit on offer.
    */
   const addSearchResult = (result: FoodSearchResult) => {
+    Keyboard.dismiss();
     setPendingFood(result);
   };
 
   const confirmPortion = (grams: number) => {
     if (!pendingFood) return;
     applySearchResult(pendingFood, grams);
+    confirmAfterSearchDismiss.current = Platform.OS === 'ios';
     setPendingFood(null);
     setShowSearch(false);
     setMode('photo');
-    router.push('/confirm');
+    if (Platform.OS !== 'ios') router.push('/confirm');
   };
 
   const submitDescription = () => {
@@ -244,18 +324,21 @@ export default function ScanScreen() {
     if (!hasScanAccess()) return;
     setShowDescription(false);
     startDescriptionScan(value);
-    router.push('/analyzing');
+    navigateAfterSheet('/analyzing');
   };
 
   const openBarcode = (data: string) => {
-    if (barcodeBusy || !/^\d{7,14}$/.test(data)) return;
+    if (!scanFocused.current || barcodeLock.current || !/^\d{7,14}$/.test(data)) return;
+    barcodeLock.current = true;
     setBarcodeBusy(true);
     void successHaptic();
     startBarcodeScan(data);
-    router.push('/analyzing');
+    navigateAfterSheet('/analyzing');
   };
 
-  const handleBarcode = ({ data }: BarcodeScanningResult) => openBarcode(data);
+  const handleBarcode = ({ data }: BarcodeScanningResult) => {
+    if (cameraActive && mode === 'barcode') openBarcode(data);
+  };
 
   const submitBarcodeEntry = () => {
     const normalized = barcodeEntry.replace(/\D/g, '');
@@ -272,6 +355,7 @@ export default function ScanScreen() {
       {cameraActive ? (
         <>
           <CameraView
+            pointerEvents="none"
             active={Platform.OS === 'ios' ? cameraActive : undefined}
             autofocus="on"
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'itf14', 'code128'] }}
@@ -313,19 +397,19 @@ export default function ScanScreen() {
           {mode !== 'description' && !permission ? <Text style={styles.permissionStatus}>{t.scan.permissionChecking}</Text> : null}
           {mode !== 'description' && permission && !permission.granted ? (
             <Pressable accessibilityRole="button" onPress={() => void requestCameraAccess()} style={styles.permissionButton}>
-              <Ionicons color={colors.text} name="camera-outline" size={18} />
+              <Ionicons color={colors.onAccent} name="camera-outline" size={18} />
               <Text style={styles.permissionText}>{permission.canAskAgain ? t.scan.allowCamera : t.scan.openSettings}</Text>
             </Pressable>
           ) : null}
         </View>
       )}
 
-      <View style={styles.scrimTop} />
-      <View style={styles.scrimBottom} />
+      <View pointerEvents="none" style={styles.scrimTop} />
+      <View pointerEvents="none" style={styles.scrimBottom} />
 
-      <SafeAreaView edges={['top', 'bottom']} style={styles.overlay}>
+      <SafeAreaView pointerEvents="box-none" edges={['top', 'bottom']} style={styles.overlay}>
         <View style={styles.topBar}>
-          <Pressable accessibilityLabel={t.scan.close} accessibilityRole="button" onPress={close} style={styles.circleButton}>
+          <Pressable accessibilityLabel={t.scan.close} accessibilityRole="button" hitSlop={8} onPress={close} style={styles.circleButton}>
             <Ionicons color={colors.white} name="close" size={24} />
           </Pressable>
           <View style={styles.titlePill}>
@@ -340,7 +424,7 @@ export default function ScanScreen() {
               onPress={() => setTorchOn((value) => !value)}
               style={[styles.circleButton, torchOn && styles.circleButtonActive]}
             >
-              <Ionicons color={torchOn ? colors.text : colors.white} name={torchOn ? 'flash' : 'flash-outline'} size={21} />
+              <Ionicons color={torchOn ? colors.onAccent : colors.white} name={torchOn ? 'flash' : 'flash-outline'} size={21} />
             </Pressable>
           ) : <View style={styles.circlePlaceholder} />}
         </View>
@@ -397,7 +481,7 @@ export default function ScanScreen() {
             </View>
           ) : (
             <Pressable accessibilityRole="button" onPress={() => setShowDescription(true)} style={styles.describeButton}>
-              <Ionicons color={colors.text} name="create-outline" size={19} />
+              <Ionicons color={colors.onAccent} name="create-outline" size={19} />
               <Text style={styles.describeButtonText}>{t.scan.openDescription}</Text>
             </Pressable>
           )}
@@ -405,7 +489,7 @@ export default function ScanScreen() {
         </View>
       </SafeAreaView>
 
-      <Modal animationType="fade" onRequestClose={() => setShowBarcodeEntry(false)} transparent visible={showBarcodeEntry}>
+      <Modal animationType="fade" onDismiss={finishSheetDismiss} onRequestClose={() => setShowBarcodeEntry(false)} transparent visible={showBarcodeEntry}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
           <View accessibilityViewIsModal style={[styles.barcodeSheet, { paddingBottom: insets.bottom + 20 }]}>
             <Text accessibilityRole="header" style={styles.describeTitle}>{t.scan.barcodeManualTitle}</Text>
@@ -434,7 +518,19 @@ export default function ScanScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal animationType="slide" onRequestClose={() => { setShowSearch(false); setMode('photo'); }} transparent visible={showSearch}>
+      <Modal animationType={reduceMotion ? 'none' : 'fade'} onDismiss={() => {
+        if (confirmAfterSearchDismiss.current) {
+          confirmAfterSearchDismiss.current = false;
+          router.push('/confirm');
+        }
+      }} onRequestClose={() => { if (pendingFood) setPendingFood(null); else { setShowSearch(false); setMode('photo'); } }} transparent visible={showSearch}>
+        {pendingFood ? <PortionSheet
+          embedded
+          onCancel={() => setPendingFood(null)}
+          onConfirm={confirmPortion}
+          target={{ name: pendingFood.name, per100g: pendingFood.per100g, defaultGrams: pendingFood.defaultGrams, portions: pendingFood.portions, sourceLabel: pendingFood.source.label }}
+          visible
+        /> : (
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
           <View accessibilityViewIsModal style={[styles.searchSheet, { paddingBottom: insets.bottom + 16 }]}>
             <View style={styles.searchHead}>
@@ -482,22 +578,10 @@ export default function ScanScreen() {
             </Pressable>
           </View>
         </KeyboardAvoidingView>
+        )}
       </Modal>
 
-      <PortionSheet
-        onCancel={() => setPendingFood(null)}
-        onConfirm={confirmPortion}
-        target={pendingFood ? {
-          name: pendingFood.name,
-          per100g: pendingFood.per100g,
-          defaultGrams: pendingFood.defaultGrams,
-          portions: pendingFood.portions,
-          sourceLabel: pendingFood.source.label,
-        } : null}
-        visible={!!pendingFood}
-      />
-
-      <Modal animationType="fade" onRequestClose={() => { setShowDescription(false); setMode('photo'); }} transparent visible={showDescription}>
+      <Modal animationType="fade" onDismiss={finishSheetDismiss} onRequestClose={() => { setShowDescription(false); setMode('photo'); }} transparent visible={showDescription}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
           <View accessibilityViewIsModal style={[styles.describeSheet, { paddingBottom: insets.bottom + 22 }]}>
             <Text accessibilityRole="header" style={styles.describeTitle}>{t.scan.describeTitle}</Text>
@@ -528,6 +612,8 @@ export default function ScanScreen() {
 }
 
 function ModeButton({ active, label, onPress }: { active: boolean; label: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable aria-checked={active} accessibilityRole="radio" accessibilityState={{ checked: active }} onPress={onPress} style={[styles.modeButton, active && styles.modeButtonActive]}>
       <Text style={[styles.modeText, active && styles.modeTextActive]}>{label.toUpperCase()}</Text>
@@ -535,22 +621,22 @@ function ModeButton({ active, label, onPress }: { active: boolean; label: string
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.camera },
   fallback: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: colors.cameraSoft, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 52 },
   fallbackOrb: { width: 112, height: 112, borderRadius: 56, backgroundColor: 'rgba(187,220,142,0.12)', borderWidth: 1, borderColor: 'rgba(187,220,142,0.32)', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   fallbackTitle: { color: colors.white, fontSize: 21, fontWeight: '700', textAlign: 'center' },
   fallbackText: { color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 8 },
   permissionButton: { marginTop: 18, minHeight: 44, borderRadius: radii.pill, paddingHorizontal: 16, backgroundColor: colors.accent, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  permissionText: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  permissionText: { color: colors.onAccent, fontSize: 13, fontWeight: '700' },
   cameraStarting: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 12 },
   cameraStartingText: { color: 'rgba(255,255,255,0.72)', fontSize: 13, fontWeight: '600' },
   permissionStatus: { color: 'rgba(255,255,255,0.58)', fontSize: 12, marginTop: 16 },
   scrimTop: { pointerEvents: 'none', position: 'absolute', left: 0, right: 0, top: 0, height: 160, backgroundColor: 'rgba(0,0,0,0.36)' },
   scrimBottom: { pointerEvents: 'none', position: 'absolute', left: 0, right: 0, bottom: 0, height: 250, backgroundColor: 'rgba(0,0,0,0.48)' },
-  overlay: { flex: 1, justifyContent: 'space-between', pointerEvents: 'box-none' },
+  overlay: { flex: 1, justifyContent: 'space-between', pointerEvents: 'box-none', zIndex: 2 },
   topBar: { height: 66, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  circleButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(17,19,15,0.48)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
+  circleButton: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(17,19,15,0.48)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center' },
   circleButtonActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   circlePlaceholder: { width: 42, height: 42 },
   titlePill: { height: 38, borderRadius: 19, backgroundColor: 'rgba(17,19,15,0.58)', paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 7 },
@@ -568,10 +654,10 @@ const styles = StyleSheet.create({
   allowancePill: { height: 30, borderRadius: 15, backgroundColor: 'rgba(17,19,15,0.62)', paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 },
   allowanceText: { color: colors.white, fontSize: 11, fontWeight: '700' },
   modeLabel: { flexDirection: 'row', borderRadius: radii.pill, backgroundColor: 'rgba(17,19,15,0.58)', padding: 3 },
-  modeButton: { minHeight: 34, borderRadius: 17, paddingHorizontal: 11, alignItems: 'center', justifyContent: 'center' },
+  modeButton: { minHeight: 44, borderRadius: 17, paddingHorizontal: 11, alignItems: 'center', justifyContent: 'center' },
   modeButtonActive: { backgroundColor: colors.accent },
   modeText: { color: 'rgba(255,255,255,0.62)', fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
-  modeTextActive: { color: colors.text },
+  modeTextActive: { color: colors.onAccent },
   shutterRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   shutterOuter: { width: 82, height: 82, borderRadius: 41, borderWidth: 3, borderColor: colors.white, alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 66, height: 66, borderRadius: 33, backgroundColor: colors.accent },
@@ -584,7 +670,7 @@ const styles = StyleSheet.create({
   barcodeManualButton: { minHeight: 34, borderRadius: radii.pill, borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)', backgroundColor: 'rgba(255,255,255,0.10)', paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 6 },
   barcodeManualText: { color: colors.white, fontSize: 11, fontWeight: '700' },
   describeButton: { minHeight: 52, borderRadius: radii.pill, backgroundColor: colors.accent, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  describeButtonText: { color: colors.text, fontSize: 13, fontWeight: '800' },
+  describeButtonText: { color: colors.onAccent, fontSize: 13, fontWeight: '800' },
   privacy: { color: 'rgba(255,255,255,0.48)', fontSize: 10 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.58)', justifyContent: 'flex-end' },
   barcodeSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 22, gap: 13 },
@@ -605,7 +691,7 @@ const styles = StyleSheet.create({
   describeTitle: { color: colors.text, fontSize: 26, fontWeight: '700' },
   describeText: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   describeInput: { minHeight: 128, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, color: colors.text, fontSize: 16, lineHeight: 23, padding: 14, textAlignVertical: 'top' },
-  describeSubmit: { minHeight: 54, borderRadius: radii.button, backgroundColor: colors.text, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  describeSubmit: { minHeight: 54, borderRadius: radii.button, backgroundColor: colors.camera, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   describeSubmitText: { color: colors.white, fontSize: 15, fontWeight: '800' },
   describeCancel: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   describeCancelText: { color: colors.muted, fontSize: 13, fontWeight: '700' },

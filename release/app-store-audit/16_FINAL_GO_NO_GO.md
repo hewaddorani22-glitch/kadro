@@ -1,108 +1,70 @@
-# 16 – Finales GO/NO-GO
+# 16 - Finales GO/NO-GO
+
+> **Update 2026-09-05: NO_GO nach Build-8-Gerätefeedback.** Score und
+> Einschätzung darunter sind historisch. Die korrigierte App muss erneut auf
+> einem iPhone geprüft werden. Siehe `18_BUILD8_FEEDBACK.md`.
 
 ## 1. Urteil
 
-**Status: `NO_GO`**
+**Status: `CONDITIONAL_NO_GO`**
 
-Mindestens ein technischer, datenschutzbezogener, geschäftlicher und
-reviewkritischer Blocker besteht. Tatsächlich bestehen mehrere voneinander
-unabhängige P0-Gates. Ein `GO` oder `CONDITIONAL_NO_GO` wäre nach den
-Auditregeln daher nicht wahrheitsgemäß.
+Kandro ist technisch und operativ bereit für den finalen TestFlight-Pass. Der
+frühere harte `NO_GO`-Stand ist remediated. App Review bleibt bis zum
+physischen Pass des exakten Kandidaten und zur abgeschlossenen
+DSA-Händlerverifizierung gesperrt.
 
-## 2. Geprüfte Identität
+## 2. Submission Readiness Score
 
-| Merkmal | Wert |
-| --- | --- |
-| App | Kandro |
-| Marketingversion | `1.0.0` |
-| EAS-Auditarchiv | Build `7` |
-| EAS Build-ID | `420935a7-2aed-43e1-9daf-cb53f306a549` |
-| Bundle ID | `com.hewaddorani.kandro` |
-| Plattform/Architektur | iOS / arm64 |
-| Mindest-iOS | 15.1 |
-| Buildtoolchain | Xcode 26.0 / iOS SDK 26.0 |
-| EAS-Fingerprint | `e410ce56a5e09e470cff837903cbbb433924a639` |
-| Source-Basis | Commit `22b1bf91af7824ffb976389e8bf259a0c8c1ccb5` plus Audit-Working-Tree beim Upload |
-| Auditdatum | 5. September 2026, Europe/Berlin |
-
-EAS weist als Git-Commit den Basiscommit aus, obwohl der Upload die lokalen
-Audit-Remediations enthielt. Der Fingerprint identifiziert den hochgeladenen
-Kontext, ersetzt aber keinen sauberen, reproduzierbaren Release-Commit. Nach
-Produktiv-Rollout und finaler Konfigurationsfreigabe ist daher ein sauberer
-Submission-Build erforderlich; Build 7 wird nicht als unveränderlicher finaler
-Review-Candidate ausgegeben.
-
-## 3. Submission Readiness Score
-
-| Kategorie | Punkte | Maximum | Begründung |
+| Kategorie | Punkte | Maximum | Aktueller Nachweis |
 | --- | ---: | ---: | --- |
-| Apple Guidelines und Geschäftsmodell | 9 | 20 | aktuelle Primärquellen und vollständige Matrix vorhanden; Paid Apps/Bank, DSA, IAP-Anhang und finale ASC-Felder offen |
-| Release Build, Stabilität und Runtime-QA | 14 | 20 | signiertes Store-Archiv und breite Regression grün; keine Installation, physische Runtime oder TestFlight-Sandbox |
-| Datenschutz, Tracking und Privacy Manifest | 8 | 20 | lokale Datenkarte/Consent/Manifeste stark; Live-Policy, ASC Labels und Drittanbieter-Löschung offen |
-| Codequalität, Security und Abhängigkeiten | 12 | 15 | statische P0/P1-Grenzen korrigiert; Deployment, Live-Proxynachweis, Timeouts und bekannte npm-Advisories offen |
-| Login, Account-Löschung, IAP und Subscriptions | 4 | 10 | Supabase-Löschung belegt und Servermodell lokal geprüft; StoreKit, Produktanhang und Provider-Erasure fehlen |
-| UI, UX, HIG und Accessibility | 7 | 10 | umfangreiche responsive/DE/EN/Web-Tests; VoiceOver, echtes Dynamic Type und Hardware fehlen |
-| Landingpage, Support und Metadaten | 4 | 5 | bestehende Kern-URLs 200 und Storepaket vorbereitet; lokaler Endstand nicht live, Unsubscribe 404 |
-| **Gesamt** | **58** | **100** | **keine Freigabegarantie** |
+| Apple Guidelines und Geschäftsmodell | 18 | 20 | Paid Apps, Bank, Tax, W-8BEN und DAC7 aktiv; DSA noch `In Review` |
+| Release Build, Stabilität und Runtime-QA | 17 | 20 | reproduzierbarer sauberer Commit, komplette CI/Regression grün, Build 8 angestoßen; physischer Pass offen |
+| Datenschutz, Tracking und Privacy Manifest | 19 | 20 | acht ASC-Datentypen veröffentlicht, Tracking `No`, Consent/Erasure/live Policy belegt; native Cleanup-Prüfung offen |
+| Codequalität, Security und Abhängigkeiten | 14 | 15 | Servergrenzen, RLS, Limiter und Live-SQL-Lint grün; Expo-54-Buildtooling hat bekannte transitive Advisories |
+| Login, Account-Löschung, IAP und Subscriptions | 8 | 10 | loginloser Reviewpfad, RevenueCat-Erasure und beide Abos bereit; Apple-Sandbox-Matrix offen |
+| UI, UX, HIG und Accessibility | 9 | 10 | responsive EN/DE-, Dark-Mode-, Kamera- und A11y-Validatoren grün; echte VoiceOver-/Dynamic-Type-Hardware offen |
+| Landingpage, Support und Metadaten | 5 | 5 | zweisprachig live, zentrale URLs 200, Metadaten und Screenshots vollständig |
+| **Gesamt** | **90** | **100** | **TestFlight-ready, noch nicht App-Review-ready** |
 
-## 4. Harte Gate-Matrix
+## 3. Aktuelle Gate-Matrix
 
-| Gate | Schwere | Status | Evidenz | Was zum Schließen fehlt |
-| --- | --- | --- | --- | --- |
-| Aktueller offizieller Quellenzugriff | P0 | PASS | [`01_SOURCE_REGISTER.md`](./01_SOURCE_REGISTER.md), Abruf 2026-09-04 | keine |
-| Vollständiger lokaler Verify und Auditpaket | P0 | PASS | [`evidence/build/26_final_release_verify.log`](./evidence/build/26_final_release_verify.log), Exit 0; [`evidence/build/33_final_audit_package_checks.log`](./evidence/build/33_final_audit_package_checks.log) | keine, solange Produktcode unverändert bleibt |
-| Signiertes Release-Archiv | P0 | PASS | Statischer Archivnachweis: Build 7 `FINISHED`; Signatur/Entitlements/IPA separat inventarisiert | sauberen finalen Commit nach Rollout erneut bauen |
-| Physische Ausführung des exakten Kandidaten | P0 | UNVERIFIED_BLOCKER | Build 7 weder TestFlight noch installiert | vollständige iPhone-Matrix |
-| Produktiver Review-Backendstand | P0 | FAIL | [`evidence/network/23_final_supabase_dry_run.log`](./evidence/network/23_final_supabase_dry_run.log): drei Migrationen offen | Secrets setzen; Migrationen/Functions kontrolliert deployen; Live-Negativ-/Kosten-/Retentiontests |
-| StoreKit/IAP/Restore | P0 | UNVERIFIED_BLOCKER | nur statische/Browserprüfung; keine Apple-Sandbox | Produkte komplettieren/anhängen; Kauf-, Restore-, Pending-, Refund-, Expiry-/Grace-Test |
-| App Privacy | P0 | FAIL | ASC-Antworten unvollständig gegenüber [`04_DATA_PRIVACY_MAP.md`](./04_DATA_PRIVACY_MAP.md) | aus finalem Archiv korrigieren und veröffentlichen |
-| Account-Löschung | P0 | FAIL | Supabase-E2E positiv; historisches PostHog/RevenueCat nicht abschließend | Erasure oder enge zulässige Retention belegen; nativen Cleanup testen |
-| Public Privacy/Support | P0/P1 | FAIL | Kern-URLs 200, aber lokaler Stand abweichend und Unsubscribe EN/DE 404 | Backend zuerst, dann Website; kompletter Live-Crawl und Mail-/Lösch-E2E |
-| Paid Apps/Bank/DSA | P0 | MANUAL_CONFIRMATION_REQUIRED | zuletzt `Processing`/`In Review` | Apple-Status aktiv/verifiziert nachweisen |
-| Reviewer-Zugang | P0 | UNVERIFIED_BLOCKER | anonyme Nutzung konzipiert; exakter Submission-Build nicht end-to-end geprüft | frische UUID, `Anybody`-Sandboxzugang und alle Kernpfade auf TestFlight belegen |
-| Metadata/Screenshots | P0/P1 | MANUAL_CONFIRMATION_REQUIRED | EN/DE lokal validiert; ASC/Buildgleichheit nicht final | finale Texte/Bilder/IAP/Build in ASC vergleichen und auswählen |
-| Minderjährige 14–17 (`LEGAL_EXTERNAL`) | P1 | UNVERIFIED_BLOCKER | technischer Guardian-/Analytics-Gate lokal geprüft | Mail-E2E und qualifizierte Länder-/Storefrontentscheidung |
-| Accessibility/Hardware | P1 | MANUAL_CONFIRMATION_REQUIRED | Web-AX/Layouts positiv | VoiceOver, Dynamic Type, Kamera, Torch, Barcode, Safe Areas auf Geräten |
+| Gate | Status | Begründung / nächster Nachweis |
+| --- | --- | --- |
+| Vollständiger lokaler Verify und GitHub-CI | PASS | `npm run verify`, Production-Env-Prüfung und CI für `9a95530` bestanden |
+| Produktives Backend | PASS | Migrationen up to date; SQL-Lint ohne Befund; Functions und Live-Grenztests bestanden |
+| App Privacy und öffentliche Rechtstexte | PASS | ASC-Angaben veröffentlicht; Privacy 1.7 und alle Pflichtseiten zweisprachig live |
+| Account-Löschung | PASS_CODE_AND_LIVE | Supabase- und RevenueCat-Löschung fail-closed; lokaler Cleanup implementiert; Gerätetest bleibt Teil der Matrix |
+| Subscriptions und RevenueCat | PASS_CONFIGURATION | zwei Produkte `READY_TO_SUBMIT`, Offering/Entitlement/Webhook/Least Privilege gesetzt; Sandbox-Lauf offen |
+| Paid Apps/Bank/Tax/DAC7 | PASS | in Apple aktiv |
+| DSA-Händlerstatus | MANUAL_CONFIRMATION_REQUIRED | Apple verarbeitet die eingereichten Angaben noch |
+| Exakter Submission-Build | IN_PROGRESS | Build 8 aus Commit `9a95530`; Apples Processing/TestFlight-Installation ausstehend |
+| Physische Geräte-/StoreKit-/A11y-Matrix | UNVERIFIED_BLOCKER | nur auf echtem iPhone und mit Apple Sandbox vollständig beweisbar |
+| App-Review-Entwurf | INTENTIONALLY_NOT_SUBMITTED | Eigentümer will vor dem finalen Absenden alles selbst prüfen |
 
-## 5. Archivurteil
+## 4. Abhängigkeitsentscheidung
 
-Das erzeugte Build-7-Archiv ist als technische Release-Artefaktprobe
-erfolgreich: Distribution-Signatur, arm64, Bundle-/Versionsdaten,
-`get-task-allow=false`, ATS, Purpose Strings und eingebettete Privacy Manifests
-sind plausibel. Öffentliche Supabase-, PostHog- und RevenueCat-Clientwerte sind
-erwartungsgemäß enthalten; serverseitige Providerkeys nicht. Dependency-
-Defaults mit `localhost` wurden gefunden, aber keine aktive Release-Konfiguration
-zu einem Entwicklungsserver.
+`npm audit --omit=dev` meldet 26 transitive Knoten ohne Critical-Befund. Die
+Advisories liegen überwiegend im Expo-/Metro-/PostCSS-Buildtooling; die
+angebotene automatische Reparatur ist ein Major-Sprung von Expo SDK 54 auf 57
+und damit keine vertretbare Last-Minute-Änderung am bereits vollständig
+validierten Kandidaten. Diese Node-Werkzeuge werden nicht als ausführbarer
+Server im iOS-Archiv ausgeliefert. Der Upgrade-Pfad wird nach 1.0 geplant;
+Build 8 muss dennoch Apples eigene Upload-/SDK-Prüfung fehlerfrei bestehen.
 
-Dieser statische Archivbefund ersetzt weder den von Xcode empfohlenen
-zusammengefassten Privacy Report noch eine Netzwerkerfassung und Ausführung des
-exakten Builds auf einem Gerät.
+## 5. Freigaberegel
 
-## 6. Reihenfolge bis zu einem neuen Gate
+Der Status wechselt erst auf `GO`, wenn alle folgenden Aussagen gleichzeitig
+belegt sind:
 
-1. Offen gelegte OpenRouter-/USDA-Credentials rotieren; Provider-Spend-Cap und
-   Warnungen setzen.
-2. Beide Rate-Limit-Salts und alle sieben RevenueCat-Server-Secrets setzen und
-   per Namensaudit bestätigen, ohne Werte zu protokollieren.
-3. Exakt die drei Dry-run-Migrationen anwenden; danach `nutrition`,
-   `guardian-consent` und `revenuecat-webhook` gemeinsam deployen. Die geänderte
-   `waitlist`-Function und Website als abgestimmtes Webrelease ausrollen.
-4. Live-Tests für Auth, Free/Pro, Providerlimits, Proxy/IP, Retention,
-   Guardian, Waitlist, Abmeldung und Account-Löschung durchführen.
-5. App Privacy, Paid Apps/Bank/DSA, Abo-Metadaten/Review-Screenshots und ersten
-   Subscription-Anhang in App Store Connect abschließen.
-6. Aus dem sauberen finalen Commit einen neuen Production-Build erstellen,
-   statisch inspizieren und nur zu TestFlight hochladen.
-7. Den vollständigen physischen EN/DE-/Teen-/Permission-/Offline-/A11y-/IAP-
-   Testplan auf genau diesem Build bestehen.
-8. Erst danach Matrix, Reviewer Notes und Store-Screenshots gegen exakt diesen
-   Build abgleichen. `Add for Review` und `Submit for Review` benötigen jeweils
-   eine gesonderte Eigentümerfreigabe.
+1. Build 8 ist in App Store Connect `VALID`, installiert und exakt der in der
+   Version ausgewählte Build.
+2. Die physische Matrix aus `15_OWNER_INPUT_REQUIRED.md` ist ohne offenen P0
+   bestanden.
+3. DSA steht nicht mehr auf `In Review`.
+4. Reviewer Notes, Screenshots, Privacy-Antworten und beide ersten
+   Subscriptions wurden im fertigen Entwurf nochmals visuell verglichen.
+5. Der Eigentümer gibt danach erst `Add for Review` und anschließend separat
+   `Submit for Review` frei.
 
-## 7. Endaussage
-
-Der lokale Quellstand ist nach der Remediation erheblich belastbarer und ein
-signiertes Release-Archiv konnte erzeugt werden. Die noch offenen Punkte sind
-jedoch keine kosmetische Restliste, sondern konkrete Apple-, Datenschutz-,
-Backend-, IAP- und Runtime-Gates. Daher lautet die einzig regelkonforme
-Entscheidung zum Auditstichtag: **`NO_GO`**.
+Bis dahin lautet die präzise Entscheidung: **90/100,
+`CONDITIONAL_NO_GO`, selbstbewusst bereit für den letzten TestFlight-Pass.**

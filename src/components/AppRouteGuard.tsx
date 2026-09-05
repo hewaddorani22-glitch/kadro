@@ -1,15 +1,18 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import { useRouter, useSegments } from 'expo-router';
 import { PropsWithChildren, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui';
-import { colors } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 
 const publicBeforeConsent = new Set(['index', 'onboarding', 'data-consent', 'privacy', 'terms', 'sources', 'account-deletion']);
 
 export function AppRouteGuard({ children }: PropsWithChildren) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const segments = useSegments();
   const { hydrationReady, profile, retryAccountRecovery, syncMode, wellnessConsentGranted } = useApp();
@@ -59,7 +62,7 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
   return children;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   gate: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 28, backgroundColor: colors.background },
   title: { color: colors.text, fontSize: 26, lineHeight: 32, fontWeight: '800', textAlign: 'center' },
   copy: { maxWidth: 420, color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center' },

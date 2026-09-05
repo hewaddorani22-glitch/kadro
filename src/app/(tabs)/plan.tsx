@@ -1,10 +1,12 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { hasRecipe } from '@/services/recipes';
 import { useSubscription } from '@/context/SubscriptionContext';
@@ -18,6 +20,8 @@ import { selectionHaptic, successHaptic } from '@/services/haptics';
 
 
 export default function PlanScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ context?: string; fromScan?: string }>();
   const router = useRouter();
   const { freeScansLeft, hasLoggedScan, logPlannedMeal, profile, remaining } = useApp();
@@ -140,7 +144,7 @@ export default function PlanScreen() {
                 <Text style={styles.contextDetail}>{context.detail}</Text>
               </View>
               <View style={[styles.chevron, active && styles.chevronActive]}>
-                <Ionicons color={colors.text} name={active ? 'checkmark' : 'arrow-forward'} size={19} />
+                <Ionicons color={active ? colors.onAccent : colors.text} name={active ? 'checkmark' : 'arrow-forward'} size={19} />
               </View>
             </Pressable>
           );
@@ -292,6 +296,8 @@ export default function PlanScreen() {
 }
 
 function NutritionStat({ label, value }: { label: string; value: number | string }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.nutritionStat}>
       <Text style={styles.nutritionValue}>{value}</Text>
@@ -300,11 +306,11 @@ function NutritionStat({ label, value }: { label: string; value: number | string
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   headerCopy: { flex: 1, gap: 8 },
   subtitle: { color: colors.muted, fontSize: 15, lineHeight: 22 },
-  balanceCard: { backgroundColor: colors.text, borderColor: colors.text, alignItems: 'flex-start', gap: 12 },
+  balanceCard: { backgroundColor: colors.camera, borderColor: colors.camera, alignItems: 'flex-start', gap: 12 },
   balanceLabel: { color: 'rgba(255,255,255,0.62)', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
   balanceValue: { color: colors.white, fontSize: 21, fontWeight: '700', marginTop: 5, fontVariant: ['tabular-nums'] },
   proteinPill: { alignSelf: 'flex-start', backgroundColor: 'rgba(187,220,142,0.14)', borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 5 },
@@ -346,10 +352,10 @@ const styles = StyleSheet.create({
   portionChoice: { flex: 1, minWidth: 0, minHeight: 48, borderRadius: 11, alignItems: 'center', justifyContent: 'center', gap: 2 },
   portionChoiceActive: { backgroundColor: colors.accent },
   portionChoiceLabel: { color: colors.muted, fontSize: 13, fontWeight: '700' },
-  portionChoiceActiveText: { color: colors.text },
+  portionChoiceActiveText: { color: colors.onAccent },
   portionMultiplier: { color: colors.muted, fontSize: 10, fontVariant: ['tabular-nums'] },
   portionResult: { color: colors.text, fontSize: 13, fontWeight: '700', textAlign: 'center', fontVariant: ['tabular-nums'] },
-  loggedBanner: { minHeight: 66, borderRadius: radii.card, backgroundColor: colors.accent, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  loggedBanner: { minHeight: 66, borderRadius: radii.card, backgroundColor: colors.accentSoft, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   loggedIcon: { width: 34, height: 34, borderRadius: 13, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   loggedCopy: { flex: 1, minWidth: 0, gap: 2 },
   loggedTitle: { color: colors.text, fontSize: 14, fontWeight: '800' },
@@ -357,8 +363,8 @@ const styles = StyleSheet.create({
   catalogNote: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', paddingHorizontal: 12 },
   hint: { alignItems: 'center', gap: 8, paddingVertical: 14 },
   hintText: { color: colors.muted, fontSize: 13 },
-  proBanner: { minHeight: 78, borderRadius: radii.card, backgroundColor: colors.accent, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  proIcon: { width: 42, height: 42, borderRadius: 16, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
+  proBanner: { minHeight: 78, borderRadius: radii.card, backgroundColor: colors.accentSoft, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  proIcon: { width: 42, height: 42, borderRadius: 16, backgroundColor: colors.camera, alignItems: 'center', justifyContent: 'center' },
   proCopy: { flex: 1, gap: 3 },
   proTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
   proText: { color: colors.text, fontSize: 11, opacity: 0.7 },

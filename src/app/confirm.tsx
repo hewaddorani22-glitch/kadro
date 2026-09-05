@@ -1,3 +1,5 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -6,22 +8,27 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { mealPhotoPlaceholder } from '@/utils/format';
 import { PortionSheet } from '@/components/PortionSheet';
 import { Card, ConfidenceBadge, MealPhoto, PrimaryButton, Screen } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { countBucket, trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { successHaptic } from '@/services/haptics';
 import { PortionFactor } from '@/types/nutrition';
 import { formatNumber } from '@/utils/format';
+import { initialSelection, itemNutritionPer100g } from '@/utils/portions';
 
 export default function ConfirmScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { adjustItem, analysisMessage, detectedItems, mealPortion, photoUri, scanMode, scannedMeal, setItemAmount, setMealPortion, toggleItem } = useApp();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [amountFor, setAmountFor] = useState<string | null>(null);
+  const [preferGrams, setPreferGrams] = useState(false);
   // A barcode or a search hit is one food, and for one food the honest
   // question is "how many grams", not "0.7x of what we guessed".
   const singleItem = detectedItems.length === 1 ? detectedItems[0] : null;
+  const hasIncludedFood = detectedItems.some((item) => item.included);
   const { locale, t } = useLanguage();
 
   const changeInput = () => {
@@ -29,10 +36,15 @@ export default function ConfirmScreen() {
       router.replace('/(tabs)/scan?mode=search');
       return;
     }
+    if (scanMode === 'description') {
+      router.replace('/(tabs)/scan?mode=description');
+      return;
+    }
     router.replace('/(tabs)/scan');
   };
 
   const confirm = () => {
+    if (!hasIncludedFood) return;
     void successHaptic();
     const includedItems = detectedItems.filter((item) => item.included);
     trackEvent('meal confirmed', {
@@ -58,7 +70,7 @@ export default function ConfirmScreen() {
       <View style={styles.heading}>
         <View style={styles.headingRow}>
           <Text style={styles.title}>{t.confirm.heading}</Text>
-          <ConfidenceBadge uncertain={scannedMeal.confidence === 'medium'} />
+          {hasIncludedFood ? <ConfidenceBadge uncertain={scannedMeal.confidence === 'medium'} /> : null}
         </View>
         <Text style={styles.subtitle}>{singleItem ? t.confirm.subtitleSingle : t.confirm.subtitle}</Text>
       </View>
@@ -105,7 +117,10 @@ export default function ConfirmScreen() {
             onPress={() => setAmountFor(singleItem.id)}
             style={styles.amountField}
           >
-            <Text style={styles.amountFieldValue}>{singleItem.amountG} g</Text>
+            <Text style={styles.amountFieldValue}>{(() => {
+              const selection = initialSelection(singleItem.amountG, singleItem.portions, { chosen: true });
+              return selection.unitIndex >= 0 ? `${formatNumber(Number(selection.amount), locale)} × ${singleItem.portions![selection.unitIndex].label}` : `${formatNumber(singleItem.amountG, locale)} g`;
+            })()}</Text>
             <Ionicons color={colors.muted} name="create-outline" size={20} />
           </Pressable>
         </Card>
@@ -147,27 +162,30 @@ export default function ConfirmScreen() {
       </Card>
       )}
 
+      {!singleItem ? detectedItems.filter((item) => item.included && item.portions?.length).map((item) => (
+        <Pressable key={`pieces-${item.id}`} accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.amountQuestion}`} onPress={() => setAmountFor(item.id)} style={styles.amountField}>
+          <View style={{ flex: 1 }}><Text style={styles.portionTitle}>{item.name}</Text><Text style={styles.portionSubtitle}>{formatNumber(Number((item.amountG / item.portions![0].grams).toFixed(2)), locale)} × {item.portions![0].label}</Text></View>
+          <Ionicons color={colors.accentText} name="create-outline" size={22} />
+        </Pressable>
+      )) : null}
+
       <PortionSheet
-        onCancel={() => setAmountFor(null)}
+        onCancel={() => { setAmountFor(null); setPreferGrams(false); }}
         onConfirm={(grams) => {
           if (amountFor) setItemAmount(amountFor, grams);
           setAmountFor(null);
+          setPreferGrams(false);
         }}
         target={(() => {
           const item = detectedItems.find((entry) => entry.id === amountFor);
           if (!item || item.baseAmountG < 1) return null;
-          const per100 = (value: number) => Math.round((value / item.baseAmountG) * 100);
           return {
             name: item.name,
-            per100g: {
-              calories: per100(item.calories / item.portionFactor),
-              protein: per100(item.protein / item.portionFactor),
-              carbs: per100(item.carbs / item.portionFactor),
-              fat: per100(item.fat / item.portionFactor),
-            },
+            per100g: itemNutritionPer100g(item),
             defaultGrams: item.amountG,
             // This is the amount already on the meal, not a database default.
             amountIsChosen: true,
+            preferGrams,
             portions: item.portions,
             sourceLabel: item.source.label,
           };
@@ -181,7 +199,7 @@ export default function ConfirmScreen() {
             <View key={item.id}>
               <View style={[styles.itemRow, !item.included && styles.itemRowOff]}>
                 <Pressable accessibilityLabel={`${item.name} ${t.confirm.include}`} accessibilityRole="checkbox" accessibilityState={{ checked: item.included }} onPress={() => toggleItem(item.id)} style={[styles.checkButton, item.included && styles.checkButtonOn]}>
-                  <Ionicons color={item.included ? colors.text : colors.muted} name={item.included ? 'checkmark' : 'add'} size={17} />
+                  <Ionicons color={item.included ? colors.onAccent : colors.muted} name={item.included ? 'checkmark' : 'add'} size={17} />
                 </Pressable>
                 <View style={styles.itemCopy}>
                   <View style={styles.itemNameRow}>
@@ -194,7 +212,7 @@ export default function ConfirmScreen() {
                   <Pressable accessibilityLabel={`${item.name} ${t.confirm.decrease}`} accessibilityRole="button" onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
                     <Ionicons color={colors.text} name="remove" size={17} />
                   </Pressable>
-                  <Text style={styles.amount}>{item.amountG} g</Text>
+                  <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.amountQuestion}`} onPress={() => { setPreferGrams(true); setAmountFor(item.id); }} style={{ minHeight: 44, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border, justifyContent: 'center' }}><Text style={styles.amount}>{formatNumber(item.amountG, locale)} g</Text></Pressable>
                   <Pressable accessibilityLabel={`${item.name} ${t.confirm.increase}`} accessibilityRole="button" onPress={() => adjustItem(item.id, 1)} style={styles.stepperButton}>
                     <Ionicons color={colors.text} name="add" size={17} />
                   </Pressable>
@@ -220,9 +238,10 @@ export default function ConfirmScreen() {
         </View>
       </Card>
 
-      <PrimaryButton icon="arrow-forward" label={t.confirm.proceed} onPress={confirm} />
+      {!hasIncludedFood ? <Text style={styles.subtitle}>{t.confirm.emptyMeal}</Text> : null}
+      <PrimaryButton disabled={!hasIncludedFood} icon="arrow-forward" label={t.confirm.proceed} onPress={confirm} />
       <PrimaryButton
-        label={scanMode === 'search' ? t.confirm.searchAgain : t.confirm.retake}
+        label={scanMode === 'search' ? t.confirm.searchAgain : scanMode === 'description' ? t.confirm.editDescription : t.confirm.retake}
         onPress={changeInput}
         variant="ghost"
       />
@@ -230,7 +249,7 @@ export default function ConfirmScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   iconButtonSpacer: { width: 42, height: 42 },
@@ -258,24 +277,24 @@ const styles = StyleSheet.create({
   portionChoice: { flex: 1, minHeight: 52, borderRadius: 11, alignItems: 'center', justifyContent: 'center', gap: 2 },
   portionChoiceActive: { backgroundColor: colors.accent },
   portionChoiceLabel: { color: colors.muted, fontSize: 13, fontWeight: '700' },
-  portionChoiceLabelActive: { color: colors.text },
+  portionChoiceLabelActive: { color: colors.onAccent },
   portionMultiplier: { color: colors.muted, fontSize: 10, fontVariant: ['tabular-nums'] },
-  detailsToggle: { minHeight: 36, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  detailsToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   detailsToggleText: { color: colors.muted, fontSize: 12, fontWeight: '600' },
-  itemRow: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 7 },
+  itemRow: { minHeight: 72, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 11, paddingHorizontal: 7, paddingVertical: 12 },
   itemRowOff: { opacity: 0.48 },
-  checkButton: { width: 34, height: 34, borderRadius: 13, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  checkButton: { width: 44, height: 44, borderRadius: 13, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   checkButtonOn: { backgroundColor: colors.accent, borderColor: colors.accent },
-  itemCopy: { flex: 1, gap: 3 },
+  itemCopy: { flex: 1, minWidth: 0, gap: 3 },
   itemNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  itemName: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  itemName: { flexShrink: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
   uncertain: { color: colors.attention, fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
   itemCalories: { color: colors.muted, fontSize: 11, fontVariant: ['tabular-nums'] },
-  stepper: { height: 38, borderRadius: 14, backgroundColor: colors.background, flexDirection: 'row', alignItems: 'center' },
-  stepperButton: { width: 34, height: 38, alignItems: 'center', justifyContent: 'center' },
+  stepper: { width: '100%', minHeight: 44, borderRadius: 14, backgroundColor: colors.background, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  stepperButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   amount: { minWidth: 44, color: colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center', fontVariant: ['tabular-nums'] },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 52 },
-  estimateCard: { backgroundColor: colors.text, borderColor: colors.text, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  estimateCard: { backgroundColor: colors.camera, borderColor: colors.camera, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   estimateLabel: { color: 'rgba(255,255,255,0.58)', fontSize: 9, fontWeight: '800', letterSpacing: 0.9 },
   estimateValue: { color: colors.white, fontSize: 22, fontWeight: '700', marginTop: 4, fontVariant: ['tabular-nums'] },
   macroSummary: { flexDirection: 'row', alignItems: 'center', gap: 6 },

@@ -1,3 +1,5 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -6,13 +8,15 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CalorieRing } from '@/components/CalorieRing';
 import { MealDetailSheet } from '@/components/MealDetailSheet';
 import { Card, Eyebrow, IconCircle, MacroCard, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { Meal } from '@/types/nutrition';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatDateParts, formatNumber, mealTypeIcon, mealTypeLabel } from '@/utils/format';
 
 export default function TodayScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { consumed, hasLoggedScan, logRepeatMeal, meals, pendingAnalysisCount, remaining, repeatMeals, resetScan, resumeLatestAnalysis, setPlannedMealType, targets, userName } = useApp();
   const [repeating, setRepeating] = useState<string | null>(null);
@@ -258,7 +262,7 @@ export default function TodayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   // The greeting has to yield to the avatar: "Good afternoon, <name>" is far
   // longer than "Guten Tag" and ran underneath it.
@@ -266,7 +270,7 @@ const styles = StyleSheet.create({
   date: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   greeting: { color: colors.text, fontSize: 28, lineHeight: 35, fontWeight: '700', letterSpacing: -0.8, marginTop: 5 },
   avatar: { width: 44, height: 44, flexShrink: 0, borderRadius: 22, backgroundColor: colors.text, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: colors.white, fontSize: 15, fontWeight: '800' },
+  avatarText: { color: colors.surface, fontSize: 15, fontWeight: '800' },
   pendingBanner: { minHeight: 66, borderRadius: radii.card, backgroundColor: colors.attentionSoft, borderWidth: 1, borderColor: colors.attention, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 11 },
   pendingIcon: { width: 38, height: 38, borderRadius: 14, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   pendingCopy: { flex: 1, gap: 2 },
@@ -293,7 +297,7 @@ const styles = StyleSheet.create({
   slotHeader: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 8 },
   slotTitle: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '700' },
   slotCalories: { color: colors.muted, fontSize: 13, fontWeight: '600' },
-  slotAdd: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
+  slotAdd: { width: 44, height: 44, borderRadius: 17, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   timelineCard: { padding: 8 },
   mealRow: { minHeight: 72, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, gap: 12 },
   mealRowPressed: { backgroundColor: colors.background },

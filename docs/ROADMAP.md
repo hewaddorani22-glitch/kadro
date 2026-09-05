@@ -1,5 +1,20 @@
 # Roadmap
 
+## Build 8 feedback, 2026-09-05
+
+- [x] Reject empty scan confirmation/save; suppress empty confidence; use two-row ingredient controls on narrow screens; hide result recommendations below the same 150 kcal threshold as Today/Plan; remove adult caps/floors from adolescent maintenance calculation.
+- [ ] Local native simulator pass blocked: only Command Line Tools installed, no discoverable Xcode or simctl. Install full Xcode and an iOS runtime before claiming a simulator pass.
+
+- [x] Replace search slide with fade/Reduce Motion; direct detail-row gram entry preserves 110.3 g; independently assert target arithmetic for the adult profile test matrix.
+
+- [x] Replace stacked search/portion modals; keep amount editor close/save reachable.
+- [x] Recognized piece count, count stepper, estimated per-piece calories, and correction round-trip regression.
+- [x] Light first-launch default, persisted profile appearance switch, dynamic palettes and corrected dark-mode foregrounds.
+- [x] Plain pancakes before compound variants; invalidate outdated search responses immediately.
+- [x] Full verify gate plus live model text test: 3 pancakes / 240 g returns 80 g per piece.
+- [ ] Verify a replacement native candidate on a physical iPhone: decimal keyboard close/save, search add, real photo count correction, touch targets, appearance persistence. Build 8 itself is unchanged.
+- [ ] Preserve household-unit metadata when restoring logged meal history from cloud (current active scan/search correction does retain it).
+
 ## Current status: Day 4 app work complete; native TestFlight and legal gates remain
 
 - [x] Kandro name, mark, app icon, and exact brand tokens

@@ -1,8 +1,9 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
-import { colors } from '@/constants/theme';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber } from '@/utils/format';
 
@@ -21,6 +22,8 @@ export function CalorieRing({
   /** Quietly acknowledges the one goal the user actually controls. */
   proteinReached?: boolean;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { width } = useWindowDimensions();
   const { locale, t } = useLanguage();
   // The ring used to be a hard 220pt, which overflowed the hero card on the
@@ -90,7 +93,7 @@ export function CalorieRing({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   outer: {
     alignItems: 'center',
     justifyContent: 'center',

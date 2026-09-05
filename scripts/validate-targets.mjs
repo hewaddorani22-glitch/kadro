@@ -46,6 +46,12 @@ for (let weightKg = 45; weightKg <= 160; weightKg += 5) {
     const profile = { age, heightCm, weightKg, activityLevel, goal, weeklyRateKg, sex, displayName: '', preferences: [], completedAt: null, unitSystem: 'metric' };
     const t = calculateDailyTargets(profile);
     checked += 1;
+    // Independent oracle for every input combination, not just a broad range.
+    const sexOffset = { female: -161, male: 5, unspecified: -78 }[sex];
+    const expectedMaintenance = (10 * weightKg + 6.25 * heightCm - 5 * age + sexOffset) * ACTIVITY[activityLevel];
+    const expectedOffset = goal === 'maintain' ? 0 : (goal === 'lose' ? -1 : 1) * weeklyRateKg * 1100;
+    const expectedCalories = Math.min(4000, Math.max(1300, expectedMaintenance * 0.7, Math.round((expectedMaintenance + expectedOffset) / 10) * 10));
+    assert.equal(t.calories, expectedCalories, 'profile inputs must reach the goal calculation unchanged');
 
     // --- The macros must describe the calorie figure ------------------------
     const fromMacros = t.protein * 4 + t.carbs * 4 + t.fat * 9;
@@ -134,6 +140,15 @@ assert.equal(missing.calories, midpoint.calories, 'a profile saved before the qu
 // still part of the estimate. Only the meal-ranking emphasis may change.
 const teenBase = { age: 15, heightCm: 170, weightKg: 62, activityLevel: 'light', weeklyRateKg: 0.5, sex: 'male', displayName: '', preferences: [], completedAt: null, unitSystem: 'metric' };
 const teenLose = calculateDailyTargets({ ...teenBase, goal: 'lose' });
+for (const age of [14, 15, 16, 17])
+for (const sex of ['female', 'male', 'unspecified'])
+for (const activityLevel of ['low', 'light', 'high'])
+for (const weightKg of [45, 62, 100])
+for (const goal of ['lose', 'maintain', 'gain']) {
+  const profile = { ...teenBase, age, sex, activityLevel, weightKg, heightCm: 190, goal };
+  assert.equal(calculateDailyTargets(profile).calories, Math.round(personalization.maintenanceCalories(profile) / 10) * 10,
+    'teen maintenance must not inherit adult calorie caps or floors');
+}
 const teenMaintain = calculateDailyTargets({ ...teenBase, goal: 'maintain' });
 const teenGain = calculateDailyTargets({ ...teenBase, goal: 'gain' });
 assert.equal(teenLose.calories, teenMaintain.calories, 'a 15-year-old must not receive a calorie deficit');

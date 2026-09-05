@@ -1,16 +1,19 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Eyebrow, PageTitle, Screen } from '@/components/ui';
-import { colors } from '@/constants/theme';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { recipeTitle } from '@/services/recommendations';
 import { getRecipe } from '@/services/recipes';
 import { formatNumber } from '@/utils/format';
 
 export default function RecipeScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { language, locale, t } = useLanguage();
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -92,7 +95,7 @@ export default function RecipeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   iconButtonSpacer: { width: 42, height: 42 },
@@ -114,6 +117,6 @@ const styles = StyleSheet.create({
   note: { color: colors.muted, fontSize: 11, lineHeight: 16 },
   stepRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   stepNumber: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
-  stepNumberText: { color: colors.text, fontSize: 12, fontWeight: '800' },
+  stepNumberText: { color: colors.onAccent, fontSize: 12, fontWeight: '800' },
   stepText: { flex: 1, color: colors.text, fontSize: 14, lineHeight: 21, paddingTop: 3 },
 });

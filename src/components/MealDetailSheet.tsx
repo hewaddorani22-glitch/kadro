@@ -1,10 +1,12 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { Meal, PortionFactor } from '@/types/nutrition';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -19,6 +21,8 @@ import { MEAL_TYPES, mealTypeIcon, mealTypeLabel } from '@/utils/format';
  * contradicted the promise the result screen makes about staying in control.
  */
 export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose: () => void }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { adjustLoggedMealPortion, deleteLoggedMeal, setLoggedMealType } = useApp();
   const { locale, t } = useLanguage();
@@ -127,8 +131,8 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
                     onPress={() => void changeType(type)}
                     style={[styles.typeChip, active && styles.typeChipActive]}
                   >
-                    <Ionicons color={colors.text} name={mealTypeIcon(type)} size={15} />
-                    <Text style={styles.typeChipText}>{mealTypeLabel(type, t.common)}</Text>
+                    <Ionicons color={active ? colors.onAccent : colors.text} name={mealTypeIcon(type)} size={15} />
+                    <Text style={[styles.typeChipText, active && { color: colors.onAccent }]}>{mealTypeLabel(type, t.common)}</Text>
                   </Pressable>
                 );
               })}
@@ -191,6 +195,8 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
 }
 
 function Macro({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.macro}>
       <Text style={styles.macroValue}>{value}</Text>
@@ -199,7 +205,7 @@ function Macro({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   scrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)' },
   sheet: {
     maxHeight: '82%',
@@ -229,14 +235,14 @@ const styles = StyleSheet.create({
   itemAmount: { color: colors.muted, fontSize: 11, fontVariant: ['tabular-nums'] },
   sourceNote: { color: colors.muted, fontSize: 10, marginTop: 2 },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  typeChip: { minHeight: 40, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  typeChip: { minHeight: 44, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 6 },
   typeChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   typeChipText: { color: colors.text, fontSize: 12, fontWeight: '600' },
   portionSelector: { flexDirection: 'row', borderRadius: radii.input, backgroundColor: colors.background, padding: 4, gap: 4 },
   portionChoice: { flex: 1, minWidth: 0, minHeight: 52, borderRadius: 11, alignItems: 'center', justifyContent: 'center', gap: 2 },
   portionActive: { backgroundColor: colors.accent },
   portionLabel: { color: colors.muted, fontSize: 13, fontWeight: '700' },
-  portionActiveText: { color: colors.text },
+  portionActiveText: { color: colors.onAccent },
   portionMultiplier: { color: colors.muted, fontSize: 10, fontVariant: ['tabular-nums'] },
   confirmBlock: { gap: 8 },
   confirmText: { color: colors.text, fontSize: 14, fontWeight: '700', textAlign: 'center' },

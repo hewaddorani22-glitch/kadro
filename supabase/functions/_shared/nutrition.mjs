@@ -410,6 +410,13 @@ export function searchTermVariants(term) {
 }
 
 export function buildMealItem(item, facts, index) {
+  const count = item.pieceCount;
+  const pieceGrams = item.estimatedGrams / count;
+  const portions = typeof count === 'number' && Number.isFinite(count) && count >= 0.5 && count <= 99
+    && Number.isFinite(pieceGrams) && pieceGrams >= 1 && pieceGrams <= 2000
+    && typeof item.pieceLabel === 'string' && item.pieceLabel.trim()
+    ? [{ label: item.pieceLabel.trim().slice(0, 80), grams: pieceGrams, estimated: true }]
+    : undefined;
   if (!facts) {
     return {
       id: `detected-${index}`,
@@ -450,6 +457,7 @@ export function buildMealItem(item, facts, index) {
     confidence: item.confidence === 'medium' || facts.matchConfidence === 'medium' ? 'medium' : 'high',
     optional: item.optional,
     included: true,
+    ...(portions ? { portions } : {}),
     source: {
       provider,
       referenceId,

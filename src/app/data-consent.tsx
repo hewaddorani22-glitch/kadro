@@ -1,14 +1,17 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card, PrimaryButton, Screen } from '@/components/ui';
-import { colors } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 
 export default function DataConsentScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { grantWellnessConsent, profile, wellnessConsentGranted, withdrawWellnessConsent } = useApp();
   const { t } = useLanguage();
@@ -42,7 +45,7 @@ export default function DataConsentScreen() {
 
       <View style={styles.heading}>
         <View style={[styles.statusIcon, !wellnessConsentGranted && styles.statusIconPaused]}>
-          <Ionicons color={colors.text} name={wellnessConsentGranted ? 'shield-checkmark-outline' : 'pause-outline'} size={28} />
+          <Ionicons color={colors.onAccent} name={wellnessConsentGranted ? 'shield-checkmark-outline' : 'pause-outline'} size={28} />
         </View>
         <Text accessibilityRole="header" style={styles.title}>{t.consent.title}</Text>
         <Text style={styles.stateTitle}>{wellnessConsentGranted ? t.consent.activeTitle : t.consent.pausedTitle}</Text>
@@ -73,7 +76,7 @@ export default function DataConsentScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topBar: { flexDirection: 'row' },
   backButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   heading: { gap: 9 },

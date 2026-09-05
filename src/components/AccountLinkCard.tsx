@@ -1,9 +1,11 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Card, PrimaryButton } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import {
   AccountLinkState,
@@ -20,6 +22,8 @@ import { useLanguage } from '@/i18n/LanguageProvider';
 type ViewMode = 'upgrade' | 'sign-in';
 
 export function AccountLinkCard() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { loadExistingAccount, refreshCloudState, userName } = useApp();
   const [account, setAccount] = useState<AccountLinkState | null>(null);
   const [mode, setMode] = useState<ViewMode>('upgrade');
@@ -234,9 +238,11 @@ export function AccountLinkCard() {
 }
 
 function AccountHeader({ icon, title }: { icon: keyof typeof Ionicons.glyphMap; title: string }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.header}>
-      <View style={styles.icon}><Ionicons color={colors.text} name={icon} size={22} /></View>
+      <View style={styles.icon}><Ionicons color={colors.onAccent} name={icon} size={22} /></View>
       <Text style={styles.title}>{title}</Text>
     </View>
   );
@@ -259,6 +265,8 @@ function AccountInput({
   secureTextEntry?: boolean;
   value: string;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <TextInput
       autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
@@ -278,6 +286,8 @@ function AccountInput({
 }
 
 function Feedback({ error, message }: { error: string | null; message: string | null }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   if (!error && !message) return null;
   return (
     <View accessibilityLiveRegion={error ? 'assertive' : 'polite'} style={[styles.feedback, error ? styles.errorFeedback : styles.successFeedback]}>
@@ -287,7 +297,7 @@ function Feedback({ error, message }: { error: string | null; message: string | 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   card: { gap: 14 },
   linkedCard: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
   loadingText: { color: colors.muted, fontSize: 12, textAlign: 'center' },

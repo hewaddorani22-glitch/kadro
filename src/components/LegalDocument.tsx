@@ -1,3 +1,5 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -5,9 +7,11 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '@/components/ui';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import type { LegalCopy } from '@/i18n/legal.de';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 
 export function LegalDocument({ document, version }: { document: LegalCopy; version: string }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { title, intro, sections } = document;
   const router = useRouter();
   const { t } = useLanguage();
@@ -35,7 +39,7 @@ export function LegalDocument({ document, version }: { document: LegalCopy; vers
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   backButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
   topTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },

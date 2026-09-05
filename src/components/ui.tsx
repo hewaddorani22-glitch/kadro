@@ -1,3 +1,5 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSegments } from 'expo-router';
 import { PropsWithChildren, ReactNode } from 'react';
@@ -15,7 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, radii, spacing } from '@/constants/theme';
+import { radii, spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
 
@@ -36,6 +38,8 @@ export function PrimaryButton({
   disabled,
   style,
 }: ButtonProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const dark = variant === 'dark';
   const ghost = variant === 'ghost';
   const secondary = variant === 'secondary';
@@ -58,12 +62,12 @@ export function PrimaryButton({
         style,
       ]}
     >
-      <Text style={[styles.buttonText, lightText && styles.buttonTextLight, ghost && styles.buttonTextDark]}>
+      <Text style={[styles.buttonText, lightText && styles.buttonTextLight, dark && { color: colors.surface }, ghost && styles.buttonTextDark]}>
         {label}
       </Text>
       {icon ? (
         <Ionicons
-          color={lightText ? colors.white : colors.text}
+          color={dark ? colors.surface : lightText ? colors.onDeep : colors.text}
           name={icon}
           size={18}
         />
@@ -77,6 +81,8 @@ export function Screen({
   scroll = true,
   style,
 }: PropsWithChildren<{ scroll?: boolean; style?: StyleProp<ViewStyle> }>) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const segments = useSegments();
   // Tab screens scroll underneath the floating tab bar, every other screen only
@@ -116,18 +122,26 @@ export function Card({
   children,
   style,
 }: PropsWithChildren<{ style?: StyleProp<ViewStyle> }>) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return <View style={[styles.card, style]}>{children}</View>;
 }
 
 export function Eyebrow({ children, light = false }: PropsWithChildren<{ light?: boolean }>) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return <Text style={[styles.eyebrow, light && styles.lightText]}>{children}</Text>;
 }
 
 export function PageTitle({ children }: PropsWithChildren) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return <Text style={styles.pageTitle}>{children}</Text>;
 }
 
 export function SectionTitle({ children, action }: PropsWithChildren<{ action?: ReactNode }>) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.sectionTitleRow}>
       <Text style={styles.sectionTitle}>{children}</Text>
@@ -136,7 +150,9 @@ export function SectionTitle({ children, action }: PropsWithChildren<{ action?: 
   );
 }
 
-export function ProgressBar({ value, color = colors.accentText }: { value: number; color?: string }) {
+export function ProgressBar({ value, color }: { value: number; color?: string }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   // A target of zero makes callers hand us 0/0 or x/0. NaN survives min and
   // max and would reach the style as width: "NaN%"; an exceeded target is a
   // full bar, not an empty one.
@@ -144,7 +160,7 @@ export function ProgressBar({ value, color = colors.accentText }: { value: numbe
   const percentage = Math.round(Math.min(1, Math.max(0, safeValue)) * 100);
   return (
     <View accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: 100, now: percentage }} style={styles.progressTrack}>
-      <View style={[styles.progressFill, { width: `${percentage}%`, backgroundColor: color }]} />
+      <View style={[styles.progressFill, { width: `${percentage}%`, backgroundColor: color ?? colors.accentText }]} />
     </View>
   );
 }
@@ -162,6 +178,8 @@ export function MacroCard({
   unit?: string;
   icon: keyof typeof Ionicons.glyphMap;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
   // 10% tolerance, same as the weekly strip: 175 of 180 g is a day that went
   // fine, and calling it a miss is the kind of nagging this app avoids.
@@ -169,7 +187,7 @@ export function MacroCard({
   return (
     <Card style={styles.macroCard}>
       <View style={[styles.macroIcon, reached && styles.macroIconReached]}>
-        <Ionicons color={colors.text} name={reached ? 'checkmark' : icon} size={16} />
+        <Ionicons color={reached ? colors.onAccent : colors.text} name={reached ? 'checkmark' : icon} size={16} />
       </View>
       <Text numberOfLines={1} style={styles.macroLabel}>{label}</Text>
       <Text style={styles.macroValue}>{current}</Text>
@@ -180,6 +198,8 @@ export function MacroCard({
 }
 
 export function ConfidenceBadge({ uncertain = false }: { uncertain?: boolean }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
   return (
     <View style={[styles.confidence, uncertain && styles.confidenceUncertain]}>
@@ -198,6 +218,8 @@ export function ConfidenceBadge({ uncertain = false }: { uncertain?: boolean }) 
 export type MealPhotoPlaceholder = 'demo' | 'description' | 'barcode' | 'search';
 
 export function MealPhoto({ uri, height = 250, placeholder = 'demo', style }: { uri?: string | null; height?: number; placeholder?: MealPhotoPlaceholder; style?: StyleProp<ViewStyle> }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
   const source: ImageSourcePropType = uri ? { uri } : require('../../assets/meal-bowl.jpg');
   if (!uri && placeholder !== 'demo') {
@@ -212,7 +234,7 @@ export function MealPhoto({ uri, height = 250, placeholder = 'demo', style }: { 
     return (
       <View accessibilityLabel={copy.alt} accessible style={[styles.photoFrame, styles.photoPlaceholder, { height }, style]}>
         <View style={styles.photoPlaceholderIcon}>
-          <Ionicons color={colors.text} name={copy.icon as keyof typeof Ionicons.glyphMap} size={36} />
+          <Ionicons color={colors.onAccent} name={copy.icon as keyof typeof Ionicons.glyphMap} size={36} />
         </View>
         <Text style={styles.photoPlaceholderTitle}>{copy.title}</Text>
         <Text style={styles.photoPlaceholderText}>{copy.text}</Text>
@@ -246,6 +268,8 @@ export function IconCircle({
   tone?: 'accent' | 'neutral' | 'dark';
   size?: number;
 }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View
       style={[
@@ -255,12 +279,12 @@ export function IconCircle({
         tone === 'dark' && styles.iconCircleDark,
       ]}
     >
-      <Ionicons color={tone === 'dark' ? colors.white : colors.text} name={name} size={Math.round(size * 0.45)} />
+      <Ionicons color={tone === 'dark' ? colors.surface : tone === 'accent' ? colors.onAccent : colors.text} name={name} size={Math.round(size * 0.45)} />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,

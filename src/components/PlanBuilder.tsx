@@ -1,9 +1,10 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Platform, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
-import { colors } from '@/constants/theme';
 import { stepHaptic } from '@/services/haptics';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -58,6 +59,8 @@ export function frameAt(progress: number, steps: { value: number; unit: string }
  * landing on exactly the number the next screen shows.
  */
 export function PlanBuilder({ profile }: { profile: UserProfile }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { locale, t } = useLanguage();
   const reduceMotion = useReducedMotion();
   const steps = useMemo(() => explainTargets(profile), [profile]);
@@ -165,7 +168,7 @@ export function PlanBuilder({ profile }: { profile: UserProfile }) {
               index === frame.index && frame.settled === index && styles.dotActive,
             ]}
           >
-            {index < frame.settled ? <Ionicons color={colors.text} name="checkmark" size={11} /> : null}
+            {index < frame.settled ? <Ionicons color={colors.onAccent} name="checkmark" size={11} /> : null}
           </View>
         ))}
       </View>
@@ -173,7 +176,7 @@ export function PlanBuilder({ profile }: { profile: UserProfile }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   wrap: { alignItems: 'center', gap: 18 },
   ring: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
   spinner: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },

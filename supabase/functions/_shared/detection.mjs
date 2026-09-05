@@ -19,10 +19,12 @@ export const detectionSchema = {
         required: [
           'name', 'searchTermEn', 'referenceKey', 'estimatedGrams',
           'estimatedGramsLow', 'estimatedGramsHigh', 'preparation',
-          'hiddenCaloriesRisk', 'confidence', 'optional',
+          'hiddenCaloriesRisk', 'confidence', 'optional', 'pieceCount', 'pieceLabel',
         ],
         properties: {
           name: { type: 'string' },
+          pieceCount: { type: ['number', 'null'], minimum: 0.5, maximum: 99 },
+          pieceLabel: { type: ['string', 'null'] },
           searchTermEn: { type: 'string' },
           referenceKey: { type: 'string', enum: [...BLS_REFERENCE_KEYS, 'other'] },
           estimatedGrams: { type: 'integer', minimum: 5, maximum: 2000 },
@@ -65,6 +67,7 @@ Work conservatively and never output nutrition values.
 - Account for breading, cheese, dressing, sauce and the frying oil likely used. Invisible oil or an unclear sauce gets hiddenCaloriesRisk=high and confidence=medium.
 - estimatedGrams is the best estimate. estimatedGramsLow and estimatedGramsHigh form the smallest realistic range and must satisfy low <= best <= high.
 - Use plate size, layer thickness, piece count and typical portion sizes. Do not confuse volume with weight.
+- For countable foods such as pancakes, dumplings, eggs, bread slices or sushi, return pieceCount as the visible/stated count and pieceLabel as a localized singular unit such as "1 pancake" or "1 Pfannkuchen". estimatedGrams is the TOTAL weight of all those pieces, never the per-piece weight. Keep the food name free of counts. Keep a pancake or dumpling as a whole food, not separate flour/egg ingredients; toppings and sauces remain separate. For uncountable foods or an uncertain count, set both pieceCount and pieceLabel to null. Never invent a count for rice, oil or a mixed bowl.
 
 Available BLS complete dishes:
 ${BLS_MODEL_CATALOG}`.trim();

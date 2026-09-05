@@ -305,6 +305,7 @@ export const de = {
     errProviderBody: 'Versuch es noch einmal oder beschreibe die Mahlzeit kurz in eigenen Worten.',
   },
   confirm: {
+    emptyMeal: 'Wähle mindestens ein Lebensmittel aus oder ändere deine Eingabe.',
     subtitleSingle: 'Ein Lebensmittel. Stell die Menge ein, den Rest rechnet Kandro.',
     amountQuestion: 'Wie viel war es?',
     photoSearchTitle: 'Aus der Datenbank',
@@ -325,6 +326,7 @@ export const de = {
     currentEstimate: 'AKTUELLE SCHÄTZUNG',
     proceed: 'Passt, weiter',
     retake: 'Foto wiederholen',
+    editDescription: 'Beschreibung ändern',
     searchAgain: 'Anderes Lebensmittel suchen',
     add: 'hinzufügen',
     remove: 'entfernen',
@@ -367,6 +369,10 @@ export const de = {
     reminderDismiss: 'Nicht nötig',
   },
   portion: {
+    save: 'Menge übernehmen',
+    perPiece: '~{calories} kcal pro Einheit',
+    piece: '1 Stück',
+    estimatedPiece: 'Stückgröße aus deinem Scan geschätzt. Anzahl anpassen oder Gramm eingeben.',
     amount: 'Menge',
     grams: 'Gramm',
     add: 'Hinzufügen',
@@ -448,6 +454,10 @@ export const de = {
     today: 'Heute',
   },
   profile: {
+    appearance: 'Darstellung',
+    appearanceDetail: 'Wähle, wie Kandro aussieht. Hell ist der Standard.',
+    light: 'Hell',
+    dark: 'Dunkel',
     changePlan: 'Ziel und Angaben ändern',
     bodyValues: 'Deine Werte',
     units: 'Einheiten',

@@ -1,10 +1,12 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Eyebrow, PrimaryButton, Screen } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import {
   isEveningReminderEnabled,
@@ -17,6 +19,8 @@ import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatDateParts, formatNumber, mealTypeLabel } from '@/utils/format';
 
 export default function EveningScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { consumed, meals, targets, userName } = useApp();
   const [reminderEnabled, setReminderEnabled] = useState(true);
@@ -125,7 +129,7 @@ export default function EveningScreen() {
 
       <Card style={styles.tomorrowCard}>
         <View style={styles.tomorrowTop}>
-          <View style={styles.tomorrowIcon}><Ionicons color={colors.text} name="sunny-outline" size={20} /></View>
+          <View style={styles.tomorrowIcon}><Ionicons color={colors.onAccent} name="sunny-outline" size={20} /></View>
           <View style={styles.tomorrowCopy}>
             <Eyebrow>{t.evening.tomorrow}</Eyebrow>
             <Text style={styles.tomorrowTitle}>{t.evening.tomorrowTitle}</Text>
@@ -156,11 +160,11 @@ export default function EveningScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   topTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
-  heroCard: { backgroundColor: colors.text, borderColor: colors.text, gap: 22, paddingVertical: 24 },
+  heroCard: { backgroundColor: colors.camera, borderColor: colors.camera, gap: 22, paddingVertical: 24 },
   heroTop: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   heroCopy: { flex: 1, minWidth: 0, gap: 6 },
   headline: { color: colors.white, fontSize: 28, lineHeight: 34, fontWeight: '700', letterSpacing: -0.8 },

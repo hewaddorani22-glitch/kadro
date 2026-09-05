@@ -1,3 +1,5 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -6,7 +8,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PrimaryButton } from '@/components/ui';
 import { KandroMark } from '@/components/KandroMark';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
@@ -18,6 +20,8 @@ import { toBillingMode, trackEvent } from '@/services/telemetry';
 type Plan = 'yearly' | 'monthly';
 
 export default function PaywallScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ reason?: string }>();
@@ -237,6 +241,8 @@ export default function PaywallScreen() {
 }
 
 function Benefit({ detail, icon, title }: { detail: string; icon: keyof typeof Ionicons.glyphMap; title: string }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.benefit}>
       <View style={styles.benefitIcon}><Ionicons color={colors.accentText} name={icon} size={20} /></View>
@@ -250,6 +256,8 @@ function Benefit({ detail, icon, title }: { detail: string; icon: keyof typeof I
 }
 
 function PlanCard({ badge, detail, disabled, label, onPress, price, selected }: { badge?: string; detail: string; disabled?: boolean; label: string; onPress: () => void; price: string; selected: boolean }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable aria-checked={selected} accessibilityRole="radio" accessibilityState={{ checked: selected, disabled: Boolean(disabled) }} disabled={disabled} onPress={onPress} style={[styles.planCard, selected && styles.planCardSelected, disabled && styles.planCardDisabled]}>
       <View style={[styles.radio, selected && styles.radioSelected]}>
@@ -267,7 +275,7 @@ function PlanCard({ badge, detail, disabled, label, onPress, price, selected }: 
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 20 },
   topBar: { height: 55, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   closeButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
@@ -276,7 +284,7 @@ const styles = StyleSheet.create({
   content: { flexGrow: 1, alignItems: 'center', paddingTop: 15, paddingBottom: 16 },
   heroMark: { width: 104, height: 104, borderRadius: 52, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   testBadge: { backgroundColor: colors.accent, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 5, marginTop: 10 },
-  testBadgeText: { color: colors.text, fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
+  testBadgeText: { color: colors.onAccent, fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
   eyebrow: { color: colors.accentText, fontSize: 10, fontWeight: '800', letterSpacing: 1.3, marginTop: 16 },
   title: { color: colors.text, fontSize: 36, lineHeight: 41, fontWeight: '700', letterSpacing: -1.2, textAlign: 'center', marginTop: 7 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 340, marginTop: 10 },
@@ -297,13 +305,13 @@ const styles = StyleSheet.create({
   planCardDisabled: { opacity: 0.45 },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   radioSelected: { borderColor: colors.accentText },
-  radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.accentDeep },
+  radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.accentText },
   planCopy: { flex: 1, minWidth: 0, gap: 4 },
   planLabelRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 7 },
   planLabel: { color: colors.text, fontSize: 15, fontWeight: '700' },
   planDetail: { color: colors.muted, fontSize: 10 },
   badge: { flexShrink: 0, backgroundColor: colors.text, borderRadius: radii.pill, paddingHorizontal: 7, paddingVertical: 4 },
-  badgeText: { color: colors.white, fontSize: 7, fontWeight: '800', letterSpacing: 0.7 },
+  badgeText: { color: colors.surface, fontSize: 7, fontWeight: '800', letterSpacing: 0.7 },
   planPrice: { flexShrink: 0, color: colors.text, fontSize: 12, fontWeight: '700', fontVariant: ['tabular-nums'] },
   footer: { gap: 9, paddingTop: 10, backgroundColor: colors.background },
   loader: { marginTop: 12 },

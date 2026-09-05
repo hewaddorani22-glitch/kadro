@@ -1,3 +1,5 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs, usePathname } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -6,15 +8,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KandroMark } from '@/components/KandroMark';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
 import { useLanguage } from '@/i18n/LanguageProvider';
-import { colors, shadows } from '@/constants/theme';
+import { shadows } from '@/constants/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
 function TabIcon({ focused, active, inactive }: { focused: boolean; active: IconName; inactive: IconName }) {
+  const { colors } = useTheme();
   return <Ionicons color={focused ? colors.text : colors.muted} name={focused ? active : inactive} size={22} />;
 }
 
 export default function TabLayout() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
@@ -66,7 +71,7 @@ export default function TabLayout() {
                 onPress={onPress}
                 style={({ pressed }) => [styles.scanButton, pressed && styles.scanPressed]}
               >
-                <KandroMark dotColor={colors.white} size={38} />
+                <KandroMark dotColor={colors.onAccent} strokeColor={colors.onAccent} size={38} />
               </Pressable>
             </View>
           ),
@@ -90,7 +95,7 @@ export default function TabLayout() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   tabBar: {
     position: 'absolute',
     paddingTop: 8,

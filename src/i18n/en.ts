@@ -304,6 +304,7 @@ export const en: typeof de = {
     errProviderBody: 'Try again or describe the meal briefly in your own words.',
   },
   confirm: {
+    emptyMeal: 'Select at least one food or change your input.',
     subtitleSingle: 'One food. Set the amount and Kandro does the rest.',
     amountQuestion: 'How much was it?',
     photoSearchTitle: 'From the database',
@@ -324,6 +325,7 @@ export const en: typeof de = {
     currentEstimate: 'CURRENT ESTIMATE',
     proceed: 'Looks right, continue',
     retake: 'Retake photo',
+    editDescription: 'Change description',
     searchAgain: 'Search for another food',
     add: 'add',
     remove: 'remove',
@@ -366,6 +368,10 @@ export const en: typeof de = {
     reminderDismiss: 'Not needed',
   },
   portion: {
+    save: 'Save amount',
+    perPiece: '~{calories} kcal per unit',
+    piece: '1 piece',
+    estimatedPiece: 'Piece size estimated from your scan. Adjust the count or enter grams.',
     amount: 'Amount',
     grams: 'Grams',
     add: 'Add',
@@ -447,6 +453,10 @@ export const en: typeof de = {
     today: 'Today',
   },
   profile: {
+    appearance: 'Appearance',
+    appearanceDetail: 'Choose how Kandro looks. Light is the default.',
+    light: 'Light',
+    dark: 'Dark',
     changePlan: 'Change goal and details',
     bodyValues: 'Your measurements',
     units: 'Units',

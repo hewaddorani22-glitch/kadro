@@ -22,11 +22,13 @@ export type MealItem = Nutrition & {
   amountG: number;
   baseAmountG: number;
   portionFactor: number;
+  /** Stable reference retained across repeated amount corrections. */
+  nutritionPer100g?: Nutrition;
   confidence: 'high' | 'medium';
   optional?: boolean;
   included: boolean;
   /** Named household portions from the source, when it has any. */
-  portions?: { label: string; grams: number }[];
+  portions?: { label: string; grams: number; estimated?: boolean }[];
   source: NutritionSource;
 };
 

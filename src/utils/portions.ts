@@ -1,6 +1,12 @@
-import type { Nutrition } from '@/types/nutrition';
+import type { MealItem, Nutrition } from '@/types/nutrition';
 
-export type FoodPortion = { label: string; grams: number };
+export function itemNutritionPer100g(item: MealItem): Nutrition {
+  if (item.nutritionPer100g) return item.nutritionPer100g;
+  const factor = item.amountG > 0 ? 100 / item.amountG : 0;
+  return { calories: item.calories * factor, protein: item.protein * factor, carbs: item.carbs * factor, fat: item.fat * factor, fiber: (item.fiber ?? 0) * factor };
+}
+
+export type FoodPortion = { label: string; grams: number; estimated?: boolean };
 
 /** Wider than any real meal, narrow enough to catch a typed "1000000". */
 export const MIN_PORTION_G = 1;
@@ -14,9 +20,11 @@ export const MAX_PORTION_G = 5000;
  * weight; with no portion chosen the number already is grams.
  */
 export function resolveGrams(input: string, portion?: FoodPortion): number | null {
-  const parsed = Number(String(input).replace(',', '.'));
+  const normalized = String(input).trim().replace(',', '.');
+  if (!/^\d+(?:\.\d*)?$/.test(normalized)) return null;
+  const parsed = Number(normalized);
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
-  const grams = Math.round(portion ? parsed * portion.grams : parsed);
+  const grams = Math.round((portion ? parsed * portion.grams : parsed) * 10) / 10;
   if (grams < MIN_PORTION_G || grams > MAX_PORTION_G) return null;
   return grams;
 }
@@ -46,14 +54,14 @@ export function initialSelection(
   portions: FoodPortion[] = [],
   { chosen = false }: { chosen?: boolean } = {},
 ): { unitIndex: number; amount: string } {
-  const amount = Math.round(grams);
+  const amount = Math.round(grams * 10) / 10;
   if (!chosen) return portions.length ? { unitIndex: 0, amount: '1' } : { unitIndex: -1, amount: String(amount > 0 ? amount : 100) };
   if (!Number.isFinite(amount) || amount < MIN_PORTION_G) return { unitIndex: -1, amount: '100' };
   for (const [index, portion] of portions.entries()) {
     if (!portion.grams) continue;
     const count = amount / portion.grams;
     // Half steps only: 1.5 bananas is a portion, 1.37 is arithmetic.
-    if (count >= 0.5 && count <= 20 && Math.abs(count * 2 - Math.round(count * 2)) < 1e-6) {
+    if (count >= 0.5 && count <= 99 && Math.abs(amount - Math.round(count * 2) / 2 * portion.grams) < 0.05) {
       return { unitIndex: index, amount: String(Math.round(count * 2) / 2) };
     }
   }

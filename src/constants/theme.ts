@@ -1,8 +1,6 @@
-import { Appearance } from 'react-native';
+export const isDarkMode = false;
 
-export const isDarkMode = Appearance.getColorScheme() === 'dark';
-
-const lightColors = {
+export const lightColors = {
   background: '#F5F3EE',
   surface: '#FFFFFF',
   text: '#14150F',
@@ -21,9 +19,12 @@ const lightColors = {
   camera: '#14150F',
   cameraSoft: '#25261F',
   white: '#FFFFFF',
+  onAccent: '#14150F',
+  onDeep: '#FFFFFF',
 } as const;
 
-const darkColors: { [Key in keyof typeof lightColors]: string } = {
+export type ThemeColors = { [Key in keyof typeof lightColors]: string };
+export const darkColors: ThemeColors = {
   background: '#10120E',
   surface: '#191C16',
   text: '#F4F3EC',
@@ -42,15 +43,15 @@ const darkColors: { [Key in keyof typeof lightColors]: string } = {
   camera: '#0C0E0B',
   cameraSoft: '#171A15',
   white: '#FFFFFF',
+  onAccent: '#14150F',
+  onDeep: '#FFFFFF',
 };
 
 /**
- * Styles are created once when the app starts, so the system appearance is
- * resolved once here as well. A cold launch always follows the device theme;
- * this avoids a second preference switch while keeping every screen on the
- * same palette.
+ * Light is the first-launch default. Screens subscribe to ThemeProvider;
+ * this fallback is only for the outer error boundary and pure defaults.
  */
-export const colors = isDarkMode ? darkColors : lightColors;
+export const colors = lightColors;
 
 export const radii = {
   card: 18,

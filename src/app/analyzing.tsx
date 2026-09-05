@@ -1,3 +1,5 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -6,7 +8,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { mealPhotoPlaceholder } from '@/utils/format';
 import { MealPhoto, PrimaryButton } from '@/components/ui';
-import { colors, radii } from '@/constants/theme';
+import { radii } from '@/constants/theme';
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { useApp } from '@/context/AppContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
@@ -16,6 +18,8 @@ import { AnalysisErrorKind } from '@/services/contracts';
 
 
 export default function AnalyzingScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const {
     analysisError,
@@ -125,7 +129,7 @@ export default function AnalyzingScreen() {
 
         <View style={styles.content}>
           <View style={[styles.sparkleCircle, failed && styles.warningCircle]}>
-            <Ionicons color={colors.text} name={failed ? 'alert-outline' : 'sparkles'} size={25} />
+            <Ionicons color={colors.onAccent} name={failed ? 'alert-outline' : 'sparkles'} size={25} />
           </View>
           <Text accessibilityLiveRegion="polite" style={styles.title}>{failed ? error?.title : t.analyzing.working}</Text>
           <Text style={styles.subtitle}>
@@ -177,7 +181,7 @@ export default function AnalyzingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   topBar: { height: 58, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   closeButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },

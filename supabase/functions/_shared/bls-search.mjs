@@ -58,6 +58,8 @@ const COMMON_REFERENCE_CODES = new Set([
   'Y921162', // chicken doner
   'Y9A1050', // falafel
   'Y9A1070', // lahmacun
+  'X925012', // plain pancakes, milk 1.5%
+  'X929212', // plain pancakes, milk 3.5%
 ]);
 
 function scoreName(name, words, query, terms) {
@@ -98,7 +100,12 @@ function scoreName(name, words, query, terms) {
   // finds the processed row because the modifier is then part of the query.
   const unrequestedProcessing = words.filter((word) => PROCESSED_WORDS.has(word) && !terms.includes(word)).length;
   const plainBonus = words.some((word) => word === 'raw' || word === 'roh') ? 10 : 0;
-  return base + plainBonus
+  // Filled dishes and casseroles must not outrank the base food merely
+  // because the source name is shorter. Explicit modifiers still win.
+  const compoundDish = /\b(gefullt|filled|stuffed|auflauf|casserole)\b/.test(name)
+    && !terms.some((term) => /^(gefullt|filled|stuffed|auflauf|casserole)$/.test(term))
+    && terms.length === 1;
+  return base + plainBonus - (compoundDish ? 140 : 0)
     - Math.min(extraWords, 25) * 4
     - unrequestedProcessing * 90;
 }

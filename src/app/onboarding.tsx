@@ -1,3 +1,5 @@
+import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -7,7 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { KandroMark } from '@/components/KandroMark';
 import { PlanBuilder, BUILDING_MS } from '@/components/PlanBuilder';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
-import { colors, radii, spacing } from '@/constants/theme';
+import { radii, spacing } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { BIOLOGICAL_SEXES, calculateDailyTargets, estimatedPace, isRateLimited, isTeenProfile, weeklyRateLabel } from '@/services/personalization';
 import { getGuardianConsentStatus, requestGuardianConsent } from '@/services/guardianConsent';
@@ -101,6 +103,8 @@ function copyFor(t: Dict): Record<StepId, { title: string; subtitle: string }> {
 const skippableSteps = new Set<StepId>(['name', 'preferences']);
 
 export default function OnboardingScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -358,7 +362,7 @@ export default function OnboardingScreen() {
                       style={({ pressed }) => [styles.choice, compactHeight && styles.choiceCompact, active && styles.choiceActive, pressed && styles.choicePressed]}
                     >
                       <View style={[styles.choiceIcon, compactHeight && styles.choiceIconCompact, active && styles.choiceIconActive]}>
-                        <Ionicons color={colors.text} name={rate === 0.25 ? 'leaf-outline' : 'flash-outline'} size={22} />
+                        <Ionicons color={active ? colors.onAccent : colors.text} name={rate === 0.25 ? 'leaf-outline' : 'flash-outline'} size={22} />
                       </View>
                       <View style={styles.choiceTextBlock}>
                         <Text style={styles.choiceTitle}>{weeklyRateLabel(draftProfile.goal, rate, t.common, unitSystem)}</Text>
@@ -505,8 +509,8 @@ export default function OnboardingScreen() {
                       }}
                       style={[styles.chip, selected && styles.chipSelected]}
                     >
-                      {selected ? <Ionicons color={colors.text} name="checkmark" size={17} /> : null}
-                      <Text style={styles.chipText}>{item.label}</Text>
+                      {selected ? <Ionicons color={colors.onAccent} name="checkmark" size={17} /> : null}
+                      <Text style={[styles.chipText, selected && { color: colors.onAccent }]}>{item.label}</Text>
                     </Pressable>
                   );
                 })}
@@ -540,7 +544,7 @@ export default function OnboardingScreen() {
       <Modal animationType="fade" onRequestClose={() => setShowConsent(false)} transparent visible={showConsent}>
         <View style={styles.modalScrim}>
           <View accessibilityViewIsModal style={[styles.consentSheet, { paddingBottom: insets.bottom + 18 }]}>
-            <View style={styles.consentIcon}><Ionicons color={colors.text} name="shield-checkmark-outline" size={26} /></View>
+            <View style={styles.consentIcon}><Ionicons color={colors.onAccent} name="shield-checkmark-outline" size={26} /></View>
             <Text accessibilityRole="header" style={styles.consentTitle}>
               {draftProfile.age < 16 ? t.onboarding.guardianTitle : t.onboarding.consentTitle}
             </Text>
@@ -589,6 +593,8 @@ export default function OnboardingScreen() {
 }
 
 function ChoiceList<T extends string>({ choices, compact = false, onSelect, selected, values }: { choices: Choice[]; compact?: boolean; onSelect: (choice: T) => void; selected: T; values: T[] }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.choiceList}>
       {choices.map((choice, index) => {
@@ -604,7 +610,7 @@ function ChoiceList<T extends string>({ choices, compact = false, onSelect, sele
             style={({ pressed }) => [styles.choice, compact && styles.choiceCompact, active && styles.choiceActive, pressed && styles.choicePressed]}
           >
             <View style={[styles.choiceIcon, compact && styles.choiceIconCompact, active && styles.choiceIconActive]}>
-              <Ionicons color={colors.text} name={choice.icon} size={22} />
+              <Ionicons color={active ? colors.onAccent : colors.text} name={choice.icon} size={22} />
             </View>
             <View style={styles.choiceTextBlock}>
               <Text style={styles.choiceTitle}>{choice.label}</Text>
@@ -627,6 +633,8 @@ function ChoiceList<T extends string>({ choices, compact = false, onSelect, sele
  * for their height is the moment they know which unit they think in.
  */
 function UnitToggle({ onChange, value }: { onChange: (system: UnitSystem) => void; value: UnitSystem }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
   const labels: Record<UnitSystem, string> = {
     metric: t.onboarding.unitMetric,
@@ -654,6 +662,8 @@ function UnitToggle({ onChange, value }: { onChange: (system: UnitSystem) => voi
 }
 
 function NumberStep({ format, max, min, onChange, step, unit, value }: { format?: (value: number) => string; max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gesture = useRef(0);
@@ -733,6 +743,8 @@ function numberSize(display: string) {
 }
 
 function StepperButton({ icon, label, onPressIn, onPressOut }: { icon: 'add' | 'remove'; label: string; onPressIn: () => void; onPressOut: () => void }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   return (
     <Pressable
       accessibilityLabel={label}
@@ -747,6 +759,8 @@ function StepperButton({ icon, label, onPressIn, onPressOut }: { icon: 'add' | '
 }
 
 function StartingPlan({ limited, profile, targets }: { limited: boolean; profile: UserProfile; targets: ReturnType<typeof calculateDailyTargets> }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { locale, t } = useLanguage();
   return (
     <View style={styles.startingCard}>
@@ -795,7 +809,7 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 20 },
   flex: { flex: 1 },
   topBar: { height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -845,7 +859,7 @@ const styles = StyleSheet.create({
   unitOption: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   unitOptionActive: { borderColor: colors.accentText, backgroundColor: colors.accent },
   unitLabel: { color: colors.muted, fontSize: 13, fontWeight: '600' },
-  unitLabelActive: { color: colors.text },
+  unitLabelActive: { color: colors.onAccent },
   numberControls: { width: '100%', flexDirection: 'row', justifyContent: 'center', gap: 14 },
   numberButton: { flex: 1, maxWidth: 240, height: 72, borderRadius: 24, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   numberButtonPressed: { backgroundColor: colors.neutralSoft, transform: [{ scale: 0.94 }] },

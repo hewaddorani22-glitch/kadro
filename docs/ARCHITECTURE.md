@@ -1,5 +1,14 @@
 # Architecture
 
+## Appearance and amount editing (Build 8 remediation)
+
+- Search and standalone portion dialogs use a fade, with no animation under Reduce Motion. Tapping a detail-row gram value opens grams explicitly. Entry accepts decimal comma or point; resolution and app-state corrections preserve tenths of a gram. Nutrition display remains rounded, and search keeps the original per-100g reference for subsequent edits.
+
+- `ThemeProvider` owns a device-local light/dark preference. First launch is light regardless of the OS setting; only an explicit saved dark selection changes it. The provider updates styles in place without remounting app/account state. `useThemedStyles` resolves palette-dependent styles; pistachio uses `onAccent` text instead of the adaptive body text color.
+- Photo/text detection may return a localized piece label and count. The shared nutrition mapper derives estimated grams per piece from the total weight/count. No additional model invocation is needed. Unknown counts remain grams-only. Piece edits assume equally sized pieces and remain estimates.
+- The search modal embeds the amount editor, avoiding simultaneous sibling native modals. On iOS, navigation waits for search dismissal. The amount editor keeps close/save outside its scrolling body and accommodates the keyboard.
+- Amount corrections retain an unrounded per-100g reference in the in-memory/local meal item to avoid cumulative rounding. Existing cloud rows still contain numeric amounts/nutrients only; household-unit metadata is not currently restored from cloud history. Scan confirmation retains it throughout the active flow.
+
 ## Product loop
 
 ```text
@@ -54,6 +63,8 @@ Expo Router uses `src/app` as the route root.
 Root stack routes sit above the tab navigator so camera analysis, confirmation, result, and paywall can focus the user on one step.
 
 ## State and calculations
+
+Empty scan confirmations are blocked both in the screen and the app-state save handler. Adolescent targets round the adolescent maintenance estimate directly, without adult calorie caps/floors. The Result recommendation card observes the same below-150-kcal completion threshold as Today and Plan.
 
 `AppProvider` owns active UI state, hydrates local storage first, and then optionally reconciles with Supabase:
 
