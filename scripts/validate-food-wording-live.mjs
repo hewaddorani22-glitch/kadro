@@ -6,6 +6,15 @@ import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const cases = process.argv.includes('--feedback-shell') ? [
+  ['50 g grüne längliche Rosinen, getrocknet', [120, 180]],
+  ['50 g kernlose goldene Rosinen', [120, 180]],
+  ['Pistazien mit Schale: 20 g essbare Kerne, ohne das Schalengewicht. Dazu 30 g rohe Mandeln.', [260, 310]],
+] : [
+  ['Eine Scheibe Vollkornbrot, 50 g, mit 20 g Nutella', [180, 270]],
+  ['50 g helle Rosinen', [120, 180]],
+  ['2 hartgekochte Eier, 100 g ohne Schale, mit 30 g Mandeln natur', [280, 350]],
+];
 const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 const { data, error } = await client.auth.signInAnonymously();
 if (error || !data.user) throw error ?? new Error('No QA account');
@@ -13,11 +22,7 @@ try {
   const consent = await client.from('profiles').upsert({ user_id: data.user.id, age: 29,
     privacy_version: '2026-09-04-ai-v2', wellness_consent_at: new Date().toISOString() });
   if (consent.error) throw consent.error;
-  for (const [description, expected] of [
-    ['Eine Scheibe Vollkornbrot, 50 g, mit 20 g Nutella', [180, 270]],
-    ['50 g helle Rosinen', [120, 180]],
-    ['2 hartgekochte Eier, 100 g ohne Schale, mit 30 g Mandeln natur', [280, 350]],
-  ]) {
+  for (const [description, expected] of cases) {
     const response = await fetch(`${url}/functions/v1/nutrition/v1/describe`, { method: 'POST',
       headers: { Authorization: `Bearer ${data.session.access_token}`, apikey: key, 'Content-Type': 'application/json' },
       body: JSON.stringify({ description, language: 'de', locale: 'de-DE', requestId: randomUUID() }) });

@@ -19,6 +19,19 @@ const normalization = [
   ['rice cooked', 'rice cooked'], ['rice raw', 'rice raw'],
   ['almond milk unsweetened', 'almond milk unsweetened'],
   ['chicken breast ground', 'chicken breast ground'],
+  ['raisins green dried', 'raisins'],
+  ['green seedless raisins', 'raisins'],
+  ['raisins (golden, seedless)', 'raisins'],
+  ['pistachios in shell', 'pistachios'],
+  ['raw pistachios in their shells', 'raw pistachios'],
+  ['unshelled almonds', 'almonds'],
+  ['shelled almonds raw', 'almonds raw'],
+  ['pistachios roasted salted in shell', 'pistachios roasted salted'],
+  ['shell-on pistachios dry roasted unsalted', 'pistachios dry roasted unsalted'],
+  ['peanuts in shell oil roasted', 'peanuts oil roasted'],
+  ['taco shells', 'taco shells'],
+  ['shrimp in shell', 'shrimp in shell'],
+  ['almond milk with shells', 'almond milk with shells'],
 ];
 for (const [input, expected] of normalization) {
   assert.equal(canonicalFoodQuery(input), expected, input);
@@ -26,13 +39,13 @@ for (const [input, expected] of normalization) {
 }
 
 const groups = [
-  ['F840100', ['raisins', 'dried raisins', 'raisins dried', 'sultanas', 'golden raisins']],
+  ['F840100', ['raisins', 'dried raisins', 'raisins dried', 'sultanas', 'golden raisins', 'raisins green dried', 'green seedless raisins', 'dried green sultanas', 'brown raisins seedless']],
   ['H210100', ['almonds', 'raw almonds', 'almonds raw', 'sweet almonds raw']],
   ['H170100', ['cashews', 'raw cashews', 'cashew nuts raw']],
   ['H180100', ['brazil nut', 'brazil nuts raw']],
   ['H130100', ['hazelnut', 'raw hazelnuts']],
   ['H120100', ['walnut', 'raw walnuts']],
-  ['H250100', ['pistachios', 'raw pistachio nuts']],
+  ['H250100', ['pistachios', 'raw pistachio nuts', 'pistachios in shell', 'raw pistachios in their shells', 'shelled pistachios']],
   ['C133000', ['rolled oats', 'rolled oats raw', 'oat flakes raw']],
   ['F533100', ['honeydew melon', 'honeydew melon raw']],
   ['F504400', ['dried dates', 'dates dried', 'dried pitted dates']],
@@ -67,7 +80,21 @@ for (const [term, forbiddenCode] of [
   ['cashew butter', 'H170100'], ['walnut oil', 'H120100'],
   ['hazelnut butter pure', 'S145000'], ['dates raw', 'F504400'],
   ['honeydew honey', 'F533100'], ['oat flour', 'C133000'],
+  ['green raisins chocolate coated', 'F840100'], ['green grapes dried with oil', 'F840100'],
+  ['green raisin bread', 'F840100'], ['raisins green sweetened', 'F840100'],
+  ['raisins boiled', 'F840100'], ['raisins in rum', 'F840100'],
+  ['pistachios roasted salted in shell', 'H250100'], ['bitter almonds in shell', 'H210100'],
 ]) assert.notEqual(resolveExactBlsFacts(term)?.referenceId, forbiddenCode, term);
+assert.equal(resolveExactBlsFacts('green raisins')?.matchConfidence, 'medium', 'variety alias is a generic estimate, not an exact cultivar analysis');
+// Replayed screenshot detection returned 9 pistachios / 20 edible grams.
+// Lookup normalization must not alter counts, grams or pretend shells add kcal.
+const shellDetection = {name:'Pistazien mit Schale', searchTermEn:'pistachios in shell', referenceKey:'other', estimatedGrams:20, pieceCount:9, pieceLabel:'1 Pistazie', confidence:'medium'};
+const shellSnapshot = structuredClone(shellDetection);
+const shellItem = buildMealItem(shellDetection, resolveBlsFacts(shellDetection), 0);
+assert.equal(shellItem.amountG,20);
+assert.equal(shellItem.calories,120);
+assert.equal(incompleteNutritionError([shellItem]), null);
+assert.deepEqual(shellDetection,shellSnapshot);
 assert.equal(resolveBlsFacts({ referenceKey: 'other', searchTermEn: 'bitter linden cones' }), null);
 assert.equal(resolveBlsFacts({ referenceKey: 'other', searchTermEn: 'unknown' }), null);
 assert.equal(resolveBlsFacts({ referenceKey: 'fried_egg', searchTermEn: 'hard boiled egg' }).referenceId, 'E111132');

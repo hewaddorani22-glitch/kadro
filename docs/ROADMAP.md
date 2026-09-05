@@ -2,6 +2,7 @@
 
 ## Build 13 analysis feedback
 
+- [x] Reproduce follow-up false negatives for `raisins green dried` and `pistachios in shell`; normalize only bounded variety/presentation wording, preserve food transformations and verify unchanged edible-weight scaling.
 - [x] Reproduce bread/slice and dried-raisin false rejection. Normalize lookup-only portion wording and bridge common nuts/dried fruit/dairy/prepared ingredients to reviewed BLS source rows without inventing nutrition.
 - [x] Add behavioral regressions for query wording, source/portion scaling, decimal-fat identity, wrong egg dish keys and transformed-food rejection. Generic USDA lookup no longer competes primarily against branded rows or removes preparation as a fallback.
 - [ ] Repeat the owner's original raisin/nut photos on the hosted correction and complete the weighed real-photo set. Text/lookup regressions do not prove universal visual accuracy.
