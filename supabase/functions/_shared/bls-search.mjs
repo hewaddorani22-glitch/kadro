@@ -20,12 +20,18 @@ function fold(value) {
     .replace(/\s+/g, ' ');
 }
 
+// Normalize source spelling and common everyday queries, not nutrition data.
+function searchFold(value) {
+  const text = fold(value).replace(/\bhafer flocken\b/g, 'haferflocken');
+  return ({ oats: 'oat flakes', 'rolled oats': 'oat flakes', bananas: 'banana', bananen: 'banane' })[text] ?? text;
+}
+
 const INDEX = BLS_SEARCH_ROWS.map((row) => Object.freeze({
   row,
-  de: fold(row[1]),
-  en: fold(row[2]),
-  deWords: fold(row[1]).split(' '),
-  enWords: fold(row[2]).split(' '),
+  de: searchFold(row[1]),
+  en: searchFold(row[2]),
+  deWords: searchFold(row[1]).split(' '),
+  enWords: searchFold(row[2]).split(' '),
 }));
 
 const PROCESSED_WORDS = new Set([
@@ -60,6 +66,8 @@ const COMMON_REFERENCE_CODES = new Set([
   'Y9A1070', // lahmacun
   'X925012', // plain pancakes, milk 1.5%
   'X929212', // plain pancakes, milk 3.5%
+  'Y1A1000', // ordinary beef goulash, not soup
+  'Y341023', // ordinary pork goulash
 ]);
 
 function scoreName(name, words, query, terms) {
@@ -95,6 +103,12 @@ function scoreName(name, words, query, terms) {
   }
 
   const extraWords = Math.max(0, words.length - terms.length);
+  // A simple preparation of the actual food comes before recipes containing
+  // it: banana raw/dried before banana quark; oats dry/boiled before cookies.
+  // Explicit compound queries still use their own full phrase normally.
+  const basicVariant = name.startsWith(`${query} `)
+    && name.slice(query.length + 1).split(' ').every((word) =>
+      /^(raw|roh|fresh|frisch|boiled|gekocht|dried|getrocknet|steamed|gedampft)$/.test(word));
   // A bare everyday name means the ordinary food. "Banana" should lead with
   // raw banana, not dried banana or nectar; asking for "banana dried" still
   // finds the processed row because the modifier is then part of the query.
@@ -105,13 +119,13 @@ function scoreName(name, words, query, terms) {
   const compoundDish = /\b(gefullt|filled|stuffed|auflauf|casserole)\b/.test(name)
     && !terms.some((term) => /^(gefullt|filled|stuffed|auflauf|casserole)$/.test(term))
     && terms.length === 1;
-  return base + plainBonus - (compoundDish ? 140 : 0)
+  return base + plainBonus + (basicVariant ? 160 : 0) - (compoundDish ? 140 : 0)
     - Math.min(extraWords, 25) * 4
     - unrequestedProcessing * 90;
 }
 
 export function searchBlsCatalog(query, language = 'en', limit = 15) {
-  const needle = fold(query);
+  const needle = searchFold(query);
   if (needle.length < 2) return [];
   const terms = needle.split(' ').filter(Boolean);
   const preferred = language === 'de' ? 'de' : 'en';

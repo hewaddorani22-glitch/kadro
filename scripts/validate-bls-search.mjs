@@ -34,6 +34,14 @@ for (const [code, calories, protein] of [
 }
 
 const leading = (query, language) => searchBlsCatalog(query, language, 1)[0];
+for (const [query, language] of [['Haferflocken', 'de'], ['oats', 'en'], ['rolled oats', 'en']]) {
+  assert.deepEqual(searchBlsCatalog(query, language, 2).map(x=>x.code), ['C133000', 'C133032'], 'plain oats and cooked oats precede cookies/compound dishes');
+}
+for (const query of ['Banane', 'bananen', 'banana', 'bananas']) {
+  assert.equal(leading(query, 'de').code, 'F503100', 'ordinary banana must lead in either language');
+  assert.deepEqual(searchBlsCatalog(query, 'de', 2).map(x=>x.code), ['F503100', 'F503400'], 'plain banana variants precede mixed recipes');
+}
+assert.equal(leading('Banane getrocknet', 'de').code, 'F503400', 'an explicit preparation must override the default');
 for (const [query, language, code, expectedName] of [
   ['Banane', 'de', 'F503100', 'Banane roh'],
   ['Haferflocken', 'de', 'C133000', 'Hafer Flocken'],

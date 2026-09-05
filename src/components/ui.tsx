@@ -217,7 +217,7 @@ export function ConfidenceBadge({ uncertain = false }: { uncertain?: boolean }) 
 
 export type MealPhotoPlaceholder = 'demo' | 'description' | 'barcode' | 'search';
 
-export function MealPhoto({ uri, height = 250, placeholder = 'demo', style }: { uri?: string | null; height?: number; placeholder?: MealPhotoPlaceholder; style?: StyleProp<ViewStyle> }) {
+export function MealPhoto({ uri, height = 250, placeholder = 'demo', description, style }: { uri?: string | null; height?: number; placeholder?: MealPhotoPlaceholder; description?: string; style?: StyleProp<ViewStyle> }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
@@ -232,11 +232,11 @@ export function MealPhoto({ uri, height = 250, placeholder = 'demo', style }: { 
       search: { icon: 'search-outline', alt: t.confirm.photoSearchAlt, title: t.confirm.photoSearchTitle, text: t.confirm.photoSearchText },
     }[placeholder];
     return (
-      <View accessibilityLabel={copy.alt} accessible style={[styles.photoFrame, styles.photoPlaceholder, { height }, style]}>
+      <View accessibilityLabel={description || copy.alt} accessible style={[styles.photoFrame, styles.photoPlaceholder, { minHeight: height }, style]}>
         <View style={styles.photoPlaceholderIcon}>
           <Ionicons color={colors.onAccent} name={copy.icon as keyof typeof Ionicons.glyphMap} size={36} />
         </View>
-        <Text style={styles.photoPlaceholderTitle}>{copy.title}</Text>
+        <Text style={styles.photoPlaceholderTitle}>{description || copy.title}</Text>
         <Text style={styles.photoPlaceholderText}>{copy.text}</Text>
       </View>
     );

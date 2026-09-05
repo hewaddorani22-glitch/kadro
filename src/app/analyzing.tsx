@@ -29,6 +29,7 @@ export default function AnalyzingScreen() {
     photoUri,
     resetScan,
     scanMode,
+    descriptionInput,
     startDemoScan,
   } = useApp();
   const [visible, setVisible] = useState(0);
@@ -44,7 +45,9 @@ export default function AnalyzingScreen() {
     'invalid-input': { title: t.analyzing.errInputTitle, detail: t.analyzing.errInputBody },
     'request-expired': { title: t.analyzing.errExpiredTitle, detail: t.analyzing.errExpiredBody },
     offline: { title: t.analyzing.errOfflineTitle, detail: t.analyzing.errOfflineBody },
-    'unclear-image': { title: t.analyzing.errUnclearTitle, detail: t.analyzing.errUnclearBody },
+    'unclear-image': scanMode === 'description'
+      ? { title: t.analyzing.errDescriptionTitle, detail: t.analyzing.errDescriptionBody }
+      : { title: t.analyzing.errUnclearTitle, detail: t.analyzing.errUnclearBody },
     'multiple-dishes': { title: t.analyzing.errMultipleTitle, detail: t.analyzing.errMultipleBody },
     'product-not-found': { title: t.analyzing.errProductTitle, detail: t.analyzing.errProductBody },
     'provider-error': { title: t.analyzing.errProviderTitle, detail: t.analyzing.errProviderBody },
@@ -93,15 +96,21 @@ export default function AnalyzingScreen() {
   };
 
   const changeInput = (path: '/(tabs)/scan' | '/(tabs)/scan?mode=description' = '/(tabs)/scan') => {
-    resetScan();
-    router.replace(path);
+    if (scanMode === 'description') {
+      router.replace('/(tabs)/scan?mode=description');
+    } else {
+      resetScan();
+      router.replace(path);
+    }
   };
 
   const error = analysisError ? errorCopy[analysisError] : null;
   const failed = analysisStatus === 'error' || analysisStatus === 'queued';
   const failureDetail = analysisError === 'offline'
     ? (analysisStatus === 'queued' ? error?.detail : t.analyzing.errOfflineNotQueuedBody)
-    : analysisMessage ?? error?.detail;
+    : scanMode === 'description' && analysisError === 'unclear-image'
+      ? t.analyzing.errDescriptionBody
+      : analysisMessage ?? error?.detail;
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
@@ -119,8 +128,8 @@ export default function AnalyzingScreen() {
         style={styles.scroll}
       >
         <View style={styles.photoWrap}>
-          <MealPhoto height={photoHeight} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
-          {!failed ? <View style={styles.scanLine} /> : null}
+          <MealPhoto height={photoHeight} description={scanMode === 'description' ? descriptionInput : undefined} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
+          {!failed && scanMode !== 'description' ? <View style={styles.scanLine} /> : null}
           <View style={styles.analyzingPill}>
             <View style={[styles.liveDot, failed && styles.warningDot]} />
             <Text style={styles.analyzingPillText}>{failed ? t.analyzing.badgeCheck : t.analyzing.badgeAnalysing}</Text>

@@ -41,7 +41,7 @@ export function validateAnalysisInput(input) {
 export function classifyDetection(detection, source = 'photo') {
   const fromPhoto = source !== 'text';
 
-  if (!detection || detection.clarity === 'unclear' || !Array.isArray(detection.items) || detection.items.length === 0) {
+  if (!detection || (fromPhoto && detection.clarity === 'unclear') || !Array.isArray(detection.items) || detection.items.length === 0) {
     return {
       status: 422,
       body: {

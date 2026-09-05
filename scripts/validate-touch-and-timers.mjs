@@ -67,10 +67,12 @@ for (const file of files) {
 const plan = readFileSync(join(root, 'app/(tabs)/plan.tsx'), 'utf8');
 assert.match(plan, /paywallTimer\.current = setTimeout/, 'the delayed paywall is untracked again');
 assert.match(plan, /clearTimeout\(paywallTimer\.current\)/, 'the delayed paywall is never cancelled');
+assert.match(plan, /useFocusEffect\(useCallback/, 'tabs stay mounted: cancellation must happen on blur, not only unmount');
+assert.match(plan, /if \(focused\.current && params\.fromScan/, 'a save completing after blur must not schedule a new paywall');
 
 if (problems.length) {
   console.error('Touch and timer check failed:');
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
-console.log(`Checked ${files.length} files: every small Pressable reaches ${MIN_TARGET}pt, and no timer outlives its screen.`);
+console.log(`Checked ${files.length} files for statically detectable small Pressables and uncancelled timers; Plan is guarded on blur. Native hit testing remains required.`);

@@ -21,7 +21,7 @@ export default function ConfirmScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { adjustItem, analysisMessage, detectedItems, mealPortion, photoUri, scanMode, scannedMeal, setItemAmount, setMealPortion, toggleItem } = useApp();
+  const { adjustItem, analysisMessage, descriptionInput, detectedItems, mealPortion, photoUri, scanMode, scannedMeal, setItemAmount, setMealPortion, toggleItem } = useApp();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [amountFor, setAmountFor] = useState<string | null>(null);
   const [preferGrams, setPreferGrams] = useState(false);
@@ -65,7 +65,7 @@ export default function ConfirmScreen() {
         <View style={styles.iconButtonSpacer} />
       </View>
 
-      <MealPhoto height={230} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
+      <MealPhoto height={230} description={scanMode === 'description' ? descriptionInput : undefined} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
 
       <View style={styles.heading}>
         <View style={styles.headingRow}>

@@ -24,7 +24,7 @@ export default function ScanScreen() {
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const pathname = usePathname();
-  const { applySearchResult, freeScansLeft, hasEverLoggedScan, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan } = useApp();
+  const { applySearchResult, descriptionInput, freeScansLeft, hasEverLoggedScan, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
@@ -33,7 +33,7 @@ export default function ScanScreen() {
   const [mode, setMode] = useState<'photo' | 'description' | 'barcode' | 'search'>(
     requestedMode === 'description' ? 'description' : 'photo',
   );
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(descriptionInput);
   // Arriving with ?mode=description means the user just hit a barcode the
   // database does not know; the sheet should already be open for them.
   const [showDescription, setShowDescription] = useState(requestedMode === 'description');

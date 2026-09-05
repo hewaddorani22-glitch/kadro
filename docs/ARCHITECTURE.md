@@ -2,6 +2,16 @@
 
 ## Appearance and amount editing (Build 8 remediation)
 
+- Description input is retained in AppContext and shown on analysis/confirmation;
+  text failures use text-specific guidance and return to the populated editor.
+  Only photos are subject to image clarity / separate-plate rejection. Identified
+  text still uses estimated portions; no-food text remains rejected.
+- BLS search normalizes spaced German compounds and everyday oats/banana aliases;
+  simple preparations rank above compound recipes. The reference catalogue now
+  also separates beef/pork goulash from goulash soup using existing BLS rows.
+- The delayed Plan paywall is cancelled on tab blur, including a save that
+  completes after focus was lost, not only on component unmount.
+
 - Search and standalone portion dialogs use a fade, with no animation under Reduce Motion. Tapping a detail-row gram value opens grams explicitly. Entry accepts decimal comma or point; resolution and app-state corrections preserve tenths of a gram. Nutrition display remains rounded, and search keeps the original per-100g reference for subsequent edits.
 
 - `ThemeProvider` owns a device-local light/dark preference. First launch is light regardless of the OS setting; only an explicit saved dark selection changes it. The provider updates styles in place without remounting app/account state. `useThemedStyles` resolves palette-dependent styles; pistachio uses `onAccent` text instead of the adaptive body text color.

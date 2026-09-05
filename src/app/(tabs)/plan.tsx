@@ -1,8 +1,8 @@
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen } from '@/components/ui';
@@ -94,9 +94,15 @@ export default function PlanScreen() {
    * is that the day re-plans after every meal, so this is where it happens.
    */
   const paywallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (paywallTimer.current) clearTimeout(paywallTimer.current);
-  }, []);
+  const focused = useRef(false);
+  useFocusEffect(useCallback(() => {
+    focused.current = true;
+    return () => {
+      focused.current = false;
+      if (paywallTimer.current) clearTimeout(paywallTimer.current);
+      paywallTimer.current = null;
+    };
+  }, []));
 
   const logMeal = async (suggestion: MealSuggestion) => {
     if (logging) return;
@@ -108,7 +114,8 @@ export default function PlanScreen() {
       setLoggedTitle(suggestion.title);
       setChosen(null);
       // The paywall belongs after the value, never between choosing and eating.
-      if (params.fromScan === '1' && subscriptionStatus !== 'active' && freeScansLeft === 0) {
+      if (focused.current && params.fromScan === '1' && subscriptionStatus !== 'active' && freeScansLeft === 0) {
+        if (paywallTimer.current) clearTimeout(paywallTimer.current);
         paywallTimer.current = setTimeout(() => router.push('/paywall?reason=after-meal'), 900);
       }
     } finally {

@@ -59,6 +59,8 @@ for (const [index, entry] of GERMAN_MEAL_EVALUATION.entries()) {
 // Independent spot values copied from the published BLS 4.0 workbook. They
 // catch accidental edits even though the runtime and evaluation share a catalog.
 const spotChecks = {
+  goulash_beef: [124, 12.95, 4.2, 5.9],
+  goulash_pork: [150, 18.2, 0.6, 8.3],
   currywurst_pommes: [217, 6.58, 17.44, 13.04],
   doner_chicken: [199, 13.08, 18, 7.9],
   pizza_margherita: [238, 7.77, 20, 13.55],
@@ -82,6 +84,8 @@ for (const [key, expected] of Object.entries(spotChecks)) {
 const digest = createHash('sha256')
   .update(JSON.stringify(GERMAN_MEAL_EVALUATION))
   .digest('hex');
-assert.equal(digest, '4a10e3d90db6d7d3ed5ead925d7daf582ebc89b3d39b8be5483438e91b835bad', 'BLS-Evaluationssnapshot wurde verändert; Quelle und Änderung bewusst prüfen.');
+// Added Y1A1000 and Y341023 from the independently checksum-locked full BLS
+// snapshot, to distinguish goulash from the pre-existing soup reference.
+assert.equal(digest, '41584493d6001f10f5af489e32231ed946b9495f1e3f15bf65c562a724f5250b', 'BLS-Evaluationssnapshot wurde verändert; Quelle und Änderung bewusst prüfen.');
 
 console.log(`Validated ${GERMAN_MEAL_EVALUATION.length} sourced German BLS 4.0 meal references.`);

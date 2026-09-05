@@ -44,6 +44,8 @@ meatball_potato_salad|Y912130|Frikadelle mit Kartoffelsalat und Senf|450|198|8.4
 koenigsberger_klopse|Y036333|Königsberger Klopse mit Kapernsauce|400|140|9.4|3.52|9.7|0.4
 beef_roulade_sauce|Y151112|Rinderroulade geschmort mit Sauce|300|133|12|1.8|8.5|0.4
 goulash_soup|X456133|Ungarische Gulaschsuppe mit Rindfleisch und Kartoffeln|500|59|2.8|3|3.8|0.5
+goulash_beef|Y1A1000|Gulasch mit Rindfleisch (keine Suppe)|300|124|12.95|4.2|5.9|1
+goulash_pork|Y341023|Gulasch mit Schweinefleisch (keine Suppe)|300|150|18.2|0.6|8.3|0.2
 chili_con_carne|X469753|Chili con carne mit Rinderhackfleisch|450|158|9.9|9|7.9|4.9
 lentil_soup|X462513|Linsensuppe mit Gemüse|500|82|4.53|10|1.9|3.4
 lentil_soup_sausage|X4A8050|Linsensuppe mit Gemüse und Wiener Würstchen|500|115|5.78|9|5.5|2.8
