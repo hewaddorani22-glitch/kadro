@@ -10,8 +10,14 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import ts from 'typescript';
 
 const source = readFileSync(new URL('../src/app/onboarding.tsx', import.meta.url), 'utf8');
+const decimalModule = { exports: {} };
+new Function('module', 'exports', ts.transpileModule(readFileSync(new URL('../src/utils/decimalInput.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(decimalModule, decimalModule.exports);
+for (const [text, expected] of [['45,5',45.5], ['60.4',60.4], ['83',83], ['40.0',40], ['200',200], ['',null], ['60,',null], ['60.45',null], ['60x',null], ['39.9',null], ['200.1',null], ['1e2',null]]) {
+  assert.equal(decimalModule.exports.parseDecimalInput(text,40,200), expected, `weight input ${text}`);
+}
 
 // --- The shipped arithmetic, lifted out and run ----------------------------
 const body = source.slice(source.indexOf('const apply = useCallback('), source.indexOf('const stop = useCallback('));
@@ -52,6 +58,10 @@ assert.equal(apply(0.1 + 0.2 + 79.7, 1, { min: 40, max: 200 }), 81,
 
 // --- The kilogram display follows the language -----------------------------
 const weightStep = source.slice(source.indexOf("{step === 'weight' ?"), source.indexOf("{step === 'activity' ?"));
+assert.match(weightStep, /onChange=\{setWeight\}\s+step=\{0\.1\}/);
+assert.equal((weightStep.match(/\beditable\b/g) || []).length, 2);
+assert.match(source, /if \(parsed === null\) return; onChange\(parsed\);/);
+assert.match(source, /weightKg: weight/);
 assert.match(weightStep, /format=\{\(kilos\) => formatNumber\(kilos, locale\)\}/,
   'a kilogram with a decimal renders with an English separator on a German screen');
 

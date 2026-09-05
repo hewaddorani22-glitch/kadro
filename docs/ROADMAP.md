@@ -2,6 +2,8 @@
 
 ## Build 8 feedback, 2026-09-05
 
+- [x] Exact decimal weight entry in both onboarding and profile plan editing: comma/point, explicit save/cancel, existing bounds, 0.1 kg steps and no unit-switch rounding of stored weight. Native decimal-keyboard layout remains part of the next iPhone pass.
+
 - [x] Build 11 feedback: reproduce honeydew energy 0 against USDA Foundation 2710816; map Atwater energy fields and preserve correction precision. Hosted text regression now returns 329 kcal for an explicit 1000 g edible portion. Existing incorrectly saved meals are not silently rewritten.
 - [x] Prevent retained scan navigation stacks; verify 30 cycles with the actual navigation reducer. Restrict camera to focused/foreground screen and bound iOS acquisition resolution.
 - [ ] Obtain and inspect the reported iPhone crash/Jetsam log and repeat at least 15 physical photo cycles in a replacement native build. Browser/reducer tests do not certify native camera stability.

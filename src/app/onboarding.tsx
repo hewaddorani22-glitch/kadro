@@ -17,6 +17,7 @@ import { trackEvent } from '@/services/telemetry';
 import { errorHaptic, selectionHaptic, stepHaptic, successHaptic } from '@/services/haptics';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber } from '@/utils/format';
+import { parseDecimalInput } from '@/utils/decimalInput';
 import { NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
 import {
   UNIT_SYSTEMS,
@@ -472,26 +473,28 @@ export default function OnboardingScreen() {
                 <View style={styles.unitStepValue}>
                   {usesMetricWeight(unitSystem) ? (
                     <NumberStep
+                      editable
                       format={(kilos) => formatNumber(kilos, locale)}
                       max={200}
                       min={40}
                       onChange={setWeight}
-                      step={1}
+                      step={0.1}
                       unit="kg"
                       value={weight}
                     />
                   ) : (
                     <NumberStep
+                      editable
                       accessibilityUnit="lb"
                       format={(pounds) => (unitSystem === 'uk'
                         ? formatWeight(poundsToKg(pounds), 'uk', locale)
-                        : String(pounds))}
-                      max={Math.round(kgToPounds(200))}
-                      min={Math.round(kgToPounds(40))}
+                        : formatNumber(pounds, locale))}
+                      max={Math.floor(kgToPounds(200) * 10) / 10}
+                      min={Math.ceil(kgToPounds(40) * 10) / 10}
                       onChange={(pounds) => setWeight(Math.round(poundsToKg(pounds) * 10) / 10)}
                       step={1}
                       unit={unitSystem === 'uk' ? '' : 'lb'}
-                      value={Math.round(kgToPounds(weight))}
+                      value={Math.round(kgToPounds(weight) * 10) / 10}
                     />
                   )}
                 </View>
@@ -672,10 +675,13 @@ function UnitToggle({ onChange, value }: { onChange: (system: UnitSystem) => voi
   );
 }
 
-function NumberStep({ accessibilityUnit, format, max, min, onChange, step, unit, value }: { accessibilityUnit?: string; format?: (value: number) => string; max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
+function NumberStep({ editable = false, accessibilityUnit, format, max, min, onChange, step, unit, value }: { editable?: boolean; accessibilityUnit?: string; format?: (value: number) => string; max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const [editingNumber, setEditingNumber] = useState(false);
+  const [draft, setDraft] = useState('');
+  const parsed = parseDecimalInput(draft, min, max);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const gesture = useRef(0);
   const latest = useRef(value);
@@ -700,7 +706,7 @@ function NumberStep({ accessibilityUnit, format, max, min, onChange, step, unit,
     const raw = onGrid
       ? latest.current + direction * step
       : (direction > 0 ? Math.ceil(steps) : Math.floor(steps)) * step;
-    const next = Math.min(max, Math.max(min, raw));
+    const next = Math.min(max, Math.max(min, Math.round(raw * 1e10) / 1e10));
     if (next === latest.current) return;
     latest.current = next;
     void stepHaptic(repeating);
@@ -738,15 +744,28 @@ function NumberStep({ accessibilityUnit, format, max, min, onChange, step, unit,
     <View style={styles.numberStep}>
       <View style={styles.numberCenter}>
         <View style={styles.numberRow}>
-          <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.number, numberSize(display)]}>{display}</Text>
+          {editable ? <Pressable accessibilityRole="button" accessibilityLabel={`${t.onboarding.editWeight}: ${display} ${accessibilityUnit ?? unit}`} onPress={() => { stop(); setDraft(formatNumber(value, locale)); setEditingNumber(true); }}>
+            <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.number, numberSize(display)]}>{display}</Text>
+          </Pressable> : <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.number, numberSize(display)]}>{display}</Text>}
           {unit ? <Text style={styles.numberUnit}>{unit}</Text> : null}
         </View>
       </View>
-      <Text style={styles.adjustHint}>{t.onboarding.adjustHint}</Text>
+      <Text style={styles.adjustHint}>{editable ? t.onboarding.exactWeightHint : t.onboarding.adjustHint}</Text>
       <View style={styles.numberControls}>
         <StepperButton icon="remove" label={t.common.decreaseUnit(accessibilityUnit ?? unit)} onPressIn={() => start(-1)} onPressOut={stop} />
         <StepperButton icon="add" label={t.common.increaseUnit(accessibilityUnit ?? unit)} onPressIn={() => start(1)} onPressOut={stop} />
       </View>
+      <Modal visible={editingNumber} transparent animationType="fade" onRequestClose={() => setEditingNumber(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.numberEditorScrim}>
+          <View accessibilityViewIsModal style={styles.numberEditor}>
+            <Text accessibilityRole="header" style={styles.numberEditorTitle}>{t.onboarding.editWeight} ({accessibilityUnit ?? unit})</Text>
+            <TextInput accessibilityLabel={t.onboarding.editWeight} autoFocus selectTextOnFocus keyboardType="decimal-pad" maxLength={6} value={draft} onChangeText={setDraft} style={styles.guardianInput} />
+            <Text accessibilityLiveRegion="polite" style={styles.adjustHint}>{t.onboarding.weightRange.replace('{min}', formatNumber(min, locale)).replace('{max}', formatNumber(max, locale))} {accessibilityUnit ?? unit}</Text>
+            <PrimaryButton label={t.common.save} disabled={parsed === null} onPress={() => { if (parsed === null) return; onChange(parsed); setEditingNumber(false); }} />
+            <PrimaryButton label={t.common.cancel} variant="ghost" onPress={() => setEditingNumber(false)} />
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -920,6 +939,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   limitText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },
   safetyText: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 16 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'flex-end' },
+  numberEditorScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'center', padding: 24 },
+  numberEditor: { backgroundColor: colors.surface, borderRadius: radii.card, padding: 20, gap: 14 },
+  numberEditorTitle: { color: colors.text, fontSize: 20, fontWeight: '700' },
   consentSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 24, gap: 14 },
   consentIcon: { width: 50, height: 50, borderRadius: 18, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   consentTitle: { color: colors.text, fontSize: 25, lineHeight: 30, fontWeight: '700' },

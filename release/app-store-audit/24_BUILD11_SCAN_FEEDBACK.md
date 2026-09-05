@@ -24,4 +24,10 @@ Final verification, including delayed capture success/failure while backgrounded
 
 An already active Pro entitlement may be confirmed again by Restore. That is expected and is not a new purchase. The UI displays the active message only for an active restore result; this does not exercise a real transaction in this audit.
 
+## Exact weight entry follow-up
+
+Onboarding and subsequent profile editing share a weight editor accepting one decimal place with either comma or point. Tapping the large value opens a draft with explicit Save/Cancel; invalid and out-of-range values cannot be saved. Metric adjustment uses 0.1 kg steps. Unit changes continue to preserve canonical kg.
+
+The local, cloud-disabled browser QA passed 45,5 and 60.4 entry, rejection of 200.1 kg, cancellation without mutation, lb/metric round-trip, and saving/reopening the profile with 60.4 kg retained. `npm run verify` passed (`/tmp/kandro-weight-verify.log`). This is browser and code evidence, not a native keyboard or cloud-sync pass. These client changes require a future TestFlight binary; no build or review submission was made in this follow-up.
+
 Sources: [Expo SDK 54 Camera](https://docs.expo.dev/versions/v54.0.0/sdk/camera/), [Expo SDK 54 Router](https://docs.expo.dev/versions/v54.0.0/sdk/router/), [RevenueCat restore](https://www.revenuecat.com/docs/getting-started/restoring-purchases).
