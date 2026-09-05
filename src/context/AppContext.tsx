@@ -49,6 +49,7 @@ import { clearLocalWellnessConsent, forgetLocalWellnessConsent, hasCurrentWellne
 import { clearRemindersForAccountSwitch, setEveningReminderEnabled } from '@/services/reminders';
 import { formatClockTime } from '@/utils/format';
 import { newAnalysisRequestId } from '@/utils/requestId';
+import { canSaveMealDraft, needsIngredientCorrection, replaceMealIngredient } from '@/utils/ingredientCorrection';
 import { AccountLinkState, signInToExistingAccount } from '@/services/accountLinking';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
@@ -110,6 +111,8 @@ type AppContextValue = {
   startDescriptionScan: (description: string) => void;
   startBarcodeScan: (barcode: string) => void;
   applySearchResult: (result: FoodSearchResult, grams: number) => void;
+  replaceDetectedItem: (id: string, result: FoodSearchResult, grams: number) => void;
+  removeDetectedItem: (id: string) => void;
   analyzeCurrentPhoto: (forceDemo?: boolean) => Promise<void>;
   resumeLatestAnalysis: () => Promise<boolean>;
   adjustItem: (id: string, direction: -1 | 1) => void;
@@ -141,6 +144,7 @@ function makeScanId() {
 }
 
 function scaleItem(item: MealItem, nextAmount: number): MealItem {
+  if (needsIngredientCorrection(item)) return item;
   // A provider that reports a zero amount would otherwise turn every macro into
   // Infinity or NaN on the first correction tap.
   const reference = itemNutritionPer100g(item);
@@ -171,6 +175,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [meals, setMeals] = useState<Meal[]>([]);
   const [mealHistory, setMealHistory] = useState<Meal[]>([]);
   const [lifetimeScanCount, setLifetimeScanCount] = useState(0);
+  const correctionDraftRef = useRef(false);
   const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([]);
   const [detectedItems, setDetectedItems] = useState<MealItem[]>(getDemoItems);
   const [mealTitle, setMealTitle] = useState(getDictionary().errors.demoMealTitle);
@@ -702,6 +707,23 @@ export function AppProvider({ children }: PropsWithChildren) {
     trackEvent('meal scan started', { scan_source: 'barcode' });
   }, []);
 
+  const replaceDetectedItem = useCallback((id: string, result: FoodSearchResult, grams: number) => {
+    const replacement = mealFromSearch(result, grams).items[0];
+    const corrected = replaceMealIngredient(detectedItems, id, replacement);
+    setDetectedItems(corrected);
+    setMealTitle(corrected.filter(item => item.included).map(item => item.name).join(', '));
+    setMealPortionState(null);
+    setAnalysisMessage(null);
+  }, [detectedItems]);
+
+  const removeDetectedItem = useCallback((id: string) => {
+    const corrected = detectedItems.filter(item => item.id !== id);
+    setDetectedItems(corrected);
+    setMealTitle(corrected.filter(item => item.included).map(item => item.name).join(', '));
+    setMealPortionState(null);
+    setAnalysisMessage(null);
+  }, [detectedItems]);
+
   const analyzeCurrentPhoto = useCallback(async (forceDemo = false) => {
     const invocationScanId = scanId;
     const invocationIdentityGeneration = analysisIdentityGenerationRef.current;
@@ -758,6 +780,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         // to save the meal. This bookkeeping remains valid even if the user has
         // already started another scan, but the stale result never reaches UI.
         const nextLifetimeCount = !FREE_ANALYSIS_MODES.has(activeScanMode)
+          && result.correctionRequired !== true
           && analysisIdentityGenerationRef.current === invocationIdentityGeneration
           ? await countLifetimeScanOnce(invocationScanId)
           : null;
@@ -767,6 +790,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         if (!isCurrentInvocation()) return;
         if (nextLifetimeCount !== null) setLifetimeScanCount(nextLifetimeCount);
         if (nextPendingCount !== null) setPendingAnalysisCount(nextPendingCount);
+        correctionDraftRef.current = result.correctionRequired === true;
         setDetectedItems(result.items);
         setMealTitle(result.title);
         setMealPortionState(1);
@@ -879,7 +903,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const toggleItem = (id: string) => {
     setDetectedItems((current) =>
-      current.map((item) => (item.id === id ? { ...item, included: !item.included } : item)),
+      current.map((item) => (item.id === id && !needsIngredientCorrection(item) ? { ...item, included: !item.included } : item)),
     );
   };
 
@@ -955,12 +979,14 @@ export function AppProvider({ children }: PropsWithChildren) {
   const logScannedMeal = useCallback(async () => {
     if (analysisStatus !== 'ready') throw new Error('Cannot save without a ready meal draft');
     if (!detectedItems.some((item) => item.included)) throw new Error('Cannot save an empty meal');
+    if (!canSaveMealDraft(detectedItems)) throw new Error('Cannot save an incomplete meal');
     const existing = mealHistory.find((meal) => meal.id === scannedMeal.id);
     const now = new Date();
-    // Origin remains honest for history/cloud recovery. The allowance itself
-    // was already spent when the AI result arrived, even if this confirmation
-    // is abandoned. Search/barcode are known values and remain free.
-    const costsAnalysis = !FREE_ANALYSIS_MODES.has(scanModeRef.current);
+    // A refunded draft repaired manually belongs to the same free log bucket
+    // as search/barcode. Otherwise legacy history hydration would charge it
+    // later by counting origin=scan, despite the gateway having refunded it.
+    // Complete AI results were already counted on arrival, even if abandoned.
+    const costsAnalysis = !FREE_ANALYSIS_MODES.has(scanModeRef.current) && !correctionDraftRef.current;
     // The clock guesses the slot; tapping "+" next to breakfast states it. A
     // correction re-saves the same id, and the choice is spent by then, so the
     // meal that was filed under breakfast kept its own slot rather than
@@ -1095,6 +1121,8 @@ export function AppProvider({ children }: PropsWithChildren) {
       analysisStatus,
       analysisError,
       applySearchResult,
+      replaceDetectedItem,
+      removeDetectedItem,
       analysisMessage,
       pendingAnalysisCount,
       syncMode,

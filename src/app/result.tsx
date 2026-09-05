@@ -25,7 +25,7 @@ export default function ResultScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { consumed, isCurrentScanLogged, lifetimeScanCount, logScannedMeal, photoUri, remaining, scanMode, scannedMeal, targets } = useApp();
+  const { consumed, descriptionInput, isCurrentScanLogged, lifetimeScanCount, logScannedMeal, photoUri, remaining, scanMode, scannedMeal, targets } = useApp();
   const projected = isCurrentScanLogged
     ? remaining
     : getRemaining(targets, {
@@ -204,7 +204,7 @@ export default function ResultScreen() {
         </Pressable>
       </View>
 
-      <MealPhoto height={270} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
+      <MealPhoto height={270} description={scanMode === 'description' ? descriptionInput : undefined} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
 
       <View style={styles.resultHeading}>
         <View style={styles.titleRow}>

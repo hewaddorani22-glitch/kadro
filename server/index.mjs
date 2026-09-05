@@ -6,6 +6,7 @@ import {
   buildMealItem,
   canonicalFoodQuery,
   incompleteNutritionError,
+  ingredientCorrectionDraft,
   openFoodFactsNutrition,
   chooseFoodMatch,
   classifyDetection,
@@ -173,16 +174,16 @@ async function analyzeMeal(input) {
   }
 
   const detection = await detectFoods({ ...input, language: requestedLanguage(input) });
-  return resolveDetection(detection);
+  return resolveDetection(detection, 'photo', input.ingredientCorrection);
 }
 
-async function resolveDetection(detection, source = 'photo') {
+async function resolveDetection(detection, source = 'photo', correctionProtocol) {
   const classificationError = classifyDetection(detection, source);
   if (classificationError) return classificationError;
 
   const items = await Promise.all(detection.items.map(resolveItem));
   const nutritionError = incompleteNutritionError(items);
-  if (nutritionError) return nutritionError;
+  if (nutritionError) return ingredientCorrectionDraft(detection, items, correctionProtocol) ?? nutritionError;
   const warnings = buildAccuracyWarnings(detection, items);
   return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };
 }
@@ -192,7 +193,7 @@ async function analyzeDescription(input) {
   if (description.length < 3 || description.length > 500) {
     return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
   }
-  return resolveDetection(await detectDescription(description, requestedLanguage(input)), 'text');
+  return resolveDetection(await detectDescription(description, requestedLanguage(input)), 'text', input.ingredientCorrection);
 }
 
 function searchFoods(query, language) {

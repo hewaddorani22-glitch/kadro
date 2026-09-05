@@ -59,6 +59,7 @@ function ThemedRootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="analyzing" options={{ gestureEnabled: false }} />
               <Stack.Screen name="confirm" />
+              <Stack.Screen name="correct-food" />
               <Stack.Screen name="result" />
               <Stack.Screen name="paywall" options={{ presentation: 'modal', animation: reduceMotion ? 'none' : 'slide_from_bottom' }} />
               <Stack.Screen name="privacy" />

@@ -39,6 +39,8 @@ for (const [input, expected] of normalization) {
 }
 
 const groups = [
+  ['K280100', ['potato chips', 'potato crisps']],
+  ['X654042', ['French fries']],
   ['F840100', ['raisins', 'dried raisins', 'raisins dried', 'sultanas', 'golden raisins', 'raisins green dried', 'green seedless raisins', 'dried green sultanas', 'brown raisins seedless']],
   ['H210100', ['almonds', 'raw almonds', 'almonds raw', 'sweet almonds raw']],
   ['H170100', ['cashews', 'raw cashews', 'cashew nuts raw']],
@@ -57,6 +59,8 @@ const groups = [
   ['E111132', ['hard-boiled eggs', 'soft boiled eggs']],
   ['M141300', ['plain whole milk yogurt 3.5% fat', 'plain yogurt 3.5% fat']],
 ];
+assert.equal(resolveBlsFacts({ name: 'Kartoffelchips', searchTermEn: 'French fries' }).referenceId, 'K280100');
+assert.equal(resolveBlsFacts({ name: 'Pommes frites', searchTermEn: 'potato chips' }).referenceId, 'X654042');
 let checks = 0;
 for (const [code, terms] of groups) {
   const reference = BLS_SEARCH_ROWS.find(row => row[0] === code);

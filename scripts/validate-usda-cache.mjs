@@ -35,7 +35,7 @@ assert.equal(incompleteNutritionError([{calories:0,protein:0,carbs:0,fat:0,sourc
 assert.equal(incompleteNutritionError([{...dates,protein:NaN}]).status,422);
 for (const file of ['server/index.mjs','supabase/functions/nutrition/index.ts']) {
   const source=readFileSync(new URL('../'+file,import.meta.url),'utf8');
-  assert.match(source,/const nutritionError = incompleteNutritionError\(items\);\s*if \(nutritionError\) return nutritionError;/);
+  assert.match(source,/const nutritionError = incompleteNutritionError\(items\);\s*if \(nutritionError\) return ingredientCorrectionDraft\(detection, items, correctionProtocol\) \?\? nutritionError;/);
   assert.match(source,/chooseFoodMatch\(\(result.foods \|\| \[\]\)\.filter/);
 }
 

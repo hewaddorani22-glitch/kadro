@@ -10,6 +10,7 @@
  */
 import { BLS_SEARCH_ROWS } from './bls-search-data.mjs';
 import { canonicalFoodQuery } from './food-query.mjs';
+import { blsEnglishName } from './bls-names.mjs';
 
 export const BLS_SOURCE = Object.freeze({
   name: 'Bundeslebensmittelschlüssel 4.0',
@@ -88,7 +89,7 @@ chicken_vegetables|Y562112|Gebratene Hähnchenbrust mit gedünstetem Kaisergemü
 gyros|Y384112|Schweine-Gyros, gebraten|250|230|24.35|0.5|14.48|0.3
 `.trim();
 
-const englishNameByCode = new Map(BLS_SEARCH_ROWS.map((row) => [row[0], row[2]]));
+const englishNameByCode = new Map(BLS_SEARCH_ROWS.map((row) => [row[0], blsEnglishName(row)]));
 
 export const BLS_REFERENCE_MEALS = Object.freeze(rows.split('\n').map((row) => {
   const [key, code, nameDe, defaultGrams, calories, protein, carbs, fat, fiber] = row.split('|');
@@ -127,6 +128,11 @@ export function getBlsReferenceByCode(code) {
 }
 
 export function resolveBlsFacts(item) {
+  // These German food identities are unambiguous, unlike the British source
+  // translation "potato chips". Do not let a translated query swap them.
+  const name = String(item?.name ?? '').trim().toLowerCase();
+  if (/^(kartoffelchips|stapelchips)$/.test(name)) return resolveExactBlsFacts('potato crisps');
+  if (name === 'pommes frites') return resolveExactBlsFacts('French fries');
   // Concrete ingredient identity/preparation outranks a contradictory model key
   // (observed: "hard boiled egg" with referenceKey=fried_egg).
   const ingredient = resolveExactBlsFacts(item?.searchTermEn);
@@ -156,7 +162,7 @@ const exactFoodKey = (text) => (canonicalFoodQuery(text).replace(/\bpitted\b/g, 
   .map(word => word.length > 3 && word.endsWith('s') && !word.endsWith('ss') ? word.slice(0, -1) : word).sort().join(' ');
 const exactBlsRows = new Map();
 for (const row of BLS_SEARCH_ROWS) {
-  const key = exactFoodKey(row[2]);
+  const key = exactFoodKey(blsEnglishName(row));
   // Ambiguous names must fall back to USDA, not select an arbitrary row.
   exactBlsRows.set(key, exactBlsRows.has(key) ? null : row);
 }
@@ -184,6 +190,7 @@ for (const [code, aliases] of [
   ['M141200', ['plain yogurt 1.5% fat', 'plain low fat yogurt 1.5% fat']],
   ['F533100', ['honeydew melon', 'honeydew raw']],
   ['S145000', ['chocolate hazelnut spread', 'hazelnut chocolate spread', 'cocoa hazelnut spread', 'hazelnut cocoa spread', 'nutella']],
+  ['K280100', ['potato chips', 'potato crisps']],
 ]) {
   const row = rowsByCode.get(code);
   if (!row) throw new Error(`Missing reviewed BLS ingredient ${code}`);
@@ -194,7 +201,8 @@ export function resolveExactBlsFacts(term) {
   const exact = exactBlsRows.get(key);
   const row = exact || ingredientAliases.get(key);
   if (!row) return null;
-  const [code, , description, calories, protein, carbs, fat, fiber] = row;
+  const [code, , , calories, protein, carbs, fat, fiber] = row;
+  const description = blsEnglishName(row);
   if (![calories, protein, carbs, fat].every(value => Number.isFinite(value) && value >= 0)) return null;
   return { provider: 'bls', referenceId: code, label: `BLS 4.0 ${code}`, description,
     calories, protein, carbs, fat, fiber, matchConfidence: exact ? 'high' : 'medium' };

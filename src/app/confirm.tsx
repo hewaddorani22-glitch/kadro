@@ -16,20 +16,25 @@ import { successHaptic } from '@/services/haptics';
 import { PortionFactor } from '@/types/nutrition';
 import { formatNumber } from '@/utils/format';
 import { initialSelection, itemNutritionPer100g } from '@/utils/portions';
+import { canSaveMealDraft, needsIngredientCorrection } from '@/utils/ingredientCorrection';
 
 export default function ConfirmScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { adjustItem, analysisMessage, descriptionInput, detectedItems, mealPortion, photoUri, scanMode, scannedMeal, setItemAmount, setMealPortion, toggleItem } = useApp();
+  const { adjustItem, analysisMessage, descriptionInput, detectedItems, mealPortion, photoUri, removeDetectedItem, scanMode, scannedMeal, setItemAmount, setMealPortion, toggleItem } = useApp();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [amountFor, setAmountFor] = useState<string | null>(null);
   const [preferGrams, setPreferGrams] = useState(false);
+  const [removeFor, setRemoveFor] = useState<string | null>(null);
   // A barcode or a search hit is one food, and for one food the honest
   // question is "how many grams", not "0.7x of what we guessed".
   const singleItem = detectedItems.length === 1 ? detectedItems[0] : null;
   const hasIncludedFood = detectedItems.some((item) => item.included);
+  const correctionRequired = detectedItems.some(needsIngredientCorrection);
+  const canConfirm = canSaveMealDraft(detectedItems);
   const { locale, t } = useLanguage();
+  const replaceFood = (id: string) => router.push({ pathname: '/correct-food', params: { itemId: id } } as never);
 
   const changeInput = () => {
     if (scanMode === 'search') {
@@ -44,7 +49,7 @@ export default function ConfirmScreen() {
   };
 
   const confirm = () => {
-    if (!hasIncludedFood) return;
+    if (!canConfirm) return;
     void successHaptic();
     const includedItems = detectedItems.filter((item) => item.included);
     trackEvent('meal confirmed', {
@@ -70,7 +75,7 @@ export default function ConfirmScreen() {
       <View style={styles.heading}>
         <View style={styles.headingRow}>
           <Text style={styles.title}>{t.confirm.heading}</Text>
-          {hasIncludedFood ? <ConfidenceBadge uncertain={scannedMeal.confidence === 'medium'} /> : null}
+          {hasIncludedFood && !correctionRequired ? <ConfidenceBadge uncertain={scannedMeal.confidence === 'medium'} /> : null}
         </View>
         <Text style={styles.subtitle}>{singleItem ? t.confirm.subtitleSingle : t.confirm.subtitle}</Text>
       </View>
@@ -85,24 +90,24 @@ export default function ConfirmScreen() {
       <View style={styles.chips}>
         {detectedItems.map((item) => (
           <Pressable
-            accessibilityLabel={`${item.name} ${item.included ? t.confirm.remove : t.confirm.add}`}
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: item.included }}
+            accessibilityLabel={`${item.name} ${needsIngredientCorrection(item) ? t.confirm.replaceFood : item.included ? t.confirm.remove : t.confirm.add}`}
+            accessibilityRole={needsIngredientCorrection(item) ? 'button' : 'checkbox'}
+            accessibilityState={needsIngredientCorrection(item) ? {} : { checked: item.included }}
             key={item.id}
-            onPress={() => toggleItem(item.id)}
-            style={[styles.detectedChip, !item.included && styles.detectedChipOff, item.optional && item.included && styles.detectedChipQuestion]}
+            onPress={() => needsIngredientCorrection(item) ? replaceFood(item.id) : toggleItem(item.id)}
+            style={[styles.detectedChip, !item.included && !needsIngredientCorrection(item) && styles.detectedChipOff, (needsIngredientCorrection(item) || item.optional && item.included) && styles.detectedChipQuestion]}
           >
             <Ionicons
-              color={!item.included ? colors.muted : item.optional ? colors.attention : colors.success}
-              name={!item.included ? 'add-circle-outline' : item.optional ? 'help-circle' : 'checkmark-circle'}
+              color={needsIngredientCorrection(item) ? colors.attention : !item.included ? colors.muted : item.optional ? colors.attention : colors.success}
+              name={needsIngredientCorrection(item) ? 'help-circle' : !item.included ? 'add-circle-outline' : item.optional ? 'help-circle' : 'checkmark-circle'}
               size={17}
             />
-            <Text style={[styles.detectedChipText, !item.included && styles.detectedChipTextOff]}>{item.name}</Text>
+            <Text style={[styles.detectedChipText, !item.included && !needsIngredientCorrection(item) && styles.detectedChipTextOff]}>{item.name}</Text>
           </Pressable>
         ))}
       </View>
 
-      {singleItem ? (
+      {singleItem && !needsIngredientCorrection(singleItem) ? (
         <Card style={styles.portionCard}>
           <View style={styles.portionHeading}>
             <View>
@@ -124,7 +129,7 @@ export default function ConfirmScreen() {
             <Ionicons color={colors.muted} name="create-outline" size={20} />
           </Pressable>
         </Card>
-      ) : (
+      ) : !singleItem ? (
       <Card style={styles.portionCard}>
         <View style={styles.portionHeading}>
           <View>
@@ -160,14 +165,34 @@ export default function ConfirmScreen() {
           <Ionicons color={colors.muted} name={detailsOpen ? 'chevron-up' : 'chevron-down'} size={18} />
         </Pressable>
       </Card>
-      )}
+      ) : null}
 
-      {!singleItem ? detectedItems.filter((item) => item.included && item.portions?.length).map((item) => (
-        <Pressable key={`pieces-${item.id}`} accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.amountQuestion}`} onPress={() => setAmountFor(item.id)} style={styles.amountField}>
-          <View style={{ flex: 1 }}><Text style={styles.portionTitle}>{item.name}</Text><Text style={styles.portionSubtitle}>{formatNumber(Number((item.amountG / item.portions![0].grams).toFixed(2)), locale)} × {item.portions![0].label}</Text></View>
-          <Ionicons color={colors.accentText} name="create-outline" size={22} />
-        </Pressable>
-      )) : null}
+      <Text style={styles.subtitle}>{t.confirm.ingredientHint}</Text>
+      {detectedItems.map((item) => {
+        const unresolved = needsIngredientCorrection(item);
+        const selection = initialSelection(item.amountG, item.portions, { chosen: true });
+        const amount = selection.unitIndex >= 0
+          ? `${formatNumber(Number(selection.amount), locale)} × ${item.portions![selection.unitIndex].label} · ${formatNumber(item.amountG, locale)} g`
+          : `${formatNumber(item.amountG, locale)} g`;
+        return (
+          <Card key={`ingredient-${item.id}`} style={styles.ingredientCard}>
+            <Text style={styles.portionTitle}>{item.name}</Text>
+            <Text style={styles.subtitle}>{unresolved ? t.confirm.missingValues : `${amount} · ~${formatNumber(item.calories, locale)} kcal`}</Text>
+            {!unresolved && !item.included ? <Text style={styles.subtitle}>{t.confirm.excluded}</Text> : null}
+            <View style={styles.ingredientActions}>
+              {!unresolved ? <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.editAmount}`} onPress={() => setAmountFor(item.id)} style={styles.ingredientAction}><Text style={styles.actionText}>{t.confirm.editAmount}</Text></Pressable> : null}
+              <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.replaceFood}`} onPress={() => replaceFood(item.id)} style={styles.ingredientAction}><Text style={styles.actionText}>{t.confirm.replaceFood}</Text></Pressable>
+              <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.removeFood}`} onPress={() => setRemoveFor(item.id)} style={styles.ingredientAction}><Text style={styles.actionText}>{t.confirm.removeFood}</Text></Pressable>
+            </View>
+            {removeFor === item.id ? <View style={styles.ingredientCard}>
+              <Text style={styles.portionTitle}>{t.confirm.removeFoodTitle}</Text>
+              <Text style={styles.subtitle}>{t.confirm.removeFoodBody}</Text>
+              <PrimaryButton label={t.confirm.removeFood} onPress={() => { removeDetectedItem(item.id); setRemoveFor(null); }} />
+              <PrimaryButton variant="ghost" label={t.common.cancel} onPress={() => setRemoveFor(null)} />
+            </View> : null}
+          </Card>
+        );
+      })}
 
       <PortionSheet
         onCancel={() => { setAmountFor(null); setPreferGrams(false); }}
@@ -178,7 +203,7 @@ export default function ConfirmScreen() {
         }}
         target={(() => {
           const item = detectedItems.find((entry) => entry.id === amountFor);
-          if (!item || item.baseAmountG < 1) return null;
+          if (!item || needsIngredientCorrection(item) || item.baseAmountG < 1) return null;
           return {
             name: item.name,
             per100g: itemNutritionPer100g(item),
@@ -206,9 +231,9 @@ export default function ConfirmScreen() {
                     <Text style={styles.itemName}>{item.name}</Text>
                     {item.optional ? <Text style={styles.uncertain}>{t.confirm.check}</Text> : null}
                   </View>
-                  <Text style={styles.itemCalories}>~{formatNumber(item.calories, locale)} kcal · {item.source.label}</Text>
+                  <Text style={styles.itemCalories}>{needsIngredientCorrection(item) ? t.confirm.missingValues : `~${formatNumber(item.calories, locale)} kcal · ${item.source.label}`}</Text>
                 </View>
-                <View style={styles.stepper}>
+                {!needsIngredientCorrection(item) ? <View style={styles.stepper}>
                   <Pressable accessibilityLabel={`${item.name} ${t.confirm.decrease}`} accessibilityRole="button" onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
                     <Ionicons color={colors.text} name="remove" size={17} />
                   </Pressable>
@@ -216,7 +241,7 @@ export default function ConfirmScreen() {
                   <Pressable accessibilityLabel={`${item.name} ${t.confirm.increase}`} accessibilityRole="button" onPress={() => adjustItem(item.id, 1)} style={styles.stepperButton}>
                     <Ionicons color={colors.text} name="add" size={17} />
                   </Pressable>
-                </View>
+                </View> : null}
               </View>
               {index < detectedItems.length - 1 ? <View style={styles.divider} /> : null}
             </View>
@@ -224,7 +249,10 @@ export default function ConfirmScreen() {
         </Card>
       ) : null}
 
-      <Card style={styles.estimateCard}>
+      {correctionRequired ? <Card style={styles.ingredientCard}>
+        <Text style={styles.portionTitle}>{t.confirm.incompleteTotal}</Text>
+        <Text style={styles.subtitle}>{t.confirm.resolveFirst}</Text>
+      </Card> : <Card style={styles.estimateCard}>
         <View>
           <Text style={styles.estimateLabel}>{t.confirm.currentEstimate}</Text>
           <Text style={styles.estimateValue}>~{scannedMeal.calories} kcal</Text>
@@ -236,10 +264,10 @@ export default function ConfirmScreen() {
           <View style={styles.dot} />
           <Text style={styles.macroSummaryText}>{scannedMeal.fat}g F</Text>
         </View>
-      </Card>
+      </Card>}
 
       {!hasIncludedFood ? <Text style={styles.subtitle}>{t.confirm.emptyMeal}</Text> : null}
-      <PrimaryButton disabled={!hasIncludedFood} icon="arrow-forward" label={t.confirm.proceed} onPress={confirm} />
+      <PrimaryButton disabled={!canConfirm} icon="arrow-forward" label={t.confirm.proceed} onPress={confirm} />
       <PrimaryButton
         label={scanMode === 'search' ? t.confirm.searchAgain : scanMode === 'description' ? t.confirm.editDescription : t.confirm.retake}
         onPress={changeInput}
@@ -261,13 +289,17 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   analysisWarning: { minHeight: 48, borderRadius: 15, backgroundColor: colors.attentionSoft, paddingHorizontal: 13, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
   analysisWarningText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  detectedChip: { minHeight: 38, borderRadius: radii.pill, backgroundColor: colors.successSoft, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  detectedChip: { minHeight: 44, borderRadius: radii.pill, backgroundColor: colors.successSoft, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 6 },
   detectedChipQuestion: { backgroundColor: colors.attentionSoft },
   detectedChipOff: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   detectedChipText: { color: colors.text, fontSize: 12, fontWeight: '600' },
   detectedChipTextOff: { color: colors.muted, textDecorationLine: 'line-through' },
   listCard: { padding: 8 },
   portionCard: { gap: 16 },
+  ingredientCard: { gap: 10 },
+  ingredientActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  ingredientAction: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 10, justifyContent: 'center', borderRadius: 12, backgroundColor: colors.neutralSoft },
+  actionText: { color: colors.accentText, fontSize: 13, fontWeight: '600', flexShrink: 1 },
   amountField: { minHeight: 60, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.neutralSoft, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   amountFieldValue: { color: colors.text, fontSize: 24, fontWeight: '700' },
   portionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },

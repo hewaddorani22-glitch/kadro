@@ -34,6 +34,12 @@ for (const [code, calories, protein] of [
 }
 
 const leading = (query, language) => searchBlsCatalog(query, language, 1)[0];
+for (const query of ['Kartoffelchips', 'potato chips', 'potato crisps']) {
+  for (const language of ['de', 'en']) assert.equal(leading(query, language).code, 'K280100', `${query}: packaged chips are not fries or reduced-calorie chips`);
+}
+assert.equal(leading('French fries', 'en').code, 'X654042');
+assert.equal(leading('Pommes frites', 'de').code, 'X654042');
+assert.equal(leading('Kartoffelchips energiereduziert', 'de').code, 'K290100');
 for (const [query, language] of [['Haferflocken', 'de'], ['oats', 'en'], ['rolled oats', 'en']]) {
   assert.deepEqual(searchBlsCatalog(query, language, 2).map(x=>x.code), ['C133000', 'C133032'], 'plain oats and cooked oats precede cookies/compound dishes');
 }

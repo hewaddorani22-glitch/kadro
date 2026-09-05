@@ -5,6 +5,7 @@ import {
   buildAccuracyWarnings,
   buildMealItem,
   incompleteNutritionError,
+  ingredientCorrectionDraft,
   openFoodFactsNutrition,
   chooseFoodMatch,
   classifyDetection,
@@ -483,6 +484,7 @@ async function resolveDetection(
   admin: any,
   source: 'photo' | 'text' = 'photo',
   claimUsda?: () => Promise<void>,
+  correctionProtocol?: unknown,
 ): Promise<Result> {
   const classificationError = classifyDetection(detection, source);
   if (classificationError) return classificationError;
@@ -503,7 +505,7 @@ async function resolveDetection(
     return buildMealItem(item, blsFacts ?? usdaFacts, index);
   });
   const nutritionError = incompleteNutritionError(items);
-  if (nutritionError) return nutritionError;
+  if (nutritionError) return ingredientCorrectionDraft(detection, items, correctionProtocol) ?? nutritionError;
   const warnings = buildAccuracyWarnings(detection, items);
   return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };
 }
@@ -519,7 +521,7 @@ async function analyzePhoto(input: any, admin: any, claimUsda?: () => Promise<vo
   return resolveDetection(await requestDetection([
     { type: 'input_text', text: photoDetectionPrompt(requestedLanguage(input)) },
     { type: 'input_image', image_url: `data:${input.mimeType};base64,${input.imageBase64}`, detail: imageDetail },
-  ]), admin, 'photo', claimUsda);
+  ]), admin, 'photo', claimUsda, input.ingredientCorrection);
 }
 
 // deno-lint-ignore no-explicit-any
@@ -531,7 +533,7 @@ async function analyzeDescription(input: any, admin: any, claimUsda?: () => Prom
   return resolveDetection(await requestDetection([{
     type: 'input_text',
     text: descriptionDetectionPrompt(description, requestedLanguage(input)),
-  }]), admin, 'text', claimUsda);
+  }]), admin, 'text', claimUsda, input.ingredientCorrection);
 }
 
 /**
@@ -1096,7 +1098,9 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     if (error instanceof ProviderQuotaError) return reply(error.result);
     throw error;
   }
-  if (result.status !== 200) {
+  // A failed lookup still refunds the user's allowance. The new app can repair
+  // its draft for free; provider rate limits still account for the real calls.
+  if (result.status !== 200 || result.body.correctionRequired === true) {
     await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
     return reply(result);
   }

@@ -10,6 +10,7 @@ import {
 } from '@/services/supabaseClient';
 import { MealItem, Nutrition } from '@/types/nutrition';
 import { getDictionary, getLanguage, getLocale } from '@/i18n/active';
+import { needsIngredientCorrection } from '@/utils/ingredientCorrection';
 
 /**
  * Optional local override for development. When it is unset the app talks to
@@ -194,7 +195,7 @@ export function deleteTemporaryPhoto(uri: string | null | undefined) {
 export async function analyzePreparedPhoto(input: MealAnalysisInput, requestId: string): Promise<MealAnalysisResult> {
   return readAnalysisResponse(await gatewayFetch('/v1/analyze', {
     method: 'POST',
-    body: { ...input, requestId },
+    body: { ...input, requestId, ingredientCorrection: 1 },
   }));
 }
 
@@ -221,9 +222,10 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
     throw new MealAnalysisError(kind, gatewayMessage(payload?.code, payload?.message));
   }
   if (!payload?.items?.length) throw new MealAnalysisError('unclear-image', getDictionary().errors.noClearMeal);
-  // Also reject old cached/replayed responses containing unpriced ingredients.
-  if (payload.items.some(item => (item.source as { code?: string })?.code === 'unmatched'
-    || ![item.calories, item.protein, item.carbs, item.fat].every(value => Number.isFinite(value) && value >= 0))) {
+  // Only the explicit correction protocol may carry unresolved placeholders.
+  // Malformed numbers in an otherwise resolved ingredient are never accepted.
+  if (payload.items.some(item => needsIngredientCorrection(item)
+    && !(payload.correctionRequired === true && item.source?.code === 'unmatched'))) {
     throw new MealAnalysisError('invalid-input', getDictionary().errors.gatewayMissingNutrition);
   }
   return localizeResult(payload);
@@ -232,7 +234,7 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
 export async function analyzeDescription(description: string, requestId: string): Promise<MealAnalysisResult> {
   return readAnalysisResponse(await gatewayFetch('/v1/describe', {
     method: 'POST',
-    body: { description: description.trim(), language: getLanguage(), locale: getLocale(), requestId },
+    body: { description: description.trim(), language: getLanguage(), locale: getLocale(), requestId, ingredientCorrection: 1 },
   }));
 }
 
@@ -320,6 +322,21 @@ export async function searchFoods(query: string): Promise<FoodSearchResult[]> {
     throw new MealAnalysisError('provider-error', gatewayMessage(payload?.code, payload?.message));
   }
   return payload?.results ?? [];
+}
+
+/** A branded drink can be corrected with the digits on its actual label. */
+export async function searchIngredientReplacement(query: string): Promise<FoodSearchResult[]> {
+  const term = query.trim();
+  let results: FoodSearchResult[];
+  if (/^\d{7,14}$/.test(term)) {
+    const { items: [item] } = await analyzeBarcode(term);
+    results = [{ id: item.id, name: item.name, per100g: item.nutritionPer100g!, defaultGrams: 100, portions: item.portions, source: item.source }];
+  } else {
+    results = await searchFoods(term);
+  }
+  return results.filter(result => result.name && result.per100g
+    && [result.per100g.calories, result.per100g.protein, result.per100g.carbs, result.per100g.fat].every(value => Number.isFinite(value) && value >= 0)
+    && !(result.per100g.calories === 0 && result.per100g.protein * 4 + result.per100g.carbs * 4 + result.per100g.fat * 9 > 5));
 }
 
 /**

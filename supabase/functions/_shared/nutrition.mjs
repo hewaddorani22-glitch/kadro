@@ -543,6 +543,19 @@ export function incompleteNutritionError(items) {
   return null;
 }
 
+/** Only correction-capable clients receive a draft. Legacy clients fail closed. */
+export function ingredientCorrectionDraft(detection, items, protocol) {
+  if (protocol !== 1 || !items.length || !items.some(item => item.source?.code === 'unmatched')) return null;
+  // Do not turn malformed resolved values into an editable success.
+  if (items.some(item => item.source?.code !== 'unmatched'
+    && (![item.calories, item.protein, item.carbs, item.fat].every(value => Number.isFinite(value) && value >= 0)
+      || (item.calories === 0 && item.protein * 4 + item.carbs * 4 + item.fat * 9 > 5)))) return null;
+  return { status: 200, body: {
+    title: detection.title, confidence: 'medium', correctionRequired: true,
+    items, warnings: buildAccuracyWarnings(detection, items),
+  } };
+}
+
 /**
  * Named portions for one USDA row, so the app can offer "1 banana" instead of
  * making someone guess that a banana weighs 126 g.

@@ -8,6 +8,7 @@ export {
   buildAccuracyWarnings,
   buildMealItem,
   incompleteNutritionError,
+  ingredientCorrectionDraft,
   openFoodFactsNutrition,
   chooseFood,
   chooseFoodMatch,

@@ -53,6 +53,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
+    "preverify": "node scripts/validate-ingredient-correction.mjs",
+    "validate:ingredient-correction": "node scripts/validate-ingredient-correction.mjs",
     "validate:meals": "node scripts/validate-meal-cases.mjs",
     "validate:german": "node scripts/validate-german-meals.mjs",
     "validate:catalog": "node scripts/validate-catalog.mjs",

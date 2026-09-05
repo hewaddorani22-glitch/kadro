@@ -1,4 +1,5 @@
 import { BLS_SEARCH_ROWS } from './bls-search-data.mjs';
+import { blsEnglishName } from './bls-names.mjs';
 
 /**
  * Full-text search over the compact BLS 4.0 snapshot.
@@ -23,15 +24,15 @@ function fold(value) {
 // Normalize source spelling and common everyday queries, not nutrition data.
 function searchFold(value) {
   const text = fold(value).replace(/\bhafer flocken\b/g, 'haferflocken');
-  return ({ oats: 'oat flakes', 'rolled oats': 'oat flakes', bananas: 'banana', bananen: 'banane' })[text] ?? text;
+  return ({ oats: 'oat flakes', 'rolled oats': 'oat flakes', bananas: 'banana', bananen: 'banane', kartoffelchips: 'potato crisps', 'potato chips': 'potato crisps' })[text] ?? text;
 }
 
 const INDEX = BLS_SEARCH_ROWS.map((row) => Object.freeze({
   row,
   de: searchFold(row[1]),
-  en: searchFold(row[2]),
+  en: searchFold(blsEnglishName(row)),
   deWords: searchFold(row[1]).split(' '),
-  enWords: searchFold(row[2]).split(' '),
+  enWords: searchFold(blsEnglishName(row)).split(' '),
 }));
 
 const PROCESSED_WORDS = new Set([
@@ -50,6 +51,7 @@ const COMMON_REFERENCE_CODES = new Set([
   'H861000', // tofu
   'H960000', // hummus
   'K110132', // potato, boiled
+  'K280100', // ordinary packaged potato crisps, not calorie-reduced or fries
   'M713100', // low-fat quark
   'V416172', // chicken breast, grilled
   'X574512', // edamame, prepared
@@ -171,7 +173,8 @@ export function searchBlsCatalog(query, language = 'en', limit = 15) {
     ))
     .slice(0, limit)
     .map(({ entry, strong }) => {
-      const [code, nameDe, nameEn, calories, protein, carbs, fat, fiber] = entry.row;
+      const [code, nameDe, , calories, protein, carbs, fat, fiber] = entry.row;
+      const nameEn = blsEnglishName(entry.row);
       return {
         code,
         nameDe,

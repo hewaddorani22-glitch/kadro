@@ -9,6 +9,8 @@ export type MealAnalysisInput = {
 };
 
 export type MealAnalysisResult = {
+  /** Opt-in protocol: editable draft, not a complete nutrition result. */
+  correctionRequired?: boolean;
   title: string;
   confidence: 'high' | 'medium';
   items: MealItem[];

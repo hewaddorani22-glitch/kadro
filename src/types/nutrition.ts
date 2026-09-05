@@ -11,6 +11,8 @@ export type Nutrition = {
 };
 
 export type NutritionSource = {
+  /** Only unresolved analysis drafts carry this code. Never log them. */
+  code?: 'unmatched';
   provider: 'usda' | 'bls' | 'open-food-facts' | 'kandro-catalog' | 'demo';
   referenceId?: string;
   label: string;

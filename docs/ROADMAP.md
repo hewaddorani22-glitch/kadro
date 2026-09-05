@@ -1,5 +1,14 @@
 # Roadmap
 
+## Build 13 feedback: multi-ingredient correction
+
+- [x] Show every detected food in the quick ingredient list, not only countable foods.
+- [x] Targeted database/barcode-digit replacement with portion confirmation and explicit removal, preserving the rest of the meal.
+- [x] Opt-in correction drafts for missing nutrient mappings; legacy clients remain fail-closed. No incomplete total, no saving unresolved ingredients, no additional AI charge for the lookup repair.
+- [x] Behavioral regression coverage for 1-12 ingredient sums, replacement isolation, old/new gateway behavior and persistence/route guards.
+- [ ] Verify the updated native interface on the next TestFlight build, including iPhone keyboard/back/cancel, replacement, removal and multi-food sums.
+- [ ] Reproduce the reported apple/tomato/peach vision confusion using an original photo. Screenshots and text fixtures cannot establish visual recognition accuracy.
+
 ## Build 13 analysis feedback
 
 - [x] Reproduce follow-up false negatives for `raisins green dried` and `pistachios in shell`; normalize only bounded variety/presentation wording, preserve food transformations and verify unchanged edible-weight scaling.
