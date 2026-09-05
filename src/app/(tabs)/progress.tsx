@@ -11,6 +11,7 @@ import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { currentLoggingStreak, proteinConsistency } from '@/services/consistency';
 import { localDateKey } from '@/utils/date';
+import { useLocalDay } from '@/hooks/useLocalDay';
 import { formatWeight, formatWeightDelta, kgToStoneParts, parseStoneInput, parseWeightInput, weightInputUnit, weightInputValue } from '@/utils/units';
 import { formatDateParts } from '@/utils/format';
 
@@ -30,12 +31,13 @@ export default function ProgressScreen() {
   const [stonePounds, setStonePounds] = useState(() => String(kgToStoneParts(profile.weightKg).pounds));
   const [weightError, setWeightError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const currentDay = useLocalDay();
 
   const thirtyDaysAgo = useMemo(() => {
     const date = new Date();
     date.setDate(date.getDate() - 29);
     return localDateKey(date);
-  }, []);
+  }, [currentDay]);
   const visibleWeights = weightEntries.filter((entry) => entry.date >= thirtyDaysAgo);
   const visibleMeals = mealHistory.filter((meal) => (meal.date ?? '') >= thirtyDaysAgo);
   const currentWeight = visibleWeights.at(-1)?.weightKg ?? profile.weightKg;
@@ -43,9 +45,9 @@ export default function ProgressScreen() {
 
   const consistency = useMemo(
     () => proteinConsistency(mealHistory, targets.protein),
-    [locale, mealHistory, targets.protein],
+    [currentDay, locale, mealHistory, targets.protein],
   );
-  const loggingStreak = useMemo(() => currentLoggingStreak(mealHistory), [mealHistory]);
+  const loggingStreak = useMemo(() => currentLoggingStreak(mealHistory), [currentDay, mealHistory]);
   const { averageProtein, loggedCount: trackedDays, reachedCount } = consistency;
   const showsScore = trackedDays >= 3;
 

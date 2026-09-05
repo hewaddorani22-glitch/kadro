@@ -3,12 +3,34 @@
 // or the Plan results and the app starts recommending a fourth meal to a person
 // who has already eaten their whole budget. These checks pin the guard down.
 import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
 
 const problems = [];
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
 const today = read('src/app/(tabs)/today.tsx');
 const plan = read('src/app/(tabs)/plan.tsx');
+const hook = read('src/hooks/useLocalDay.ts');
+const emitted = ts.transpileModule(hook.replace(/^import .*;\n/gm, '').replace('export function', 'function'), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+let currentDate = '2026-09-05', renderedDay, tick, onState, cleanup, removed = false, cleared = false;
+const useLocalDay = new Function('useState', 'useEffect', 'AppState', 'localDateKey', 'setInterval', 'clearInterval', `${emitted}; return useLocalDay;`)(
+  (initial) => { renderedDay = initial(); return [renderedDay, (next) => { renderedDay = next; }]; },
+  (effect) => { cleanup = effect(); },
+  { addEventListener: (_, callback) => { onState = callback; return { remove: () => { removed = true; } }; } },
+  () => currentDate,
+  (callback) => { tick = callback; return 42; },
+  (id) => { cleared = id === 42; },
+);
+assert.equal(useLocalDay(), '2026-09-05');
+currentDate = '2026-09-06'; tick(); assert.equal(renderedDay, currentDate);
+currentDate = '2026-09-07'; onState('background'); assert.equal(renderedDay, '2026-09-06');
+onState('active'); assert.equal(renderedDay, currentDate);
+cleanup(); assert.ok(removed && cleared);
+const progress = read('src/app/(tabs)/progress.tsx');
+assert.match(progress, /\[currentDay, locale, mealHistory, targets\.protein\]/);
+assert.match(progress, /currentLoggingStreak\(mealHistory\), \[currentDay, mealHistory\]/);
+assert.match(read('src/context/AppContext.tsx'), /setMeals\(mealHistory\.filter\(\(meal\) => meal\.date === currentDay\)\)/);
 
 for (const [label, source] of [['today.tsx', today], ['plan.tsx', plan]]) {
   if (!/const dayIsDone = remaining\.calories < \d+;/.test(source)) {

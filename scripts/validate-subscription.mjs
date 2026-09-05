@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import assert from 'node:assert/strict';
+import ts from 'typescript';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const [service, accountDeletion, context, paywall, scan, result, appContext, localRepository, envExample, packageJson, dictDe, dictEn] = await Promise.all([
@@ -20,6 +22,24 @@ const [service, accountDeletion, context, paywall, scan, result, appContext, loc
 ]);
 
 const failures = [];
+// Execute the actual plan mapper, not a second implementation of its rules.
+const mapper = service.slice(service.indexOf('function trialLabelFrom'), service.indexOf('export async function loadSubscriptionSnapshot'));
+const compiledMapper = ts.transpileModule(mapper, { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+const toPlan = new Function('getDictionary', `${compiledMapper}; return toPlan;`)(() => ({ billing: {
+  trialPeriod: (count, unit) => `${count} ${unit}`, pricePerPeriod: (price) => price,
+  perMonth: (price) => price, yearlyBilling: 'annual', monthlyFlexible: 'monthly', billingLine: (price) => price,
+} }));
+const trialPackage = { product: { identifier: 'test', price: 30, priceString: '30', introPrice: { price: 0, periodNumberOfUnits: 7, periodUnit: 'DAY' } } };
+for (const eligibility of [undefined, false]) {
+  assert.equal(toPlan('yearly', trialPackage, eligibility).hasFreeTrial, false);
+  assert.equal(toPlan('yearly', trialPackage, eligibility).trialLabel, null);
+}
+assert.equal(toPlan('yearly', trialPackage, true).trialLabel, '7 day');
+assert.equal(toPlan('yearly', { product: { ...trialPackage.product, introPrice: null } }, true).hasFreeTrial, false);
+assert.match(service, /checkTrialOrIntroductoryPriceEligibility/);
+assert.match(service, /status ===\s*INTRO_ELIGIBILITY_STATUS\.INTRO_ELIGIBILITY_STATUS_ELIGIBLE/);
+assert.match(service, /toPlan\('yearly', offering\?\.annual \?\? null, trialEligible/);
+assert.match(service, /toPlan\('monthly', offering\?\.monthly \?\? null, trialEligible/);
 for (const invariant of [
   'Purchases.configure',
   'Purchases.getOfferings',

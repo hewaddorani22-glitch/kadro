@@ -73,6 +73,13 @@ export const DETECTED_ITEMS: MealItem[] = [
   },
 ];
 
+/** Resolve demo names at invocation, after the stored language has loaded. */
+export function getDemoItems(): MealItem[] {
+  const t = getDictionary().errors;
+  const names: Record<string, string> = { chicken: t.demoChicken, rice: t.demoRice, avocado: t.demoAvocado, sauce: t.demoSauce };
+  return DETECTED_ITEMS.map((item) => ({ ...item, name: names[item.id] ?? item.name }));
+}
+
 export function nutritionFromItems(items: MealItem[]): Nutrition {
   return items.filter((item) => item.included).reduce<Nutrition>(
     (sum, item) => ({
@@ -167,4 +174,3 @@ export function getRemaining(targets: DailyTargets, consumed: Nutrition): Nutrit
     fat: Math.max(0, targets.fat - consumed.fat),
   };
 }
-

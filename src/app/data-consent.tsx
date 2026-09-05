@@ -45,7 +45,7 @@ export default function DataConsentScreen() {
 
       <View style={styles.heading}>
         <View style={[styles.statusIcon, !wellnessConsentGranted && styles.statusIconPaused]}>
-          <Ionicons color={colors.onAccent} name={wellnessConsentGranted ? 'shield-checkmark-outline' : 'pause-outline'} size={28} />
+          <Ionicons color={wellnessConsentGranted ? colors.onAccent : colors.attention} name={wellnessConsentGranted ? 'shield-checkmark-outline' : 'pause-outline'} size={28} />
         </View>
         <Text accessibilityRole="header" style={styles.title}>{t.consent.title}</Text>
         <Text style={styles.stateTitle}>{wellnessConsentGranted ? t.consent.activeTitle : t.consent.pausedTitle}</Text>

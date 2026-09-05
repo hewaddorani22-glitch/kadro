@@ -8,9 +8,22 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import ts from 'typescript';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (relative) => readFile(resolve(projectRoot, relative), 'utf8');
+const mockSource = await read('src/services/mockNutrition.ts');
+const demoBody = mockSource.slice(mockSource.indexOf('export function getDemoItems'), mockSource.indexOf('export function nutritionFromItems'));
+const demoJs = ts.transpileModule(demoBody.replace('export function', 'function'), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
+let demoName = 'Hähnchen';
+const demoItems = new Function('getDictionary', 'DETECTED_ITEMS', `${demoJs}; return getDemoItems;`)(
+  () => ({ errors: { demoChicken: demoName } }), [{ id: 'chicken', name: 'old', amountG: 180 }],
+);
+assert.equal(demoItems()[0].name, 'Hähnchen');
+demoName = 'Chicken';
+assert.equal(demoItems()[0].name, 'Chicken');
+assert.equal(demoItems()[0].amountG, 180);
+assert.doesNotMatch(await read('src/context/AppContext.tsx'), /setDetectedItems\(DETECTED_ITEMS\)/);
 
 const {
   detectionSchema,

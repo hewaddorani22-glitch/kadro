@@ -65,7 +65,14 @@ for (const [query, language, code, expectedName] of [
 const gateway = await readFile(new URL('../supabase/functions/nutrition/index.ts', import.meta.url), 'utf8');
 const searchFn = gateway.slice(gateway.indexOf('async function searchFoods'), gateway.indexOf('async function searchOpenFoodFacts'));
 assert.match(searchFn, /searchBlsCatalog\(term, language, 15\)/, 'the gateway must use the complete bilingual catalogue');
-assert.match(searchFn, /if \(results\.length\) \{\s*return/, 'common food search must finish without a provider round trip');
+// Still the same requirement — an everyday food must not cost a round trip —
+// but a hit that merely starts with the same letters is not an everyday food.
+// "pho" prefix-matches the phosphate in a curing salt, and letting that end
+// the search hid every product Open Food Facts has behind four letters.
+assert.match(searchFn, /if \(results\.length && catalogueAnswered\) \{\s*return/,
+  'a real catalogue match must finish without a provider round trip');
+assert.match(searchFn, /const catalogueAnswered = catalogue\.some\(\(food\) => food\.strong\)/,
+  'the gateway must tell a real match from a prefix coincidence');
 assert.match(searchFn, /if \(language === 'de'\)/, 'German provider fallback must have its own localized path');
 assert.ok(!/name: String\(entry\.description/.test(searchFn.slice(searchFn.indexOf("if (language === 'de')"), searchFn.indexOf('let foods'))), 'German results must never expose a raw USDA description');
 

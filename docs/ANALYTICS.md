@@ -7,6 +7,7 @@ Kandro measures only whether the core product loop works. `src/services/telemetr
 | Event | Allowed properties |
 |---|---|
 | `onboarding completed` | `completion` |
+| `plan edited` | `completion` (never the nutrition goal) |
 | `meal scan started` | `scan_source` |
 | `meal analysis completed` | `scan_source`, `confidence`, `detected_item_count`, `warning_present` |
 | `meal analysis failed` | `scan_source`, `failure_reason`, `queued_for_retry` |

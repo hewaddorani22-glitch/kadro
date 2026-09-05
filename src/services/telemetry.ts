@@ -3,7 +3,7 @@ import { File, Paths } from 'expo-file-system';
 import PostHog, { PostHogPersistedProperty } from 'posthog-react-native';
 
 import { AnalysisErrorKind } from '@/services/contracts';
-import { MealContext, NutritionGoal } from '@/types/nutrition';
+import { MealContext } from '@/types/nutrition';
 
 type ScanSource = 'camera' | 'demo' | 'queued_retry' | 'description' | 'barcode' | 'search';
 type CountBucket = '1' | '2-3' | '4+';
@@ -11,7 +11,7 @@ type BillingMode = 'preview' | 'test_store' | 'native_store' | 'web';
 
 type AnalyticsEventMap = {
   'onboarding completed': { completion: 'finished' | 'skipped' };
-  'plan edited': { goal: NutritionGoal };
+  'plan edited': { completion: 'finished' };
   'meal scan started': { scan_source: ScanSource };
   'meal analysis completed': {
     confidence: 'high' | 'medium';
@@ -79,6 +79,8 @@ const blockedAutomaticProperties = new Set([
   '$screen_height',
   '$screen_width',
   '$timezone',
+  // Also scrub legacy queued events produced before goals were removed.
+  'goal',
 ]);
 
 function sanitizeAutomaticProperties<Event extends { properties?: Record<string, unknown> }>(event: Event) {

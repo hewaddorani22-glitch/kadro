@@ -260,7 +260,7 @@ export default function OnboardingScreen() {
    */
   const saveEdits = async () => {
     await completeOnboarding(draftProfile);
-    trackEvent('plan edited', { goal: draftProfile.goal });
+    trackEvent('plan edited', { completion: 'finished' });
     router.replace('/(tabs)/profile');
   };
 
@@ -453,6 +453,7 @@ export default function OnboardingScreen() {
                     <NumberStep max={220} min={130} onChange={setHeight} step={1} unit="cm" value={height} />
                   ) : (
                     <NumberStep
+                      accessibilityUnit="in"
                       format={(inches) => `${Math.floor(inches / 12)}′ ${inches % 12}″`}
                       max={cmToTotalInches(220)}
                       min={cmToTotalInches(130)}
@@ -481,6 +482,7 @@ export default function OnboardingScreen() {
                     />
                   ) : (
                     <NumberStep
+                      accessibilityUnit="lb"
                       format={(pounds) => (unitSystem === 'uk'
                         ? formatWeight(poundsToKg(pounds), 'uk', locale)
                         : String(pounds))}
@@ -670,7 +672,7 @@ function UnitToggle({ onChange, value }: { onChange: (system: UnitSystem) => voi
   );
 }
 
-function NumberStep({ format, max, min, onChange, step, unit, value }: { format?: (value: number) => string; max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
+function NumberStep({ accessibilityUnit, format, max, min, onChange, step, unit, value }: { accessibilityUnit?: string; format?: (value: number) => string; max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
@@ -742,8 +744,8 @@ function NumberStep({ format, max, min, onChange, step, unit, value }: { format?
       </View>
       <Text style={styles.adjustHint}>{t.onboarding.adjustHint}</Text>
       <View style={styles.numberControls}>
-        <StepperButton icon="remove" label={t.common.decreaseUnit(unit)} onPressIn={() => start(-1)} onPressOut={stop} />
-        <StepperButton icon="add" label={t.common.increaseUnit(unit)} onPressIn={() => start(1)} onPressOut={stop} />
+        <StepperButton icon="remove" label={t.common.decreaseUnit(accessibilityUnit ?? unit)} onPressIn={() => start(-1)} onPressOut={stop} />
+        <StepperButton icon="add" label={t.common.increaseUnit(accessibilityUnit ?? unit)} onPressIn={() => start(1)} onPressOut={stop} />
       </View>
     </View>
   );

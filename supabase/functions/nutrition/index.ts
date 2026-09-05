@@ -557,9 +557,27 @@ async function searchFoods(
     results.push(entry);
   };
 
-  for (const food of searchBlsCatalog(term, language, 15)) {
+  const catalogue = searchBlsCatalog(term, language, 15);
+  // A hit that merely starts with the same letters is not an answer: "pho"
+  // prefix-matches the phosphate in a curing salt, and returning that used to
+  // end the search before Open Food Facts was ever asked.
+  const catalogueAnswered = catalogue.some((food) => food.strong);
+
+  // When nothing in the catalogue really answered, its rows are kept aside and
+  // appended after the network results rather than sitting on top of them:
+  // seeing a curing salt above the actual pho is worse than not seeing it.
+  const weakRows: { entry: unknown; id: string }[] = [];
+  const keep = (entry: unknown, referenceId: string) => {
+    if (catalogueAnswered) add(entry, referenceId);
+    else weakRows.push({ entry, id: referenceId });
+  };
+  const appendWeak = () => {
+    for (const row of weakRows) add(row.entry, row.id);
+  };
+
+  for (const food of catalogue) {
     const meal = getBlsReferenceByCode(food.code);
-    add({
+    keep({
       id: meal ? `bls-${meal.key}` : `bls-${food.code}`,
       name: language === 'de' ? (meal?.nameDe ?? food.nameDe) : (meal?.nameEn ?? food.nameEn),
       per100g: meal?.per100g ?? food.per100g,
@@ -567,12 +585,15 @@ async function searchFoods(
       portions: meal ? [{ label: language === 'de' ? '1 Portion' : '1 portion', grams: meal.defaultGrams }] : [],
       source: { provider: 'bls', referenceId: food.code, label: `BLS 4.0 ${food.code}` },
     }, food.code);
-    if (results.length >= 15) break;
+    if (results.length + weakRows.length >= 15) break;
   }
 
-  // Everyday foods now finish here: no network, no quota and no English USDA
-  // wording leaking into a German result list.
-  if (results.length) {
+  // Everyday foods finish here: no network, no quota and no English USDA
+  // wording leaking into a German result list. Only a real match may end the
+  // search, though — a weak one keeps the catalogue entry and asks the network
+  // as well, so the letters that happen to match cannot hide three million
+  // products behind them.
+  if (results.length && catalogueAnswered) {
     return { status: 200, body: { query: term, results: results.slice(0, 15) } };
   }
 
@@ -594,6 +615,7 @@ async function searchFoods(
       if (error instanceof ProviderQuotaError) throw error;
       // A missing brand result is an empty search, not a broken German UI.
     }
+    appendWeak();
     return { status: 200, body: { query: term, results: results.slice(0, 15) } };
   }
 
@@ -646,6 +668,7 @@ async function searchFoods(
     }
   }
 
+  appendWeak();
   return { status: 200, body: { query: term, results: results.slice(0, 15) } };
 }
 

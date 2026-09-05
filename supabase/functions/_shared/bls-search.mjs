@@ -130,6 +130,26 @@ export function searchBlsCatalog(query, language = 'en', limit = 15) {
   const terms = needle.split(' ').filter(Boolean);
   const preferred = language === 'de' ? 'de' : 'en';
 
+  /**
+   * Whether the entry answered the question or merely began with the same
+   * letters. "pho" prefix-matches the phosphate in a curing salt, and a hit
+   * like that used to end the search before Open Food Facts was ever asked.
+   */
+  const isStrong = (name, words) => {
+    if (!name) return false;
+    if (name === needle || name.startsWith(`${needle} `)) return true;
+    if (terms.length === 1 && name.replace(/\s+/g, '') === needle) return true;
+    return terms.every((term) => {
+      if (words.includes(term)) return true;
+      // German compounds are answers: "hähnchenbrust" means
+      // "Hähnchenbrustfilet". Three letters inside "phosphat" are a
+      // coincidence. What separates them is how much of the word the query
+      // actually covers.
+      return words.some((word) => word.startsWith(term)
+        && (term.length >= 5 || term.length / word.length >= 0.6));
+    });
+  };
+
   return INDEX
     .map((entry) => {
       const localScore = scoreName(entry[preferred], entry[`${preferred}Words`], needle, terms);
@@ -139,7 +159,9 @@ export function searchBlsCatalog(query, language = 'en', limit = 15) {
       const code = String(entry.row[0]);
       const matchedScore = Math.max(localScore + (localScore ? 8 : 0), otherScore);
       const score = matchedScore + (matchedScore && COMMON_REFERENCE_CODES.has(code) ? 75 : 0);
-      return score ? { entry, score } : null;
+      const strong = isStrong(entry[preferred], entry[`${preferred}Words`])
+        || isStrong(entry[preferred === 'de' ? 'en' : 'de'], entry[`${preferred === 'de' ? 'en' : 'de'}Words`]);
+      return score ? { entry, score, strong } : null;
     })
     .filter(Boolean)
     .sort((a, b) => (
@@ -148,12 +170,15 @@ export function searchBlsCatalog(query, language = 'en', limit = 15) {
       || String(a.entry.row[0]).localeCompare(String(b.entry.row[0]))
     ))
     .slice(0, limit)
-    .map(({ entry }) => {
+    .map(({ entry, strong }) => {
       const [code, nameDe, nameEn, calories, protein, carbs, fat, fiber] = entry.row;
       return {
         code,
         nameDe,
         nameEn,
+        // Lets the caller tell "this is the food" from "this begins with those
+        // letters", so a weak hit does not stand in for a real search.
+        strong,
         per100g: { calories, protein, carbs, fat, fiber },
       };
     });

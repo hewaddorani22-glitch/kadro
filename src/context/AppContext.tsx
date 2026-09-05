@@ -1,5 +1,5 @@
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { useLocalDay } from '@/hooks/useLocalDay';
 
 import { AnalysisErrorKind, MealAnalysisInput } from '@/services/contracts';
 import { analyzeBarcode, analyzeDescription, analyzePreparedPhoto, deleteTemporaryPhoto, FoodSearchResult, MealAnalysisError, mealFromSearch, prepareMealPhoto } from '@/services/mealAnalysis';
@@ -28,6 +28,7 @@ import {
   createScannedMeal,
   DEFAULT_TARGETS,
   DETECTED_ITEMS,
+  getDemoItems,
   getRemaining,
   nutritionFromItems,
   sumMeals,
@@ -165,7 +166,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [mealHistory, setMealHistory] = useState<Meal[]>([]);
   const [lifetimeScanCount, setLifetimeScanCount] = useState(0);
   const [weightEntries, setWeightEntries] = useState<WeightEntry[]>([]);
-  const [detectedItems, setDetectedItems] = useState<MealItem[]>(DETECTED_ITEMS);
+  const [detectedItems, setDetectedItems] = useState<MealItem[]>(getDemoItems);
   const [mealTitle, setMealTitle] = useState(getDictionary().errors.demoMealTitle);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [scanId, setScanId] = useState(makeScanId);
@@ -184,6 +185,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [pendingAnalysisCount, setPendingAnalysisCount] = useState(0);
   const [syncMode, setSyncMode] = useState<SyncMode>(isSupabaseConfigured ? 'syncing' : 'local');
   const loadedDayRef = useRef(localDateKey());
+  const currentDay = useLocalDay();
   // Each new input invalidates every older async analysis. The provider call
   // may still finish (and its successful quota spend still has to be counted),
   // but a late response must never replace a newer meal on screen.
@@ -339,7 +341,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       setPendingAnalysisCount(0);
 
       await retryAccountRecovery();
-      setDetectedItems(DETECTED_ITEMS);
+      setDetectedItems(getDemoItems());
       setMealTitle(getDictionary().errors.demoMealTitle);
       setScanId(makeScanId());
       setScanMode('demo');
@@ -527,19 +529,12 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
-    // "Heute" is a filtered snapshot taken at load time. Without this the list
-    // still showed yesterday's meals after the app sat backgrounded overnight.
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') return;
-      const today = localDateKey();
-      if (today === loadedDayRef.current) return;
-      loadedDayRef.current = today;
-      void loadMeals()
-        .then(setMeals)
-        .catch((error) => captureOperationalError(error, { area: 'ui', operation: 'day_rollover' }));
-    });
-    return () => subscription.remove();
-  }, []);
+    if (currentDay === loadedDayRef.current) return;
+    loadedDayRef.current = currentDay;
+    // Filter the authoritative in-memory history synchronously. A delayed
+    // disk read here could overwrite a meal saved just after midnight.
+    setMeals(mealHistory.filter((meal) => meal.date === currentDay));
+  }, [currentDay, mealHistory]);
 
   const consumed = useMemo(() => sumMeals(meals), [meals]);
   const remaining = useMemo(() => getRemaining(targets, consumed), [consumed, targets]);
@@ -635,7 +630,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setQueuedInput(null);
     setDescriptionInput('');
     setBarcodeInput('');
-    setDetectedItems(DETECTED_ITEMS);
+    setDetectedItems(getDemoItems());
     setMealTitle(getDictionary().errors.demoMealTitle);
     setAnalysisStatus('idle');
     setAnalysisError(null);
@@ -722,7 +717,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       if (forceDemo || activeScanMode === 'demo') {
         await new Promise((resolve) => setTimeout(resolve, 1900));
         if (!isCurrentInvocation()) return;
-        setDetectedItems(DETECTED_ITEMS);
+        setDetectedItems(getDemoItems());
         setMealTitle(getDictionary().errors.demoMealTitle);
         setAnalysisStatus('ready');
         trackEvent('meal analysis completed', {
@@ -891,7 +886,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     scanModeRef.current = 'demo';
     plannedMealTypeRef.current = null;
     setPlannedMealTypeState(null);
-    setDetectedItems(DETECTED_ITEMS);
+    setDetectedItems(getDemoItems());
     setMealTitle(getDictionary().errors.demoMealTitle);
     setPhotoUri(null);
     setScanId(makeScanId());
@@ -917,7 +912,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setMealHistory([]);
     setLifetimeScanCount(0);
     setWeightEntries([]);
-    setDetectedItems(DETECTED_ITEMS);
+    setDetectedItems(getDemoItems());
     setMealTitle(getDictionary().errors.demoMealTitle);
     setPhotoUri(null);
     setScanId(makeScanId());

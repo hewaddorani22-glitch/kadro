@@ -21,7 +21,7 @@ The first three successful AI results are free and count when the result is retu
 
 **Age and calorie safety are enforced in both the client and database.** Ages below 14 cannot be entered. Ages 14–15 remain locked until a parent or legal guardian affirmatively confirms a single-use emailed link; the protected analysis gateway independently verifies that record before any provider receives data. Ages 16–17 can consent themselves. Optional PostHog analytics remain disabled for every user under 18.
 
-For ages 14–17, Kandro uses the 2023 Dietary Reference Intake adolescent Estimated Energy Requirement equation, which includes normal growth. Their goal may change meal ranking, but Kandro applies neither a calorie deficit nor a surplus and shows no weight-change pace. Adults use Mifflin-St Jeor times an activity factor. Adult targets never fall below 1,300 kcal or 70% of maintenance, whichever is higher. There is no aggressive option, fasting mode, streak or punishment mechanic.
+For ages 14–17, Kandro uses the 2023 Dietary Reference Intake adolescent Estimated Energy Requirement equation, which includes normal growth. Their goal may change meal ranking, but Kandro applies neither a calorie deficit nor a surplus and shows no weight-change pace. Adults use Mifflin-St Jeor times an activity factor. Adult targets never fall below 1,300 kcal or 70% of maintenance, whichever is higher. There is no fasting mode or punishment mechanic. Progress displays consecutive days with a logged meal; this is a logging streak, not a reward for eating less or meeting a calorie deficit.
 
 Test account: none required; Kandro creates an anonymous Supabase session only after consent.
 

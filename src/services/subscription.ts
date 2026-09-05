@@ -2,6 +2,7 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 import Purchases, {
   CustomerInfo,
+  INTRO_ELIGIBILITY_STATUS,
   LOG_LEVEL,
   PURCHASES_ERROR_CODE,
   PurchasesPackage,
@@ -102,12 +103,13 @@ function trialLabelFrom(product: PurchasesPackage['product']): string | null {
   return getDictionary().billing.trialPeriod(count, unit);
 }
 
-function toPlan(id: SubscriptionPlanId, purchasePackage: PurchasesPackage | null): SubscriptionPlan | null {
+function toPlan(id: SubscriptionPlanId, purchasePackage: PurchasesPackage | null, trialEligible = false): SubscriptionPlan | null {
   if (!purchasePackage) return null;
   const { product } = purchasePackage;
   const t = getDictionary();
   const yearly = id === 'yearly';
-  const hasFreeTrial = Boolean(product.introPrice && product.introPrice.price === 0);
+  const trialLabel = trialEligible ? trialLabelFrom(product) : null;
+  const hasFreeTrial = trialLabel !== null;
   const monthlyEquivalent = yearly
     ? (typeof product.pricePerMonth === 'number' ? product.pricePerMonth : product.price / 12)
     : product.price;
@@ -122,7 +124,7 @@ function toPlan(id: SubscriptionPlanId, purchasePackage: PurchasesPackage | null
         : t.billing.monthlyFlexible,
     billing: t.billing.billingLine(product.priceString, yearly),
     hasFreeTrial,
-    trialLabel: trialLabelFrom(product),
+    trialLabel,
     priceAmount: product.price,
     monthlyEquivalent: Number.isFinite(monthlyEquivalent) ? monthlyEquivalent : null,
   };
@@ -144,13 +146,23 @@ export async function loadSubscriptionSnapshot(): Promise<SubscriptionSnapshot> 
     Purchases.getOfferings(),
   ]);
   const offering = offerings.current;
+  const productIds = [offering?.annual, offering?.monthly]
+    .flatMap((pkg) => pkg ? [pkg.product.identifier] : []);
+  // An intro offer on a product does not mean this Apple account can use it.
+  // Unknown/error/non-iOS must show standard pricing, not promise a free trial.
+  const eligibility = Platform.OS === 'ios' && productIds.length
+    ? await Purchases.checkTrialOrIntroductoryPriceEligibility(productIds).catch(() => ({}))
+    : {};
+  const trialEligible = (pkg: PurchasesPackage | null | undefined) => Boolean(pkg &&
+    (eligibility as Record<string, { status: INTRO_ELIGIBILITY_STATUS }>)[pkg.product.identifier]?.status ===
+      INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE);
   return {
     configured: true,
     entitlementActive: hasPro(customerInfo),
     mode: subscriptionMode(),
     plans: {
-      yearly: toPlan('yearly', offering?.annual ?? null),
-      monthly: toPlan('monthly', offering?.monthly ?? null),
+      yearly: toPlan('yearly', offering?.annual ?? null, trialEligible(offering?.annual)),
+      monthly: toPlan('monthly', offering?.monthly ?? null, trialEligible(offering?.monthly)),
     },
   };
 }
