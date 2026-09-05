@@ -1,0 +1,23 @@
+Kandro is a general wellness nutrition-planning app for users aged 14 and over, not a medical device or a Kids-category app. English is the default international language; German is fully localized. Metric, US pounds and UK stone/pounds are supported.
+
+No login or demo account is required. Complete onboarding and explicitly consent to the disclosed AI/data processing. Photo and text analysis use the authenticated production gateway, OpenRouter and Microsoft Azure. Optional analytics start off and are disabled under 18. Consent withdrawal is under You > Analysis & data use. Account and data deletion are under You > Delete account and data, including the anonymous account. Deletion does not cancel an Apple subscription; the app provides the Apple subscription-management link.
+
+The central Scan button offers Photo, Describe, Barcode and Search. For a simple description test enter "150 g apple and 40 g oats". Review ingredients and amounts before continuing. All nutrition is an estimate. In Build 14, every recognized ingredient has a Replace food action using database search or barcode digits, an amount editor and explicit removal. If a nutrient lookup is incomplete, the app retains the draft but hides the total and blocks saving until every unresolved ingredient is replaced or explicitly removed. It does not save unknown nutrition as zero calories. Recognized identities and portions still require user confirmation.
+
+After confirmation, the meal is saved once and updates Today. Plan offers three next-meal ideas when sufficient daily budget remains. Search, barcode, saved history and account deletion do not require Pro. The first three complete AI analyses are free and count when returned, even if the confirmation is abandoned. Incomplete lookup drafts are refunded; manual correction does not use another AI analysis.
+
+Kandro Pro provides further photo and text analyses, subject to 60 analyses per UTC day and service/abuse limits. Monthly and annual products provide the same entitlement:
+com.hewaddorani.kandro.pro.monthly
+com.hewaddorani.kandro.pro.annual
+Entitlement: kandro_pro
+
+Open You > Kandro Pro to see both StoreKit plans. Prices, duration, renewal and cancellation information, Privacy, Terms and Restore Purchases are shown before purchase. Use Apple's sandbox purchase sheet. Pro is enabled only after authenticated server verification of the Apple subscription. A bounded retry handles delayed transaction propagation; Restore Purchases repeats verification. Expo Go Test Store purchases do not unlock production access.
+
+Ages below 14 are blocked. Ages 14-15 require a parent/guardian to confirm a single-use emailed link before wellness consent and analysis are enabled; the gateway independently enforces this. Ages 16-17 can consent themselves. Ages 14-17 use adolescent energy requirements including growth, with no calorie deficit or surplus. Adults use Mifflin-St Jeor with an activity factor. The app does not diagnose or treat disease.
+
+The production endpoint is live. The Example meal is clearly identified as a demo and is not a substitute for the live analysis path.
+
+Sources: https://getkandro.com/en/sources/
+Support: https://getkandro.com/en/support/
+Privacy: https://getkandro.com/en/privacy/
+Terms: https://getkandro.com/en/terms/
