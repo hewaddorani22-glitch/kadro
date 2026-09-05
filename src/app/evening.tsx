@@ -72,11 +72,11 @@ export default function EveningScreen() {
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel={t.evening.close} accessibilityRole="button" onPress={() => router.replace('/(tabs)/today')} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t.evening.close} accessibilityRole="button" hitSlop={8} onPress={() => router.replace('/(tabs)/today')} style={styles.iconButton}>
           <Ionicons color={colors.text} name="close" size={22} />
         </Pressable>
         <Text style={styles.topTitle}>{t.evening.title}</Text>
-        <Pressable accessibilityLabel={t.evening.share} accessibilityRole="button" onPress={() => void shareDay()} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t.evening.share} accessibilityRole="button" hitSlop={8} onPress={() => void shareDay()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="share-outline" size={21} />
         </Pressable>
       </View>

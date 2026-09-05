@@ -27,7 +27,7 @@ export default function RecipeScreen() {
   if (!recipe) {
     return (
       <Screen>
-        <Pressable accessibilityLabel={t.common.back} accessibilityRole="button" onPress={() => router.back()} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t.common.back} accessibilityRole="button" hitSlop={8} onPress={() => router.back()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
         <PageTitle>{t.recipe.missingTitle}</PageTitle>
@@ -39,7 +39,7 @@ export default function RecipeScreen() {
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel={t.common.back} accessibilityRole="button" onPress={() => router.back()} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t.common.back} accessibilityRole="button" hitSlop={8} onPress={() => router.back()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
         <Text style={styles.topTitle}>{t.recipe.title}</Text>

@@ -150,7 +150,7 @@ export default function PaywallScreen() {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel={t.paywall.close} accessibilityRole="button" onPress={() => router.back()} style={styles.closeButton}>
+        <Pressable accessibilityLabel={t.paywall.close} accessibilityRole="button" hitSlop={8} onPress={() => router.back()} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={22} />
         </Pressable>
         <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || status === 'loading' }} disabled={busy || status === 'loading'} onPress={() => void restorePurchase()}>

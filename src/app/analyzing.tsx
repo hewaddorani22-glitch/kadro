@@ -106,7 +106,7 @@ export default function AnalyzingScreen() {
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel={t.analyzing.close} accessibilityRole="button" onPress={() => changeInput()} style={styles.closeButton}>
+        <Pressable accessibilityLabel={t.analyzing.close} accessibilityRole="button" hitSlop={8} onPress={() => changeInput()} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={23} />
         </Pressable>
         <Text style={styles.topTitle}>{t.analyzing.title}</Text>
@@ -201,7 +201,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   title: { color: colors.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.5, marginTop: 14, textAlign: 'center' },
   subtitle: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 7, maxWidth: 340 },
   chips: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 22 },
-  chip: { minHeight: 38, borderRadius: radii.pill, backgroundColor: colors.successSoft, borderWidth: 1, borderColor: '#D6E6D7', paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  chip: { minHeight: 38, borderRadius: radii.pill, backgroundColor: colors.successSoft, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 },
   chipWaiting: { backgroundColor: colors.surface, borderColor: colors.border },
   chipText: { color: colors.text, fontSize: 12, fontWeight: '600' },
   chipTextWaiting: { color: colors.muted },

@@ -195,11 +195,11 @@ export default function ResultScreen() {
   return (
     <Screen>
       <View style={styles.topBar}>
-        <Pressable accessibilityLabel={t.common.back} accessibilityRole="button" onPress={() => router.back()} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t.common.back} accessibilityRole="button" hitSlop={8} onPress={() => router.back()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
         <Text style={styles.topTitle}>{t.result.title}</Text>
-        <Pressable accessibilityLabel={t.result.share} accessibilityRole="button" onPress={() => void shareResult()} style={styles.iconButton}>
+        <Pressable accessibilityLabel={t.result.share} accessibilityRole="button" hitSlop={8} onPress={() => void shareResult()} style={styles.iconButton}>
           <Ionicons color={colors.text} name="share-outline" size={21} />
         </Pressable>
       </View>

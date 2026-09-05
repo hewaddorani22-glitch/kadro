@@ -93,6 +93,11 @@ export default function PlanScreen() {
    * no calories, no change to the day. The one thing the whole product promises
    * is that the day re-plans after every meal, so this is where it happens.
    */
+  const paywallTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (paywallTimer.current) clearTimeout(paywallTimer.current);
+  }, []);
+
   const logMeal = async (suggestion: MealSuggestion) => {
     if (logging) return;
     setLogging(true);
@@ -104,7 +109,7 @@ export default function PlanScreen() {
       setChosen(null);
       // The paywall belongs after the value, never between choosing and eating.
       if (params.fromScan === '1' && subscriptionStatus !== 'active' && freeScansLeft === 0) {
-        setTimeout(() => router.push('/paywall?reason=after-meal'), 900);
+        paywallTimer.current = setTimeout(() => router.push('/paywall?reason=after-meal'), 900);
       }
     } finally {
       setLogging(false);
