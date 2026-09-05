@@ -2,7 +2,7 @@
 
 ## Decision
 
-Ready to build a replacement TestFlight candidate, not approved for App Review.
+Replacement TestFlight candidate built successfully, not approved for App Review.
 Historical 90/100 and Build 8 sign-off are not current candidate evidence.
 
 ## Checks performed
@@ -49,3 +49,38 @@ Full Xcode/iOS simulator is absent. EAS remote build is available and the latest
 completed candidate before this run is 1.0.0 (8), source 9a95530. A new build and
 upload do not constitute an App Review submission. Final App Review remains
 explicitly unauthorized.
+
+## Replacement candidate evidence
+
+- Version 1.0.0 (9), source commit `bbe4bb835ca8d406c786279a63afd22181a60d59`.
+- EAS build `5f6ed099-8360-4c1d-85f3-1677640e938d`: FINISHED.
+- TestFlight upload `bda54533-58de-48e0-89e3-4c88ea652865`: FINISHED, no error.
+- Apple confirms Build 9 exists, ID `b5bdc836-8412-4b19-9df5-aecebec94b32`,
+  processingState VALID, internalBuildState IN_BETA_TESTING, autoNotifyEnabled
+  true. External state is READY_FOR_BETA_SUBMISSION; no external beta review or
+  public App Review was submitted. Verified via Apple API on 2026-09-05.
+- iOS JavaScript export passed; this is not a local native/simulator test.
+- Apple API confirms version 1.0.0 remains PREPARE_FOR_SUBMISSION. Both de-DE
+  and en-US descriptions, keywords and localized support/marketing URLs exist.
+- Apple TestFlight crash and feedback queries returned zero records. This does
+  not exclude usability defects or unreported crashes.
+- Eight public EN/DE landing, privacy, terms and support URLs returned HTTP 200.
+- npm production audit: 26 transitive findings (17 moderate, 9 high, 0 critical).
+  No untested force/major SDK upgrade performed. Findings remain a release risk
+  to assess, not a clean dependency bill of health.
+
+## Exact Build 9 owner test
+
+1. Open camera from each meal entry, close using X, repeat and close during a
+   capture; no frozen overlay or late navigation should occur.
+2. Search pancakes, add a result, edit 110.3 / 110,3 grams, cancel/save/reopen,
+   then change recognized piece count. Initial recognition remains an estimate.
+3. Check light default on a fresh install and persisted dark preference;
+   keyboard, large text, VoiceOver and small-screen controls remain usable.
+4. Record/delete meals, restart and verify daily totals/history; exercise
+   account confirmation, sync and deletion without losing control of navigation.
+5. Complete sandbox purchase, restore and free/Pro boundary tests. Simulator
+   or web checks do not replace these native tests.
+
+App Review remains NO_GO until the exact candidate passes these gates and the
+remaining operational/listing evidence is checked. No review was submitted.
