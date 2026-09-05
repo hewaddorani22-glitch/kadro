@@ -1,4 +1,5 @@
 import { withSupabase } from 'npm:@supabase/server@1.5.1';
+import { canonicalFoodQuery } from '../_shared/food-query.mjs';
 
 import {
   buildAccuracyWarnings,
@@ -368,7 +369,7 @@ async function searchUsdaOnce(
   const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query: term, pageSize: 15 }),
+    body: JSON.stringify({ query: term, pageSize: 25, dataType: ['Foundation', 'SR Legacy', 'Survey (FNDDS)'] }),
   });
   if (!response.ok) throw new Error(`usda_${response.status}`);
   const result = await response.json();
@@ -489,7 +490,7 @@ async function resolveDetection(
   // deno-lint-ignore no-explicit-any
   const terms = detection.items
     .filter((item: any) => !resolveBlsFacts(item))
-    .map((item: any) => normalizeSearchTerm(item.searchTermEn))
+    .map((item: any) => canonicalFoodQuery(item.searchTermEn))
     // A term that names no food would be looked up, cached, and then reused for
     // every other ingredient that produced the same placeholder.
     .filter(isUsableSearchTerm);
@@ -497,7 +498,7 @@ async function resolveDetection(
   // deno-lint-ignore no-explicit-any
   const items = detection.items.map((item: any, index: number) => {
     const blsFacts = resolveBlsFacts(item);
-    const term = normalizeSearchTerm(item.searchTermEn);
+    const term = canonicalFoodQuery(item.searchTermEn);
     const usdaFacts = isUsableSearchTerm(term) ? facts.get(term) ?? null : null;
     return buildMealItem(item, blsFacts ?? usdaFacts, index);
   });

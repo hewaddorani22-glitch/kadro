@@ -76,7 +76,7 @@
     "preflight": "npm run verify && npm run validate:eas:remote && npm run validate:release",
     "preflight:production": "npm run verify && npm run validate:eas:remote && npm run validate:release:production:remote && npm run db:remote:check",
     "validate:analysis-language": "node scripts/validate-analysis-language.mjs",
-    "validate:matching": "node scripts/validate-usda-matching.mjs",
+    "validate:matching": "node scripts/validate-usda-matching.mjs && node scripts/validate-food-query.mjs",
     "validate:units": "node scripts/validate-units.mjs",
     "validate:barcode": "node scripts/validate-barcode.mjs",
     "validate:search-coverage": "node scripts/validate-search-coverage.mjs",

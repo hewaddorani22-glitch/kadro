@@ -1,5 +1,11 @@
 # Roadmap
 
+## Build 13 analysis feedback
+
+- [x] Reproduce bread/slice and dried-raisin false rejection. Normalize lookup-only portion wording and bridge common nuts/dried fruit/dairy/prepared ingredients to reviewed BLS source rows without inventing nutrition.
+- [x] Add behavioral regressions for query wording, source/portion scaling, decimal-fat identity, wrong egg dish keys and transformed-food rejection. Generic USDA lookup no longer competes primarily against branded rows or removes preparation as a fallback.
+- [ ] Repeat the owner's original raisin/nut photos on the hosted correction and complete the weighed real-photo set. Text/lookup regressions do not prove universal visual accuracy.
+
 ## Review remediation, 2026-09-05
 
 - Fixed partial barcode labels, progress pound precision/range mismatch, offline profile edit timestamps and deferred-state unit persistence. Regression coverage is part of `npm run verify`.

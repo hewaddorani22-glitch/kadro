@@ -38,7 +38,7 @@ for (const [index, entry] of GERMAN_MEAL_EVALUATION.entries()) {
 
   const item = {
     nameDe: reference.nameDe,
-    searchTermEn: 'unused for exact BLS match',
+    searchTermEn: reference.nameEn,
     referenceKey: reference.key,
     estimatedGrams: entry.grams,
     estimatedGramsLow: entry.grams,

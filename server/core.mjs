@@ -3,6 +3,7 @@
  * gateway and the local development server can never drift apart.
  * This file only re-exports them for Node consumers.
  */
+export { canonicalFoodQuery } from '../supabase/functions/_shared/food-query.mjs';
 export {
   buildAccuracyWarnings,
   buildMealItem,

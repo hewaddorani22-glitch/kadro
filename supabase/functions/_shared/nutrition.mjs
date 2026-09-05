@@ -1,3 +1,5 @@
+import { canonicalFoodQuery } from './food-query.mjs';
+
 /**
  * The display language for the detected title and ingredient names. An older
  * build sends nothing, and an unknown value is not worth a 400: falling back to
@@ -115,7 +117,7 @@ export function isUsableSearchTerm(term) {
 }
 
 /** Changing the matcher invalidates previous choices without deleting data. */
-export const USDA_MATCHER_VERSION = 7;
+export const USDA_MATCHER_VERSION = 8;
 
 export function usdaCacheKey(term) {
   return `v${USDA_MATCHER_VERSION}:${normalizeSearchTerm(term)}`;
@@ -142,6 +144,7 @@ const QUALIFIER_WORDS = new Set([
   'nfs', 'ns', 'unspecified', 'form', 'salt', 'added', 'drained', 'includes',
   'commodity', 'usda', 'variety', 'varieties', 'type', 'types', 'product',
   'no', 'fresh', 'frozen',
+  'broiler', 'fryer', 'meat', 'only', 'boneless', 'skinless',
 ]);
 
 /**
@@ -151,6 +154,10 @@ const QUALIFIER_WORDS = new Set([
  * counted twice.
  */
 const ADDED_FAT_WORDS = new Set(['oil', 'butter', 'fat', 'cream', 'cheese', 'sauce', 'gravy', 'dressing', 'margarine']);
+// A shared noun is insufficient: rice noodles aren't rice and almond milk
+// isn't almonds. These transformations cannot win when the base row is absent.
+const FOOD_TRANSFORMS = new Set(['noodle', 'flour', 'bread', 'cake', 'cookie', 'biscuit', 'chip', 'juice', 'powder',
+  'milk', 'butter', 'oil', 'soup', 'salad', 'sauce', 'spread', 'substitute', 'raab']);
 const NO_ADDED_FAT = /\bno(?:t)? +(?:added +)?(?:fat|oil|butter)\b|\bwithout +(?:added +)?(?:fat|oil|butter)\b/;
 
 /**
@@ -193,8 +200,8 @@ export function chooseFoodMatch(foods, term = '') {
   // USDA response turned a "nothing found" into a crash and a 503.
   if (!list.length) return { food: undefined, score: 0, margin: 0, confidence: 'low', cacheable: false, ranked: [] };
 
-  const target = normalizeSearchTerm(term);
-  const targetWords = words(term);
+  const target = normalizeSearchTerm(canonicalFoodQuery(term));
+  const targetWords = words(target);
 
   const rank = (food) => {
     const index = DATA_TYPE_PRIORITY.indexOf(food.dataType);
@@ -203,7 +210,7 @@ export function chooseFoodMatch(foods, term = '') {
 
   const score = (food) => {
     const description = normalizeSearchTerm(food.description);
-    const identity = foodNouns(term).filter(word => !['pitted', 'peeled', 'seedless', 'boneless', 'skinless'].includes(word));
+    const identity = foodNouns(target).filter(word => !['pitted', 'peeled', 'seedless', 'boneless', 'skinless'].includes(word));
     const candidateWords = new Set(words(description));
     // Preparation overlap is not food identity: dried dates are not dried
     // lotus seeds. Keep this as a hard boundary, independent of score bonuses.
@@ -211,6 +218,11 @@ export function chooseFoodMatch(foods, term = '') {
     const descriptionWords = words(food.description);
     const descriptionSet = new Set(descriptionWords);
     const targetSet = new Set(targetWords);
+    const candidateIdentity = foodNouns(description);
+    if (candidateIdentity.some(word => FOOD_TRANSFORMS.has(word) && !targetSet.has(word))) return -1000;
+    const cookedWords = ['cooked', 'boiled', 'steamed', 'fried', 'baked', 'roasted', 'grilled', 'stewed'];
+    if (targetSet.has('raw') && cookedWords.some(word => descriptionSet.has(word))) return -1000;
+    if (descriptionSet.has('raw') && cookedWords.some(word => targetSet.has(word))) return -1000;
     // Curated data outranks user-submitted data, but only as a tie-breaker:
     // relevance still decides. A grid search over fourteen captured USDA
     // responses passes every case for a step of 3 to 7; 5 sits in the middle.
@@ -423,15 +435,13 @@ export function toFoodFacts(food, match = null) {
  * first and fall back to these rewrites only when nothing acceptable matched.
  */
 export function searchTermVariants(term) {
-  const normalized = String(term ?? '').trim();
+  const normalized = canonicalFoodQuery(term);
   if (!normalized) return [];
   const variants = [];
   const swapped = normalized.replace(/\b(?:boiled|steamed|poached|braised)\b/gi, 'cooked');
   if (swapped !== normalized) variants.push(swapped);
-  // Dropping the preparation entirely is the last resort: less precise, but a
-  // raw-vs-cooked mismatch is a smaller error than counting the food as zero.
-  const bare = normalized.replace(/\b(?:boiled|steamed|poached|braised|cooked|grilled|fried|baked|roasted|raw)\b/gi, '').replace(/\s+/g, ' ').trim();
-  if (bare && bare !== normalized && !variants.includes(bare)) variants.push(bare);
+  // Never drop preparation as a generic fallback. Dry vs cooked rice differs
+  // several-fold; an explicit failure is safer than a plausible wrong result.
   return variants;
 }
 

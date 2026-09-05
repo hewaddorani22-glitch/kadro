@@ -9,6 +9,7 @@
  * DOI: https://doi.org/10.25826/Data20251217-134202-0
  */
 import { BLS_SEARCH_ROWS } from './bls-search-data.mjs';
+import { canonicalFoodQuery } from './food-query.mjs';
 
 export const BLS_SOURCE = Object.freeze({
   name: 'Bundeslebensmittelschlüssel 4.0',
@@ -126,8 +127,19 @@ export function getBlsReferenceByCode(code) {
 }
 
 export function resolveBlsFacts(item) {
+  // Concrete ingredient identity/preparation outranks a contradictory model key
+  // (observed: "hard boiled egg" with referenceKey=fried_egg).
+  const ingredient = resolveExactBlsFacts(item?.searchTermEn);
+  if (ingredient) return ingredient;
   const meal = getBlsReference(item?.referenceKey);
-  if (!meal) return resolveExactBlsFacts(item?.searchTermEn);
+  if (!meal) return null;
+  // Egg preparations are distinct dishes. Never let a model key silently add
+  // frying fat to boiled eggs or replace scrambled eggs with an omelette.
+  const term = canonicalFoodQuery(item?.searchTermEn);
+  if (['fried_egg', 'scrambled_eggs', 'omelette'].includes(meal.key)) {
+    const required = {fried_egg: /\b(?:fried|sunny side)\b/, scrambled_eggs: /\bscrambled\b/, omelette: /\bomele(?:t|tt)e?\b/}[meal.key];
+    if (!required.test(term) || /\b(?:boiled|poached|raw)\b/.test(term)) return null;
+  }
   return {
     provider: 'bls',
     referenceId: meal.code,
@@ -139,21 +151,53 @@ export function resolveBlsFacts(item) {
 
 // Exact identity and preparation only. Never use fuzzy search rankings to
 // silently substitute another food or turn dried food into fresh food.
-const exactFoodKey = (text) => String(text ?? '').toLowerCase().replace(/\bpitted\b/g, '').replace(/[^a-z0-9 ]/g, ' ')
-  .split(/\s+/).filter(Boolean).map(word => word.length > 3 && word.endsWith('s') && !word.endsWith('ss') ? word.slice(0, -1) : word).sort().join(' ');
+const exactFoodKey = (text) => (canonicalFoodQuery(text).replace(/\bpitted\b/g, '').match(/[a-z]+|\d+(?:[.,]\d+)?/g) || [])
+  .map(word => word.replace(',', '.'))
+  .map(word => word.length > 3 && word.endsWith('s') && !word.endsWith('ss') ? word.slice(0, -1) : word).sort().join(' ');
 const exactBlsRows = new Map();
 for (const row of BLS_SEARCH_ROWS) {
   const key = exactFoodKey(row[2]);
   // Ambiguous names must fall back to USDA, not select an arbitrary row.
   exactBlsRows.set(key, exactBlsRows.has(key) ? null : row);
 }
+// Reviewed whole-term vocabulary bridges to existing source rows, not invented
+// nutrient values. Do not erase qualifiers to force a match: roasted/salted,
+// flour, butter, milk and chocolate-coated variants need their own reference.
+const ingredientAliases = new Map();
+const rowsByCode = new Map(BLS_SEARCH_ROWS.map(row => [row[0], row]));
+for (const [code, aliases] of [
+  ['F840100', ['raisins', 'sultanas', 'golden raisins', 'golden raisins dried', 'dried golden raisins', 'grapes dried']],
+  ['H210100', ['almonds', 'almonds raw', 'sweet almonds raw']],
+  ['H210200', ['almonds blanched']],
+  ['H170100', ['cashews', 'cashews raw', 'cashew nuts raw']],
+  ['H180100', ['brazil nuts raw']],
+  ['H130100', ['hazelnuts raw']],
+  ['H120100', ['walnuts raw']],
+  ['H250100', ['pistachios', 'pistachios raw', 'pistachio nuts raw']],
+  ['H430100', ['sunflower seeds raw']],
+  ['C133000', ['rolled oats', 'rolled oats raw', 'oat flakes raw']],
+  ['C352032', ['white rice cooked', 'white rice steamed']],
+  ['C351032', ['brown rice cooked', 'brown rice steamed']],
+  ['V416172', ['chicken breast grilled', 'skinless chicken breast grilled', 'boneless skinless chicken breast grilled']],
+  ['E111132', ['hard boiled eggs', 'hard-boiled eggs', 'soft boiled eggs', 'chicken eggs hard boiled']],
+  ['M141300', ['plain yogurt 3.5% fat', 'plain whole milk yogurt 3.5% fat', 'whole milk yogurt', 'plain whole milk yogurt']],
+  ['M141200', ['plain yogurt 1.5% fat', 'plain low fat yogurt 1.5% fat']],
+  ['F533100', ['honeydew melon', 'honeydew raw']],
+  ['S145000', ['chocolate hazelnut spread', 'hazelnut chocolate spread', 'cocoa hazelnut spread', 'hazelnut cocoa spread', 'nutella']],
+]) {
+  const row = rowsByCode.get(code);
+  if (!row) throw new Error(`Missing reviewed BLS ingredient ${code}`);
+  for (const alias of aliases) ingredientAliases.set(exactFoodKey(alias), row);
+}
 export function resolveExactBlsFacts(term) {
-  const row = exactBlsRows.get(exactFoodKey(term));
+  const key = exactFoodKey(term);
+  const exact = exactBlsRows.get(key);
+  const row = exact || ingredientAliases.get(key);
   if (!row) return null;
   const [code, , description, calories, protein, carbs, fat, fiber] = row;
   if (![calories, protein, carbs, fat].every(value => Number.isFinite(value) && value >= 0)) return null;
   return { provider: 'bls', referenceId: code, label: `BLS 4.0 ${code}`, description,
-    calories, protein, carbs, fat, fiber, matchConfidence: 'high' };
+    calories, protein, carbs, fat, fiber, matchConfidence: exact ? 'high' : 'medium' };
 }
 
 /**

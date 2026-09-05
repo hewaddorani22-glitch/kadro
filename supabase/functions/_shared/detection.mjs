@@ -57,6 +57,7 @@ function languageRule(language) {
     `"title" and every item "name" are shown to the user: write them in ${label} as a natural food name, e.g. "grilled chicken breast", not as a database query.`,
     '"searchTermEn" is a USDA FoodData Central query and is always English, whatever the display language.',
     'Never put "other" or a referenceKey value into "searchTermEn": it must always name the actual food, e.g. "chicken breast grilled". "other" belongs in "referenceKey" alone.',
+    'Keep portion words and counts OUT of searchTermEn: "whole grain bread", not "whole grain bread slice". Counts belong only in pieceCount/pieceLabel. Use familiar generic database terms, e.g. "raisins", "almonds raw", "chocolate hazelnut spread" for Nutella. Do not imply brand-exact nutrients from a generic reference.',
   ].join(' ');
 }
 
@@ -64,9 +65,11 @@ const accuracyRules = `
 Work conservatively and never output nutrition values.
 - Never substitute an unfamiliar food or plant with a similar-looking common food. Never silently omit an explicitly named ingredient because its identity is uncertain. Keep it as an item with referenceKey=other, searchTermEn=unknown and confidence=medium so the lookup can request clarification instead of pricing a partial meal.
 - referenceKey: pick a BLS key only when the whole detected item is exactly that composed dish. In that case do not break it down further. Otherwise referenceKey=other.
+- Never use fried_egg for boiled/poached/raw eggs. A nearby dish in the catalog is NOT a fallback. For boiled eggs use referenceKey=other and searchTermEn="chicken egg boiled". Keep stated fat percentages for dairy and distinguish plain, Greek, sweetened and plant-based yogurt.
 - Goulash/Gulasch is a stew, not goulash_soup. Use goulash_soup only for explicitly described soup or clearly visible soup. Use goulash_beef/goulash_pork for the named meat. If the meat is unspecified, a beef-goulash reference is a medium-confidence assumption and the item name must make that assumption visible. Keep apple sauce or other toppings separate from goulash.
 - With referenceKey=other: break the meal into visible, nutritionally relevant ingredients. Use short, precise English USDA terms including the preparation, e.g. "chicken breast grilled" rather than "chicken".
 - Account for breading, cheese, dressing, sauce and the frying oil likely used. Invisible oil or an unclear sauce gets hiddenCaloriesRisk=high and confidence=medium.
+- A background container or food at the edge is not automatically part of the intended portion. Focus on the centered subject. Several types of nuts in one bowl are one meal (dishCount=1); identify the visible types separately. Do not add speculative minor ingredients to otherwise identifiable plain foods.
 - estimatedGrams is the best estimate. estimatedGramsLow and estimatedGramsHigh form the smallest realistic range and must satisfy low <= best <= high.
 - Use plate size, layer thickness, piece count and typical portion sizes. Do not confuse volume with weight.
 - Grams refer to the edible portion only: exclude melon rind/seeds, banana peel, pits, bones and packaging. For a whole uncut fruit the edible weight is uncertain; use medium confidence and a realistic range, not the gross whole-fruit weight as flesh.

@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import {
   buildAccuracyWarnings,
   buildMealItem,
+  canonicalFoodQuery,
   incompleteNutritionError,
   openFoodFactsNutrition,
   chooseFoodMatch,
@@ -133,7 +134,7 @@ async function searchUsdaOnce(query) {
   const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, pageSize: 15 }),
+    body: JSON.stringify({ query, pageSize: 25, dataType: ['Foundation', 'SR Legacy', 'Survey (FNDDS)'] }),
   });
   if (!response.ok) throw new Error(`usda_${response.status}`);
   const result = await response.json();
@@ -142,7 +143,7 @@ async function searchUsdaOnce(query) {
 }
 
 async function resolveUsdaItem(item, index) {
-  const term = normalizeSearchTerm(item.searchTermEn);
+  const term = canonicalFoodQuery(item.searchTermEn);
   // Same guard as the hosted gateway: a placeholder term must not price food.
   if (!isUsableSearchTerm(term)) return buildMealItem(item, null, index);
   const cacheKey = usdaCacheKey(term);
