@@ -67,8 +67,23 @@ export function classifyDetection(detection, source = 'photo') {
 }
 
 export function nutrient(food, ids) {
-  const match = (food.foodNutrients || []).find((entry) => ids.includes(Number(entry.nutrientId || entry.nutrientNumber)));
-  return Number(match?.value || 0);
+  for (const id of ids) {
+    for (const entry of food.foodNutrients || []) {
+      if (Number(entry.nutrientId ?? entry.nutrient?.id) !== id
+        && Number(entry.nutrientNumber ?? entry.nutrient?.number) !== id) continue;
+      const raw = entry.value ?? entry.amount;
+      if (raw === null || raw === undefined || raw === '') continue;
+      const value = Number(raw);
+      if (Number.isFinite(value) && value >= 0) return value;
+    }
+  }
+  return null;
+}
+
+// Legacy energy first, then food-specific Atwater, then general Atwater.
+// USDA Foundation foods may omit 1008 entirely. Never interpret missing as 0.
+export function energyKcal(food) {
+  return nutrient(food, [1008, 208, 2048, 958, 2047, 957]);
 }
 
 /**
@@ -100,7 +115,7 @@ export function isUsableSearchTerm(term) {
 }
 
 /** Changing the matcher invalidates previous choices without deleting data. */
-export const USDA_MATCHER_VERSION = 4;
+export const USDA_MATCHER_VERSION = 5;
 
 export function usdaCacheKey(term) {
   return `v${USDA_MATCHER_VERSION}:${normalizeSearchTerm(term)}`;
@@ -346,7 +361,7 @@ export function rankFoodMatches(foods, term, limit = 12) {
   for (const entry of rescored) {
     if (!entry.food || entry.score < floor) continue;
     // A row with no energy value cannot be logged, only misread as free food.
-    if (typeof nutrient(entry.food, [1008, 208]) !== 'number') continue;
+    if (energyKcal(entry.food) === null) continue;
     const description = normalizeSearchTerm(entry.food.description);
     if (contentWords.length && !contentWords.some((word) => description.includes(word))) continue;
     // USDA repeats near-identical rows; a list of six identical labels reads
@@ -371,6 +386,11 @@ export function chooseFood(foods, term = '') {
  */
 export function toFoodFacts(food, match = null) {
   if (!food) return null;
+  const calories = energyKcal(food);
+  const protein = nutrient(food, [1003, 203]);
+  const carbs = nutrient(food, [1005, 205]);
+  const fat = nutrient(food, [1004, 204]);
+  if ([calories, protein, carbs, fat].some((value) => value === null)) return null;
   return {
     provider: 'usda',
     referenceId: String(food.fdcId),
@@ -380,11 +400,11 @@ export function toFoodFacts(food, match = null) {
     matchConfidence: match?.confidence || 'high',
     matchScore: match?.score,
     matchMargin: match?.margin,
-    calories: nutrient(food, [1008, 208]),
-    protein: nutrient(food, [1003, 203]),
-    carbs: nutrient(food, [1005, 205]),
-    fat: nutrient(food, [1004, 204]),
-    fiber: nutrient(food, [1079, 291]),
+    calories,
+    protein,
+    carbs,
+    fat,
+    fiber: nutrient(food, [1079, 291]) ?? 0,
   };
 }
 
@@ -410,6 +430,9 @@ export function searchTermVariants(term) {
 }
 
 export function buildMealItem(item, facts, index) {
+  // Defense against old cache records and malformed provider values.
+  if (facts && (!Number.isFinite(facts.calories) || facts.calories < 0
+    || (facts.calories === 0 && (facts.protein * 4 + facts.carbs * 4 + facts.fat * 9) > 5))) facts = null;
   const count = item.pieceCount;
   const pieceGrams = item.estimatedGrams / count;
   const portions = typeof count === 'number' && Number.isFinite(count) && count >= 0.5 && count <= 99
@@ -449,6 +472,7 @@ export function buildMealItem(item, facts, index) {
     amountG: item.estimatedGrams,
     baseAmountG: item.estimatedGrams,
     portionFactor: 1,
+    nutritionPer100g: { calories: facts.calories, protein: facts.protein, carbs: facts.carbs, fat: facts.fat, fiber: facts.fiber ?? 0 },
     calories: Math.round(Number(facts.calories) * factor),
     protein: Math.round(Number(facts.protein) * factor),
     carbs: Math.round(Number(facts.carbs) * factor),

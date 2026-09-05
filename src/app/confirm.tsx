@@ -33,14 +33,14 @@ export default function ConfirmScreen() {
 
   const changeInput = () => {
     if (scanMode === 'search') {
-      router.replace('/(tabs)/scan?mode=search');
+      router.dismissTo('/(tabs)/scan?mode=search');
       return;
     }
     if (scanMode === 'description') {
-      router.replace('/(tabs)/scan?mode=description');
+      router.dismissTo('/(tabs)/scan?mode=description');
       return;
     }
-    router.replace('/(tabs)/scan');
+    router.dismissTo('/(tabs)/scan');
   };
 
   const confirm = () => {
@@ -52,7 +52,7 @@ export default function ConfirmScreen() {
       correction_applied: mealPortion !== 1 || detectedItems.some((item) => !item.included || item.amountG !== item.baseAmountG),
       included_item_count: countBucket(includedItems.length),
     });
-    router.push('/result');
+    router.replace('/result');
   };
 
   return (

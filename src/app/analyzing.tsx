@@ -97,10 +97,10 @@ export default function AnalyzingScreen() {
 
   const changeInput = (path: '/(tabs)/scan' | '/(tabs)/scan?mode=description' = '/(tabs)/scan') => {
     if (scanMode === 'description') {
-      router.replace('/(tabs)/scan?mode=description');
+      router.dismissTo('/(tabs)/scan?mode=description');
     } else {
       resetScan();
-      router.replace(path);
+      router.dismissTo(path);
     }
   };
 

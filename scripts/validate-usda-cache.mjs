@@ -46,6 +46,20 @@ function throughCacheTable(facts) {
 
 const failures = [];
 
+// Actual Foundation honeydew shape: no legacy Energy 1008, both Atwater IDs.
+const melon = usdaFood(2710816, { protein: 0.531, carbs: 8.15, fat: 0.216, fiber: 0 });
+melon.foodNutrients.push({ nutrientId: 2047, value: 36.7 }, { nutrientId: 2048, value: 32.9 });
+assert.equal(toFoodFacts(melon).calories, 32.9);
+assert.equal(buildMealItem({ name: 'Honigmelone', estimatedGrams: 1000 }, toFoodFacts(melon), 0).calories, 329);
+assert.equal(toFoodFacts({ foodNutrients: [{ nutrientId: 1003, value: 1 }] }), null);
+assert.equal(toFoodFacts(usdaFood(2, { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 })).calories, 0);
+const detail = { fdcId: 3, foodNutrients: [{ nutrient: { id: 2047 }, amount: 36.7 }, ...melon.foodNutrients.filter(n => ![1008, 2047, 2048].includes(n.nutrientId))] };
+assert.equal(toFoodFacts(detail).calories, 36.7);
+const corrupt = buildMealItem({ name: 'Melon', estimatedGrams: 1000 }, { ...toFoodFacts(melon), calories: 0 }, 0);
+assert.equal(corrupt.included, false, 'zero-energy legacy cache with macros must never count as valid food');
+const preciseMelon = buildMealItem({ name: 'Melon', estimatedGrams: 25 }, toFoodFacts(melon), 0);
+assert.equal(preciseMelon.nutritionPer100g.protein, 0.531, 'portion edits retain source precision');
+
 // 1. The cache key must not depend on how the model spaced or cased the term.
 const variants = ['Grilled Chicken Breast', 'grilled chicken breast', '  GRILLED   chicken breast  '];
 const keys = new Set(variants.map(normalizeSearchTerm));

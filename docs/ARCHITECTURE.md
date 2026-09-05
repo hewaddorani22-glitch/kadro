@@ -2,6 +2,9 @@
 
 ## Appearance and amount editing (Build 8 remediation)
 
+- USDA energy resolves legacy kcal, food-specific Atwater, then general Atwater fields. Missing energy/macros are not treated as a complete zero-valued reference. Cache version 5 invalidates previous mappings; source per-100g precision is preserved through scan correction. Zero-energy references with substantial macros are rejected rather than silently logged.
+- Scan completion replaces confirm with result and dismisses back to the existing tab navigator. Repeated cycles no longer retain old correction/tab stacks. Camera mounting additionally requires navigation focus and foreground AppState; iOS acquisition is bounded to 1920×1080 before compression. These are preventive lifecycle corrections, not proof of the reported native crash's cause.
+
 - Description input is retained in AppContext and shown on analysis/confirmation;
   text failures use text-specific guidance and return to the populated editor.
   Only photos are subject to image clarity / separate-plate rejection. Identified

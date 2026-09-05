@@ -2,6 +2,10 @@
 
 ## Build 8 feedback, 2026-09-05
 
+- [x] Build 11 feedback: reproduce honeydew energy 0 against USDA Foundation 2710816; map Atwater energy fields and preserve correction precision. Hosted text regression now returns 329 kcal for an explicit 1000 g edible portion. Existing incorrectly saved meals are not silently rewritten.
+- [x] Prevent retained scan navigation stacks; verify 30 cycles with the actual navigation reducer. Restrict camera to focused/foreground screen and bound iOS acquisition resolution.
+- [ ] Obtain and inspect the reported iPhone crash/Jetsam log and repeat at least 15 physical photo cycles in a replacement native build. Browser/reducer tests do not certify native camera stability.
+
 - [x] Follow-up QA: midnight refresh, privacy-safe analytics event, eligibility-gated trial copy, localized demo ingredients, consent contrast and stepper accessibility units. Full browser QA evidence is in `release/app-store-audit/22_FULL_APP_QA.md`.
 - [x] Landing/app consistency: guest account, guardian requirement, photo retry retention and recipe scope clarified; waitlist network timeouts recover with localized feedback.
 

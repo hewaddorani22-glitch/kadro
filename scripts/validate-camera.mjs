@@ -8,6 +8,7 @@
  */
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
+import { StackRouter, StackActions } from '@react-navigation/routers';
 
 const problems = [];
 const scan = readFileSync(new URL('../src/app/(tabs)/scan.tsx', import.meta.url), 'utf8');
@@ -71,13 +72,17 @@ if (problems.length) {
 // Execute the actual screen handler with a delayed native camera response.
 // Closing must win over both a successful photo and a rejected camera promise.
 const handler = scan.slice(scan.indexOf('const capture = async'), scan.indexOf('// The demo meal'));
-for (const rejectPhoto of [false, true]) {
+for (const { rejectPhoto, background } of [
+  { rejectPhoto: false, background: false }, { rejectPhoto: true, background: false },
+  { rejectPhoto: false, background: true }, { rejectPhoto: true, background: true },
+]) {
   let settle;
   let calls = 0;
   const events = [];
   const refs = { scanFocused: { current: true }, scanVisit: { current: 1 }, captureLock: { current: false } };
   const dependencies = {
     ...refs,
+    AppState: { currentState: 'active' },
     hasScanAccess: () => true,
     setCapturing: () => {}, primaryHaptic: () => {},
     permission: { granted: true },
@@ -93,13 +98,36 @@ for (const rejectPhoto of [false, true]) {
   const first = capturePhoto();
   await capturePhoto();
   assert.equal(calls, 1, 'two taps in the same frame must take only one photo');
-  refs.scanFocused.current = false;
-  refs.scanVisit.current += 1;
+  if (background) dependencies.AppState.currentState = 'background';
+  else {
+    refs.scanFocused.current = false;
+    refs.scanVisit.current += 1;
+  }
   settle(rejectPhoto ? new Error('camera unmounted') : { uri: 'file:cancelled.jpg' });
   await first;
   assert.deepEqual(events, rejectPhoto ? [] : ['delete:file:cancelled.jpg'], 'a closed scanner must never navigate or alert late');
 }
 assert.match(scan, /hitSlop=\{8\} onPress=\{close\}/);
+assert.match(active, /isFocused && foreground/);
+assert.match(scan, /AppState.addEventListener\('change'/);
+assert.match(scan, /return \(\) => subscription.remove\(\)/);
+assert.match(scan, /pictureSize=\{Platform.OS === 'ios' \? '1920x1080' : undefined\}/);
 assert.match(scan, /scanFocused.current = false;[\s\S]*scanVisit.current \+= 1;/);
 assert.equal((scan.match(/onDismiss=\{finishSheetDismiss\}/g) || []).length, 2);
+const confirm = readFileSync(new URL('../src/app/confirm.tsx', import.meta.url), 'utf8');
+const result = readFileSync(new URL('../src/app/result.tsx', import.meta.url), 'utf8');
+assert.ok(confirm.includes("router.replace('/result')"));
+assert.ok(result.includes("router.dismissTo('/(tabs)/today')"));
+assert.ok(result.includes("router.dismissTo({ pathname: '/(tabs)/plan'"));
+// Use the actual navigation reducer, not an invented array simulation.
+const stack = StackRouter({ initialRouteName: '(tabs)' });
+const options = { routeNames: ['(tabs)', 'analyzing', 'confirm', 'result'], routeParamList: {}, routeGetIdList: {} };
+let navigation = stack.getInitialState(options);
+for (let cycle = 0; cycle < 30; cycle++) {
+  for (const action of [StackActions.push('analyzing'), StackActions.replace('confirm'), StackActions.replace('result'), StackActions.popTo('(tabs)', { screen: cycle % 2 ? 'plan' : 'today' })]) {
+    navigation = stack.getStateForAction(navigation, action, options);
+    assert.ok(navigation);
+  }
+  assert.equal(navigation.routes.length, 1, 'completed scans must not accumulate tab/correction screens');
+}
 console.log('Camera lifecycle: focus reset, duplicate-tap lock, cancelled capture success/error and sheet dismissal checks passed.');

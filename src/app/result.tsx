@@ -176,13 +176,13 @@ export default function ResultScreen() {
     // is guarded separately and does not double-count.
     await logScannedMeal();
     trackEvent('meal saved', { next_destination: 'recommendations' });
-    router.replace({ pathname: '/(tabs)/plan', params: { context: 'home', fromScan: '1' } });
+    router.dismissTo({ pathname: '/(tabs)/plan', params: { context: 'home', fromScan: '1' } });
   };
 
   const saveForLater = async () => {
     await logScannedMeal();
     trackEvent('meal saved', { next_destination: 'today' });
-    router.replace('/(tabs)/today');
+    router.dismissTo('/(tabs)/today');
   };
 
   const shareResult = async () => {

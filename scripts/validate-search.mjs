@@ -90,11 +90,11 @@ for (const file of ['src/i18n/de.ts', 'src/i18n/en.ts']) {
 // to an already-open search sheet and say what will actually happen.
 assert.match(confirm, /scanMode === 'search' \? t\.confirm\.searchAgain : scanMode === 'description' \? t\.confirm\.editDescription : t\.confirm\.retake/,
   'search confirmation must not offer to retake a photo');
-assert.match(confirm, /router\.replace\('\/\(tabs\)\/scan\?mode=description'\)/,
+assert.match(confirm, /router\.dismissTo\('\/\(tabs\)\/scan\?mode=description'\)/,
   'description confirmation must return to text entry, not the camera');
 const changeInput = confirm.slice(confirm.indexOf('const changeInput'), confirm.indexOf('const confirm'));
 assert.match(changeInput, /scanMode === 'search'/, 'the change-input action must distinguish a search result');
-assert.match(changeInput, /router\.replace\('\/\(tabs\)\/scan\?mode=search'\)/,
+assert.match(changeInput, /router\.dismissTo\('\/\(tabs\)\/scan\?mode=search'\)/,
   'choosing another searched food must reopen the search sheet');
 // German search leans on the BLS dish names, because USDA is English only.
 const bls = await read('supabase/functions/_shared/bls-reference.mjs');

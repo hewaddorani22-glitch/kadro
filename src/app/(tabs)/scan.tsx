@@ -4,7 +4,8 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
+import { ActivityIndicator, Alert, AppState, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
@@ -24,6 +25,12 @@ export default function ScanScreen() {
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const pathname = usePathname();
+  const isFocused = useIsFocused();
+  const [foreground, setForeground] = useState(AppState.currentState === 'active');
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => setForeground(state === 'active'));
+    return () => subscription.remove();
+  }, []);
   const { applySearchResult, descriptionInput, freeScansLeft, hasEverLoggedScan, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const [permission, requestPermission] = useCameraPermissions();
@@ -67,6 +74,7 @@ export default function ScanScreen() {
   // The sheets cover the whole screen, so a camera running behind one is a
   // preview nobody can see holding a device nobody else can use.
   const cameraActive = pathname.endsWith('/scan')
+    && isFocused && foreground
     && !scannerClosed
     && mode !== 'description'
     && mode !== 'search'
@@ -216,7 +224,7 @@ export default function ScanScreen() {
       // shutter into a dead button; asking the camera and handling the failure
       // costs one retry at worst.
       const result = await cameraRef.current.takePictureAsync({ quality: 0.9 });
-      if (!scanFocused.current || visit !== scanVisit.current) {
+      if (!scanFocused.current || visit !== scanVisit.current || AppState.currentState !== 'active') {
         deleteTemporaryPhoto(result?.uri);
         return;
       }
@@ -224,7 +232,7 @@ export default function ScanScreen() {
       setCapturedPhoto(result.uri);
       router.push('/analyzing');
     } catch {
-      if (scanFocused.current && visit === scanVisit.current) {
+      if (scanFocused.current && visit === scanVisit.current && AppState.currentState === 'active') {
         Alert.alert(t.scan.captureFailedTitle, t.scan.captureFailedBody);
       }
     } finally {
@@ -355,6 +363,7 @@ export default function ScanScreen() {
       {cameraActive ? (
         <>
           <CameraView
+            pictureSize={Platform.OS === 'ios' ? '1920x1080' : undefined}
             pointerEvents="none"
             active={Platform.OS === 'ios' ? cameraActive : undefined}
             autofocus="on"
