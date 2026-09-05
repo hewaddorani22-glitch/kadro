@@ -10,6 +10,7 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { runInNewContext } from 'node:vm';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const fn = read('supabase/functions/waitlist/index.ts');
@@ -178,6 +179,58 @@ for (const [language, file, needles] of [
 
 // --- The page cannot ask for what it cannot confirm ------------------------
 const script = read('site/waitlist.js');
+// Execute the shipped browser script, including rejected and stalled requests.
+async function runFormCase(language, statusMode, submitMode = 'success') {
+  const input = { value: 'qa@example.invalid', disabled: false };
+  const button = { disabled: false };
+  const status = { textContent: '', className: '' };
+  let submit;
+  const timers = new Map();
+  let timerId = 0;
+  let sentBody;
+  const form = {
+    hidden: true,
+    closest: () => ({ querySelector: () => status }),
+    querySelector: (selector) => selector === 'button' ? button : input,
+    reportValidity: () => true,
+    reset: () => { input.value = ''; },
+    addEventListener: (_, handler) => { submit = handler; },
+  };
+  const fetch = (url, options) => {
+    const mode = url.endsWith('/status') ? statusMode : submitMode;
+    if (options.body) sentBody = JSON.parse(options.body);
+    if (mode === 'reject') return Promise.reject(new Error('offline'));
+    if (mode === 'stall') return new Promise((_, reject) => options.signal.addEventListener('abort', () => reject(new Error('timeout'))));
+    return Promise.resolve({ ok: true, json: async () => ({ accepting: mode !== 'closed' }) });
+  };
+  runInNewContext(script, {
+    document: { documentElement: { lang: language }, querySelectorAll: () => [form] },
+    location: { search: '' }, window: {}, URLSearchParams, AbortController, fetch,
+    setTimeout: (fn) => { timers.set(++timerId, fn); return timerId; },
+    clearTimeout: (id) => timers.delete(id),
+  });
+  const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
+  if (statusMode === 'stall') for (const callback of [...timers.values()]) callback();
+  await flush();
+  assert.equal(form.hidden, false, `${statusMode}: form must remain discoverable`);
+  assert.equal(input.disabled, statusMode === 'closed');
+  assert.equal(timers.size, 0, 'status timer must be cleaned up');
+  if (statusMode === 'closed') return;
+  submit({ preventDefault() {} });
+  assert.equal(button.disabled, true);
+  if (submitMode === 'stall') for (const callback of [...timers.values()]) callback();
+  await flush();
+  assert.equal(button.disabled, false, 'submit must recover after failures/timeouts');
+  assert.equal(sentBody.language, language);
+  assert.equal(timers.size, 0, 'submit timer must be cleaned up');
+  assert.match(status.textContent, submitMode === 'success'
+    ? language === 'de' ? /Postfach/ : /inbox/
+    : language === 'de' ? /nicht geklappt/ : /did not work/);
+}
+for (const language of ['de', 'en']) {
+  for (const status of ['success', 'closed', 'reject', 'stall']) await runFormCase(language, status);
+  for (const submission of ['reject', 'stall']) await runFormCase(language, 'success', submission);
+}
 // Shown either way, but inert until an address can actually be confirmed: a
 // blank gap where a sign-up should be reads as a broken page.
 assert.match(script, /control\.input\.disabled = true;\s*\n\s*control\.button\.disabled = true;/,

@@ -74,6 +74,12 @@ Root stack routes sit above the tab navigator so camera analysis, confirmation, 
 
 ## State and calculations
 
+`useLocalDay` refreshes the local date on foreground entry and every 30 seconds.
+AppContext synchronously filters hydrated meal history when the day changes;
+Progress uses the same date signal for its window and streak calculations.
+Trial copy is advertised only after StoreKit reports introductory eligibility;
+unknown eligibility falls back to the regular subscription price.
+
 Empty scan confirmations are blocked both in the screen and the app-state save handler. Adolescent targets round the adolescent maintenance estimate directly, without adult calorie caps/floors. The Result recommendation card observes the same below-150-kcal completion threshold as Today and Plan.
 
 `AppProvider` owns active UI state, hydrates local storage first, and then optionally reconciles with Supabase:

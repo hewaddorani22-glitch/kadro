@@ -35,8 +35,13 @@
     control.status.className = 'form-status' + (tone ? ' ' + tone : '');
   };
 
-  fetch(ENDPOINT + '/status')
-    .then(function (response) { return response.json(); })
+  var statusController = new AbortController();
+  var statusTimeout = setTimeout(function () { statusController.abort(); }, 8000);
+  fetch(ENDPOINT + '/status', { signal: statusController.signal })
+    .then(function (response) {
+      if (!response.ok) throw new Error('Status unavailable');
+      return response.json();
+    })
     .then(function (payload) {
       for (var index = 0; index < controls.length; index += 1) {
         var control = controls[index];
@@ -47,7 +52,16 @@
         say(control, closedMessage());
       }
     })
-    .catch(function () {});
+    .catch(function () {
+      for (var index = 0; index < controls.length; index += 1) {
+        var control = controls[index];
+        // The status check is advisory. A manual submission can retry the
+        // server, which still refuses sign-ups when delivery is unavailable.
+        control.form.hidden = false;
+        say(control, text.failed, 'bad');
+      }
+    })
+    .finally(function () { clearTimeout(statusTimeout); });
 
   var subscribe = function (control) {
     control.form.addEventListener('submit', function (event) {
@@ -55,8 +69,11 @@
       if (!control.form.reportValidity()) return;
       control.button.disabled = true;
       say(control, text.sending);
+      var controller = new AbortController();
+      var timeout = setTimeout(function () { controller.abort(); }, 15000);
       fetch(ENDPOINT + '/subscribe', {
         method: 'POST',
+        signal: controller.signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: control.input.value,
@@ -72,7 +89,7 @@
           else say(control, text.failed, 'bad');
         })
         .catch(function () { say(control, text.failed, 'bad'); })
-        .finally(function () { control.button.disabled = false; });
+        .finally(function () { clearTimeout(timeout); control.button.disabled = false; });
     });
   };
   for (var item = 0; item < controls.length; item += 1) subscribe(controls[item]);
