@@ -206,7 +206,7 @@ export default function ConfirmScreen() {
                     <Text style={styles.itemName}>{item.name}</Text>
                     {item.optional ? <Text style={styles.uncertain}>{t.confirm.check}</Text> : null}
                   </View>
-                  <Text style={styles.itemCalories}>~{item.calories} kcal · {item.source.label}</Text>
+                  <Text style={styles.itemCalories}>~{formatNumber(item.calories, locale)} kcal · {item.source.label}</Text>
                 </View>
                 <View style={styles.stepper}>
                   <Pressable accessibilityLabel={`${item.name} ${t.confirm.decrease}`} accessibilityRole="button" onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>

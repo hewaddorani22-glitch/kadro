@@ -108,7 +108,7 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
               {included.map((item) => (
                 <View key={item.id} style={styles.itemRow}>
                   <Text numberOfLines={1} style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemAmount}>{item.amountG} g · ~{item.calories} kcal</Text>
+                  <Text style={styles.itemAmount}>{formatNumber(item.amountG, locale)} g · ~{formatNumber(item.calories, locale)} kcal</Text>
                 </View>
               ))}
               <Text style={styles.sourceNote}>{included[0].source.label}</Text>

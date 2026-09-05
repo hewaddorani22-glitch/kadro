@@ -16,6 +16,7 @@ import { getGuardianConsentStatus, requestGuardianConsent } from '@/services/gua
 import { trackEvent } from '@/services/telemetry';
 import { errorHaptic, selectionHaptic, stepHaptic, successHaptic } from '@/services/haptics';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { formatNumber } from '@/utils/format';
 import { NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
 import {
   UNIT_SYSTEMS,
@@ -469,7 +470,15 @@ export default function OnboardingScreen() {
                 <UnitToggle onChange={setUnitSystem} value={unitSystem} />
                 <View style={styles.unitStepValue}>
                   {usesMetricWeight(unitSystem) ? (
-                    <NumberStep max={200} min={40} onChange={setWeight} step={1} unit="kg" value={weight} />
+                    <NumberStep
+                      format={(kilos) => formatNumber(kilos, locale)}
+                      max={200}
+                      min={40}
+                      onChange={setWeight}
+                      step={1}
+                      unit="kg"
+                      value={weight}
+                    />
                   ) : (
                     <NumberStep
                       format={(pounds) => (unitSystem === 'uk'
@@ -679,7 +688,17 @@ function NumberStep({ format, max, min, onChange, step, unit, value }: { format?
    * is nothing to feel when nothing changed.
    */
   const apply = useCallback((direction: -1 | 1, repeating = false) => {
-    const next = Math.min(max, Math.max(min, latest.current + direction * step));
+    // A value that came back through a unit conversion does not sit on the step
+    // grid: 176 lb is 79.8 kg, and adding a whole step to that kept the .8 for
+    // ever, so only the digits in front of the separator ever moved. The first
+    // press lands on the neighbouring whole step in the direction pressed;
+    // after that it moves a full step at a time.
+    const steps = latest.current / step;
+    const onGrid = Math.abs(steps - Math.round(steps)) < 1e-9;
+    const raw = onGrid
+      ? latest.current + direction * step
+      : (direction > 0 ? Math.ceil(steps) : Math.floor(steps)) * step;
+    const next = Math.min(max, Math.max(min, raw));
     if (next === latest.current) return;
     latest.current = next;
     void stepHaptic(repeating);

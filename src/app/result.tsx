@@ -238,7 +238,7 @@ export default function ResultScreen() {
                 <View style={styles.ingredientCheck}><Ionicons color={colors.success} name="checkmark" size={15} /></View>
                 <Text style={styles.ingredientName}>{item.name}</Text>
                 <View style={styles.ingredientMeta}>
-                  <Text style={styles.ingredientAmount}>{item.amountG} g</Text>
+                  <Text style={styles.ingredientAmount}>{formatNumber(item.amountG, locale)} g</Text>
                   <Text style={styles.ingredientSource}>{item.source.label}</Text>
                 </View>
               </View>
