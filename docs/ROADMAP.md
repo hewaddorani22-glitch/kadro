@@ -2,6 +2,8 @@
 
 ## Build 8 feedback, 2026-09-05
 
+- [x] Build 9 billing follow-up: reproduce active Apple sandbox receipt denied by server because the v2 entitlement is unexpanded; accept allowlisted subscription product + active entitlement without requiring nested products. Regression covers real response shape and retains wrong-store/product/entitlement rejection. On-device restore confirmation remains required.
+
 - [x] Reject empty scan confirmation/save; suppress empty confidence; use two-row ingredient controls on narrow screens; hide result recommendations below the same 150 kcal threshold as Today/Plan; remove adult caps/floors from adolescent maintenance calculation.
 - [ ] Local native simulator pass blocked: only Command Line Tools installed, no discoverable Xcode or simctl. Install full Xcode and an iOS runtime before claiming a simulator pass.
 

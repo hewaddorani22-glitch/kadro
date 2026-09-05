@@ -151,10 +151,10 @@ function subscription(overrides = {}) {
       items: [{
         id: ENTITLEMENT_RESOURCE_ID,
         state: 'active',
-        products: {
-          object: 'list',
-          items: [{ id: PRODUCT_RESOURCE_ID, app_id: APP_ID, state: 'active' }],
-        },
+        // Actual authenticated v2 response, 2026-09-05: product_id is on
+        // the subscription; the entitlement has NO nested products list.
+        object: 'entitlement',
+        lookup_key: 'kandro_pro',
       }],
     },
     ...overrides,
@@ -208,6 +208,8 @@ for (const unsafe of [
   subscription({ gives_access: false }),
   subscription({ current_period_ends_at: nowMs - 1, gives_access: false }),
   subscription({ entitlements: { object: 'list', items: [] } }),
+  subscription({ entitlements: { object: 'list', items: [{ id: 'entl_other', state: 'active' }] } }),
+  subscription({ entitlements: { object: 'list', items: [{ id: ENTITLEMENT_RESOURCE_ID, state: 'archived' }] } }),
   subscription({ entitlements: { object: 'list', items: [{
     id: ENTITLEMENT_RESOURCE_ID,
     state: 'active',
@@ -220,6 +222,14 @@ for (const unsafe of [
   }, 'Test Store/wrong store/product/app/entitlement/expired subscriptions must fail closed');
 }
 assert.throws(() => activeIosSubscriptionFromV2({ items: {} }, iosSubscriptionOptions), /response_invalid/);
+assert.throws(() => activeIosSubscriptionFromV2({ object: 'list', items: [subscription()] }, {
+  ...iosSubscriptionOptions, productResourceIds: [],
+}), /response_invalid/, 'the unexpanded response must still require a server-owned iOS product allowlist');
+assert.equal(activeIosSubscriptionFromV2({ object: 'list', items: [subscription({
+  entitlements: { object: 'list', items: [{ id: ENTITLEMENT_RESOURCE_ID, state: 'active',
+    products: { object: 'list', items: [{ id: PRODUCT_RESOURCE_ID, app_id: APP_ID, state: 'active' }] },
+  }] },
+})] }, iosSubscriptionOptions).active, true, 'expanded responses remain supported');
 
 let requestedUrl = '';
 let requestedAuthorization = '';

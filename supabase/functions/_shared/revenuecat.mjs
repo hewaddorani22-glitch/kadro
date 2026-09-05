@@ -184,12 +184,22 @@ export function activeIosSubscriptionFromV2(payload, {
     const entitlement = item?.entitlements?.items?.find((entry) => (
       entry?.id === entitlementResourceId && entry?.state === 'active'
     ));
-    const product = entitlement?.products?.items?.find((entry) => (
-      entry?.id === item.product_id
-      && entry?.app_id === iosAppId
-      && entry?.state === 'active'
-    ));
-    if (!product) return [];
+    if (!entitlement) return [];
+    // Customer/subscriptions returns unexpanded entitlement resources: the
+    // nested `products` list shown in the API's fully expanded schema is not
+    // sent in actual responses. The exact RevenueCat product resource IDs
+    // above are server-configured for this iOS app, not device-supplied store
+    // names. Together with APP_STORE and the entitlement ID they establish
+    // access without another provider call. Never require the optional list.
+    // If expansion is present, reject contradictory product/app metadata.
+    if (entitlement.products !== undefined) {
+      const product = entitlement.products?.items?.find((entry) => (
+        entry?.id === item.product_id
+        && entry?.app_id === iosAppId
+        && entry?.state === 'active'
+      ));
+      if (!product) return [];
+    }
 
     const futureExpiries = [item.current_period_ends_at, item.ends_at]
       .filter((value) => value != null)
