@@ -62,6 +62,31 @@ assert.match(weightStep, /onChange=\{setWeight\}\s+step=\{0\.1\}/);
 assert.equal((weightStep.match(/\beditable\b/g) || []).length, 2);
 assert.match(source, /if \(parsed === null\) return; onChange\(parsed\);/);
 assert.match(source, /weightKg: weight/);
+assert.match(weightStep, /onChange=\{\(pounds\) => setWeight\(poundsToKg\(pounds\)\)\}/);
+assert.match(weightStep, /step=\{unitSystem === 'us' \? 0\.1 : 1\}/);
+// Execute the actual conversion helpers and the actual UI onChange expression.
+const unitsSource = readFileSync(new URL('../src/utils/units.ts', import.meta.url), 'utf8').replace(/^import .*;\n/gm, '');
+const unitsModule = {exports:{}};
+new Function('module','exports',ts.transpileModule(unitsSource,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(unitsModule,unitsModule.exports);
+const {poundsToKg,kgToPounds}=unitsModule.exports;
+const changeExpression=weightStep.match(/onChange=\{\(pounds\) => setWeight\(([^\n]+)\)\}/)[1];
+const changePounds=new Function('pounds','poundsToKg',`return ${changeExpression}`);
+for(let tenth=882;tenth<4409;tenth++) {
+  const lb=tenth/10;
+  const kg=changePounds(lb,poundsToKg);
+  assert.equal(Math.round(kgToPounds(kg)*10)/10,lb,`lb entry drift at ${lb}`);
+  // Profile storage uses numeric(5,2); that precision still retains 0.1 lb.
+  assert.equal(Math.round(kgToPounds(Math.round(kg*100)/100)*10)/10,lb,`stored lb drift at ${lb}`);
+}
+let lb=218.9;
+for(let tap=1;tap<=20;tap++) {
+  lb=Math.round(kgToPounds(changePounds(apply(lb,1,{step:0.1}),poundsToKg))*10)/10;
+  assert.equal(lb,Math.round((218.9+tap*0.1)*10)/10);
+}
+for(let tap=1;tap<=20;tap++) {
+  lb=Math.round(kgToPounds(changePounds(apply(lb,-1,{step:0.1}),poundsToKg))*10)/10;
+  assert.equal(lb,Math.round((220.9-tap*0.1)*10)/10);
+}
 assert.match(weightStep, /format=\{\(kilos\) => formatNumber\(kilos, locale\)\}/,
   'a kilogram with a decimal renders with an English separator on a German screen');
 

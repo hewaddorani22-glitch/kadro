@@ -2,6 +2,8 @@
 
 ## Build 8 feedback, 2026-09-05
 
+- [x] US onboarding/profile weight stepper uses 0.1 lb and no intermediate 0.1 kg rounding. Regression sweeps lb inputs and database precision; native rapid-touch/hold behavior remains a physical-device gate.
+
 - [x] Reject incomplete scanned-meal nutrition instead of showing zero placeholders; exact BLS ingredient fallback and USDA food-identity gate prevent dried dates matching dried lotus seeds. Existing stored meals are not automatically rewritten; recognition of arbitrary photos remains a device/evaluation gate.
 
 - [x] Exact decimal weight entry in both onboarding and profile plan editing: comma/point, explicit save/cancel, existing bounds, 0.1 kg steps and no unit-switch rounding of stored weight. Native decimal-keyboard layout remains part of the next iPhone pass.

@@ -491,8 +491,8 @@ export default function OnboardingScreen() {
                         : formatNumber(pounds, locale))}
                       max={Math.floor(kgToPounds(200) * 10) / 10}
                       min={Math.ceil(kgToPounds(40) * 10) / 10}
-                      onChange={(pounds) => setWeight(Math.round(poundsToKg(pounds) * 10) / 10)}
-                      step={1}
+                      onChange={(pounds) => setWeight(poundsToKg(pounds))}
+                      step={unitSystem === 'us' ? 0.1 : 1}
                       unit={unitSystem === 'uk' ? '' : 'lb'}
                       value={Math.round(kgToPounds(weight) * 10) / 10}
                     />
