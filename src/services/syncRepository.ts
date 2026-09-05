@@ -46,7 +46,7 @@ export async function hydrateCloudState(): Promise<HydratedCloudState | null> {
   if (!cloud) return null;
 
   const localIsNewer = shouldPromoteLocalProfile(
-    localProfile.completedAt,
+    localProfile.completedAt ? localProfile.editedAt ?? localProfile.completedAt : null,
     cloud.profile.completedAt,
     cloud.ageDeclared,
   );

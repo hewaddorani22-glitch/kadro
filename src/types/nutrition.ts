@@ -90,6 +90,8 @@ export type UserProfile = {
   sex: BiologicalSex;
   preferences: string[];
   completedAt: string | null;
+  /** Last explicit edit, separate from initial onboarding completion. */
+  editedAt?: string;
 };
 
 export type WeightEntry = {

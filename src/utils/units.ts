@@ -117,10 +117,18 @@ export function weightInputUnit(system: UnitSystem) {
 
 /** Parses what the user typed back to kilograms, accepting both separators. */
 export function parseWeightInput(raw: string, system: UnitSystem): number | null {
+  if (!/^\d+(?:[.,]\d+)?$/.test(raw.trim())) return null;
   const value = Number(raw.replace(',', '.').trim());
   if (!Number.isFinite(value) || value <= 0) return null;
   const kg = usesMetricWeight(system) ? value : poundsToKg(value);
-  return kg >= 25 && kg <= 400 ? Math.round(kg * 10) / 10 : null;
+  return normalizeWeightKg(kg);
+}
+
+/** Match persistence bounds; never silently clamp a user's measurement. */
+export function normalizeWeightKg(kg: number): number | null {
+  return Number.isFinite(kg) && kg >= 35 && kg <= 350
+    ? Math.round(kg * 100) / 100
+    : null;
 }
 
 // --- Weekly rate -----------------------------------------------------------
@@ -149,15 +157,16 @@ export function kgToStoneParts(kg: number) {
 }
 
 export function stonePartsToKg(stone: number, pounds: number) {
-  return Math.round(poundsToKg(stone * POUNDS_PER_STONE + pounds) * 10) / 10;
+  return poundsToKg(stone * POUNDS_PER_STONE + pounds);
 }
 
 /** Validates a stone-and-pounds pair the same way parseWeightInput does. */
 export function parseStoneInput(stoneRaw: string, poundsRaw: string): number | null {
+  if (!/^\d*$/.test(stoneRaw.trim()) || !/^(?:\d+(?:[.,]\d+)?)?$/.test(poundsRaw.trim())) return null;
   const stone = Number(stoneRaw.trim() || '0');
   const pounds = Number(poundsRaw.replace(',', '.').trim() || '0');
   if (!Number.isFinite(stone) || !Number.isFinite(pounds)) return null;
   if (stone < 0 || pounds < 0 || pounds >= POUNDS_PER_STONE) return null;
   const kg = stonePartsToKg(stone, pounds);
-  return kg >= 25 && kg <= 400 ? kg : null;
+  return normalizeWeightKg(kg);
 }

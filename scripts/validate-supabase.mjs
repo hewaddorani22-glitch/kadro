@@ -154,7 +154,7 @@ if (!gateway.includes('context.supabaseAdmin') || !gateway.includes('usda_food_c
 }
 // A zero-calorie product is not a product without data. Diet drinks and
 // sparkling water are among the most scanned items and were being rejected.
-if (!gateway.includes('missing_nutrition') || !gateway.includes('NUTRIMENT_KEYS')) {
+if (!gateway.includes('missing_nutrition') || !gateway.includes('openFoodFactsNutrition(values)')) {
   failures.push('the barcode lookup must distinguish absent nutrition from genuine zeroes');
 }
 if (/some\(\(value\) => value > 0\)/.test(mealAnalysis)) {

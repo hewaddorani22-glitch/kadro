@@ -80,13 +80,13 @@ assert.ok(
 
 // --- Input parsing ----------------------------------------------------------
 assert.equal(units.parseWeightInput('84,2', 'metric'), 84.2, 'a comma must parse like a dot');
-assert.equal(units.parseWeightInput('185.2', 'us'), 84, 'pounds must come back as kilograms');
+assert.equal(units.parseWeightInput('185.2', 'us'), 84.01, 'pounds must keep hundredth-kg precision');
 assert.equal(units.parseWeightInput('abc', 'metric'), null);
 assert.equal(units.parseWeightInput('0', 'metric'), null);
 assert.equal(units.parseWeightInput('900', 'metric'), null, 'an implausible weight must be rejected');
 // 13 st 3 lb is 185 lb, which is 83.9 kg — the display rounds to whole pounds,
 // so a round trip through stone is accurate to a tenth of a kilogram, not exact.
-assert.equal(units.parseStoneInput('13', '3'), 83.9, 'stone and pounds must come back as kilograms');
+assert.equal(units.parseStoneInput('13', '3'), 83.91, 'stone and pounds must come back as kilograms');
 assert.ok(Math.abs(units.parseStoneInput('13', '3') - 84) <= 0.15, 'the stone round trip must stay within 150 g');
 assert.equal(units.parseStoneInput('13', '14'), null, 'fourteen pounds is another stone, not a valid entry');
 assert.equal(units.parseStoneInput('13', '-1'), null);

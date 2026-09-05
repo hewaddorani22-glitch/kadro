@@ -4,6 +4,7 @@ import {
   buildAccuracyWarnings,
   buildMealItem,
   incompleteNutritionError,
+  openFoodFactsNutrition,
   chooseFoodMatch,
   classifyDetection,
   normalizeSearchTerm,
@@ -820,16 +821,8 @@ async function lookupBarcode(barcode: string, language: string, claimOff?: () =>
   const result = await response.json();
   const product = result.product;
   const values = product?.nutriments || {};
-  // A zero-calorie product is not a product without data. Diet drinks,
-  // sparkling water and sugar-free gum are among the most scanned items, and
-  // rejecting them as "missing nutrition" was simply wrong. Presence of the
-  // key decides, not its value.
-  const NUTRIMENT_KEYS = ['energy-kcal_100g', 'proteins_100g', 'carbohydrates_100g', 'fat_100g'];
-  const hasNutrition = NUTRIMENT_KEYS.some((key) => {
-    const value = values[key];
-    return value !== undefined && value !== null && value !== '' && Number.isFinite(Number(value));
-  });
-  if (!hasNutrition) {
+  const per100g = openFoodFactsNutrition(values);
+  if (!per100g) {
     return {
       status: 422,
       body: {
@@ -849,13 +842,7 @@ async function lookupBarcode(barcode: string, language: string, claimOff?: () =>
       // Empty rather than a sentence: the app fills in the fallback wording
       // from its own dictionary, so it is never German for an English reader.
       nameMissing: !localizedProductName(product, language),
-      per100g: {
-        calories: Math.round(Number(values['energy-kcal_100g'] || 0)),
-        protein: Math.round(Number(values.proteins_100g || 0)),
-        carbs: Math.round(Number(values.carbohydrates_100g || 0)),
-        fat: Math.round(Number(values.fat_100g || 0)),
-        fiber: Math.round(Number(values.fiber_100g || 0)),
-      },
+      per100g,
       // The pack's own serving, so "2 servings" is a tap rather than a
       // multiplication the user does in their head.
       portions: servingPortion(product),

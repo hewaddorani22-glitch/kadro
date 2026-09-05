@@ -1,5 +1,10 @@
 # 16 - Finales GO/NO-GO
 
+> **Aktueller Stand 2026-09-05: 85/100, CONDITIONAL_NO_GO.** Siehe
+> `28_REMEDIATION_METADATA_REVIEW.md`. Build 12 ist VALID, enthält aber die
+> neuesten Client-Korrekturen nicht. Im ASC-Entwurf ist kein Build ausgewählt.
+> Alle darunterstehenden Build-8/11-Scores und Statusangaben sind historisch.
+
 > **Update 2026-09-05: CONDITIONAL_NO_GO für App Review.** Der Score und die
 > Build-8-Matrix darunter sind historisch, keine aktuelle Zertifizierung.
 > Neuer Kandidat: Build 11 aus `fe8c307`, siehe `23_TESTFLIGHT_REFRESH.md`

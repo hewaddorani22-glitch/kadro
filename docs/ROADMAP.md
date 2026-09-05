@@ -1,5 +1,10 @@
 # Roadmap
 
+## Review remediation, 2026-09-05
+
+- Fixed partial barcode labels, progress pound precision/range mismatch, offline profile edit timestamps and deferred-state unit persistence. Regression coverage is part of `npm run verify`.
+- Audited live DE/EN App Store draft, added subscription/terms/privacy disclosures, and corrected the banana screenshot's 252 g calculation. No App Review submission or new binary is implied. Current release gates and evidence: `release/app-store-audit/28_REMEDIATION_METADATA_REVIEW.md`.
+
 ## Build 8 feedback, 2026-09-05
 
 - [x] US onboarding/profile weight stepper uses 0.1 lb and no intermediate 0.1 kg rounding. Regression sweeps lb inputs and database precision; native rapid-touch/hold behavior remains a physical-device gate.

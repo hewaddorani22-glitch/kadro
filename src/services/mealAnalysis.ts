@@ -259,10 +259,13 @@ export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResul
       : 'provider-error';
     throw new MealAnalysisError(kind, gatewayMessage(payload?.code, payload?.message));
   }
-  // Whether values exist is decided by the gateway, which sees the raw record.
-  // Checking for a positive number here rejected every genuinely zero-calorie
-  // product: diet drinks, sparkling water, sugar-free gum.
   const nutrition = payload.per100g;
+  // Also reject partial responses from an older gateway or a replayed request.
+  if (!nutrition || ![nutrition.calories, nutrition.protein, nutrition.carbs, nutrition.fat]
+    .every((value) => typeof value === 'number' && Number.isFinite(value) && value >= 0)
+    || (nutrition.calories === 0 && nutrition.protein * 4 + nutrition.carbs * 4 + nutrition.fat * 9 > 5)) {
+    throw new MealAnalysisError('product-not-found', gatewayMessage('missing_nutrition', undefined));
+  }
   // An unnamed product used to arrive as the German "Verpacktes Lebensmittel"
   // from the gateway, regardless of who was reading it.
   const name = payload.nameMissing || !payload.name
@@ -282,6 +285,7 @@ export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResul
       included: true,
       portions: payload.portions,
       source: payload.source,
+      nutritionPer100g: nutrition,
       ...nutrition,
     }],
   };

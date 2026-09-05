@@ -2,6 +2,9 @@
 
 ## Appearance and amount editing (Build 8 remediation)
 
+- Barcode labels use the shared `openFoodFactsNutrition` boundary in both gateways. All four core fields must be present, finite and non-negative; genuine all-zero labels remain valid, but zero energy with substantial macros is rejected. Source decimals and the client's per-100g reference are preserved. Missing data produces an explicit correction path, not invented calories.
+- Progress weight inputs and persistence share 35–350 kg validation and hundredth-kg storage precision, preserving tenth-pound entries. Out-of-range measurements are rejected rather than clamped. Profile edits carry `editedAt` separately from onboarding completion; same-account hydration compares this edit revision while retaining the authoritative missing-cloud-age guard. Unit changes persist an explicit profile snapshot, never a side effect of React executing an updater.
+
 - Analysis requires complete nutrient references for every detected ingredient. Unknown ingredients remain internal sentinels but the gateway rejects the whole result with `missing_nutrition`, rather than exposing partial totals or zero placeholders. Exact unambiguous BLS ingredient names (including dried dates) complement dish keys; USDA automatic matching requires food-identity tokens, not merely shared preparation words. Cache version 7 invalidates previous misses/mismatches. Client response validation also rejects old unmatched responses.
 
 - Onboarding and profile plan editing share the same exact-weight editor. Tapping the weight accepts comma/point and one decimal; invalid drafts do not mutate profile state. Metric buttons step by 0.1 kg and US buttons by 0.1 lb. Pound edits convert to kg without intermediate rounding, preventing display drift and skipped steps. Unit-only changes leave the stored kilogram value unchanged.

@@ -282,7 +282,7 @@ def draw_log(screen: Image.Image, locale: str) -> None:
     d.rounded_rectangle((52, 742, 906, 1906), radius=42, fill=SURFACE, outline=MOSS, width=3)
     d.rounded_rectangle((390, 774, 568, 786), radius=6, fill=LINE)
     d.text((82, 832), "Banane, roh" if de else "Banana, raw", font=font(43, True), fill=INK)
-    d.text((82, 889), "USDA FDC 2709224", font=font(22), fill=MUTED)
+    d.text((82, 889), "USDA FDC 173944", font=font(22), fill=MUTED)
     d.rounded_rectangle((82, 978, 362, 1140), radius=30, fill=CANVAS, outline=LINE, width=2)
     d.text((222, 1058), "2", font=font(68, True), fill=INK, anchor="mm")
     d.text((402, 1058), "× 1 Banane" if de else "× 1 banana", font=font(36, True), fill=INK, anchor="lm")
@@ -302,8 +302,10 @@ def draw_log(screen: Image.Image, locale: str) -> None:
         d.text((x + 24, 1338), label, font=font(24, True), fill=INK)
         d.text((x + 24, 1380), detail, font=font(22), fill=MUTED)
     d.rounded_rectangle((82, 1488, 876, 1648), radius=30, fill=CANVAS)
-    d.text((112, 1524), "~244 kcal", font=font(48, True), fill=INK)
-    d.text((112, 1590), "3 g P · 58 g KH · 0 g F · 252 g" if de else "3 g P · 58 g C · 0 g F · 252 g", font=font(24), fill=MUTED)
+    # Match the displayed reference: 89 kcal/100 g, two portions of 126 g.
+    banana_kcal = round(89 * 252 / 100)
+    d.text((112, 1524), f"~{banana_kcal} kcal", font=font(48, True), fill=INK)
+    d.text((112, 1590), "3 g P · 58 g KH · 1 g F · 252 g" if de else "3 g P · 58 g C · 1 g F · 252 g", font=font(24), fill=MUTED)
     d.rounded_rectangle((82, 1692, 876, 1792), radius=50, fill=PISTACHIO)
     d.text((479, 1742), "Hinzufügen" if de else "Add", font=font(30, True), fill=INK, anchor="mm")
 

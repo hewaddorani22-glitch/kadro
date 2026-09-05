@@ -74,6 +74,8 @@ export default function ProgressScreen() {
     try {
       await addWeightEntry(value);
       setShowWeightEntry(false);
+    } catch {
+      setWeightError(t.progress.weightError);
     } finally {
       setSaving(false);
     }

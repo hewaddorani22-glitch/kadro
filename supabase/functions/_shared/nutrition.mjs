@@ -576,3 +576,21 @@ export function usdaPortions(entry) {
   }
   return out.slice(0, 4);
 }
+/** A partial label is not a zero-valued label. Preserve source precision. */
+export function openFoodFactsNutrition(values = {}) {
+  const number = (value) => {
+    if (typeof value !== 'number' && typeof value !== 'string') return null;
+    if (typeof value === 'string' && !value.trim()) return null;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  };
+  const calories = number(values['energy-kcal_100g']);
+  const protein = number(values.proteins_100g);
+  const carbs = number(values.carbohydrates_100g);
+  const fat = number(values.fat_100g);
+  if ([calories, protein, carbs, fat].some((value) => value === null)) return null;
+  // Allow true zero labels, but not an empty energy field disguised as zero.
+  if (calories === 0 && protein * 4 + carbs * 4 + fat * 9 > 5) return null;
+  const fiber = number(values.fiber_100g);
+  return { calories, protein, carbs, fat, ...(fiber === null ? {} : { fiber }) };
+}

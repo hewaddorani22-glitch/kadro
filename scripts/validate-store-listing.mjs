@@ -23,6 +23,16 @@ for (const [locale, info] of locales) {
   if (name.length > 30) problems.push(`${locale}: name is ${name.length} characters, Apple allows 30`);
   if (info.subtitle.length > 30) problems.push(`${locale}: subtitle is ${info.subtitle.length} characters, Apple allows 30`);
   if (keywords.length > 100) problems.push(`${locale}: keywords are ${keywords.length} characters, Apple allows 100`);
+  if (!info.description || info.description.length > 4000) problems.push(`${locale}: description missing or exceeds 4000 characters`);
+  if ((info.promoText ?? '').length > 170) problems.push(`${locale}: promotional text exceeds 170 characters`);
+  for (const field of ['marketingUrl', 'supportUrl', 'privacyPolicyUrl']) {
+    if (!info[field]?.startsWith('https://getkandro.com/')) problems.push(`${locale}: invalid ${field}`);
+  }
+  if (!info.description.includes('/terms/') || !info.description.includes('/privacy/')) {
+    problems.push(`${locale}: subscription metadata must link terms and privacy`);
+  }
+  if (!info.description.includes('Kandro Pro') || !/monthly|monatliches/.test(info.description)
+    || !/annual|jährliches/.test(info.description)) problems.push(`${locale}: subscription disclosure missing`);
 
   const words = (text) => new Set(text.toLowerCase().match(/[\p{L}]+/gu) ?? []);
   const named = new Set([...words(name), ...words(info.subtitle)]);

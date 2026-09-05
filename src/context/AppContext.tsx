@@ -44,6 +44,7 @@ import { localDateKey } from '@/utils/date';
 import { itemNutritionPer100g } from '@/utils/portions';
 import { getDictionary } from '@/i18n/active';
 import type { UnitSystem } from '@/utils/units';
+import { normalizeWeightKg } from '@/utils/units';
 import { clearLocalWellnessConsent, forgetLocalWellnessConsent, hasCurrentWellnessConsent, recordWellnessConsent, withdrawWellnessConsent as withdrawStoredWellnessConsent } from '@/services/consent';
 import { clearRemindersForAccountSwitch, setEveningReminderEnabled } from '@/services/reminders';
 import { formatClockTime } from '@/utils/format';
@@ -158,7 +159,12 @@ function scaleItem(item: MealItem, nextAmount: number): MealItem {
 }
 
 export function AppProvider({ children }: PropsWithChildren) {
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [profile, setProfileState] = useState<UserProfile>(DEFAULT_PROFILE);
+  const profileRef = useRef(profile);
+  const setProfile = useCallback((next: UserProfile) => {
+    profileRef.current = next;
+    setProfileState(next);
+  }, []);
   const [hydrationReady, setHydrationReady] = useState(false);
   const [wellnessConsentGranted, setWellnessConsentGranted] = useState(false);
   const [targets, setTargets] = useState(DEFAULT_TARGETS);
@@ -549,7 +555,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const userName = profile.displayName;
 
   const completeOnboarding = useCallback(async (nextProfile: UserProfile) => {
-    const completedProfile = { ...nextProfile, completedAt: nextProfile.completedAt ?? new Date().toISOString() };
+    const completedProfile = { ...nextProfile, completedAt: nextProfile.completedAt ?? new Date().toISOString(), editedAt: new Date().toISOString() };
     const nextTargets = calculateDailyTargets(completedProfile);
     const weights = await saveWeightEntry({ date: localDateKey(), weightKg: completedProfile.weightKg });
     await adoptProfile(completedProfile);
@@ -574,13 +580,10 @@ export function AppProvider({ children }: PropsWithChildren) {
    * therefore the targets, stay exactly as they were.
    */
   const setUnitSystem = useCallback(async (unitSystem: UnitSystem) => {
-    let nextProfile: UserProfile | null = null;
-    setProfile((current) => {
-      if (current.unitSystem === unitSystem) return current;
-      nextProfile = { ...current, unitSystem };
-      return nextProfile;
-    });
-    if (!nextProfile) return;
+    const current = profileRef.current;
+    if (current.unitSystem === unitSystem) return;
+    const nextProfile = { ...current, unitSystem, editedAt: new Date().toISOString() };
+    setProfile(nextProfile);
     await saveProfile(nextProfile);
     if (isSupabaseConfigured) {
       void syncUserSetup(nextProfile, calculateDailyTargets(nextProfile))
@@ -589,8 +592,9 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   const addWeightEntry = useCallback(async (weightKg: number) => {
-    const roundedWeight = Math.round(Math.min(350, Math.max(35, weightKg)) * 10) / 10;
-    const nextProfile = { ...profile, weightKg: roundedWeight };
+    const roundedWeight = normalizeWeightKg(weightKg);
+    if (roundedWeight === null) throw new Error('invalid_weight');
+    const nextProfile = { ...profileRef.current, weightKg: roundedWeight, editedAt: new Date().toISOString() };
     const nextTargets = calculateDailyTargets(nextProfile);
     const weights = await saveWeightEntry({ date: localDateKey(), weightKg: roundedWeight });
     await saveProfile(nextProfile);
