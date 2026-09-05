@@ -122,7 +122,13 @@ function reply(result: Result) {
 // deno-lint-ignore no-explicit-any
 async function accessRpc(admin: any, name: string, args: Record<string, unknown>): Promise<AccessDecision | null> {
   const { data, error } = await admin.rpc(name, args);
-  return error || !data || typeof data !== 'object' ? null : data as AccessDecision;
+  if (error) {
+    // Only fixed RPC names and PostgreSQL error codes reach logs. Messages and
+    // details can contain identifiers or payload fragments and stay excluded.
+    console.error('nutrition access rpc failure', name, String(error.code ?? 'unknown'));
+    return null;
+  }
+  return !data || typeof data !== 'object' ? null : data as AccessDecision;
 }
 
 // deno-lint-ignore no-explicit-any

@@ -8,6 +8,7 @@ import {
 } from '@/services/supabaseClient';
 import { clearRemindersAfterAccountDeletion } from '@/services/reminders';
 import { clearTelemetryAfterAccountDeletion } from '@/services/telemetry';
+import { clearSubscriptionIdentityAfterAccountDeletion } from '@/services/subscription';
 import { getDictionary } from '@/i18n/active';
 
 export async function deleteKandroAccount() {
@@ -27,6 +28,7 @@ export async function deleteKandroAccount() {
   const { error } = await supabase.functions.invoke('delete-account', { method: 'DELETE' });
   if (error) throw error;
 
+  await clearSubscriptionIdentityAfterAccountDeletion().catch(() => undefined);
   await disableCloudSyncAfterDeletion();
   rememberSupabaseUser(null);
   await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);

@@ -72,13 +72,13 @@ Check the local gateway with `curl http://127.0.0.1:8787/health`. The right-hand
 ## Enable Day 3 cloud sync
 
 1. Create a Supabase project in an EU region and enable **Anonymous Sign-Ins** under Authentication settings.
-2. Sign in with the repository's isolated CLI profile, link the project, and apply the checked-in schema. The ignored CLI home keeps Kandro credentials separate from any default Supabase CLI account:
+2. Sign in with the current Supabase CLI, link the project, and apply the checked-in schema. The access token stays in the operating system's user-level CLI credentials and is never committed:
 
 ```bash
-export SUPABASE_HOME="$PWD/supabase/.cli-home"
-npx supabase login --profile "$PWD/supabase/kandro.profile.yml" --name kandro
-npx supabase link --profile "$PWD/supabase/kandro.profile.yml" --project-ref YOUR_PROJECT_REF
-npx supabase db push --linked --profile "$PWD/supabase/kandro.profile.yml"
+npx supabase login
+npx supabase link --project-ref YOUR_PROJECT_REF
+npm run db:remote:check
+npm run db:remote:push
 ```
 
 3. From the project's Connect dialog, put only these public client values in `.env`:
@@ -155,9 +155,9 @@ The complete plan audit, including the external TestFlight and legal gates, live
 
 ## Prepare TestFlight
 
-The repository is linked to the Expo EAS project `@hewad/kandro` and includes explicit preview and production profiles. Public Supabase values are configured for both environments; PostHog and RevenueCat Test Store values are configured for preview, and the production RevenueCat iOS client key is configured for production. Apple Developer Program membership is active and the monthly and annual App Store products exist. The server-authoritative entitlement, provider-rate and retention remediations remain local until their controlled Supabase rollout and sandbox verification; they are release gates, not production claims. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
+The repository is linked to the Expo EAS project `@hewad/kandro` and includes explicit preview and production profiles. Public Supabase values are configured for both environments; PostHog and RevenueCat Test Store values are configured for preview, and the production RevenueCat iOS client key is configured for production. Apple Developer Program membership is active and the monthly and annual App Store products exist. The server-authoritative entitlement, provider-rate and retention migrations and functions are deployed and verified against the linked production project. Store copy, screenshot storyboard, the exact native test gate, and release blockers live in [docs/APP_STORE.md](./docs/APP_STORE.md).
 
-The in-app privacy policy, terms and public website share the same generated bilingual source. The authenticated Supabase deletion function is live and its regression test confirms account deletion, profile cascade, and refresh-token revocation. The exact App Store privacy answers and reviewer notes live in `docs/APP_PRIVACY.md` and `docs/APP_REVIEW_NOTES.md`.
+The in-app privacy policy, terms and public website share the same generated bilingual source. The authenticated Supabase deletion function removes the linked RevenueCat customer before deleting the Supabase account; its live regression test confirms account deletion, profile cascade, and refresh-token revocation. The exact App Store privacy answers and reviewer notes live in `docs/APP_PRIVACY.md` and `docs/APP_REVIEW_NOTES.md`.
 
 ## Working with coding agents
 
@@ -171,9 +171,9 @@ Contributions should follow [CONTRIBUTING.md](./CONTRIBUTING.md). Pull requests 
 - React Native + Expo Router + TypeScript
 - Kandro brand system and German product UI
 - Real camera preview when permission is granted
-- Authenticated, metered Supabase analysis gateway using GPT-4.1-mini, BLS 4.0, USDA fallback and Open Food Facts for Preview/Production plus an optional local development gateway; live billing is still pending
+- Authenticated, metered Supabase analysis gateway using GPT-4.1-mini, BLS 4.0, USDA fallback and Open Food Facts for Preview/Production plus an optional local development gateway
 - Optional anonymous PostHog product analytics; native Sentry reporting begins with the development/TestFlight build
-- Versioned wellness-data consent, privacy/terms drafts, and authenticated account deletion with local cleanup
+- Versioned wellness-data consent, synchronized privacy/terms, and authenticated account deletion with RevenueCat and local cleanup
 - Confirmed meal records never retain photos; only a compressed failed scan can live temporarily in the local retry queue
 - Confirmed meals survive restarts in local AsyncStorage
 - Onboarding, consent, calculated targets, preferences, weight entries, and the three-free-analysis boundary survive restarts

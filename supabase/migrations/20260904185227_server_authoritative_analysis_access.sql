@@ -265,14 +265,13 @@ set search_path = ''
 as $$
 declare
   changed integer;
-  access_row public.analysis_access%rowtype;
 begin
   perform pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended(p_user_id::text, 4901721)
   );
   update public.analysis_requests
   set state = 'started',
-      started_at = pg_catalog.coalesce(started_at, pg_catalog.now()),
+      started_at = coalesce(started_at, pg_catalog.now()),
       updated_at = pg_catalog.now()
   where user_id = p_user_id
     and request_id = p_request_id
@@ -523,7 +522,6 @@ as $$
 declare
   observation_count integer;
   lock_user_id uuid;
-  row_index integer;
   changed integer;
   applied_count integer := 0;
   stale_count integer := 0;
@@ -543,9 +541,9 @@ begin
     or p_checked_at < pg_catalog.now() - interval '15 minutes'
     or p_checked_at > pg_catalog.now() + interval '5 minutes'
     or observation_count is null or observation_count not between 1 and 8
-    or pg_catalog.coalesce(pg_catalog.array_ndims(p_user_ids), 0) <> 1
-    or pg_catalog.coalesce(pg_catalog.array_ndims(p_active), 0) <> 1
-    or pg_catalog.coalesce(pg_catalog.array_ndims(p_expires_at), 0) <> 1
+    or coalesce(pg_catalog.array_ndims(p_user_ids), 0) <> 1
+    or coalesce(pg_catalog.array_ndims(p_active), 0) <> 1
+    or coalesce(pg_catalog.array_ndims(p_expires_at), 0) <> 1
     or pg_catalog.cardinality(p_active) <> observation_count
     or pg_catalog.cardinality(p_expires_at) <> observation_count then
     return pg_catalog.jsonb_build_object('status', 'invalid_event');
@@ -874,10 +872,10 @@ grant execute on function public.claim_revenuecat_refresh(uuid, integer) to serv
 grant execute on function public.consume_global_analysis_quota(integer) to service_role;
 grant execute on function public.apply_revenuecat_entitlement_batch(text, text, text, bigint, uuid[], boolean[], timestamptz[], timestamptz) to service_role;
 
--- pg_cron is available on hosted Supabase. The immediately preceding release
--- migration also enables it, but this migration remains safe when replayed in
--- isolation on a fresh environment.
-create extension if not exists pg_cron with schema pg_catalog;
+-- pg_cron is enabled by the immediately preceding waitlist-retention
+-- migration. Do not repeat CREATE EXTENSION here: on hosted Supabase an
+-- existing pg_cron installation can carry dependent grants, and attempting
+-- to reconcile its requested schema again fails with SQLSTATE 2BP01.
 grant usage on schema cron to postgres;
 grant all privileges on all tables in schema cron to postgres;
 

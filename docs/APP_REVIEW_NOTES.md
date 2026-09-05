@@ -6,7 +6,7 @@ Paste the relevant section into App Store Connect after replacing the bracketed 
 
 Kandro is a general wellness nutrition-planning app for users aged 14 and over. It does not diagnose or treat a medical condition and is not submitted in the Kids category.
 
-No login is required. On first launch, the reviewer completes onboarding and gives explicit consent before any nutrition, body, photo or text data is transferred. Consent can be withdrawn under **You → Analysis & data use**. The app then blocks all analysis and cloud processing while preserving existing data. **You → Delete account and data** permanently deletes the Supabase account and local Kandro data without contacting support.
+No login is required. On first launch, the reviewer completes onboarding and gives explicit consent before any nutrition, body, photo or text data is transferred. Consent can be withdrawn under **You → Analysis & data use**. The app then blocks all analysis and cloud processing while preserving existing data. **You → Delete account and data** permanently deletes the Supabase account, linked Kandro cloud data, linked RevenueCat customer and local Kandro data without contacting support. An Apple subscription remains separately manageable through the Apple subscription settings, which are linked on the same screen.
 
 The central Scan button offers four paths:
 

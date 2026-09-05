@@ -4,8 +4,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const [service, context, paywall, scan, result, appContext, localRepository, envExample, packageJson, dictDe, dictEn] = await Promise.all([
+const [service, accountDeletion, context, paywall, scan, result, appContext, localRepository, envExample, packageJson, dictDe, dictEn] = await Promise.all([
   readFile(resolve(projectRoot, 'src/services/subscription.ts'), 'utf8'),
+  readFile(resolve(projectRoot, 'src/services/accountDeletion.ts'), 'utf8'),
   readFile(resolve(projectRoot, 'src/context/SubscriptionContext.tsx'), 'utf8'),
   readFile(resolve(projectRoot, 'src/app/paywall.tsx'), 'utf8'),
   readFile(resolve(projectRoot, 'src/app/(tabs)/scan.tsx'), 'utf8'),
@@ -25,10 +26,15 @@ for (const invariant of [
   'Purchases.getCustomerInfo',
   'Purchases.purchasePackage',
   'Purchases.restorePurchases',
+  'Purchases.isAnonymous',
+  'Purchases.logOut',
   'customerInfo.entitlements.active[ENTITLEMENT_ID]',
   'ensureSupabaseUser',
 ]) {
   if (!service.includes(invariant)) failures.push(`subscription invariant missing: ${invariant}`);
+}
+if (!accountDeletion.includes('clearSubscriptionIdentityAfterAccountDeletion')) {
+  failures.push('account deletion must discard the RevenueCat on-device identity');
 }
 
 if (!service.includes('ExecutionEnvironment.StoreClient')) failures.push('Expo Go must select the RevenueCat Test Store');

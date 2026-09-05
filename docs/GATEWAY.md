@@ -157,6 +157,10 @@ müssen im eigenen Dashboard vor dem Rollout bestätigt werden.
 
 1. In RevenueCat einen API-v2-Secret-Key für genau das Kandro-Projekt anlegen,
    nur mit `customer_information:subscriptions:read`.
+   Einen zweiten, getrennten Schlüssel nur mit
+   `customer_information:customers:read_write` für die Accountlöschung
+   anlegen. So kann der Löschpfad Kundendaten entfernen, ohne Kauf- oder
+   Projektkonfiguration verändern zu dürfen.
 2. Die internen IDs notieren: `proj...` (Projekt), `app...` (Kandro-iOS-App)
    und `entl...` (Entitlement-Ressource) sowie die `prod...`-Ressourcen für
    Monats-/Jahresprodukt. `entl...` ist **nicht** der sichtbare Lookup-Key
@@ -167,13 +171,14 @@ müssen im eigenen Dashboard vor dem Rollout bestätigt werden.
    Sandbox und Production aktivieren (oder getrennte Integrationen verwenden),
    einen langen zufälligen Authorization-Wert setzen und HMAC Signing
    einschalten. Den nur einmal angezeigten Signing-Secret sicher speichern.
-4. Diese sieben Werte aus `supabase/.env.gateway.example` als Supabase Edge
+4. Diese acht Werte aus `supabase/.env.gateway.example` als Supabase Edge
    Secrets setzen: `REVENUECAT_PROJECT_ID`, `REVENUECAT_APP_ID`,
    `REVENUECAT_ENTITLEMENT_RESOURCE_ID`,
    `REVENUECAT_IOS_PRODUCT_RESOURCE_IDS`, `REVENUECAT_SECRET_API_KEY`,
+   `REVENUECAT_ERASURE_API_KEY`,
    `REVENUECAT_WEBHOOK_AUTHORIZATION`,
    `REVENUECAT_WEBHOOK_SIGNATURE_SECRET`. Keiner davon ist `EXPO_PUBLIC_`.
-5. Dry-run und Migration ausführen, danach beide Functions deployen:
+5. Dry-run und Migration ausführen, danach die Functions deployen:
 
    ```bash
    npm run db:remote:check
@@ -181,6 +186,7 @@ müssen im eigenen Dashboard vor dem Rollout bestätigt werden.
    npm run gateway:secrets
    npm run gateway:deploy
    npx supabase functions deploy revenuecat-webhook --no-verify-jwt
+   npx supabase functions deploy delete-account
    ```
 
 6. Unter RevenueCat **Project Settings → General → Sandbox Testing Access**

@@ -23,7 +23,7 @@ function contact() {
 }
 
 export const legalEn: LegalCopySet = {
-  version: '1.6 · Last updated 4 September 2026',
+  version: '1.7 · Last updated 5 September 2026',
   privacy: {
     title: 'Privacy notice',
     intro: 'This notice explains in plain language which data Kandro processes, why, and how you can delete it again at any time.',
@@ -60,14 +60,14 @@ export const legalEn: LegalCopySet = {
           'Kandro is available from age 14. In Germany, users aged 14 or 15 need authorization from a parent or legal guardian under Art. 8 GDPR before the explicit wellness-data consent can take effect; from age 16 the user can consent for themselves. The guardian confirms the disclosed recipients and purposes through a single-use link that expires after 48 hours. After successful confirmation, the request and token hash are deleted immediately; a daily database job removes expired requests. They can withdraw authorization through the contact address above; the user can also stop future processing in the app at any time.',
           'Local data remains until you delete the app data or your account. Confirmed meals are stored locally for your history; for the cloud history the app currently loads at most 90 days. Cloud data remains until the account is deleted. Technically necessary backups may expire according to the retention periods of the respective processor.',
           'To recover a successful analysis after an interrupted response and prevent free or Pro allowances from being counted twice, Supabase stores the structured nutrition result with a random request ID and your account ID. The photo, Base64 working copy, prompt and typed raw text are not stored for this purpose. An hourly job clears the result after 22 hours. The request ID, status and allowance type then remain for at most 30 days to prevent duplicate calls and abuse; RevenueCat webhook IDs remain for at most 90 days for deduplication. Account deletion immediately cascades to these Kandro records.',
-          'Voluntarily transmitted PostHog events remain until the retention configured for the EU project expires or a valid erasure request is completed. Switching analytics off stops future transmission but does not automatically erase events already sent. RevenueCat and Apple may keep purchase and subscription history as long as needed for restoration, billing, fraud prevention or legal duties. OpenRouter does not retain prompt or response content, but keeps content-free request metadata under its own retention criteria.',
+          'Voluntarily transmitted PostHog events remain until the retention configured for the EU project expires or a valid erasure request is completed. Switching analytics off stops future transmission and clears the random local analytics identity and pending event queues. PostHog never receives the Supabase account ID, so previously sent events cannot be joined to the deleted Kandro account. Apple may keep purchase and subscription history as long as needed for restoration, billing, fraud prevention or legal duties. OpenRouter does not retain prompt or response content, but keeps content-free request metadata under its own retention criteria.',
         ],
       },
       {
         title: '5. Your rights',
         paragraphs: [
           'You can request access, rectification, erasure, restriction and, where applicable, data portability, and you can withdraw consent with effect for the future. Pseudonymous usage analytics can be switched off at any time under “You”.',
-          'Under “You → Delete account and data” you can delete your Supabase account, the associated cloud data and your local history. An Apple subscription must additionally be cancelled in your Apple subscription settings. Events already sent to PostHog and purchase history held by Apple or RevenueCat are not erased automatically; you can contact the address above about erasure where that right applies.',
+          'Under “You → Delete account and data” you can delete your Supabase account, the associated Kandro cloud data, the linked RevenueCat customer and your local history and identifiers. Kandro asks RevenueCat to complete or durably queue that erasure before destroying the account join ID. An Apple subscription and Apple purchase history remain separate; the subscription must additionally be cancelled in your Apple subscription settings. Events already sent to PostHog remain pseudonymous and unlinked to the Supabase account until their configured retention expires or a valid erasure request is completed. You can contact the address above about any further erasure right.',
           'You have the right to lodge a complaint with a supervisory authority; for North Rhine-Westphalia this is the State Commissioner for Data Protection and Freedom of Information NRW.',
         ],
       },

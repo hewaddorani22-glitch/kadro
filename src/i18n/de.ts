@@ -732,7 +732,7 @@ export const de = {
   },
   deletion: {
     title: 'Account und Daten löschen',
-    body: 'Dieser Schritt löscht den Supabase-Account, alle damit verknüpften Cloud-Daten, lokale Mahlzeiten, wartende Scans und die lokale Analysekennung.',
+    body: 'Dieser Schritt löscht den Supabase-Account, alle verknüpften Kandro-Cloud-Daten, den verknüpften RevenueCat-Kunden, lokale Mahlzeiten, wartende Scans und lokale Kennungen.',
     warningTitle: 'Ein Store-Abo läuft separat weiter',
     warningText: 'Die Accountlöschung kündigt ein Apple-Abonnement nicht. Verwalte oder kündige es vor der Löschung in deinen Apple-Einstellungen.',
     openSubscriptions: 'Apple-Abonnements öffnen',

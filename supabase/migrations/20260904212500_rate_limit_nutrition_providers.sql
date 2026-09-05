@@ -52,7 +52,6 @@ declare
   subject_limits smallint[];
   subject_row private.nutrition_provider_rate_limits%rowtype;
   subject_active boolean;
-  subject_index integer;
   retry_after integer;
 begin
   if p_user_id is null
@@ -112,9 +111,9 @@ begin
     for update;
     subject_active := found and subject_row.window_started_at > rate_clock - quota_window;
     if subject_active and subject_row.request_count >= subject_limits[subject_index] then
-      retry_after := pg_catalog.greatest(
+      retry_after := greatest(
         1,
-        pg_catalog.ceil(pg_catalog.extract(epoch from subject_row.window_started_at + quota_window - rate_clock))::integer
+        pg_catalog.ceil(extract(epoch from subject_row.window_started_at + quota_window - rate_clock))::integer
       );
       return pg_catalog.jsonb_build_object('status', 'rate_limited', 'retryAfter', retry_after);
     end if;
@@ -187,7 +186,6 @@ declare
   subject_limits smallint[] := array[200::smallint];
   subject_row private.nutrition_provider_rate_limits%rowtype;
   subject_active boolean;
-  subject_index integer;
   retry_after integer;
   quota_window constant interval := interval '1 minute';
 begin
@@ -227,9 +225,9 @@ begin
     for update;
     subject_active := found and subject_row.window_started_at > rate_clock - quota_window;
     if subject_active and subject_row.request_count + p_request_units > subject_limits[subject_index] then
-      retry_after := pg_catalog.greatest(
+      retry_after := greatest(
         1,
-        pg_catalog.ceil(pg_catalog.extract(epoch from subject_row.window_started_at + quota_window - rate_clock))::integer
+        pg_catalog.ceil(extract(epoch from subject_row.window_started_at + quota_window - rate_clock))::integer
       );
       return pg_catalog.jsonb_build_object('status', 'rate_limited', 'retryAfter', retry_after);
     end if;
@@ -303,7 +301,9 @@ $$;
 revoke all on function private.purge_nutrition_provider_rate_limits(timestamptz)
   from public, anon, authenticated;
 
-create extension if not exists pg_cron with schema pg_catalog;
+-- pg_cron is enabled by 20260904184701_add_waitlist_retention.sql. Repeating
+-- CREATE EXTENSION after the cron schema has dependent grants can fail on
+-- hosted Supabase with SQLSTATE 2BP01, even with IF NOT EXISTS.
 grant usage on schema cron to postgres;
 grant all privileges on all tables in schema cron to postgres;
 

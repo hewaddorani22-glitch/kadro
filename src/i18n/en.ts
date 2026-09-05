@@ -723,7 +723,7 @@ export const en: typeof de = {
   },
   deletion: {
     title: 'Delete account and data',
-    body: 'This removes the Supabase account, all linked cloud data, local meals, queued scans and the local analysis identifier.',
+    body: 'This removes the Supabase account, all linked Kandro cloud data, the linked RevenueCat customer, local meals, queued scans and local identifiers.',
     warningTitle: 'A store subscription continues separately',
     warningText: 'Deleting the account does not cancel an Apple subscription. Manage or cancel it in your Apple settings before deleting.',
     openSubscriptions: 'Open Apple subscriptions',

@@ -166,6 +166,17 @@ export async function restoreSubscription() {
   return hasPro(await Purchases.restorePurchases());
 }
 
+/**
+ * Drops RevenueCat's on-device identity after the server has erased the
+ * linked customer. The backend deletion is authoritative; this cleanup must
+ * never make an already-completed account deletion look like it failed.
+ */
+export async function clearSubscriptionIdentityAfterAccountDeletion() {
+  if (!publicApiKey() || !(await Purchases.isConfigured())) return;
+  if (!(await Purchases.isAnonymous())) await Purchases.logOut();
+  configurationPromise = null;
+}
+
 export function isSubscriptionPurchaseCancelled(error: unknown) {
   if (!error || typeof error !== 'object') return false;
   const candidate = error as { code?: string; userCancelled?: boolean | null };
