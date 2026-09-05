@@ -215,12 +215,17 @@ async function readAnalysisResponse(response: Response): Promise<MealAnalysisRes
                 ? 'daily-limit'
                 : payload?.code === 'request_completed'
                   ? 'request-expired'
-            : payload?.code === 'invalid_input'
+            : payload?.code === 'invalid_input' || payload?.code === 'missing_nutrition'
               ? 'invalid-input'
           : 'provider-error';
     throw new MealAnalysisError(kind, gatewayMessage(payload?.code, payload?.message));
   }
   if (!payload?.items?.length) throw new MealAnalysisError('unclear-image', getDictionary().errors.noClearMeal);
+  // Also reject old cached/replayed responses containing unpriced ingredients.
+  if (payload.items.some(item => (item.source as { code?: string })?.code === 'unmatched'
+    || ![item.calories, item.protein, item.carbs, item.fat].every(value => Number.isFinite(value) && value >= 0))) {
+    throw new MealAnalysisError('invalid-input', getDictionary().errors.gatewayMissingNutrition);
+  }
   return localizeResult(payload);
 }
 

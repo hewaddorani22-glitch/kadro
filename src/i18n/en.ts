@@ -527,7 +527,7 @@ export const en: typeof de = {
     gatewayDescriptionLength: 'Describe the meal in 3 to 500 characters.',
     gatewayInvalidBarcode: 'That barcode is not valid.',
     gatewayProductNotFound: 'The product was not found.',
-    gatewayMissingNutrition: 'No nutrition values are on file for this product.',
+    gatewayMissingNutrition: 'Not all nutrition values could be matched reliably. Describe the foods, preparation and amounts more precisely or use food search.',
     gatewayUnauthorized: 'Please open Kandro again.',
     gatewayProviderError: 'The analysis cannot be reached right now.',
     gatewayDailyLimit: 'You have logged a lot of meals today. It picks up again tomorrow.',

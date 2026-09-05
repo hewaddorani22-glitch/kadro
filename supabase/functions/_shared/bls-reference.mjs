@@ -127,7 +127,7 @@ export function getBlsReferenceByCode(code) {
 
 export function resolveBlsFacts(item) {
   const meal = getBlsReference(item?.referenceKey);
-  if (!meal) return null;
+  if (!meal) return resolveExactBlsFacts(item?.searchTermEn);
   return {
     provider: 'bls',
     referenceId: meal.code,
@@ -135,6 +135,25 @@ export function resolveBlsFacts(item) {
     description: meal.nameDe,
     ...meal.per100g,
   };
+}
+
+// Exact identity and preparation only. Never use fuzzy search rankings to
+// silently substitute another food or turn dried food into fresh food.
+const exactFoodKey = (text) => String(text ?? '').toLowerCase().replace(/\bpitted\b/g, '').replace(/[^a-z0-9 ]/g, ' ')
+  .split(/\s+/).filter(Boolean).map(word => word.length > 3 && word.endsWith('s') && !word.endsWith('ss') ? word.slice(0, -1) : word).sort().join(' ');
+const exactBlsRows = new Map();
+for (const row of BLS_SEARCH_ROWS) {
+  const key = exactFoodKey(row[2]);
+  // Ambiguous names must fall back to USDA, not select an arbitrary row.
+  exactBlsRows.set(key, exactBlsRows.has(key) ? null : row);
+}
+export function resolveExactBlsFacts(term) {
+  const row = exactBlsRows.get(exactFoodKey(term));
+  if (!row) return null;
+  const [code, , description, calories, protein, carbs, fat, fiber] = row;
+  if (![calories, protein, carbs, fat].every(value => Number.isFinite(value) && value >= 0)) return null;
+  return { provider: 'bls', referenceId: code, label: `BLS 4.0 ${code}`, description,
+    calories, protein, carbs, fat, fiber, matchConfidence: 'high' };
 }
 
 /**

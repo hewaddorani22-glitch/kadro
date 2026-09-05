@@ -115,7 +115,7 @@ export function isUsableSearchTerm(term) {
 }
 
 /** Changing the matcher invalidates previous choices without deleting data. */
-export const USDA_MATCHER_VERSION = 5;
+export const USDA_MATCHER_VERSION = 7;
 
 export function usdaCacheKey(term) {
   return `v${USDA_MATCHER_VERSION}:${normalizeSearchTerm(term)}`;
@@ -203,6 +203,11 @@ export function chooseFoodMatch(foods, term = '') {
 
   const score = (food) => {
     const description = normalizeSearchTerm(food.description);
+    const identity = foodNouns(term).filter(word => !['pitted', 'peeled', 'seedless', 'boneless', 'skinless'].includes(word));
+    const candidateWords = new Set(words(description));
+    // Preparation overlap is not food identity: dried dates are not dried
+    // lotus seeds. Keep this as a hard boundary, independent of score bonuses.
+    if (identity.length && !identity.every(word => candidateWords.has(word))) return -1000;
     const descriptionWords = words(food.description);
     const descriptionSet = new Set(descriptionWords);
     const targetSet = new Set(targetWords);
@@ -391,6 +396,7 @@ export function toFoodFacts(food, match = null) {
   const carbs = nutrient(food, [1005, 205]);
   const fat = nutrient(food, [1004, 204]);
   if ([calories, protein, carbs, fat].some((value) => value === null)) return null;
+  if (calories === 0 && protein * 4 + carbs * 4 + fat * 9 > 5) return null;
   return {
     provider: 'usda',
     referenceId: String(food.fdcId),
@@ -431,7 +437,7 @@ export function searchTermVariants(term) {
 
 export function buildMealItem(item, facts, index) {
   // Defense against old cache records and malformed provider values.
-  if (facts && (!Number.isFinite(facts.calories) || facts.calories < 0
+  if (facts && (![facts.calories, facts.protein, facts.carbs, facts.fat].every(value => Number.isFinite(value) && value >= 0)
     || (facts.calories === 0 && (facts.protein * 4 + facts.carbs * 4 + facts.fat * 9) > 5))) facts = null;
   const count = item.pieceCount;
   const pieceGrams = item.estimatedGrams / count;
@@ -500,7 +506,7 @@ export function mapUsdaFood(item, food, index) {
  */
 export function buildAccuracyWarnings(detection, items) {
   const warnings = [];
-  if (items.some((item) => item.calories === 0)) {
+  if (items.some((item) => item.source?.code === 'unmatched')) {
     warnings.push('unmatched_ingredient');
   }
   if (detection.items.some((item) => item.hiddenCaloriesRisk === 'high')) {
@@ -515,6 +521,16 @@ export function buildAccuracyWarnings(detection, items) {
     warnings.push('wide_portion');
   }
   return warnings;
+}
+
+// A partial meal must not become a deceptively complete low-calorie result.
+// Use an existing error code understood even by already installed clients.
+export function incompleteNutritionError(items) {
+  if (!items.length || items.some(item => item.source?.code === 'unmatched'
+    || ![item.calories, item.protein, item.carbs, item.fat].every(value => Number.isFinite(value) && value >= 0))) {
+    return { status: 422, body: { code: 'missing_nutrition', message: 'Nicht alle Zutaten konnten zuverlässig zugeordnet werden. Bitte Lebensmittel und Zubereitung genauer beschreiben oder die Suche verwenden.' } };
+  }
+  return null;
 }
 
 /**

@@ -62,6 +62,7 @@ function languageRule(language) {
 
 const accuracyRules = `
 Work conservatively and never output nutrition values.
+- Never substitute an unfamiliar food or plant with a similar-looking common food. Never silently omit an explicitly named ingredient because its identity is uncertain. Keep it as an item with referenceKey=other, searchTermEn=unknown and confidence=medium so the lookup can request clarification instead of pricing a partial meal.
 - referenceKey: pick a BLS key only when the whole detected item is exactly that composed dish. In that case do not break it down further. Otherwise referenceKey=other.
 - Goulash/Gulasch is a stew, not goulash_soup. Use goulash_soup only for explicitly described soup or clearly visible soup. Use goulash_beef/goulash_pork for the named meat. If the meat is unspecified, a beef-goulash reference is a medium-confidence assumption and the item name must make that assumption visible. Keep apple sauce or other toppings separate from goulash.
 - With referenceKey=other: break the meal into visible, nutritionally relevant ingredients. Use short, precise English USDA terms including the preparation, e.g. "chicken breast grilled" rather than "chicken".

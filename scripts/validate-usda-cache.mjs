@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildMealItem,
+  incompleteNutritionError,
   chooseFood,
   chooseFoodMatch,
   mapUsdaFood,
@@ -11,6 +12,32 @@ import {
   usdaCacheKey,
   USDA_MATCHER_VERSION,
 } from '../server/core.mjs';
+import { resolveExactBlsFacts } from '../supabase/functions/_shared/bls-reference.mjs';
+import { readFileSync } from 'node:fs';
+
+const dateFacts = resolveExactBlsFacts('dried dates');
+assert.equal(dateFacts.referenceId, 'F504400');
+assert.equal(dateFacts.calories, 356);
+assert.deepEqual(dateFacts, resolveExactBlsFacts('dates dried'));
+assert.deepEqual(dateFacts, resolveExactBlsFacts('dried pitted dates'));
+assert.equal(chooseFoodMatch([{fdcId:170149,dataType:'SR Legacy',description:'Seeds, lotus seeds, dried'}],'dates dried').food,undefined);
+assert.equal(chooseFoodMatch([{fdcId:170149,dataType:'SR Legacy',description:'Seeds, lotus seeds, dried'}],'dried pitted dates').food,undefined);
+assert.notEqual(resolveExactBlsFacts('date raw')?.referenceId, dateFacts.referenceId);
+assert.equal(resolveExactBlsFacts('bitter linden cones'), null);
+const dates = buildMealItem({name:'Datteln',estimatedGrams:50},dateFacts,0);
+assert.equal(dates.calories,178);
+assert.equal(incompleteNutritionError([dates]),null);
+const unknown = buildMealItem({name:'Unknown',estimatedGrams:50},null,1);
+assert.equal(incompleteNutritionError([dates,unknown]).status,422);
+assert.equal(incompleteNutritionError([unknown]).body.code,'missing_nutrition');
+assert.equal(incompleteNutritionError([]).status,422);
+assert.equal(incompleteNutritionError([{calories:0,protein:0,carbs:0,fat:0,source:{referenceId:'water'}}]),null);
+assert.equal(incompleteNutritionError([{...dates,protein:NaN}]).status,422);
+for (const file of ['server/index.mjs','supabase/functions/nutrition/index.ts']) {
+  const source=readFileSync(new URL('../'+file,import.meta.url),'utf8');
+  assert.match(source,/const nutritionError = incompleteNutritionError\(items\);\s*if \(nutritionError\) return nutritionError;/);
+  assert.match(source,/chooseFoodMatch\(\(result.foods \|\| \[\]\)\.filter/);
+}
 
 /** Shapes a USDA search hit the way FoodData Central returns one. */
 function usdaFood(fdcId, { calories, protein, carbs, fat, fiber }) {

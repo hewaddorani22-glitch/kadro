@@ -532,7 +532,7 @@ export const de = {
     gatewayDescriptionLength: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.',
     gatewayInvalidBarcode: 'Der Barcode ist ungültig.',
     gatewayProductNotFound: 'Das Produkt wurde nicht gefunden.',
-    gatewayMissingNutrition: 'Für dieses Produkt sind keine Nährwerte hinterlegt.',
+    gatewayMissingNutrition: 'Nicht alle Nährwerte konnten zuverlässig zugeordnet werden. Beschreibe Lebensmittel, Zubereitung und Menge genauer oder verwende die Lebensmittelsuche.',
     gatewayUnauthorized: 'Bitte öffne Kandro erneut.',
     gatewayProviderError: 'Die Analyse ist gerade nicht erreichbar.',
     gatewayDailyLimit: 'Du hast heute sehr viele Mahlzeiten erfasst. Morgen geht es normal weiter.',

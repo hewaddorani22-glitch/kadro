@@ -4,6 +4,7 @@ import { createServer } from 'node:http';
 import {
   buildAccuracyWarnings,
   buildMealItem,
+  incompleteNutritionError,
   chooseFoodMatch,
   classifyDetection,
   descriptionDetectionPrompt,
@@ -135,7 +136,7 @@ async function searchUsdaOnce(query) {
   });
   if (!response.ok) throw new Error(`usda_${response.status}`);
   const result = await response.json();
-  const match = chooseFoodMatch(result.foods || [], query);
+  const match = chooseFoodMatch((result.foods || []).filter(food => toFoodFacts(food)), query);
   return { facts: toFoodFacts(match.food, match), cacheable: match.cacheable };
 }
 
@@ -178,6 +179,8 @@ async function resolveDetection(detection, source = 'photo') {
   if (classificationError) return classificationError;
 
   const items = await Promise.all(detection.items.map(resolveItem));
+  const nutritionError = incompleteNutritionError(items);
+  if (nutritionError) return nutritionError;
   const warnings = buildAccuracyWarnings(detection, items);
   return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };
 }

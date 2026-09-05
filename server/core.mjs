@@ -6,6 +6,7 @@
 export {
   buildAccuracyWarnings,
   buildMealItem,
+  incompleteNutritionError,
   chooseFood,
   chooseFoodMatch,
   isUsableSearchTerm,

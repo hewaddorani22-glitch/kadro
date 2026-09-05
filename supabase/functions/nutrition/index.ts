@@ -3,6 +3,7 @@ import { withSupabase } from 'npm:@supabase/server@1.5.1';
 import {
   buildAccuracyWarnings,
   buildMealItem,
+  incompleteNutritionError,
   chooseFoodMatch,
   classifyDetection,
   normalizeSearchTerm,
@@ -370,7 +371,7 @@ async function searchUsdaOnce(
   });
   if (!response.ok) throw new Error(`usda_${response.status}`);
   const result = await response.json();
-  const match = chooseFoodMatch(result.foods || [], term);
+  const match = chooseFoodMatch((result.foods || []).filter((food: unknown) => toFoodFacts(food)), term);
   return { facts: toFoodFacts(match.food, match), cacheable: match.cacheable };
 }
 
@@ -499,6 +500,8 @@ async function resolveDetection(
     const usdaFacts = isUsableSearchTerm(term) ? facts.get(term) ?? null : null;
     return buildMealItem(item, blsFacts ?? usdaFacts, index);
   });
+  const nutritionError = incompleteNutritionError(items);
+  if (nutritionError) return nutritionError;
   const warnings = buildAccuracyWarnings(detection, items);
   return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };
 }
