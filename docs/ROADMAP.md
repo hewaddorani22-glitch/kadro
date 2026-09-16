@@ -1,5 +1,13 @@
 # Roadmap
 
+## Website launch, 2026-09-16
+
+- [x] Replace DE/EN Early Access sign-ups with direct App Store downloads for
+  released app 6808622187, clear Free/Pro scope, FAQ, desktop QR and mobile CTA.
+- [x] Preserve support, legal, confirmation, unsubscribe and guardian routes.
+- Conversion uplift and installation attribution remain unmeasured; no new
+  website tracking or claimed download/rating metrics were introduced.
+
 ## Build 8 feedback, 2026-09-05
 
 - [x] US onboarding/profile weight stepper uses 0.1 lb and no intermediate 0.1 kg rounding. Regression sweeps lb inputs and database precision; native rapid-touch/hold behavior remains a physical-device gate.

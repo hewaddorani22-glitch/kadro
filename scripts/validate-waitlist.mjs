@@ -252,11 +252,16 @@ for (const page of ['site/index.html', 'site/en/index.html']) {
 }
 for (const page of ['site/index.html', 'site/en/index.html']) {
   const html = read(page);
-  if (!/<form class="signup" data-waitlist hidden>/.test(html)) {
-    problems.push(`${page}: the sign-up form is visible before the endpoint is asked`);
+  // The app has launched. Existing confirmation/unsubscribe links must keep
+  // working, but new visitors should go straight to the store without signing up.
+  if (/data-waitlist|src="(?:\.\.\/)?waitlist\.js"/.test(html)) {
+    problems.push(`${page}: the launched landing page still collects waitlist sign-ups`);
   }
-  if (!/data-discord/.test(html)) problems.push(`${page}: no Discord link`);
-  if (!/privacy|Datenschutz/.test(html)) problems.push(`${page}: the form does not link the privacy policy`);
+  const storeLinks = [...html.matchAll(/<a\b[^>]*href="(https:\/\/apps\.apple\.com[^\"]*)"[^>]*data-app-store/g)];
+  if (storeLinks.length < 3 || storeLinks.some((match) => match[1] !== 'https://apps.apple.com/app/id6808622187')) {
+    problems.push(`${page}: download links must point directly to the released Kandro app`);
+  }
+  if (!/privacy|Datenschutz/.test(html)) problems.push(`${page}: missing privacy policy link`);
 }
 assert.match(fn, /language[^\n]*=== 'de' \? 'de' : 'en'/,
   'missing language no longer defaults safely to English');

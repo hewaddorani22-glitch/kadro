@@ -1,5 +1,14 @@
 # Architecture
 
+## Website after App Store launch (2026-09-16)
+
+The static German and English landing pages route visitors through ordinary
+links to App Store app 6808622187. A static desktop QR and the iOS Smart App
+Banner reference the same app. No waitlist, analytics or additional third-party
+requests are made by these landing pages. `site/launch.css` scopes the download
+layout separately from legal and consent pages. Existing waitlist confirmation
+and unsubscribe endpoints remain unchanged for recipients of earlier emails.
+
 ## Appearance and amount editing (Build 8 remediation)
 
 - Analysis requires complete nutrient references for every detected ingredient. Unknown ingredients remain internal sentinels but the gateway rejects the whole result with `missing_nutrition`, rather than exposing partial totals or zero placeholders. Exact unambiguous BLS ingredient names (including dried dates) complement dish keys; USDA automatic matching requires food-identity tokens, not merely shared preparation words. Cache version 7 invalidates previous misses/mismatches. Client response validation also rejects old unmatched responses.

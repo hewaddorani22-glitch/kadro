@@ -68,6 +68,17 @@ eingetragen werden.
 
 ## Warteliste vor dem Start
 
+**Seit dem App-Store-Start am 16. September 2026:** Die DE/EN-Landingpages
+verlinken direkt auf `https://apps.apple.com/app/id6808622187`. Keine neue
+Wartelistenanmeldung und kein Resend-/Supabase-Aufruf beim Seitenbesuch.
+`launch.css` enthält die ausschließlich auf die Download-Seiten begrenzte
+Gestaltung, einschließlich festem mobilen Download-Button und Desktop-QR-Code.
+Der QR-Code kodiert denselben internationalen App-Store-Link. Alle Download-Links
+funktionieren ohne JavaScript; die Sprachauswahl bleibt der einzige Inline-Code.
+Es gibt keine erzwungene Store-Weiterleitung beim Öffnen der Website.
+Bestätigungs-, Abmelde- und Elternzustimmungsseiten bleiben erreichbar.
+Die folgenden Angaben dokumentieren die bestehende Wartelisteninfrastruktur.
+
 Anmeldungen laufen über die Edge Function `waitlist` und landen in der Tabelle
 `public.waitlist` bei Supabase in der EU. Kein E-Mail-Dienstleister hält die
 Liste: nur den Versand.
