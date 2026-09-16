@@ -9,6 +9,15 @@ requests are made by these landing pages. `site/launch.css` scopes the download
 layout separately from legal and consent pages. Existing waitlist confirmation
 and unsubscribe endpoints remain unchanged for recipients of earlier emails.
 
+The root landing document is English; `/en/` is the explicit English URL and
+`/de/` the German URL. Root language routing uses browser language, not country,
+with English as the missing-language/no-JavaScript fallback. Explicit language
+URLs and query choices win. Campaign queries and fragments survive redirects.
+`site/download.js` supplies manual App Store help and optional clipboard copying.
+Recognized iPhone TikTok webviews open the Safari instructions on a CTA click
+instead of attempting the blocked handoff. Native TikTok behavior cannot be
+certified by the automated user-agent simulations; no forced scheme is used.
+
 ## Appearance and amount editing (Build 8 remediation)
 
 - Analysis requires complete nutrient references for every detected ingredient. Unknown ingredients remain internal sentinels but the gateway rejects the whole result with `missing_nutrition`, rather than exposing partial totals or zero placeholders. Exact unambiguous BLS ingredient names (including dried dates) complement dish keys; USDA automatic matching requires food-identity tokens, not merely shared preparation words. Cache version 7 invalidates previous misses/mismatches. Client response validation also rejects old unmatched responses.

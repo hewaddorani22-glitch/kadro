@@ -45,7 +45,16 @@ beiden eine andere Überschrift. Genau so eine Abweichung fällt im Review auf.
 
 ## Zweisprachigkeit
 
-Deutsch liegt in der Wurzel, Englisch unter `/en/`. Jede übersetzte Seite trägt
+Die Landingpage ist standardmäßig Englisch (`/` und `/en/`); Deutsch liegt
+unter `/de/`. Nur die Wurzel wählt anhand der Browsersprache bzw. einer bewusst
+gespeicherten Sprachwahl. Fehlende Sprachdaten und deaktiviertes JavaScript
+fallen auf Englisch zurück. `/en/` bleibt auch bei deutscher Gerätesprache
+Englisch. Kein Geo-IP-Routing. `?lang=de`/`?lang=en` überschreiben die Auswahl;
+Kampagnenparameter bleiben bei der Weiterleitung erhalten. Internationale
+TikTok-Profile können direkt `https://getkandro.com/en/` verlinken.
+
+Bei den Rechts- und Hilfeseiten liegt Deutsch weiterhin in der Wurzel,
+Englisch unter `/en/`. Jede übersetzte Seite trägt
 `canonical` plus `hreflang` für `de`, `en` und `x-default` (Standard ist die
 deutsche Seite). `npm run validate:site` prüft, dass jeder interne Link
 auflöst und die Sprachpaare aufeinander zeigen.
@@ -74,7 +83,11 @@ Wartelistenanmeldung und kein Resend-/Supabase-Aufruf beim Seitenbesuch.
 `launch.css` enthält die ausschließlich auf die Download-Seiten begrenzte
 Gestaltung, einschließlich festem mobilen Download-Button und Desktop-QR-Code.
 Der QR-Code kodiert denselben internationalen App-Store-Link. Alle Download-Links
-funktionieren ohne JavaScript; die Sprachauswahl bleibt der einzige Inline-Code.
+funktionieren ohne JavaScript. `download.js` ergänzt kopierbare Store-Links und
+eine Safari-Anleitung für erkannte TikTok-Webviews. Es versucht keine erzwungene
+App-Öffnung über Sonderprotokolle. Die Erkennung ist eine Heuristik; die manuell
+aufklappbare Download-Hilfe ist in jedem Browser vorhanden. Eine echte
+iPhone-TikTok-Prüfung bleibt zusätzlich zu den simulierten Browserfällen nötig.
 Es gibt keine erzwungene Store-Weiterleitung beim Öffnen der Website.
 Bestätigungs-, Abmelde- und Elternzustimmungsseiten bleiben erreichbar.
 Die folgenden Angaben dokumentieren die bestehende Wartelisteninfrastruktur.

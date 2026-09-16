@@ -34,7 +34,7 @@ function webpSize(path) {
   return { width: buffer.readUInt16LE(26) & 0x3fff, height: buffer.readUInt16LE(28) & 0x3fff };
 }
 
-const pages = ['site/index.html', 'site/en/index.html'];
+const pages = ['site/index.html', 'site/en/index.html', 'site/de/index.html'];
 let checked = 0;
 
 for (const page of pages) {
@@ -61,13 +61,13 @@ for (const page of pages) {
   }
 }
 
-if (checked < 8) problems.push(`only ${checked} images were checked across both languages`);
+if (checked < 12) problems.push(`only ${checked} images were checked across both languages`);
 
 // Both languages must show the same pictures, or one of them is stale.
-const [german, english] = pages.map((page) => [...readFileSync(resolve(projectRoot, page), 'utf8')
+const imageLists = pages.map((page) => [...readFileSync(resolve(projectRoot, page), 'utf8')
   .matchAll(/assets\/([a-z-]+\.webp)" width="(\d+)" height="(\d+)"/g)]
   .map((match) => match.slice(1).join(' ')).join('|'));
-if (german !== english) {
+if (imageLists.some((list) => list !== imageLists[0])) {
   problems.push('the two languages reference the images at different sizes');
 }
 

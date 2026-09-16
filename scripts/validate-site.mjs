@@ -72,20 +72,20 @@ for (const page of pages) {
 
   const alternates = [...html.matchAll(/rel="alternate" hreflang="([^"]+)" href="([^"]+)"/g)]
     .map((m) => [m[1], m[2]]);
-  const isTranslated = /\/(privacy|terms|sources|support|unsubscribe)\/index\.html$/.test(rel) || /site\/(en\/)?index\.html$/.test(rel);
+  const isTranslated = /\/(privacy|terms|sources|support|unsubscribe)\/index\.html$/.test(rel) || /site\/((?:en|de)\/)?index\.html$/.test(rel);
   if (isTranslated) {
     const langs = alternates.map(([lang]) => lang);
     for (const required of ['de', 'en', 'x-default']) {
       if (!langs.includes(required)) failures.push(`${rel}: missing hreflang="${required}"`);
     }
-    const self = alternates.find(([lang]) => lang === (rel.includes('site/en/') ? 'en' : 'de'));
+    const self = alternates.find(([lang]) => lang === (rel === 'site/index.html' || rel.includes('site/en/') ? 'en' : 'de'));
     if (self && canonical && self[1] !== canonical) {
       failures.push(`${rel}: hreflang self-reference ${self[1]} does not match canonical ${canonical}`);
     }
   }
 
   const lang = html.match(/<html lang="([^"]+)"/)?.[1];
-  const expected = rel.includes('site/en/') ? 'en' : 'de';
+  const expected = rel === 'site/index.html' || rel.includes('site/en/') ? 'en' : 'de';
   if (lang !== expected) failures.push(`${rel}: <html lang> is "${lang}", expected "${expected}"`);
 }
 

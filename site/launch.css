@@ -30,6 +30,18 @@
 .desktop-qr img { border: 1px solid var(--line); border-radius: 8px; background: white; }
 .desktop-qr strong { font-size: 13px; }
 .desktop-qr p { color: var(--muted); font-size: 12px; line-height: 1.5; margin: 3px 0 0; }
+.store-help { max-width: 510px; margin-top: 18px; font-size: 13px; }
+.store-help summary { color: var(--moss); font-weight: 650; cursor: pointer; padding: 8px 0; min-height: 40px; }
+.store-help[open] { padding: 10px 18px 18px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.store-help .store-help-body h2 { font-size: 20px; margin: 14px 0; letter-spacing: -.02em; }
+.store-help-body p { line-height: 1.55; margin: 12px 0; }
+.store-help ol { padding-left: 20px; }
+.store-help li { margin-bottom: 10px; }
+.store-help input { width: 100%; min-height: 44px; padding: 10px; border: 1px solid var(--line); border-radius: 7px; font: inherit; font-size: 12px; background: var(--canvas); color: var(--ink); }
+.store-help button { min-height: 44px; padding: 10px 15px; margin-top: 10px; border: 0; border-radius: 8px; background: var(--moss); color: white; font: inherit; font-weight: 650; cursor: pointer; }
+.store-help input:focus-visible, .store-help button:focus-visible { outline: 3px solid var(--moss); outline-offset: 3px; }
+.store-help [data-copy-status]:empty { display: none; }
+.store-help .store-device-note { font-size: 11px; color: var(--muted); margin-bottom: 0; }
 .hero-product { position: relative; margin: 0; padding: 12px 0 0; text-align: center; }
 .product-backdrop { position: absolute; z-index: -1; inset: 35px -10px 60px; border-radius: 180px 180px 24px 24px; background: #e6e9dd; }
 .hero-product > img { position: relative; width: 286px; height: auto; margin: 0 auto; border-radius: 30px; }

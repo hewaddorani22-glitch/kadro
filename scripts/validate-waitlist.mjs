@@ -242,7 +242,7 @@ assert.ok(!/payload\.accepting\) form\.hidden = false/.test(script),
 // message the script tried to show threw instead.
 assert.match(script, /var status = block\.querySelector\('\[data-waitlist-status\]'\)/,
   'each form cannot find the status line inside its own signup block');
-for (const page of ['site/index.html', 'site/en/index.html']) {
+for (const page of ['site/index.html', 'site/en/index.html', 'site/de/index.html']) {
   const html = read(page);
   for (const form of html.matchAll(/<form class="signup[^>]*>[\s\S]*?<\/form>/g)) {
     if (form[0].includes('data-waitlist-status')) {
@@ -250,7 +250,7 @@ for (const page of ['site/index.html', 'site/en/index.html']) {
     }
   }
 }
-for (const page of ['site/index.html', 'site/en/index.html']) {
+for (const page of ['site/index.html', 'site/en/index.html', 'site/de/index.html']) {
   const html = read(page);
   // The app has launched. Existing confirmation/unsubscribe links must keep
   // working, but new visitors should go straight to the store without signing up.

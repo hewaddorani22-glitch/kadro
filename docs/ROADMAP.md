@@ -2,6 +2,11 @@
 
 ## Website launch, 2026-09-16
 
+- [x] September 17: English static root fallback and explicit DE/EN URLs;
+  preserve campaigns during language routing. Add visible manual download help
+  and a Safari path for recognized iPhone TikTok webviews.
+- [ ] Confirm the Safari handoff on the owner's physical iPhone inside TikTok.
+
 - [x] Replace DE/EN Early Access sign-ups with direct App Store downloads for
   released app 6808622187, clear Free/Pro scope, FAQ, desktop QR and mobile CTA.
 - [x] Preserve support, legal, confirmation, unsubscribe and guardian routes.

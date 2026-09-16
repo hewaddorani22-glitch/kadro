@@ -1,120 +1,58 @@
 #!/usr/bin/env node
-/**
- * Sending a reader to the wrong language is the cheapest way to lose them, and
- * sending them back and forth is worse than either language would have been.
- *
- * This does not read the redirect and hope: it lifts the script out of the
- * shipped page and runs it against invented browsers, because the only claim
- * worth making about language detection is one that was actually executed.
- */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
-const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
-
-const scriptOf = (page, marker) => {
-  const html = read(page);
-  const blocks = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]);
-  const block = blocks.find((body) => body.includes(marker));
-  assert.ok(block, `${page}: the language script is gone`);
-  return new vm.Script(block);
-};
-
-const root = scriptOf('site/index.html', 'kandro-lang');
-const english = scriptOf('site/en/index.html', 'kandro-lang');
-
-/** One visit. Returns where the reader ended up and what was remembered. */
-function visit(script, { languages, stored, search = '', hash = '', storageThrows = false }) {
+const paths = { root: 'site/index.html', en: 'site/en/index.html', de: 'site/de/index.html' };
+const html = Object.fromEntries(Object.entries(paths).map(([key, path]) => [key, readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')]));
+const scripts = Object.fromEntries(Object.entries(html).map(([key, page]) => [key, new vm.Script([...page.matchAll(/<script>([\s\S]*?)<\/script>/g)].map(m => m[1]).find(s => s.includes('kandro-lang')))]));
+function visit(page, { languages, language = languages?.[0], stored, search = '', hash = '', storageThrows = false } = {}) {
   let went = null;
-  const store = new Map();
-  if (stored) store.set('kandro-lang', stored);
-  const context = {
-    navigator: { languages, language: languages && languages[0] },
-    location: {
-      search,
-      hash,
-      replace: (target) => { went = target; },
-    },
+  const store = new Map(stored ? [['kandro-lang', stored]] : []);
+  scripts[page].runInNewContext({ navigator: { languages, language }, URLSearchParams,
+    location: { search, hash, replace: value => { went = value; } },
     localStorage: {
-      getItem: (key) => {
-        if (storageThrows) throw new Error('blocked');
-        return store.has(key) ? store.get(key) : null;
-      },
-      setItem: (key, value) => {
-        if (storageThrows) throw new Error('blocked');
-        store.set(key, value);
-      },
+      getItem: key => { if (storageThrows) throw Error('blocked'); return store.get(key); },
+      setItem: (key, value) => { if (storageThrows) throw Error('blocked'); store.set(key, value); },
     },
-    URLSearchParams,
-  };
-  vm.createContext(context);
-  script.runInContext(context);
-  return { went, remembered: store.get('kandro-lang') ?? null };
+  });
+  return { went, remembered: store.get('kandro-lang') };
 }
 
-// --- What the device says --------------------------------------------------
-for (const languages of [['de'], ['de-DE'], ['de-DE', 'en-US'], ['de-AT'], ['de-CH', 'fr']]) {
-  assert.equal(visit(root, { languages }).went, null,
-    `a browser asking for ${languages[0]} was moved off the German page`);
+// Root HTML is English even when a webview disables JavaScript entirely.
+assert.match(html.root, /<html lang="en">/);
+assert.match(html.root, /Log your meal/);
+for (const languages of [['en'], ['en-US'], ['en-DE'], ['en-GB', 'de'], ['fr-FR'], ['tr'], ['pt-BR'], ['den'], [], [''], undefined]) {
+  assert.equal(visit('root', { languages }).went, null, `English fallback failed for ${languages}`);
 }
-for (const languages of [['en'], ['en-US', 'de'], ['en-GB'], ['fr-FR'], ['tr'], ['pt-BR', 'en']]) {
-  assert.equal(visit(root, { languages }).went, 'en/',
-    `a browser asking for ${languages[0]} was left on the German page`);
+for (const languages of [['de'], ['de-DE'], ['de-AT'], ['de-CH'], ['de-US', 'en']]) {
+  assert.equal(visit('root', { languages }).went, 'de/', `German routing failed for ${languages}`);
 }
+assert.equal(visit('root', { languages: [], language: 'de-DE' }).went, 'de/');
+assert.equal(visit('root', { languages: ['en'], stored: 'de' }).went, 'de/');
+assert.equal(visit('root', { languages: ['de'], stored: 'en' }).went, null);
+assert.equal(visit('root', { languages: ['de'], stored: 'invalid' }).went, 'de/');
 
-// A device that says nothing at all keeps the page it is already on.
-assert.equal(visit(root, { languages: [] }).went, null);
-assert.equal(visit(root, { languages: [''] }).went, null);
-assert.equal(visit(root, { languages: undefined }).went, null);
-// "de" must be a language, not a prefix: "den" is not German.
-assert.equal(visit(root, { languages: ['den'] }).went, 'en/', 'a made-up code beginning with de counted as German');
-
-// --- A choice outlives what the device says --------------------------------
-assert.equal(visit(root, { languages: ['en-US'], stored: 'de' }).went, null,
-  'someone who chose German is sent to English by their phone anyway');
-assert.equal(visit(root, { languages: ['de-DE'], stored: 'en' }).went, 'en/',
-  'someone who chose English is dragged back to German by their phone');
-
-// --- The switch itself -----------------------------------------------------
-// The English page links back as ?lang=de; that click has to stick, or the
-// reader bounces straight back on their next visit.
-const chose = visit(root, { languages: ['en-US'], search: '?lang=de' });
-assert.equal(chose.went, null, 'clicking "Deutsch" bounced straight back to English');
-assert.equal(chose.remembered, 'de', 'the choice was not remembered');
-
-const wantsEnglish = visit(root, { languages: ['de-DE'], search: '?lang=en' });
-assert.equal(wantsEnglish.went, 'en/', '?lang=en did not reach the English page');
-assert.equal(wantsEnglish.remembered, 'en');
-
-// The English page never redirects — a page that sends you back is a page you
-// cannot stay on — but it does remember.
-assert.equal(visit(english, { languages: ['de-DE'], search: '?lang=en' }).went, null,
-  'the English page redirects, which is half a loop');
-assert.equal(visit(english, { languages: ['de-DE'], search: '?lang=en' }).remembered, 'en');
-assert.equal(visit(english, { languages: ['en-US'] }).went, null);
-
-// --- Nothing is lost on the way --------------------------------------------
-assert.equal(visit(root, { languages: ['en'], hash: '#waitlist' }).went, 'en/#waitlist',
-  'the anchor someone followed was dropped on the way');
-assert.equal(visit(root, { languages: ['en'], search: '?ref=reddit' }).went, 'en/?ref=reddit',
-  'the campaign the visit came from was dropped, so it cannot be counted');
-
-// --- A browser that refuses to remember ------------------------------------
-assert.doesNotThrow(() => visit(root, { languages: ['en'], storageThrows: true }),
-  'private mode breaks the page instead of the feature');
-assert.equal(visit(root, { languages: ['en'], storageThrows: true }).went, 'en/',
-  'a private window turns off language detection entirely, so everyone gets German');
-assert.equal(visit(root, { languages: ['de-DE'], storageThrows: true }).went, null);
-assert.doesNotThrow(() => visit(root, { languages: ['de'], search: '?lang=en', storageThrows: true }),
-  'a choice that cannot be remembered must still be acted on');
-assert.equal(visit(root, { languages: ['de'], search: '?lang=en', storageThrows: true }).went, 'en/');
-
-// --- The switch is always reachable ----------------------------------------
-for (const [page, expected] of [['site/index.html', 'en/?lang=en'], ['site/en/index.html', '../?lang=de']]) {
-  const html = read(page);
-  assert.ok(html.includes(`class="lang" href="${expected}"`),
-    `${page}: the language switch no longer states the choice, so it cannot be remembered`);
+// Explicit locale links do not depend on country, browser language or stale storage.
+assert.equal(visit('en', { languages: ['de'], stored: 'de' }).went, null);
+assert.equal(visit('de', { languages: ['en'], stored: 'en' }).went, null);
+assert.equal(visit('root', { languages: ['en'], search: '?lang=de' }).went, 'de/?lang=de');
+assert.equal(visit('root', { languages: ['de'], search: '?lang=en' }).went, null);
+assert.equal(visit('en', { search: '?lang=de' }).went, '../de/?lang=de');
+assert.equal(visit('de', { search: '?lang=en' }).went, '../en/?lang=en');
+for (const page of ['root', 'en', 'de']) {
+  for (const language of ['en', 'de']) {
+    assert.equal(visit(page, { search: `?lang=${language}` }).remembered, language);
+    assert.doesNotThrow(() => visit(page, { search: `?lang=${language}`, storageThrows: true }));
+  }
 }
-
-console.log('Language routing: the device decides once, an explicit choice always wins, and nothing loops.');
+const search = '?lang=de&utm_source=tiktok&ttclid=example';
+assert.equal(visit('root', { search, hash: '#free' }).went, `de/${search}#free`);
+assert.equal(visit('de', { search: '?lang=en&utm_source=tiktok', hash: '#download-help' }).went, '../en/?lang=en&utm_source=tiktok#download-help');
+assert.equal(visit('root', { languages: ['de'], storageThrows: true }).went, 'de/');
+assert.equal(visit('root', { languages: ['en'], storageThrows: true }).went, null);
+for (const [key, target] of [['root', 'de/?lang=de'], ['en', '../de/?lang=de'], ['de', '../en/?lang=en']]) {
+  assert.ok(html[key].includes(`class="lang" href="${target}"`));
+  assert.match(html[key], /hreflang="x-default" href="https:\/\/getkandro.com\/en\/"/);
+}
+console.log('Language routing passed: static English default, German by browser language, explicit locale links, blocked storage, preserved campaigns, no loops.');
