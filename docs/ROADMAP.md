@@ -2,6 +2,9 @@
 
 ## Website launch, 2026-09-16
 
+- [x] September 19: compact `/downloads/` entry for TikTok traffic, automatic
+  DE/EN selection, one primary App Store CTA, existing app preview, clear free/Pro
+  scope and visible browser-handoff help. No fabricated social proof or new trackers.
 - [x] September 17: English static root fallback and explicit DE/EN URLs;
   preserve campaigns during language routing. Add visible manual download help
   and a Safari path for recognized iPhone TikTok webviews.

@@ -1,5 +1,23 @@
 # Architecture
 
+## Compact website download entry (2026-09-19)
+
+`site/downloads/index.html` is the short TikTok bio entry, alongside explicit
+`site/en/downloads/index.html` and `site/de/downloads/index.html`. These static
+pages share `site/downloads.css`, existing brand/product assets and `download.js`.
+English is the no-JavaScript/default fallback; German browser language or an
+explicit saved choice selects German. Explicit language URLs remain authoritative;
+`?lang=` overrides them. Automatic redirects and the language switch preserve
+campaign parameters and fragments. No geography lookup or tracking is added.
+
+The ordinary HTTPS App Store link remains usable without JavaScript. On recognized
+non-Android TikTok webviews, `data-tiktok-help` expands instructions immediately;
+the CTA opens that help instead of attempting a blocked external handoff. Other
+landing pages retain their existing disclosure behavior. Copy-link fallback works
+without clipboard permission, and manual instructions remain available even when
+user-agent detection misses TikTok. Actual TikTok-to-Safari-to-App-Store behavior
+requires an owner's physical-device check; source/routing checks do not certify it.
+
 ## Website after App Store launch (2026-09-16)
 
 The static German and English landing pages route visitors through ordinary

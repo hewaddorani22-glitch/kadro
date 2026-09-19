@@ -45,6 +45,23 @@ beiden eine andere Überschrift. Genau so eine Abweichung fällt im Review auf.
 
 ## Zweisprachigkeit
 
+### Kurze TikTok-Seite
+
+`https://getkandro.com/downloads/` ist der kurze Einstieg für die TikTok-Bio:
+ein App-Store-Button, drei Kernfunktionen, eine bestehende App-Vorschau und
+transparente Free/Pro-Angaben. `/en/downloads/` und `/de/downloads/` sind die
+festen Sprachvarianten. `/downloads/` wählt wie die Hauptseite anhand der
+Browsersprache oder gespeicherten Wahl; Englisch bleibt der statische Fallback.
+Sprachwechsel und automatische Weiterleitung erhalten Kampagnenparameter.
+
+Erkannte iPhone-TikTok-Webviews zeigen die Browser-Anleitung sofort. Der Button
+öffnet dort diese Hilfe; in normalen Browsern führt sein HTTPS-Link zum App Store.
+Eine Kopierhilfe ist zusätzlich verfügbar. Unbekannte Webviews können die
+Anleitung manuell öffnen. Kein automatischer App-Store-Sprung und keine Umgehung
+der Browserregeln. Der reale TikTok-Handoff bleibt ein Test auf dem iPhone.
+Es gibt kein neues Tracking, keine Download-Zähler und keinen Android-Store-Link.
+Die ausführliche Haupt-Landingpage bleibt bestehen.
+
 Die Landingpage ist standardmäßig Englisch (`/` und `/en/`); Deutsch liegt
 unter `/de/`. Nur die Wurzel wählt anhand der Browsersprache bzw. einer bewusst
 gespeicherten Sprachwahl. Fehlende Sprachdaten und deaktiviertes JavaScript

@@ -13,10 +13,15 @@
   var status = help.querySelector('[data-copy-status]');
 
   if (tiktok && !android) {
+    // The compact downloads page explains the handoff immediately. Keep the
+    // existing landing pages' disclosure closed until the visitor asks for it.
+    if (help.hasAttribute('data-tiktok-help')) help.open = true;
     summary.textContent = german ? 'Aus TikTok? In Safari herunterladen' : 'Coming from TikTok? Download with Safari';
     document.querySelectorAll('[data-app-store]').forEach(function (link) {
       // Keep an ordinary HTTPS href for no-JS, modifier-click and copy-link use.
-      link.textContent = german ? 'Auf iPhone laden' : 'Get it on iPhone';
+      if (!link.hasAttribute('data-keep-label')) {
+        link.textContent = german ? 'Auf iPhone laden' : 'Get it on iPhone';
+      }
       link.setAttribute('aria-controls', 'download-help');
       link.addEventListener('click', function (event) {
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
