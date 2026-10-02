@@ -1,6 +1,8 @@
 import { legalProvider } from '@/constants/legal';
 
 export type LegalCopy = {
+  /** Preserve the revision of unchanged documents when sibling notices change. */
+  version?: string;
   title: string;
   intro: string;
   sections: { title: string; paragraphs: string[] }[];
@@ -41,7 +43,7 @@ function contact() {
 }
 
 export const legalDe: LegalCopySet = {
-  version: '1.7 · Stand 5. September 2026',
+  version: '1.8 · Stand 2. Oktober 2026',
   privacy: {
     title: 'Datenschutzhinweise',
     intro: 'Diese Hinweise erklären in klarer Sprache, welche Daten Kandro verarbeitet, warum, und wie du sie jederzeit wieder löschen kannst.',
@@ -56,7 +58,9 @@ export const legalDe: LegalCopySet = {
       {
         title: '2. Welche Daten verarbeitet werden',
         paragraphs: [
+          'Für den begrenzten Zugangstest speichert Supabase an deiner Konto-ID die einmalige Variante oder den Ausschlussgrund und den Zeitpunkt. Nur verifiziert verknüpfte neue Erwachsene mit bestätigter Trial-Berechtigung kommen infrage. Diese funktionale Zugangszuordnung bleibt bis zur Accountlöschung erhalten; sie wird bei Anmeldung oder Wiederherstellung nicht neu ausgelost. Einzelne Freigaben für bereits begonnene Mahlzeitenspeicherungen erhalten deren spätere Synchronisierung. Freiwillige Analyseereignisse zur tatsächlich gezeigten Paywall bleiben an deine gesonderte Analytics-Einwilligung gebunden. Es gibt kein Geräte-Fingerprinting.',
           'Auf deinem Gerät verarbeitet Kandro dein Profil, Zielwerte, Gewichtseinträge, bestätigte Mahlzeiten und höchstens drei fehlgeschlagene, komprimierte Fotoscans für einen von dir ausgelösten Wiederholungsversuch.',
+          'Optionale tägliche Erinnerungen werden lokal geplant und enthalten keine Ernährungswerte. Für Homescreen-Widgets kannst du unter Du die Freigabe deiner heutigen Kalorien, Proteinwerte und bestätigten Ziele auf diesem Gerät aktivieren. Ohne Freigabe und auf dem Sperrbildschirm bleiben nur Einstiege. Ein geschützter gemeinsamer App-Container enthält dazu einen kleinen zeitlich begrenzten Tagesstand ohne Namen, Mahlzeitentexte, Bilder oder Zugangsdaten. Beim Ausschalten wird dieser Stand geleert; iOS kann ein zuvor gerendertes Widgetbild noch kurz behalten. Lokale Nutzungs- und Anfragezähler begrenzen die optionale native Bewertungsanfrage; Kandro lädt diese Zähler nicht hoch.',
           'Wenn die Cloud aktiv ist, speichert Supabase in der EU eine zufällige Account-ID, dein Profil, deine aktuellen Zielwerte, bestätigte Mahlzeiten, Zutaten, Empfehlungen und Feedback. Gewichtseinträge bleiben auf deinem Gerät; eine E-Mail-Adresse wird nur gespeichert, wenn du deinen Gast-Account bewusst sicherst.',
           'Damit USDA, Open Food Facts und RevenueCat nicht automatisiert überlastet werden, speichert Supabase providerspezifische Zähler mit Einweg-Pseudonymen der zufälligen Account-ID und des Ausgangsnetzwerks höchstens zwei Stunden nach ihrer letzten Nutzung. Suchbegriffe und Barcodes werden in diesen Zählern nicht gespeichert.',
           'Bei 14- oder 15-jährigen Nutzern muss ein Elternteil oder eine sorgeberechtigte Person einen Link per E-Mail bestätigen, bevor die Einwilligung abgeschlossen und die Analysefunktionen freigeschaltet werden. Die Eltern-E-Mail bleibt nur im Arbeitsspeicher der Versandfunktion und wird nicht in der Kandro-Datenbank gespeichert. Supabase speichert bis zur Bestätigung oder bis zum Ablauf nach 48 Stunden nur die ausstehende Anfrage mit einem Hash des Einmal-Tokens. Zur Abwehr automatisierten Missbrauchs von Eltern-E-Mails verbraucht jede Anfrage außerdem atomische Limits anhand getrennt gesalzener Hashwerte des App-Accounts, des Ausgangsnetzwerks und der Eltern-E-Mail. Die rohe Netzwerkadresse und Eltern-E-Mail werden dafür nicht gespeichert; diese separaten Limitdatensätze werden spätestens nach drei Stunden gelöscht. Bei erfolgreicher Bestätigung wird die Anfrage sofort gelöscht; Bestätigungszeitpunkt und Hinweisversion bleiben im geschützten Profil als Nachweis. Resend verarbeitet die Adresse und technische Zustelldaten für den Mailversand.',
@@ -74,6 +78,7 @@ export const legalDe: LegalCopySet = {
       {
         title: '4. Zweck, Rechtsgrundlage und Speicherdauer',
         paragraphs: [
+          'Bei einem begrenzten Test unter freiwillig verknüpften geeigneten Neunutzern ab 18 Jahren wird einmalig zufällig eine von zwei Zugangsvarianten zugeordnet: kostenloser Rückweg mit bisherigen Gratisgrenzen oder Trial beziehungsweise Abo vor neuer regulärer Nutzung. Bestehende, anonyme und unklar zuzuordnende Nutzer behalten ihren bisherigen kostenlosen Umfang. Bereits gespeicherte Daten sowie Konto- und Rechtsfunktionen bleiben zugänglich. Beide Testvarianten verwenden dasselbe Monatsprodukt und denselben von Apple bestätigten siebentägigen Einführungs-Trial. Ob du den Trial erhalten kannst, entscheidet deine tatsächliche Apple-Berechtigung; der angezeigte Folgepreis und die Verlängerungsbedingungen gelten.',
           'Ernährungs- und Zieldaten sind Gesundheitsdaten im Sinne von Art. 9 DSGVO. Rechtsgrundlage ist deine ausdrückliche Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO, die du im Onboarding erteilst und unter „Du → Analyse & Datennutzung“ jederzeit für die Zukunft widerrufen kannst. Nach dem Widerruf sendet Kandro keine Analyse-, Körper- oder Ernährungsdaten mehr an die genannten Empfänger. Die Einwilligung wird mit Zeitstempel und Hinweisversion auf deinem Gerät und bei aktiver Cloud in deinem geschützten Profil gespeichert.',
           'Kandro ist ab 14 Jahren verfügbar. In Deutschland brauchen 14- und 15-Jährige nach Art. 8 DSGVO die Erlaubnis eines Elternteils oder einer sorgeberechtigten Person, bevor die ausdrückliche Wellness-Dateneinwilligung wirksam werden kann; ab 16 kann der Nutzer selbst einwilligen. Das Elternteil bestätigt die offengelegten Empfänger und Zwecke über einen einmal verwendbaren Link, der nach 48 Stunden abläuft. Nach erfolgreicher Bestätigung wird die Anfrage samt Token-Hash sofort gelöscht; abgelaufene Anfragen entfernt ein täglicher Datenbankjob. Die Erlaubnis kann über die oben genannte Kontaktadresse widerrufen werden; der Nutzer kann die künftige Verarbeitung zusätzlich jederzeit in der App stoppen.',
           'Lokale Daten bleiben bis zur Löschung der App-Daten oder deines Accounts erhalten. Bestätigte Mahlzeiten werden lokal für den Verlauf gespeichert; die App lädt für den Cloud-Verlauf derzeit höchstens 90 Tage. Cloud-Daten bleiben bis zur Accountlöschung erhalten. Technisch notwendige Sicherungskopien können nach den Fristen des jeweiligen Auftragsverarbeiters auslaufen.',
@@ -160,6 +165,7 @@ export const legalDe: LegalCopySet = {
     ],
   },
   sources: {
+    version: '1.7 · Stand 5. September 2026',
     title: 'Datenquellen',
     intro: 'Erfasste Zutaten zeigen ihre Nährwertquelle. Kandro trennt Datenbankwerte, KI-gestützte Zuordnung und eigene typische Planungsrichtwerte sichtbar voneinander.',
     sections: [

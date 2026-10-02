@@ -153,7 +153,7 @@ for (const language of ['de', 'en']) {
   const copy = await loadCopy(language);
   for (const slug of ['privacy', 'terms', 'sources']) {
     const path = resolve(projectRoot, 'site', language === 'en' ? 'en' : '', slug, 'index.html');
-    const html = render({ language, slug, doc: copy[slug], version: copy.version });
+    const html = render({ language, slug, doc: copy[slug], version: copy[slug].version ?? copy.version });
     const existing = await readFile(path, 'utf8').catch(() => null);
     if (existing === html) continue;
     if (check) {

@@ -23,7 +23,7 @@ function contact() {
 }
 
 export const legalEn: LegalCopySet = {
-  version: '1.7 · Last updated 5 September 2026',
+  version: '1.8 · Last updated 2 October 2026',
   privacy: {
     title: 'Privacy notice',
     intro: 'This notice explains in plain language which data Kandro processes, why, and how you can delete it again at any time.',
@@ -38,7 +38,9 @@ export const legalEn: LegalCopySet = {
       {
         title: '2. What data is processed',
         paragraphs: [
+          'For the limited access test, Supabase stores the one-time variant or exclusion reason and timestamp against your account ID. Only verified, voluntarily linked new adults with confirmed trial eligibility can qualify. This functional access assignment remains until account deletion and is not redrawn at sign-in or restore. Individual permissions for meal saves already begun preserve their later synchronization. Optional events about the paywall actually shown remain subject to your separate analytics consent. No device fingerprinting is used.',
           'On your device, Kandro processes your profile, your targets, weight entries, confirmed meals and at most three failed, compressed photo scans kept for a retry you trigger yourself.',
+          'Optional daily reminders are scheduled locally and contain no nutrition totals. In your profile, you can allow home screen widgets to show today’s calories, protein and confirmed targets on this device. Without this choice, and on the Lock Screen, widgets only offer shortcuts. A protected shared app container holds a small, time-limited daily snapshot without names, meal descriptions, images or credentials. Turning sharing off clears it; iOS may briefly retain a previously rendered widget image. Local usage and request counters limit the optional native review request; Kandro does not upload these counters.',
           'When the cloud is active, Supabase stores in the EU a random account ID, your profile, your current targets, confirmed meals, ingredients, recommendations and feedback. Weight entries stay on your device; an email address is only stored if you deliberately secure your guest account.',
           'To prevent automated exhaustion of USDA, Open Food Facts and RevenueCat, Supabase keeps per-provider counters linked to one-way pseudonyms of the random account ID and source network for at most two hours after their last use. Food queries and barcodes are not stored in these counters.',
           'For a user aged 14 or 15, a parent or legal guardian must confirm an emailed link before consent can be completed and the analysis features are enabled. The guardian email exists only in the delivery function’s working memory and is not stored in Kandro’s database. Until confirmation or expiry after 48 hours, Supabase stores only the pending request with a hash of the single-use token. To prevent automated guardian-email abuse, each request also consumes atomic limits based on separately salted hashes of the app account, source network and guardian email. The raw network address and guardian email are not stored for this purpose, and these separate rate-limit records are deleted within three hours. After successful confirmation, the request is deleted immediately; the confirmation time and notice version remain in the protected profile as evidence. Resend processes the address and technical delivery data to send the message.',
@@ -120,6 +122,7 @@ export const legalEn: LegalCopySet = {
       {
         title: '4. Subscriptions',
         paragraphs: [
+          'A limited test among eligible new adults aged 18 or older who voluntarily link their account assigns one of two access variants once at random: a free return path within existing free limits, or a trial or subscription before new regular use. Existing, anonymous and uncertain users keep their existing free scope. Previously saved data, account controls and legal information remain accessible. Both test variants use the same monthly product and the same Apple-confirmed seven-day introductory trial. Your actual Apple eligibility determines whether the trial is available; the displayed renewal price and terms apply.',
           'Price, duration, trial period and renewal are shown before the purchase. Subscriptions renew automatically for the selected period until you cancel them. Payment is charged to your Apple ID; you can cancel at any time up to 24 hours before the period ends in your Apple ID settings.',
           'Purchases by a minor require the authorization applicable to their Apple account, such as Ask to Buy or approval by the family organizer. Kandro does not bypass Apple’s purchase controls.',
           'Deleting your Kandro account does not automatically end an Apple subscription. Purchases can be restored from the paywall.',
@@ -142,6 +145,7 @@ export const legalEn: LegalCopySet = {
     ],
   },
   sources: {
+    version: '1.7 · Last updated 5 September 2026',
     title: 'Data sources',
     intro: 'Logged ingredients show their nutrition source. Kandro visibly separates database values, AI-assisted matching and its own typical planning references.',
     sections: [
