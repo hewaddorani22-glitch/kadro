@@ -222,3 +222,17 @@ console.log('PASS: correction protocol, legacy rejection, replacement isolation,
   assert.equal(aiEstimateFacts({ ...frikadellen, estimatedPer100g: undefined }), null, 'older providers without estimate stay unchanged');
   console.log('PASS: identified dishes without database rows are priced from the checked model estimate; unknown names stay unresolved.');
 }
+
+// Regression 04.10.: an estimate reached a client that only accepts database
+// providers and the whole description failed as "invalid". Old clients now
+// keep the correction flow; new clients announce estimates and accept them.
+{
+  const { forEstimateProtocol } = await import('../server/core.mjs');
+  const detection = { title: 'Frühstück', items: [{ name: 'Chiasamen-Pudding', searchTermEn: 'chia pudding', estimatedPer100g: { calories: 150, protein: 5, carbs: 12, fat: 9 } }] };
+  assert.equal(forEstimateProtocol(detection, {}).items[0].estimatedPer100g, undefined, 'legacy clients never receive estimate-priced items');
+  assert.ok(forEstimateProtocol(detection, { estimates: 1 }).items[0].estimatedPer100g, 'estimate-capable clients keep the estimate');
+  const client = readFileSync(new URL('../src/services/mealAnalysis.ts', import.meta.url), 'utf8');
+  assert.match(client, /\['bls','usda','open-food-facts','manual','kandro-catalog'\]\.includes\(result\.source\?\.provider\)/, 'the app accepts Kandro estimates');
+  assert.equal((client.match(/captureProtocol: 2, estimates: 1/g) ?? []).length, 2, 'photo and description announce the estimate protocol');
+  console.log('PASS: estimate protocol is negotiated; legacy clients keep correction drafts, new clients accept estimates.');
+}

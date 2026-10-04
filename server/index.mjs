@@ -8,6 +8,7 @@ import { createServer } from 'node:http';
 import {
   buildAccuracyWarnings,
   aiEstimateFacts,
+  forEstimateProtocol,
   buildMealItem,
   canonicalFoodQuery,
   incompleteNutritionError,
@@ -134,7 +135,7 @@ async function analyzeMeal(input) {
   }
 
   const detection = await detectFoods({ ...input, language: requestedLanguage(input) });
-  return resolveDetection(detection, 'photo', input.ingredientCorrection);
+  return resolveDetection(forEstimateProtocol(detection, input), 'photo', input.ingredientCorrection);
 }
 
 async function resolveDetection(detection, source = 'photo', correctionProtocol) {
@@ -153,7 +154,7 @@ async function analyzeDescription(input) {
   if (description.length < 3 || description.length > 500) {
     return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
   }
-  return resolveDetection(applyDescriptionAmountsTolerant(await detectDescription(description, requestedLanguage(input)), description), 'text', input.ingredientCorrection);
+  return resolveDetection(applyDescriptionAmountsTolerant(forEstimateProtocol(await detectDescription(description, requestedLanguage(input)), input), description), 'text', input.ingredientCorrection);
 }
 
 function searchFoods(query, language) {

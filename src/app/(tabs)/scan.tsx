@@ -8,13 +8,14 @@ import { BarcodeScanningResult, CameraView, useCameraPermissions } from 'expo-ca
 import { useFocusEffect, useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIsFocused } from '@react-navigation/native';
-import { ActivityIndicator, Alert, AppState, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Keyboard, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { PrimaryButton } from '@/components/ui';
 import { PortionSheet } from '@/components/PortionSheet';
 import { ManualFoodForm } from '@/components/ManualFoodForm';
+import { VoiceInputButton } from '@/components/VoiceInputButton';
 import { radii } from '@/constants/theme';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { frameToPhotoCrop, type Rect } from '@/utils/cameraCrop';
@@ -27,6 +28,7 @@ import { useLanguage } from '@/i18n/LanguageProvider';
 import { primaryHaptic, successHaptic } from '@/services/haptics';
 import { formatNumber } from '@/utils/format';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 import { subscribePrivateDataInvalidation } from '@/services/localRepository';
 
 export default function ScanScreen() {
@@ -128,6 +130,7 @@ export default function ScanScreen() {
   const barcodeLock = useRef(false);
   const [scannerClosed, setScannerClosed] = useState(false);
   const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardInset();
   const { language, locale, t } = useLanguage();
   // The sheets cover the whole screen, so a camera running behind one is a
   // preview nobody can see holding a device nobody else can use.
@@ -652,8 +655,8 @@ export default function ScanScreen() {
         </View>
       </SafeAreaView>
 
-      <Modal animationType="fade" onDismiss={finishSheetDismiss} onRequestClose={() => setShowBarcodeEntry(false)} transparent visible={showBarcodeEntry}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
+      <Modal animationType="none" onDismiss={finishSheetDismiss} onRequestClose={() => setShowBarcodeEntry(false)} transparent visible={showBarcodeEntry}>
+        <Animated.View style={[styles.modalScrim, { paddingBottom: keyboardInset }]}>
           <View accessibilityViewIsModal style={[styles.barcodeSheet, { paddingBottom: insets.bottom + 20 }]}>
             <Text accessibilityRole="header" style={styles.describeTitle}>{t.scan.barcodeManualTitle}</Text>
             <Text style={styles.describeText}>{t.scan.barcodeManualHint}</Text>
@@ -678,10 +681,10 @@ export default function ScanScreen() {
               <Text style={styles.describeCancelText}>{t.common.cancel}</Text>
             </Pressable>
           </View>
-        </KeyboardAvoidingView>
+        </Animated.View>
       </Modal>
 
-      <Modal animationType={reduceMotion ? 'none' : 'fade'} onDismiss={() => {
+      <Modal animationType="none" onDismiss={() => {
         if (confirmAfterSearchDismiss.current) {
           confirmAfterSearchDismiss.current = false;
           router.push('/confirm');
@@ -697,7 +700,7 @@ export default function ScanScreen() {
           target={{ name: pendingFood.name, per100g: pendingFood.per100g, defaultGrams: pendingFood.lastGrams ?? pendingFood.defaultGrams, amountIsChosen: Boolean(pendingFood.lastGrams), portions: pendingFood.portions, sourceLabel: pendingFood.source.label }}
           visible
         /> : (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
+        <Animated.View style={[styles.modalScrim, { paddingBottom: keyboardInset }]}>
           <View accessibilityViewIsModal style={[styles.searchSheet, { paddingBottom: insets.bottom + 16 }]}>
             <ScrollView keyboardShouldPersistTaps="handled" style={styles.searchResults} contentContainerStyle={styles.searchContent}>
             {manualFor !== null ? <>
@@ -786,12 +789,12 @@ export default function ScanScreen() {
               <Text style={styles.describeCancelText}>{t.common.cancel}</Text>
             </Pressable>)}
           </View>
-        </KeyboardAvoidingView>
+        </Animated.View>
         )}
       </Modal>
 
-      <Modal animationType="fade" onDismiss={finishSheetDismiss} onRequestClose={() => { setShowDescription(false); setMode('photo'); }} transparent visible={showDescription}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
+      <Modal animationType="none" onDismiss={finishSheetDismiss} onRequestClose={() => { setShowDescription(false); setMode('photo'); }} transparent visible={showDescription}>
+        <Animated.View style={[styles.modalScrim, { paddingBottom: keyboardInset }]}>
           <View accessibilityViewIsModal style={[styles.describeSheet, { paddingBottom: insets.bottom + 22 }]}>
             <Text accessibilityRole="header" style={styles.describeTitle}>{t.scan.describeTitle}</Text>
             <Text style={styles.describeText}>{t.scan.describeText}</Text>
@@ -806,6 +809,7 @@ export default function ScanScreen() {
               style={styles.describeInput}
               value={description}
             />
+            <VoiceInputButton onChange={setDescription} value={description} />
             <Pressable accessibilityRole="button" onPress={submitDescription} style={styles.describeSubmit}>
               <Text style={styles.describeSubmitText}>{t.scan.describeSubmit}</Text>
               <Ionicons color={colors.white} name="arrow-forward" size={18} />
@@ -814,7 +818,7 @@ export default function ScanScreen() {
               <Text style={styles.describeCancelText}>{t.common.cancel}</Text>
             </Pressable>
           </View>
-        </KeyboardAvoidingView>
+        </Animated.View>
       </Modal>
     </View>
   );

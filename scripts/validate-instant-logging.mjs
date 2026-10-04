@@ -114,7 +114,7 @@ await test('own foods and direct logging are wired end to end', () => {
   const sql = fs.readFileSync(new URL('../supabase/migrations/20261004130000_manual_food_source.sql', import.meta.url), 'utf8');
   assert.ok(sql.includes("'manual'") && sql.includes("'bls'") && sql.includes("'open-food-facts'"));
   const analysis = fs.readFileSync(new URL('../src/services/mealAnalysis.ts', import.meta.url), 'utf8');
-  assert.ok(analysis.includes("['bls','usda','open-food-facts','manual']"), 'manual entries pass the search-result guard');
+  assert.ok(analysis.includes("['bls','usda','open-food-facts','manual','kandro-catalog']"), 'manual entries and Kandro estimates pass the search-result guard');
   const form = fs.readFileSync(new URL('../src/components/ManualFoodForm.tsx', import.meta.url), 'utf8');
   assert.ok(form.includes("provider: 'manual', referenceId: id"));
   const scan = fs.readFileSync(new URL('../src/app/(tabs)/scan.tsx', import.meta.url), 'utf8');

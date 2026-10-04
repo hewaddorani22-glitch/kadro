@@ -119,7 +119,7 @@ function validSearchResult(result: FoodSearchResult) {
     || !result.per100g || ![result.per100g.calories,result.per100g.protein,result.per100g.carbs,result.per100g.fat].every(n=>typeof n==='number' && Number.isFinite(n) && n>=0)
     || (result.per100g.calories===0 && result.per100g.protein*4+result.per100g.carbs*4+result.per100g.fat*9>5)
     || !Number.isFinite(result.defaultGrams) || result.defaultGrams<1 || result.defaultGrams>5000
-    || !['bls','usda','open-food-facts','manual'].includes(result.source?.provider) || typeof result.source.referenceId !== 'string' || !result.source.referenceId
+    || !['bls','usda','open-food-facts','manual','kandro-catalog'].includes(result.source?.provider) || typeof result.source.referenceId !== 'string' || !result.source.referenceId
     || typeof result.source.label !== 'string') return false;
   if (result.per100g.fiber !== undefined && (!Number.isFinite(result.per100g.fiber) || result.per100g.fiber<0)) return false;
   return result.portions === undefined || (Array.isArray(result.portions) && result.portions.every(p=>typeof p.label==='string' && p.label.length>0 && Number.isFinite(p.grams) && p.grams>=1 && p.grams<=5000));
@@ -256,7 +256,7 @@ export function deleteTemporaryPhoto(uri: string | null | undefined) {
 export async function analyzePreparedPhoto(input: MealAnalysisInput, requestId: string): Promise<MealAnalysisResult> {
   return readAnalysisResponse(await gatewayFetch('/v1/analyze', {
     method: 'POST',
-    body: { imageBase64: input.imageBase64, mimeType: input.mimeType, language: input.language, locale: input.locale, requestId, ingredientCorrection: 1, captureProtocol: 2 },
+    body: { imageBase64: input.imageBase64, mimeType: input.mimeType, language: input.language, locale: input.locale, requestId, ingredientCorrection: 1, captureProtocol: 2, estimates: 1 },
   }));
 }
 
@@ -291,7 +291,7 @@ async function readAnalysisResponse(response: GatewayResponse): Promise<MealAnal
 export async function analyzeDescription(description: string, requestId: string): Promise<MealAnalysisResult> {
   return readAnalysisResponse(await gatewayFetch('/v1/describe', {
     method: 'POST',
-    body: { description: description.trim(), language: getLanguage(), locale: getLocale(), requestId, ingredientCorrection: 1, captureProtocol: 2 },
+    body: { description: description.trim(), language: getLanguage(), locale: getLocale(), requestId, ingredientCorrection: 1, captureProtocol: 2, estimates: 1 },
   }));
 }
 

@@ -445,7 +445,7 @@ for (const name of [
   assert.match(gatewayEnv, new RegExp(`^${name}=`, 'm'), `${name} must be documented as an Edge secret`);
   assert.doesNotMatch(client + serverEntitlement + subscriptionContext + appContext + localRepository, new RegExp(`EXPO_PUBLIC_${name}`));
 }
-assert.match(client, /body: \{ imageBase64: input\.imageBase64, mimeType: input\.mimeType, language: input\.language, locale: input\.locale, requestId, ingredientCorrection: 1, captureProtocol: 2 \}/);
+assert.match(client, /body: \{ imageBase64: input\.imageBase64, mimeType: input\.mimeType, language: input\.language, locale: input\.locale, requestId, ingredientCorrection: 1, captureProtocol: 2, estimates: 1 \}/);
 assert.match(client, /description: description\.trim\(\)[\s\S]*requestId/);
 assert.match(appContext, /analyzeDescription\(descriptionInput, invocationScanId\)/);
 assert.match(appContext, /analyzePreparedPhoto\(input!, invocationScanId\)/);

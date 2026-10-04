@@ -7,6 +7,7 @@ export { canonicalFoodQuery } from '../supabase/functions/_shared/food-query.mjs
 export {
   buildAccuracyWarnings,
   aiEstimateFacts,
+  forEstimateProtocol,
   buildMealItem,
   incompleteNutritionError,
   ingredientCorrectionDraft,

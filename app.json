@@ -64,7 +64,17 @@
           "color": "#3F5233"
         }
       ],
-      "./plugins/withKandroWidgets"
+      "./plugins/withKandroWidgets",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Kandro nutzt das Mikrofon nur, während du deine Mahlzeit einsprichst.",
+          "speechRecognitionPermission": "Kandro wandelt deine gesprochene Mahlzeit auf dem Gerät in Text um.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

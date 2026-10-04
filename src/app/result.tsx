@@ -1,3 +1,4 @@
+import { friendlySource } from '@/utils/sourceLabel';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -231,7 +232,7 @@ export default function ResultScreen() {
                 <Text style={styles.ingredientName}>{item.name}</Text>
                 <View style={styles.ingredientMeta}>
                   <Text style={styles.ingredientAmount}>{formatNumber(item.amountG, locale)} g</Text>
-                  <Text style={styles.ingredientSource}>{item.source.label}</Text>
+                  <Text style={styles.ingredientSource}>{friendlySource(item.source.label) ?? ''}</Text>
                 </View>
               </View>
               {index < list.length - 1 ? <View style={styles.divider} /> : null}

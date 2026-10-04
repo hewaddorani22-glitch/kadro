@@ -475,6 +475,16 @@ export function aiEstimateFacts(item) {
   };
 }
 
+/**
+ * Clients that cannot store a Kandro estimate (builds before the estimate
+ * protocol) must keep the previous correction flow instead of rejecting the
+ * whole result as invalid.
+ */
+export function forEstimateProtocol(detection, input) {
+  if (input?.estimates === 1 || !detection || !Array.isArray(detection.items)) return detection;
+  return { ...detection, items: detection.items.map(({ estimatedPer100g: _omit, ...item }) => item) };
+}
+
 export function buildMealItem(item, facts, index) {
   // Defense against old cache records and malformed provider values.
   if (facts && (![facts.calories, facts.protein, facts.carbs, facts.fat].every(value => Number.isFinite(value) && value >= 0)

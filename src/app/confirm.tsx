@@ -26,7 +26,6 @@ export default function ConfirmScreen() {
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { adjustItem, analysisMessage, descriptionInput, detectedItems, mealPortion, photoUri, removeDetectedItem, replaceDetectedItem, scanMode, scannedMeal, setItemAmount, setMealPortion, toggleItem } = useApp();
-  const [detailsOpen, setDetailsOpen] = useState(false);
   const [amountFor, setAmountFor] = useState<string | null>(null);
   const [preferGrams, setPreferGrams] = useState(false);
   const [removeFor, setRemoveFor] = useState<string | null>(null);
@@ -36,6 +35,8 @@ export default function ConfirmScreen() {
   const hasIncludedFood = detectedItems.some((item) => item.included);
   const correctionRequired = detectedItems.some(needsIngredientCorrection);
   const canConfirm = canSaveMealDraft(detectedItems);
+  const { t: dict } = useLanguage();
+  const actionableHint = analysisMessage?.split('\n\n').find(line => line === dict.errors.warnUnmatched || line === dict.errors.warnHiddenCalories) ?? null;
   const { locale, t } = useLanguage();
   const replaceFood = (id: string) => router.push({ pathname: '/correct-food', params: { itemId: id } } as never);
 
@@ -83,10 +84,12 @@ export default function ConfirmScreen() {
         <Text style={styles.subtitle}>{singleItem ? t.confirm.subtitleSingle : t.confirm.subtitle}</Text>
       </View>
 
-      {analysisMessage ? (
+      {/* Estimates are normal and need no disclaimer wall. Only something the
+          person can act on is shown, as one calm line. */}
+      {actionableHint ? (
         <View style={styles.analysisWarning}>
-          <Ionicons color={colors.attention} name="alert-circle-outline" size={18} />
-          <Text style={styles.analysisWarningText}>{analysisMessage}</Text>
+          <Ionicons color={colors.accentText} name="information-circle-outline" size={18} />
+          <Text style={styles.analysisWarningText}>{actionableHint}</Text>
         </View>
       ) : null}
 
@@ -163,10 +166,6 @@ export default function ConfirmScreen() {
             );
           })}
         </View>
-        <Pressable accessibilityRole="button" accessibilityState={{ expanded: detailsOpen }} onPress={() => setDetailsOpen((current) => !current)} style={styles.detailsToggle}>
-          <Text style={styles.detailsToggleText}>{detailsOpen ? t.confirm.closeDetails : t.confirm.openDetails}</Text>
-          <Ionicons color={colors.muted} name={detailsOpen ? 'chevron-up' : 'chevron-down'} size={18} />
-        </Pressable>
       </Card>
       ) : null}
 
@@ -179,20 +178,31 @@ export default function ConfirmScreen() {
           : `${formatNumber(item.amountG, locale)} g`;
         return (
           <Card key={`ingredient-${item.id}`} style={styles.ingredientCard}>
-            <Text style={styles.portionTitle}>{item.name}</Text>
-            <Text style={styles.subtitle}>{unresolved ? t.confirm.missingValues : `${amount} · ~${formatNumber(item.calories, locale)} kcal`}</Text>
+            <View style={styles.ingredientRow}>
+              <Pressable
+                accessibilityLabel={`${item.name}: ${t.confirm.editAmount}`}
+                accessibilityRole="button"
+                disabled={unresolved}
+                onPress={() => setAmountFor(item.id)}
+                style={({ pressed }) => [styles.ingredientMain, pressed && { opacity: 0.6 }]}
+              >
+                <Text numberOfLines={2} style={[styles.ingredientName, !item.included && styles.itemRowOff]}>{item.name}</Text>
+                <View style={styles.ingredientMetaRow}>
+                  <Text style={styles.ingredientMeta}>{unresolved ? t.confirm.missingValues : `${amount} · ${formatNumber(item.calories, locale)} kcal`}</Text>
+                  {!unresolved ? <Ionicons color={colors.accentText} name="pencil" size={13} /> : null}
+                </View>
+              </Pressable>
+              <Pressable accessibilityLabel={`${item.name}: ${t.confirm.replaceFood}`} accessibilityRole="button" hitSlop={6} onPress={() => replaceFood(item.id)} style={styles.iconAction}>
+                <Ionicons color={colors.text} name="swap-horizontal" size={18} />
+              </Pressable>
+              <Pressable accessibilityLabel={`${item.name}: ${t.confirm.removeFood}`} accessibilityRole="button" hitSlop={6} onPress={() => setRemoveFor(removeFor === item.id ? null : item.id)} style={styles.iconAction}>
+                <Ionicons color={colors.text} name="trash-outline" size={18} />
+              </Pressable>
+            </View>
             {!unresolved && !item.included ? <Text style={styles.subtitle}>{t.confirm.excluded}</Text> : null}
             {unresolved ? <UnresolvedSuggestion item={item} duplicateOf={possibleDuplicate(item, detectedItems)} onRemove={() => removeDetectedItem(item.id)} onUse={(result) => replaceDetectedItem(item.id, result, item.amountG)} /> : null}
-            <View style={styles.ingredientActions}>
-              {!unresolved ? <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.editAmount}`} onPress={() => setAmountFor(item.id)} style={styles.ingredientAction}><Text style={styles.actionText}>{t.confirm.editAmount}</Text></Pressable> : null}
-              <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.replaceFood}`} onPress={() => replaceFood(item.id)} style={styles.ingredientAction}><Text style={styles.actionText}>{t.confirm.replaceFood}</Text></Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.removeFood}`} onPress={() => setRemoveFor(item.id)} style={styles.ingredientAction}><Text style={styles.actionText}>{t.confirm.removeFood}</Text></Pressable>
-            </View>
-            {removeFor === item.id ? <View style={styles.ingredientCard}>
-              <Text style={styles.portionTitle}>{t.confirm.removeFoodTitle}</Text>
-              <Text style={styles.subtitle}>{t.confirm.removeFoodBody}</Text>
-              <PrimaryButton label={t.confirm.removeFood} onPress={() => { removeDetectedItem(item.id); setRemoveFor(null); }} />
-              <PrimaryButton variant="ghost" label={t.common.cancel} onPress={() => setRemoveFor(null)} />
+            {removeFor === item.id ? <View style={styles.removeRow}>
+              <PrimaryButton icon="trash-outline" label={t.confirm.removeFood} onPress={() => { removeDetectedItem(item.id); setRemoveFor(null); }} variant="secondary" />
             </View> : null}
           </Card>
         );
@@ -222,35 +232,6 @@ export default function ConfirmScreen() {
         visible={amountFor !== null}
       />
 
-      {detailsOpen ? (
-        <Card style={styles.listCard}>
-          {detectedItems.map((item, index) => (
-            <View key={item.id}>
-              <View style={[styles.itemRow, !item.included && styles.itemRowOff]}>
-                <Pressable accessibilityLabel={`${item.name} ${t.confirm.include}`} accessibilityRole="checkbox" accessibilityState={{ checked: item.included }} onPress={() => toggleItem(item.id)} style={[styles.checkButton, item.included && styles.checkButtonOn]}>
-                  <Ionicons color={item.included ? colors.onAccent : colors.muted} name={item.included ? 'checkmark' : 'add'} size={17} />
-                </Pressable>
-                <View style={styles.itemCopy}>
-                  <View style={styles.itemNameRow}>
-                    <Text style={styles.itemName}>{item.name}</Text>
-                  </View>
-                  <Text style={styles.itemCalories}>{needsIngredientCorrection(item) ? t.confirm.missingValues : `~${formatNumber(item.calories, locale)} kcal`}</Text>
-                </View>
-                {!needsIngredientCorrection(item) ? <View style={styles.stepper}>
-                  <Pressable accessibilityLabel={`${item.name} ${t.confirm.decrease}`} accessibilityRole="button" onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
-                    <Ionicons color={colors.text} name="remove" size={17} />
-                  </Pressable>
-                  <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.amountQuestion}`} onPress={() => { setPreferGrams(true); setAmountFor(item.id); }} style={{ minHeight: 44, paddingHorizontal: 6, borderBottomWidth: 1, borderBottomColor: colors.border, justifyContent: 'center' }}><Text style={styles.amount}>{formatNumber(item.amountG, locale)} g</Text></Pressable>
-                  <Pressable accessibilityLabel={`${item.name} ${t.confirm.increase}`} accessibilityRole="button" onPress={() => adjustItem(item.id, 1)} style={styles.stepperButton}>
-                    <Ionicons color={colors.text} name="add" size={17} />
-                  </Pressable>
-                </View> : null}
-              </View>
-              {index < detectedItems.length - 1 ? <View style={styles.divider} /> : null}
-            </View>
-          ))}
-        </Card>
-      ) : null}
 
       {correctionRequired ? <Card style={styles.ingredientCard}>
         <Text style={styles.portionTitle}>{t.confirm.incompleteTotal}</Text>
@@ -353,8 +334,15 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   headingRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   title: { maxWidth: '100%', flexShrink: 1, color: colors.text, fontSize: 30, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21 },
-  analysisWarning: { minHeight: 48, borderRadius: 15, backgroundColor: colors.attentionSoft, paddingHorizontal: 13, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
-  analysisWarningText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },
+  ingredientRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  ingredientMain: { flex: 1, minWidth: 0, gap: 4, minHeight: 44, justifyContent: 'center' },
+  ingredientName: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  ingredientMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ingredientMeta: { color: colors.muted, fontSize: 14, fontVariant: ['tabular-nums'] },
+  iconAction: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
+  removeRow: { marginTop: 4 },
+  analysisWarning: { borderRadius: 15, backgroundColor: colors.neutralSoft, paddingHorizontal: 13, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  analysisWarningText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 18 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   detectedChip: { minHeight: 44, borderRadius: radii.pill, backgroundColor: colors.successSoft, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 6 },
   detectedChipQuestion: { backgroundColor: colors.attentionSoft },

@@ -1,3 +1,4 @@
+import { friendlySource } from '@/utils/sourceLabel';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
@@ -123,7 +124,7 @@ export default function CorrectFoodScreen() {
               <View style={styles.resultCopy}>
                 <Text style={styles.foodName}>{food.name}</Text>
                 <Text style={styles.copy}>{formatNumber(food.per100g.calories, locale)} kcal · {t.scan.searchPer100}</Text>
-                <Text style={styles.source}>{food.source.label}</Text>
+                <Text style={styles.source}>{friendlySource(food.source.label) ?? ''}</Text>
               </View>
               <Ionicons name="chevron-forward" color={colors.accentText} size={22} />
             </Card>

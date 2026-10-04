@@ -10,6 +10,7 @@ import { canonicalFoodQuery } from '../_shared/food-query.mjs';
 import {
   buildAccuracyWarnings,
   aiEstimateFacts,
+  forEstimateProtocol,
   buildMealItem,
   incompleteNutritionError,
   ingredientCorrectionDraft,
@@ -504,10 +505,10 @@ async function analyzePhoto(input: any, admin: any, claimUsda?: () => Promise<vo
   if (typeof input.imageBase64 !== 'string' || input.imageBase64.length > MAX_IMAGE_BASE64) {
     return { status: 413, body: { code: 'invalid_input', message: 'Das Foto ist zu groß.' } };
   }
-  return resolveDetection(await requestDetection([
+  return resolveDetection(forEstimateProtocol(await requestDetection([
     { type: 'input_text', text: photoDetectionPrompt(requestedLanguage(input)) },
     { type: 'input_image', image_url: `data:${input.mimeType};base64,${input.imageBase64}`, detail: imageDetail },
-  ], candidate, signal), admin, 'photo', claimUsda, input.ingredientCorrection);
+  ], candidate, signal), input), admin, 'photo', claimUsda, input.ingredientCorrection);
 }
 
 // deno-lint-ignore no-explicit-any
@@ -517,7 +518,7 @@ async function analyzeDescription(input: any, admin: any, claimUsda?: () => Prom
     return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
   }
   const detection = await requestDetection([{ type: 'input_text', text: descriptionDetectionPrompt(description, requestedLanguage(input)) }], candidate, signal);
-  return resolveDetection(applyDescriptionAmountsTolerant(detection, description), admin, 'text', claimUsda, input.ingredientCorrection);
+  return resolveDetection(applyDescriptionAmountsTolerant(forEstimateProtocol(detection, input), description), admin, 'text', claimUsda, input.ingredientCorrection);
 }
 
 /**
