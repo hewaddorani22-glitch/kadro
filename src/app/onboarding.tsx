@@ -21,7 +21,7 @@ import { getGuardianConsentStatus, requestGuardianConsent } from '@/services/gua
 import { trackEvent } from '@/services/telemetry';
 import { errorHaptic, selectionHaptic, stepHaptic, successHaptic } from '@/services/haptics';
 import { useLanguage } from '@/i18n/LanguageProvider';
-import { formatNumber } from '@/utils/format';
+import { formatDateParts, formatNumber } from '@/utils/format';
 import { parseDecimalInput } from '@/utils/decimalInput';
 import { NutritionGoal, UserProfile, WeeklyRateKg } from '@/types/nutrition';
 import {
@@ -42,6 +42,18 @@ type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyph
 
 
 type StepId = OnboardingStep;
+
+const formatNumberPlain = (value: number) => String(Math.round(value * 10) / 10);
+/** Calendar arithmetic on YYYY-MM-DD in UTC: no timezone or DST drift. */
+function addDaysIso(iso: string, days: number) {
+  const [year, month, day] = iso.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
+}
+function addMonthsIso(iso: string, months: number) {
+  const [year, month, day] = iso.split('-').map(Number);
+  const lastDay = new Date(Date.UTC(year, month - 1 + months + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month - 1 + months, Math.min(day, lastDay))).toISOString().slice(0, 10);
+}
 
 type Dict = ReturnType<typeof useLanguage>['t'];
 
@@ -152,6 +164,44 @@ export default function OnboardingScreen() {
     : usesMetricWeight(unitSystem) ? targetWeightNumber : poundsToKg(targetWeightNumber);
   const targetDate = targetDateInput.trim() || null;
   const targetError = age >= 18 && goal !== 'maintain' ? personalGoalError(targetWeightKg, targetDate, localDateKey()) : null;
+  const weightUnit = usesMetricWeight(unitSystem) ? 'kg' : 'lb';
+  const currentWeightDisplay = usesMetricWeight(unitSystem) ? weight : kgToPounds(weight);
+  const weightStep = usesMetricWeight(unitSystem) ? 0.5 : 1;
+  const roundToStep = (value: number) => Math.round(value / weightStep) * weightStep;
+  // A sensible first target: a few kilos in the chosen direction, on the step grid.
+  const suggestedTargetWeight = formatNumberPlain(roundToStep(goal === 'gain'
+    ? currentWeightDisplay + (usesMetricWeight(unitSystem) ? 3 : 6)
+    : currentWeightDisplay - (usesMetricWeight(unitSystem) ? 5 : 10)));
+  const nudgeTargetWeight = (direction: -1 | 1) => {
+    void selectionHaptic();
+    const current = parsePersonalGoalWeight(targetWeightInput) ?? currentWeightDisplay;
+    const limits = usesMetricWeight(unitSystem) ? [40, 200] : [Math.ceil(kgToPounds(40)), Math.floor(kgToPounds(200))];
+    const next = Math.min(limits[1], Math.max(limits[0], roundToStep(current) + direction * weightStep));
+    setTargetWeightInput(formatNumberPlain(next));
+  };
+  const targetDiffKg = targetWeightKg !== null && Number.isFinite(targetWeightKg) ? targetWeightKg - weight : null;
+  const targetDiffLabel = targetDiffKg === null ? '' : t.onboarding.targetDiff(`${targetDiffKg > 0 ? '+' : targetDiffKg < 0 ? '−' : '±'}${formatWeight(Math.abs(targetDiffKg), unitSystem, locale)}`);
+  const towardGoal = targetDiffKg !== null && ((goal === 'lose' && targetDiffKg < 0) || (goal === 'gain' && targetDiffKg > 0));
+  const paceWeeks = towardGoal ? Math.min(104, Math.max(1, Math.ceil(Math.abs(targetDiffKg!) / weeklyRate))) : null;
+  const today = localDateKey();
+  const dateOptions: { key: string; label: string; value: string | null }[] = [
+    ...(paceWeeks ? [{ key: 'pace', label: `${t.onboarding.datePace} · ${formatShortDate(addDaysIso(today, paceWeeks * 7))}`, value: addDaysIso(today, paceWeeks * 7) }] : []),
+    ...[3, 6, 12].map(months => ({ key: `m${months}`, label: t.onboarding.dateMonths(months), value: addMonthsIso(today, months) })),
+    { key: 'none', label: t.onboarding.dateNone, value: null },
+  ];
+  if (targetDate && !dateOptions.some(option => option.value === targetDate)) {
+    dateOptions.unshift({ key: 'saved', label: formatGoalDate(targetDate), value: targetDate });
+  }
+  // The suggested target arrives with the matching date already chosen.
+  const suggestedKg = usesMetricWeight(unitSystem) ? Number(suggestedTargetWeight) : poundsToKg(Number(suggestedTargetWeight));
+  const suggestedWeeks = Math.min(104, Math.max(1, Math.ceil(Math.abs(suggestedKg - weight) / weeklyRate)));
+  const suggestedTargetDate = goal === 'maintain' ? null : addDaysIso(today, suggestedWeeks * 7);
+  function formatShortDate(iso: string) {
+    return formatDateParts(new Date(`${iso}T12:00:00`), { day: 'numeric', month: 'short' }, locale);
+  }
+  function formatGoalDate(iso: string) {
+    return formatDateParts(new Date(`${iso}T12:00:00`), { day: 'numeric', month: 'short', year: 'numeric' }, locale);
+  }
   const [preferences, setPreferences] = useState<string[]>(() => (editing ? profile.preferences : ['high-protein']));
   const [showConsent, setShowConsent] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
@@ -319,7 +369,7 @@ export default function OnboardingScreen() {
           style={styles.flex}
         >
           <View style={[styles.headingBlock, compactHeight && styles.headingBlockCompact]}>
-            {step === 'goal' || step === 'plan' ? (
+            {step === 'goal' ? (
               <View style={[styles.brandMark, compactHeight && styles.brandMarkCompact]}><KandroMark size={compactHeight ? 34 : 42} /></View>
             ) : null}
             <Text accessibilityRole="header" style={[styles.title, compactHeight && styles.titleCompact]}>{copy[step].title}</Text>
@@ -335,83 +385,118 @@ export default function OnboardingScreen() {
 
             {step === 'target' ? (
               <View style={styles.rateStep}>
-                {/*
-                  Keep units available beside the pace and optional goal values.
-                */}
                 <UnitToggle onChange={setUnitSystem} value={unitSystem} />
-                <View style={styles.choiceList}>
-                {([0.25, 0.5] as WeeklyRateKg[]).map((rate) => {
-                  const active = weeklyRate === rate;
-                  const requested = dailyGoalOffset(draftProfile.goal, rate);
-                  return (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>{t.onboarding.targetWeightLabel}</Text>
+                  {targetWeightInput.trim() === '' ? (
                     <Pressable
-                      aria-checked={active}
-                      accessibilityRole="radio"
-                      accessibilityState={{ checked: active }}
-                      key={rate}
-                      onPress={() => selectChoice(() => setWeeklyRate(rate))}
-                      style={({ pressed }) => [styles.choice, compactHeight && styles.choiceCompact, active && styles.choiceActive, pressed && styles.choicePressed]}
+                      accessibilityRole="button"
+                      onPress={() => { void selectionHaptic(); setTargetWeightInput(String(suggestedTargetWeight)); setTargetDateInput(suggestedTargetDate ?? ''); }}
+                      style={({ pressed }) => [styles.addGoal, pressed && styles.choicePressed]}
                     >
-                      <View style={[styles.choiceIcon, compactHeight && styles.choiceIconCompact, active && styles.choiceIconActive]}>
-                        <Ionicons color={active ? colors.onAccent : colors.text} name={rate === 0.25 ? 'leaf-outline' : 'flash-outline'} size={22} />
-                      </View>
-                      <View style={styles.choiceTextBlock}>
-                        <Text style={styles.choiceTitle}>{weeklyRateLabel(draftProfile.goal, rate, t.common, unitSystem)}</Text>
-                        <Text style={styles.choiceDetail}>
-                          {/*
-                            Building muscle and losing weight are not the same
-                            trade-off: a faster deficit costs adherence, a
-                            faster surplus costs body composition.
-                          */}
-                          {draftProfile.goal === 'gain'
-                            ? (rate === 0.25 ? t.onboarding.rateCalmGain : t.onboarding.rateBriskGain)
-                            : (rate === 0.25 ? t.onboarding.rateCalm : t.onboarding.rateBrisk)}
-                          {' · '}{requested < 0 ? '−' : '+'}{Math.abs(requested)} {t.onboarding.perDay}
-                        </Text>
-                      </View>
-                      <Ionicons color={active ? colors.accentText : colors.border} name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
+                      <Ionicons color={colors.accentText} name="flag-outline" size={20} />
+                      <Text style={styles.addGoalText}>{t.onboarding.addTargetWeight}</Text>
                     </Pressable>
-                  );
-                })}
+                  ) : (
+                    <>
+                      <View style={styles.measureRow}>
+                        <Text numberOfLines={1} style={styles.measureLabel}>{t.onboarding.goalShort}</Text>
+                        <View style={styles.measureControls}>
+                          <StepperButton compact icon="remove" label={t.common.decreaseUnit(weightUnit)} onPressIn={() => nudgeTargetWeight(-1)} onPressOut={() => undefined} />
+                          <View style={styles.measureValueBox}>
+                            <TextInput
+                              accessibilityLabel={t.onboarding.targetWeightLabel}
+                              inputMode="decimal"
+                              keyboardType="decimal-pad"
+                              maxLength={6}
+                              onChangeText={setTargetWeightInput}
+                              selectTextOnFocus
+                              style={[styles.measureValue, { minWidth: 70, textAlign: 'right', paddingVertical: 4 }]}
+                              value={targetWeightInput}
+                            />
+                            <Text style={styles.measureUnit}>{weightUnit}</Text>
+                          </View>
+                          <StepperButton compact icon="add" label={t.common.increaseUnit(weightUnit)} onPressIn={() => nudgeTargetWeight(1)} onPressOut={() => undefined} />
+                        </View>
+                      </View>
+                      <View style={styles.goalMeta}>
+                        <Text style={styles.goalDiff}>{targetDiffLabel}</Text>
+                        <Pressable accessibilityRole="button" hitSlop={8} onPress={() => { void selectionHaptic(); setTargetWeightInput(''); setTargetDateInput(''); }}>
+                          <Text style={styles.linkText}>{t.onboarding.removeTargetWeight}</Text>
+                        </Pressable>
+                      </View>
+                    </>
+                  )}
                 </View>
-                <Text style={styles.subtitle}>{t.onboarding.personalGoalHint}</Text>
-                <Text style={styles.fieldLabel}>{t.onboarding.targetWeightLabel} · {usesMetricWeight(unitSystem) ? 'kg' : 'lb'}</Text>
-                <TextInput accessibilityLabel={t.onboarding.targetWeightLabel} inputMode="decimal" maxLength={8} onChangeText={setTargetWeightInput} value={targetWeightInput} style={styles.nameInput} placeholder="" placeholderTextColor={colors.muted} />
-                <Text style={styles.fieldLabel}>{t.onboarding.targetDateLabel}</Text>
-                <TextInput accessibilityLabel={t.onboarding.targetDateLabel} inputMode="text" autoCapitalize="none" autoCorrect={false} maxLength={10} onChangeText={setTargetDateInput} value={targetDateInput} style={styles.nameInput} placeholder={t.onboarding.targetDatePlaceholder} placeholderTextColor={colors.muted} />
+
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>{t.onboarding.rateTitle}</Text>
+                  <View style={styles.rateRow}>
+                    {([0.25, 0.5] as WeeklyRateKg[]).map((rate) => {
+                      const active = weeklyRate === rate;
+                      const requested = dailyGoalOffset(draftProfile.goal, rate);
+                      return (
+                        <Pressable
+                          aria-checked={active}
+                          accessibilityRole="radio"
+                          accessibilityState={{ checked: active }}
+                          key={rate}
+                          onPress={() => selectChoice(() => setWeeklyRate(rate))}
+                          style={({ pressed }) => [styles.rateCard, active && styles.rateCardActive, pressed && styles.choicePressed]}
+                        >
+                          <Ionicons color={active ? colors.accentText : colors.muted} name={rate === 0.25 ? 'leaf-outline' : 'flash-outline'} size={20} />
+                          <Text style={styles.rateValue}>{weeklyRateLabel(draftProfile.goal, rate, t.common, unitSystem)}</Text>
+                          <Text style={styles.rateDetail}>
+                            {/*
+                              Building muscle and losing weight are not the same
+                              trade-off: a faster deficit costs adherence, a
+                              faster surplus costs body composition.
+                            */}
+                            {draftProfile.goal === 'gain'
+                              ? (rate === 0.25 ? t.onboarding.rateCalmGain : t.onboarding.rateBriskGain)
+                              : (rate === 0.25 ? t.onboarding.rateCalm : t.onboarding.rateBrisk)}
+                            {' · '}{requested < 0 ? '−' : '+'}{Math.abs(requested)} {t.onboarding.perDay}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                {targetWeightInput.trim() !== '' && targetError !== 'weight' ? (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionLabel}>{t.onboarding.targetDateLabel}</Text>
+                    <View style={styles.dateChips}>
+                      {dateOptions.map((option) => {
+                        const active = (targetDateInput || null) === option.value;
+                        return (
+                          <Pressable
+                            accessibilityLabel={option.label}
+                            accessibilityRole="radio"
+                            accessibilityState={{ checked: active }}
+                            key={option.key}
+                            onPress={() => { void selectionHaptic(); setTargetDateInput(option.value ?? ''); }}
+                            style={[styles.dateChip, active && styles.dateChipActive]}
+                          >
+                            <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    {targetDate ? <Text style={styles.goalDiff}>{t.onboarding.dateChosen(formatGoalDate(targetDate))}</Text> : null}
+                    {paceWeeks ? <Text style={styles.fieldHint}>{t.onboarding.paceWeeks(paceWeeks)}</Text> : null}
+                  </View>
+                ) : null}
+                <Text style={styles.fieldHint}>{t.onboarding.personalGoalHint}</Text>
                 {targetError ? <Text accessibilityLiveRegion="polite" style={styles.consentError}>{targetError === 'weight' ? t.onboarding.targetWeightInvalid : t.onboarding.targetDateInvalid}</Text> : null}
               </View>
             ) : null}
 
-            {step === 'about' ? (
-              <View style={styles.nameField}>
-                <Text style={styles.fieldLabel}>{t.onboarding.nameTitle}</Text>
-                <TextInput
-                  accessibilityLabel={t.onboarding.nameTitle}
-                  autoCapitalize="words"
-                  maxLength={40}
-                  onChangeText={setDisplayName}
-                  placeholder={t.onboarding.namePlaceholder}
-                  placeholderTextColor={colors.muted}
-                  returnKeyType="done"
-                  style={styles.nameInput}
-                  value={displayName}
-                />
-              </View>
-            ) : null}
-
-            {step === 'about' ? (
-              <ChoiceList
-                choices={sexChoices}
-                compact={compactHeight}
-                onSelect={(value) => selectChoice(() => setSex(value))}
-                selected={sex}
-                values={BIOLOGICAL_SEXES}
-              />
-            ) : null}
             {step === 'about' && !editing ? (
-              <View style={styles.ageStep}>
+              <View style={styles.section}>
                 <NumberStep
+                  label={t.onboarding.ageLabel}
+                  layout="row"
                   max={100}
                   min={14}
                   onChange={(nextAge) => {
@@ -429,7 +514,7 @@ export default function OnboardingScreen() {
                     void selectionHaptic();
                     setAgeConfirmed(true);
                   }}
-                  style={[styles.ageConfirmation, ageConfirmed && styles.ageConfirmationChecked]}
+                  style={styles.ageConfirmRow}
                 >
                   <Ionicons
                     color={ageConfirmed ? colors.accentText : colors.muted}
@@ -440,56 +525,82 @@ export default function OnboardingScreen() {
                 </Pressable>
               </View>
             ) : null}
-            {step === 'about' && editing ? <Text style={styles.subtitle}>{t.onboarding.ageLocked}</Text> : null}
-            {step === 'body' ? (
-              <View style={styles.unitStep}>
-                <Text style={styles.fieldLabel}>{t.onboarding.heightTitle}</Text>
-                <UnitToggle onChange={setUnitSystem} value={unitSystem} />
-                <View style={styles.unitStepValue}>
-                  {usesMetricHeight(unitSystem) ? (
-                    <NumberStep max={220} min={130} onChange={setHeight} step={1} unit="cm" value={height} />
-                  ) : (
-                    <NumberStep
-                      accessibilityUnit="in"
-                      format={(inches) => `${Math.floor(inches / 12)}′ ${inches % 12}″`}
-                      max={cmToTotalInches(220)}
-                      min={cmToTotalInches(130)}
-                      onChange={(inches) => setHeight(totalInchesToCm(inches))}
-                      step={1}
-                      unit=""
-                      value={cmToTotalInches(height)}
-                    />
-                  )}
-                </View>
+
+            {step === 'about' ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>{t.onboarding.sexLabel}</Text>
+                <Segmented
+                  labels={sexChoices.map(choice => choice.label)}
+                  onSelect={(value) => selectChoice(() => setSex(value))}
+                  selected={sex}
+                  values={BIOLOGICAL_SEXES}
+                />
+                <Text style={styles.fieldHint}>{sexChoices[BIOLOGICAL_SEXES.indexOf(sex)]?.detail}</Text>
               </View>
             ) : null}
+
+            {step === 'about' ? (
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>{t.onboarding.nameOptional}</Text>
+                <TextInput
+                  accessibilityLabel={t.onboarding.nameTitle}
+                  autoCapitalize="words"
+                  maxLength={40}
+                  onChangeText={setDisplayName}
+                  placeholder={t.onboarding.namePlaceholder}
+                  placeholderTextColor={colors.muted}
+                  returnKeyType="done"
+                  style={styles.smallInput}
+                  value={displayName}
+                />
+              </View>
+            ) : null}
+            {step === 'about' && editing ? <Text style={styles.subtitle}>{t.onboarding.ageLocked}</Text> : null}
             {step === 'body' ? (
-              <View style={styles.unitStep}>
-                <Text style={styles.fieldLabel}>{t.onboarding.weightTitle}</Text>
-                <View style={styles.unitStepValue}>
-                  {usesMetricWeight(unitSystem) ? (
-                    <WeightEntry
-                      key={unitSystem}
-                      onValidityChange={setWeightInputValid}
-                      max={200}
-                      min={40}
-                      onChange={setWeight}
-                      unit="kg"
-                      value={weight}
-                    />
-                  ) : (
-                    <WeightEntry
-                      key={unitSystem}
-                      onValidityChange={setWeightInputValid}
-                      hint={unitSystem === 'uk' ? formatWeight(weight, 'uk', locale) : undefined}
-                      max={Math.floor(kgToPounds(200) * 10) / 10}
-                      min={Math.ceil(kgToPounds(40) * 10) / 10}
-                      onChange={(pounds) => setWeight(poundsToKg(pounds))}
-                      unit="lb"
-                      value={Math.round(kgToPounds(weight) * 10) / 10}
-                    />
-                  )}
-                </View>
+              <View style={styles.section}>
+                <UnitToggle onChange={setUnitSystem} value={unitSystem} />
+                {usesMetricHeight(unitSystem) ? (
+                  <NumberStep label={t.onboarding.heightLabel} layout="row" max={220} min={130} onChange={setHeight} step={1} unit="cm" value={height} />
+                ) : (
+                  <NumberStep
+                    accessibilityUnit="in"
+                    format={(inches) => `${Math.floor(inches / 12)}′ ${inches % 12}″`}
+                    label={t.onboarding.heightLabel}
+                    layout="row"
+                    max={cmToTotalInches(220)}
+                    min={cmToTotalInches(130)}
+                    onChange={(inches) => setHeight(totalInchesToCm(inches))}
+                    step={1}
+                    unit=""
+                    value={cmToTotalInches(height)}
+                  />
+                )}
+                {usesMetricWeight(unitSystem) ? (
+                  <WeightEntry
+                    compact
+                    key={unitSystem}
+                    label={t.onboarding.weightLabel}
+                    onValidityChange={setWeightInputValid}
+                    max={200}
+                    min={40}
+                    onChange={setWeight}
+                    unit="kg"
+                    value={weight}
+                  />
+                ) : (
+                  <WeightEntry
+                    compact
+                    key={unitSystem}
+                    label={t.onboarding.weightLabel}
+                    onValidityChange={setWeightInputValid}
+                    hint={unitSystem === 'uk' ? formatWeight(weight, 'uk', locale) : undefined}
+                    max={Math.floor(kgToPounds(200) * 10) / 10}
+                    min={Math.ceil(kgToPounds(40) * 10) / 10}
+                    onChange={(pounds) => setWeight(poundsToKg(pounds))}
+                    unit="lb"
+                    value={Math.round(kgToPounds(weight) * 10) / 10}
+                  />
+                )}
               </View>
             ) : null}
 
@@ -624,6 +735,29 @@ function ChoiceList<T extends string>({ choices, compact = false, onSelect, sele
   );
 }
 
+/** iOS-style segmented control for short, mutually exclusive answers. */
+function Segmented<T extends string>({ labels, onSelect, selected, values }: { labels: string[]; onSelect: (value: T) => void; selected: T; values: readonly T[] }) {
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View accessibilityRole="radiogroup" style={styles.segment}>
+      {values.map((value, index) => {
+        const active = value === selected;
+        return (
+          <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ checked: active }}
+            key={value}
+            onPress={() => onSelect(value)}
+            style={[styles.segmentOption, active && styles.segmentOptionActive]}
+          >
+            <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.segmentLabel, active && styles.segmentLabelActive]}>{labels[index]}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 /**
  * A tap steps by one, holding accelerates. Without the hold, moving the weight
  * from the default to a real value would cost dozens of taps.
@@ -642,7 +776,7 @@ function UnitToggle({ onChange, value }: { onChange: (system: UnitSystem) => voi
     uk: t.onboarding.unitUk,
   };
   return (
-    <View style={styles.unitToggle}>
+    <View style={styles.segment}>
       {UNIT_SYSTEMS.map((system) => {
         const active = system === value;
         return (
@@ -651,9 +785,9 @@ function UnitToggle({ onChange, value }: { onChange: (system: UnitSystem) => voi
             accessibilityState={{ selected: active }}
             key={system}
             onPress={() => { void selectionHaptic(); onChange(system); }}
-            style={[styles.unitOption, active && styles.unitOptionActive]}
+            style={[styles.segmentOption, active && styles.segmentOptionActive]}
           >
-            <Text style={[styles.unitLabel, active && styles.unitLabelActive]}>{labels[system]}</Text>
+            <Text style={[styles.segmentLabel, active && styles.segmentLabelActive]}>{labels[system]}</Text>
           </Pressable>
         );
       })}
@@ -661,7 +795,7 @@ function UnitToggle({ onChange, value }: { onChange: (system: UnitSystem) => voi
   );
 }
 
-function NumberStep({ editable = false, accessibilityUnit, format, max, min, onChange, step, unit, value }: { editable?: boolean; accessibilityUnit?: string; format?: (value: number) => string; max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
+function NumberStep({ editable = false, accessibilityUnit, format, label, layout = 'hero', max, min, onChange, step, unit, value }: { editable?: boolean; accessibilityUnit?: string; format?: (value: number) => string; label?: string; layout?: 'hero' | 'row'; max: number; min: number; onChange: (value: number) => void; step: number; unit: string; value: number }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { t, locale } = useLanguage();
@@ -726,6 +860,24 @@ function NumberStep({ editable = false, accessibilityUnit, format, max, min, onC
 
   const display = String(format ? format(value) : value);
 
+  // One calm card row (label · − value +): several measurements fit one
+  // screen without a 100 pt number pushing the rest below the fold.
+  if (layout === 'row') {
+    return (
+      <View style={styles.measureRow}>
+        {label ? <Text numberOfLines={1} style={styles.measureLabel}>{label}</Text> : null}
+        <View style={styles.measureControls}>
+          <StepperButton compact icon="remove" label={t.common.decreaseUnit(accessibilityUnit ?? unit)} onPressIn={() => start(-1)} onPressOut={stop} />
+          <View style={styles.measureValueBox}>
+            <Text adjustsFontSizeToFit numberOfLines={1} style={styles.measureValue}>{display}</Text>
+            {unit ? <Text style={styles.measureUnit}>{unit}</Text> : null}
+          </View>
+          <StepperButton compact icon="add" label={t.common.increaseUnit(accessibilityUnit ?? unit)} onPressIn={() => start(1)} onPressOut={stop} />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.numberStep}>
       <View style={styles.numberCenter}>
@@ -768,7 +920,7 @@ function numberSize(display: string) {
   return { fontSize: 46, lineHeight: 56 };
 }
 
-function StepperButton({ icon, label, onPressIn, onPressOut }: { icon: 'add' | 'remove'; label: string; onPressIn: () => void; onPressOut: () => void }) {
+function StepperButton({ compact = false, icon, label, onPressIn, onPressOut }: { compact?: boolean; icon: 'add' | 'remove'; label: string; onPressIn: () => void; onPressOut: () => void }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   return (
@@ -777,9 +929,10 @@ function StepperButton({ icon, label, onPressIn, onPressOut }: { icon: 'add' | '
       accessibilityRole="button"
       onPressIn={onPressIn}
       onPressOut={onPressOut}
-      style={({ pressed }) => [styles.numberButton, pressed && styles.numberButtonPressed]}
+      hitSlop={compact ? 6 : undefined}
+      style={({ pressed }) => [compact ? styles.roundButton : styles.numberButton, pressed && styles.numberButtonPressed]}
     >
-      <Ionicons color={colors.text} name={icon} size={26} />
+      <Ionicons color={colors.text} name={icon} size={compact ? 20 : 26} />
     </Pressable>
   );
 }
@@ -793,24 +946,25 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
       <Text style={styles.cardEyebrow}>{t.onboarding.dailyGoal}</Text>
       <Text adjustsFontSizeToFit numberOfLines={1} style={styles.calories}>{new Intl.NumberFormat(locale).format(targets.calories)}</Text>
       <Text style={styles.caloriesLabel}>{t.onboarding.kilocalories}</Text>
+      {!isTeenProfile(profile) ? (
+        <View style={styles.pacePill}>
+          <Ionicons color={colors.accentText} name={profile.goal === 'gain' ? 'trending-up' : profile.goal === 'lose' ? 'trending-down' : 'remove'} size={15} />
+          <Text style={styles.pacePillText}>{estimatedPace(profile.goal, profile.weeklyRateKg, t.common, profile.unitSystem)}</Text>
+        </View>
+      ) : <Text style={styles.planStatLabel}>{t.onboarding.teenPace}</Text>}
       <View style={styles.divider} />
-      <View style={styles.planStats}>
-        <View style={styles.planStat}>
-          <Text numberOfLines={2} style={styles.planStatValue}>{targets.protein} g</Text>
-          <Text style={styles.planStatLabel}>{t.common.protein}</Text>
-        </View>
-        <View style={styles.planStat}>
-          <Text numberOfLines={2} style={styles.planStatValue}>
-            {isTeenProfile(profile)
-              ? t.onboarding.teenPace
-              : estimatedPace(profile.goal, profile.weeklyRateKg, t.common, profile.unitSystem)}
-          </Text>
-          <Text style={styles.planStatLabel}>{t.onboarding.estimatedPace}</Text>
-        </View>
-        <View style={styles.planStat}>
-          <Text numberOfLines={2} style={styles.planStatValue}>{t.onboarding.flexible}</Text>
-          <Text style={styles.planStatLabel}>{t.onboarding.mealTimes}</Text>
-        </View>
+      <View style={styles.macroRow}>
+        {([
+          [t.common.protein, targets.protein, colors.macroProtein],
+          [t.onboarding.macroCarbs, targets.carbs, colors.macroCarbs],
+          [t.onboarding.macroFat, targets.fat, colors.macroFat],
+        ] as const).map(([label, grams, tint]) => (
+          <View key={label} style={styles.macroTile}>
+            <View style={[styles.macroDot, { backgroundColor: tint }]} />
+            <Text style={styles.macroValue}>{grams} g</Text>
+            <Text numberOfLines={1} style={styles.macroLabel}>{label}</Text>
+          </View>
+        ))}
       </View>
       <View style={styles.adaptsRow}>
         <Ionicons color={colors.accentText} name="sync" size={18} />
@@ -830,8 +984,9 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
           <Text style={styles.teenText}>{t.onboarding.teenPlanNotice}</Text>
         </View>
       ) : null}
-      {!isTeenProfile(profile) ? <Text style={styles.safetyText}>{t.onboarding.appliedOffset(Math.round(caloriePlan(profile).appliedOffset).toLocaleString(locale, { signDisplay: 'always' }))}</Text> : null}
-      <Text style={styles.safetyText}>{t.onboarding.safety}</Text>
+      <Text style={styles.safetyText}>
+        {!isTeenProfile(profile) ? `${t.onboarding.appliedOffset(Math.round(caloriePlan(profile).appliedOffset).toLocaleString(locale, { signDisplay: 'always' }))} ` : ''}{t.onboarding.safety}
+      </Text>
     </View>
   );
 }
@@ -899,6 +1054,47 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   numberRow: { width: '100%', flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 6 },
   numberValue: { flexShrink: 1, minWidth: 0 },
   numberUnit: { flexShrink: 1, color: colors.muted, fontSize: 30, fontWeight: '700' },
+  measureRow: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 16 },
+  measureLabel: { flexShrink: 1, color: colors.text, fontSize: 16, fontWeight: '600' },
+  measureControls: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
+  measureValueBox: { minWidth: 96, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center' },
+  measureValue: { color: colors.text, fontSize: 26, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  measureUnit: { marginLeft: 4, color: colors.muted, fontSize: 15, fontWeight: '600' },
+  roundButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
+  segment: { flexDirection: 'row', padding: 4, gap: 4, borderRadius: radii.pill, backgroundColor: colors.neutralSoft },
+  segmentOption: { flex: 1, minHeight: 44, borderRadius: radii.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  segmentOptionActive: { backgroundColor: colors.surface, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  segmentLabel: { color: colors.muted, fontSize: 14, fontWeight: '600', textAlign: 'center' },
+  segmentLabelActive: { color: colors.text, fontWeight: '700' },
+  sectionLabel: { color: colors.muted, fontSize: 13, fontWeight: '700', letterSpacing: 0.2 },
+  section: { gap: 10 },
+  fieldHint: { color: colors.muted, fontSize: 13, lineHeight: 18 },
+  smallInput: { minHeight: 56, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 17, fontWeight: '600', paddingHorizontal: 16 },
+  ageConfirmRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 4 },
+  addGoal: { minHeight: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 20, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.accentText, backgroundColor: colors.surface },
+  addGoalText: { color: colors.accentText, fontSize: 16, fontWeight: '700' },
+  goalMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4 },
+  goalDiff: { color: colors.accentText, fontSize: 13, fontWeight: '700' },
+  linkText: { color: colors.muted, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' },
+  dateChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  dateChip: { minHeight: 44, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 14, justifyContent: 'center' },
+  dateChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  dateChipText: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  dateChipTextActive: { color: colors.onAccent, fontWeight: '700' },
+  rateCard: { flex: 1, minHeight: 92, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, gap: 4 },
+  rateCardActive: { borderColor: colors.accentText, backgroundColor: colors.neutralSoft },
+  rateRow: { flexDirection: 'row', gap: 10 },
+  rateValue: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  rateDetail: { color: colors.muted, fontSize: 12, lineHeight: 16 },
+  macroRow: { width: '100%', flexDirection: 'row', gap: 8 },
+  macroTile: { flex: 1, minWidth: 0, alignItems: 'center', gap: 6, paddingVertical: 12, borderRadius: 16, backgroundColor: colors.neutralSoft },
+  macroDot: { width: 8, height: 8, borderRadius: 4 },
+  macroValue: { color: colors.text, fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  macroLabel: { color: colors.muted, fontSize: 11, fontWeight: '600' },
+  pacePill: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: radii.pill, backgroundColor: colors.accentSoft, paddingHorizontal: 12, paddingVertical: 6 },
+  pacePillText: { color: colors.accentText, fontSize: 13, fontWeight: '700' },
+  goalCard: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: radii.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 16 },
+  goalIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   adjustHint: { color: colors.muted, fontSize: 13, lineHeight: 18, textAlign: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   chip: { minHeight: 52, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -927,7 +1123,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   adaptsText: { flex: 1, color: colors.accentText, fontSize: 12, fontWeight: '700' },
   limitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 16, backgroundColor: colors.attentionSoft, borderRadius: 14, padding: 11 },
   limitText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },
-  safetyText: { color: colors.muted, fontSize: 10, lineHeight: 15, textAlign: 'center', marginTop: 16 },
+  safetyText: { color: colors.muted, fontSize: 10, lineHeight: 14, textAlign: 'center', marginTop: 14, opacity: 0.85 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'flex-end' },
   numberEditorScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'center', padding: 24 },
   numberEditor: { backgroundColor: colors.surface, borderRadius: radii.card, padding: 20, gap: 14 },

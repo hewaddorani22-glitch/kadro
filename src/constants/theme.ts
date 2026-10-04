@@ -21,6 +21,9 @@ export const lightColors = {
   white: '#FFFFFF',
   onAccent: '#14150F',
   onDeep: '#FFFFFF',
+  macroProtein: '#5E8C3A',
+  macroCarbs: '#D9A441',
+  macroFat: '#C9775A',
 } as const;
 
 export type ThemeColors = { [Key in keyof typeof lightColors]: string };
@@ -45,6 +48,9 @@ export const darkColors: ThemeColors = {
   white: '#FFFFFF',
   onAccent: '#14150F',
   onDeep: '#FFFFFF',
+  macroProtein: '#9CCB6E',
+  macroCarbs: '#E5BA5E',
+  macroFat: '#DE937A',
 };
 
 /**

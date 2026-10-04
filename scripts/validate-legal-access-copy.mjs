@@ -15,9 +15,9 @@ for (const [language, clause, dataClause] of [
  assert.ok(terms.includes(clause),`${language}: access/introductory-offer disclosure missing from terms`);
  assert.ok(!privacy.includes(clause),`${language}: commercial access disclosure misplaced in privacy`);
  assert.ok(privacy.includes(dataClause),`${language}: functional access-data disclosure missing from privacy`);
- // Confirmed 04.10.2026: optional verified linking, never anonymous reinstalls.
- assert.match(privacy, language === 'de' ? /freiwillig verknüpftem, verifiziertem Konto/ : /verified, voluntarily linked account/);
- assert.doesNotMatch(privacy, /ein verknüpftes Konto ist nicht erforderlich|a linked account is not required/);
+ // Owner decision 04.10.2026 (evening): open to new adult installs, no linked account needed.
+ assert.match(privacy, language === 'de' ? /ein verknüpftes Konto ist nicht erforderlich/ : /a linked account is not required/);
+ assert.match(privacy, language === 'de' ? /neue Installationen von Erwachsenen ohne bisherige Nutzung/ : /new installs by adults with no prior use/);
  assert.match(privacy, language === 'de' ? /standardmäßig ausgeschalteten Einwilligung/ : /separate, default-off consent/);
 
 }

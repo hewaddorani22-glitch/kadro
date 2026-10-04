@@ -41,7 +41,7 @@ function controller(profile=base,editing=false){
   useCallback(fn,deps){return this.useMemo(fn,deps)},
   useEffect(fn,deps){const index=cursor++;if(!same(slots[index]?.deps,deps)){slots[index]={deps};effects.push(fn)}}
  };react.useCallback=(fn,deps)=>react.useMemo(()=>fn,deps);
- const section=new Proxy({}, {get:(_,key)=>['step','confirmAge','paceGain','paceLose'].includes(key)?(...args)=>`${key}:${args.join('/')}`:String(key)});
+ const section=new Proxy({}, {get:(_,key)=>['step','confirmAge','paceGain','paceLose','dateMonths','dateChosen','paceWeeks','targetDiff','goalBy','decreaseUnit','increaseUnit'].includes(key)?(...args)=>`${key}:${args.join('/')}`:String(key)});
  const t={onboarding:section,common:section};
  const jsx=(type,props)=>({type,props:props??{}});
  const source=process.env.KANDRO_ONBOARDING_BASELINE==='1'?execFileSync('git',['show','HEAD:src/app/onboarding.tsx'],{encoding:'utf8'}):read('src/app/onboarding.tsx');
@@ -61,7 +61,7 @@ function controller(profile=base,editing=false){
   '@/services/appAccess':{prepareAccessEnrollment:async confirmed=>enrolled.push(confirmed)},'@/services/reminders':{prepareReminderOnboarding:async()=>{}},
   '@/services/telemetry':{trackEvent:(event,payload)=>events.push({event,...payload})},
   '@/services/haptics':Object.fromEntries(['errorHaptic','selectionHaptic','stepHaptic','successHaptic'].map(k=>[k,async()=>{}])),
-  '@/utils/format':{formatNumber:String},'@/utils/decimalInput':load('src/utils/decimalInput.ts'),'@/utils/units':units,'@/utils/date':{localDateKey:()=> '2026-10-04'},
+  '@/utils/format':{formatNumber:String,formatDateParts:d=>d.toISOString().slice(0,10)},'@/utils/decimalInput':load('src/utils/decimalInput.ts'),'@/utils/units':units,'@/utils/date':{localDateKey:()=> '2026-10-04'},
  },source).default;
  const render=()=>{cursor=0;tree=screen();const pending=effects;effects=[];pending.forEach(fn=>fn());return tree};
  const nodes=(node=tree)=>{if(Array.isArray(node))return node.flatMap(n=>nodes(n));if(!node||typeof node!=='object')return[];if(node.type==='Modal'&&!node.props.visible)return[];return[node,...nodes(node.props.children??null)]};
@@ -79,16 +79,39 @@ await test('real screen: explicit age, manual next, seven steps and consent boun
  await through(c,['about','body','activity','target','preferences']);assert.equal(c.step(),'plan');await c.next();assert.equal(c.saved.length,0,'needs wellness consent');
  c.find('PrimaryButton',p=>p.label==='consentAccept').onPress();await c.flush();assert.equal(c.saved.length,1);assert.equal(c.saved[0].targetWeightKg,null);assert.equal(c.saved[0].targetDate,null);assert.deepEqual(c.enrolled,[true]);assert.deepEqual(c.routes,['/reminder-setup']);
 });
-await test('real screen: goal entry, validation, back retention, unit conversion and existing profile edit',async()=>{
+await test('real screen: tap-only goal entry, date chips, validation, back retention, unit conversion and profile edit',async()=>{
  const previous={...base,displayName:'Saved',sex:'female',completedAt:'2026-09-01T12:00:00Z',targetWeightKg:70.5,targetDate:'2027-04-01'};
  const c=controller(previous,true);assert.equal(c.find('ChoiceList').selected,'lose');await c.next();assert.equal(c.find('TextInput',p=>p.accessibilityLabel==='nameTitle').value,'Saved');assert.ok(!c.nodes().some(n=>n.type?.name==='NumberStep'),'recorded age cannot be edited');
- await through(c,['about','body','activity']);assert.equal(c.step(),'target');assert.equal(c.find('TextInput',p=>p.accessibilityLabel==='targetWeightLabel').value,'70.5');
- c.find('TextInput',p=>p.accessibilityLabel==='targetDateLabel').onChangeText('2027-02-29');c.render();await c.next();assert.equal(c.step(),'target');
- c.find('TextInput',p=>p.accessibilityLabel==='targetDateLabel').onChangeText('2028-02-29');c.find('TextInput',p=>p.accessibilityLabel==='targetWeightLabel').onChangeText('0');c.render();await c.next();assert.equal(c.step(),'target');
- c.find('TextInput',p=>p.accessibilityLabel==='targetWeightLabel').onChangeText('70,5');c.render();c.find('UnitToggle').onChange('us');await c.flush();c.render();assert.equal(c.find('TextInput',p=>p.accessibilityLabel==='targetWeightLabel').value,'155.4');
- await c.next();await c.back();assert.equal(c.step(),'target');assert.equal(c.find('TextInput',p=>p.accessibilityLabel==='targetDateLabel').value,'2028-02-29');
- await through(c,['target','preferences']);const shown=c.find('PersonalGoalSummary').profile;assert.equal(shown.age,29);assert.ok(Math.abs(shown.targetWeightKg-70.5)<0.02);assert.equal(shown.completedAt,previous.completedAt);await c.next();
- assert.equal(c.saved.length,1);assert.equal(c.saved[0].targetDate,'2028-02-29');assert.deepEqual(c.grants,[],'adult edits do not re-request consent');assert.deepEqual(c.enrolled,[],'edits never enroll anew');assert.deepEqual(c.routes,['/(tabs)/profile']);
+ await through(c,['about','body','activity']);assert.equal(c.step(),'target');
+ const weightInput=()=>c.find('TextInput',p=>p.accessibilityLabel==='targetWeightLabel');
+ assert.equal(weightInput().value,'70.5');
+ assert.ok(!c.nodes().some(n=>n.type==='TextInput'&&n.props.accessibilityLabel==='targetDateLabel'),'the date is never typed');
+ // A saved custom date stays selectable as its own chip.
+ const chip=label=>c.find('Pressable',p=>p.accessibilityRole==='radio'&&p.accessibilityLabel===label);
+ assert.equal(c.find('Pressable',p=>p.accessibilityRole==='radio'&&p.accessibilityState?.checked&&p.accessibilityLabel!==undefined).accessibilityLabel,'2027-04-01');
+ chip('dateMonths:6').onPress();c.render();
+ // invalid typed weight blocks Next
+ weightInput().onChangeText('0');c.render();await c.next();assert.equal(c.step(),'target');
+ weightInput().onChangeText('70,5');c.render();
+ // the − / + steppers move on the 0.5 kg grid
+ c.find('StepperButton',p=>p.icon==='add').onPressIn();c.render();assert.equal(weightInput().value,'71');
+ c.find('StepperButton',p=>p.icon==='remove').onPressIn();c.render();assert.equal(weightInput().value,'70.5');
+ c.find('UnitToggle').onChange('us');await c.flush();c.render();assert.equal(weightInput().value,'155.4');
+ c.find('UnitToggle').onChange('metric');await c.flush();c.render();
+ await c.next();await c.back();assert.equal(c.step(),'target');
+ await through(c,['target','preferences']);const shown=c.find('PersonalGoalSummary').profile;assert.equal(shown.age,29);assert.ok(Math.abs(shown.targetWeightKg-70.5)<0.06);assert.equal(shown.targetDate,'2027-04-04');assert.equal(shown.completedAt,previous.completedAt);await c.next();
+ assert.equal(c.saved.length,1);assert.equal(c.saved[0].targetDate,'2027-04-04');assert.deepEqual(c.grants,[],'adult edits do not re-request consent');assert.deepEqual(c.enrolled,[],'edits never enroll anew');assert.deepEqual(c.routes,['/(tabs)/profile']);
+});
+await test('real screen: adding a target suggests a weight and the matching date; removing clears both',async()=>{
+ const c=controller({...base,completedAt:'2026-09-01T12:00:00Z'},true);await through(c,['goal','about','body','activity']);assert.equal(c.step(),'target');
+ assert.ok(!c.nodes().some(n=>n.type==='TextInput'&&n.props.accessibilityLabel==='targetWeightLabel'),'no target until the user asks for one');
+ c.find('Pressable',p=>p.accessibilityRole==='button'&&c.nodes().length&&true&&p.onPress&&String(p.onPress).includes('suggestedTargetWeight')).onPress();c.render();
+ assert.equal(c.find('TextInput',p=>p.accessibilityLabel==='targetWeightLabel').value,'73');
+ const checked=c.find('Pressable',p=>p.accessibilityRole==='radio'&&p.accessibilityState?.checked&&typeof p.accessibilityLabel==='string');
+ assert.match(checked.accessibilityLabel,/^datePace/,'the pace date is preselected');
+ c.find('Pressable',p=>p.accessibilityRole==='button'&&String(p.onPress).includes("setTargetWeightInput('')")).onPress();c.render();
+ assert.ok(!c.nodes().some(n=>n.type==='TextInput'&&n.props.accessibilityLabel==='targetWeightLabel'));
+ await through(c,['target','preferences']);await c.next();assert.equal(c.saved[0].targetWeightKg,null);assert.equal(c.saved[0].targetDate,null);
 });
 await test('real screen: 14–15 guardian gate and no youth target claims; maintain skips target',async()=>{
  const c=controller({...base,age:15,completedAt:'2026-09-01',targetWeightKg:60,targetDate:'2027-01-01'},true);

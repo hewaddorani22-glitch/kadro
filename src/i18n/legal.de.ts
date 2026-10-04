@@ -41,7 +41,7 @@ function contact() {
 }
 
 export const legalDe: LegalCopySet = {
-  version: '2.0 · Stand 4. Oktober 2026',
+  version: '2.1 · Stand 4. Oktober 2026',
   privacy: {
     title: 'Datenschutzhinweise',
     intro: 'Diese Hinweise erklären in klarer Sprache, welche Daten Kandro verarbeitet, warum, und wie du sie jederzeit wieder löschen kannst.',
@@ -56,7 +56,7 @@ export const legalDe: LegalCopySet = {
       {
         title: '2. Welche Daten verarbeitet werden',
         paragraphs: [
-          'Für den begrenzten Zugangstest speichert Supabase an deiner Konto-ID die einmalige Variante oder den Ausschlussgrund und den Zeitpunkt. Infrage kommen nur nachweislich neue Erwachsene mit freiwillig verknüpftem, verifiziertem Konto, ausdrücklich bestätigtem Alter und bestätigter Trial-Berechtigung. Anonyme, bestehende und unklar zuzuordnende Nutzer bleiben außerhalb des Experiments. Eine spätere Kontoverknüpfung führt nicht nachträglich zur Teilnahme. Diese funktionale Zugangszuordnung bleibt bis zur Accountlöschung erhalten; sie wird bei Anmeldung oder Wiederherstellung nicht neu ausgelost. Einzelne Freigaben für bereits begonnene Mahlzeitenspeicherungen erhalten deren spätere Synchronisierung. Freiwillige Analyseereignisse zur tatsächlich gezeigten Paywall bleiben an deine gesonderte Analytics-Einwilligung gebunden. Es gibt kein Geräte-Fingerprinting.',
+          'Für den begrenzten Zugangstest speichert Supabase an deiner Konto-ID die einmalige Variante oder den Ausschlussgrund und den Zeitpunkt. Infrage kommen nur neue Installationen von Erwachsenen ohne bisherige Nutzung und mit bestätigter Trial-Berechtigung; ein verknüpftes Konto ist nicht erforderlich. Diese funktionale Zugangszuordnung bleibt bis zur Accountlöschung erhalten; sie wird bei Anmeldung oder Wiederherstellung nicht neu ausgelost. Einzelne Freigaben für bereits begonnene Mahlzeitenspeicherungen erhalten deren spätere Synchronisierung. Freiwillige Analyseereignisse zur tatsächlich gezeigten Paywall bleiben an deine gesonderte Analytics-Einwilligung gebunden. Es gibt kein Geräte-Fingerprinting.',
           'Auf deinem Gerät verarbeitet Kandro dein Profil, Zielwerte, Gewichtseinträge, bestätigte Mahlzeiten und höchstens drei fehlgeschlagene, komprimierte Fotoscans für einen von dir ausgelösten Wiederholungsversuch.',
           'Optionale tägliche Erinnerungen werden lokal geplant und enthalten keine Ernährungswerte. Für Homescreen-Widgets kannst du unter Du die Freigabe deiner heutigen Kalorien, Proteinwerte und bestätigten Ziele auf diesem Gerät aktivieren. Ohne Freigabe und auf dem Sperrbildschirm bleiben nur Einstiege. Ein geschützter gemeinsamer App-Container enthält dazu einen kleinen zeitlich begrenzten Tagesstand ohne Namen, Mahlzeitentexte, Bilder oder Zugangsdaten. Beim Ausschalten wird dieser Stand geleert; iOS kann ein zuvor gerendertes Widgetbild noch kurz behalten. Lokale Nutzungs- und Anfragezähler begrenzen die optionale native Bewertungsanfrage; Kandro lädt diese Zähler nicht hoch.',
           'Wenn die Cloud aktiv ist, speichert Supabase in der EU eine zufällige Account-ID, dein Profil, deine aktuellen Zielwerte, bestätigte Mahlzeiten, Zutaten, Empfehlungen und Feedback. Gewichtseinträge bleiben auf deinem Gerät; eine E-Mail-Adresse wird nur gespeichert, wenn du deinen Gast-Account bewusst sicherst.',

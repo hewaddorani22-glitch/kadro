@@ -102,16 +102,14 @@ await test('notification taps open only own reminders with a fixed photo/descrip
   for (const id of reminders.REMINDER_IDS) assert.ok(tap(id, 'search'), id);
 });
 
-await test('conservative paywall restoration requires verified identity and explicit first use while preserving other exclusions', () => {
-  const sql = fs.readFileSync(new URL('../supabase/migrations/20261004145423_restore_verified_new_adult_paywall.sql', import.meta.url), 'utf8');
-  assert.match(sql, /u\.is_anonymous is distinct from false or u\.email_confirmed_at is null/);
-  assert.match(sql, /public_cohort_requires_explicit_preservation_review/);
+await test('open paywall test keeps every protection except the linked-account requirement', () => {
+  const sql = fs.readFileSync(new URL('../supabase/migrations/20261004160156_reopen_paywall_new_installs.sql', import.meta.url), 'utf8');
+  assert.doesNotMatch(sql, /is_anonymous|email_confirmed_at/);
   for (const kept of ["then 'configuration'", "then 'existing'", "then 'age'", "then 'prior_use'", "then 'pro'", "then 'offer'"]) assert.ok(sql.includes(kept), kept);
   assert.ok(/<128 then 'A' else 'B'/.test(sql), '50/50 split');
   assert.ok(!/public_enabled\s*=\s*true/.test(sql), 'migration must not switch the experiment on');
   const screen = fs.readFileSync(new URL('../src/app/access-setup.tsx', import.meta.url), 'utf8');
-  assert.ok(screen.includes('AccountLinkCard') && screen.includes('finish(firstUse)') && screen.includes('finish(false)'), 'existing voluntary linking and explicit first-use/skip controls');
-  assert.ok(!screen.includes('void finish(true)') && screen.includes('[firstUse, setFirstUse] = useState(false)'), 'first use must not be assumed or checked by default');
+  assert.ok(screen.includes('void finish(true)') && !screen.includes('AccountLinkCard'), 'a fresh install enrolls automatically without a linking detour');
 });
 
 const nutrition = await import(new URL('nutrition.mjs', shared));

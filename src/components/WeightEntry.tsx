@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { InputAccessoryView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
@@ -7,8 +8,10 @@ import { formatNumber } from '@/utils/format';
 import { parseDecimalInput, stepWeightInput } from '@/utils/decimalInput';
 
 /** A visible input: entering 90 kg takes two digits, not 120 small steps. */
-export function WeightEntry({ value, min, max, unit, hint, onChange, onValidityChange }: {
+export function WeightEntry({ value, min, max, unit, hint, label, compact = false, onChange, onValidityChange }: {
   value: number; min: number; max: number; unit: string; hint?: string;
+  /** Compact: one card row (label · − value + ) for dense onboarding steps. */
+  label?: string; compact?: boolean;
   onChange: (value: number) => void; onValidityChange: (valid: boolean) => void;
 }) {
   const { t, locale } = useLanguage();
@@ -38,6 +41,68 @@ export function WeightEntry({ value, min, max, unit, hint, onChange, onValidityC
     onValidityChange(true);
     onChange(next);
   };
+
+  const field = (
+    <TextInput
+      ref={input}
+      accessibilityLabel={`${t.onboarding.editWeight} (${unit})`}
+      accessibilityHint={t.onboarding.directWeightHint}
+      inputMode="decimal"
+      keyboardType="decimal-pad"
+      inputAccessoryViewID={Platform.OS === 'ios' ? accessoryId : undefined}
+      selectTextOnFocus
+      maxLength={7}
+      onFocus={() => setFocused(true)}
+      onBlur={() => { setFocused(false); if (parsed !== null) setDraft(formatNumber(parsed, locale)); }}
+      onChangeText={changeText}
+      onSubmitEditing={() => input.current?.blur()}
+      selectionColor={colors.accentDeep}
+      style={compact ? styles.compactInput : styles.input}
+      value={draft}
+    />
+  );
+  const accessory = Platform.OS === 'ios' ? (
+    <InputAccessoryView nativeID={accessoryId} backgroundColor={colors.surface}>
+      <View style={styles.keyboardBar}>
+        <Text accessibilityLiveRegion="polite" style={[styles.keyboardHint, parsed === null && styles.error]}>{parsed === null ? rangeHint : `${draft} ${unit}`}</Text>
+        <Pressable accessibilityRole="button" accessibilityLabel={t.onboarding.doneWeight} onPress={() => input.current?.blur()} style={styles.keyboardDone}>
+          <Text style={styles.doneText}>{t.onboarding.doneWeight}</Text>
+        </Pressable>
+      </View>
+    </InputAccessoryView>
+  ) : null;
+
+  const stepButton = (direction: -1 | 1) => (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={direction < 0 ? t.common.decreaseUnit(`1 ${unit}`) : t.common.increaseUnit(`1 ${unit}`)}
+      hitSlop={6}
+      onPress={() => adjust(direction)}
+      style={({ pressed }) => [styles.round, pressed && styles.pressed]}
+    >
+      <Ionicons color={colors.text} name={direction < 0 ? 'remove' : 'add'} size={20} />
+    </Pressable>
+  );
+
+  if (compact) {
+    return (
+      <View style={styles.compactWrap}>
+        <View style={[styles.row, focused && styles.focused, parsed === null && styles.invalid]}>
+          {label ? <Text numberOfLines={1} style={styles.rowLabel}>{label}</Text> : null}
+          <View style={styles.rowControls}>
+            {stepButton(-1)}
+            <View style={styles.rowValue}>
+              {field}
+              <Text style={styles.rowUnit}>{unit}</Text>
+            </View>
+            {stepButton(1)}
+          </View>
+        </View>
+        {parsed === null || hint ? <Text accessibilityLiveRegion="polite" style={[styles.hint, parsed === null && styles.error]}>{parsed === null ? rangeHint : hint}</Text> : null}
+        {accessory}
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -101,6 +166,15 @@ export function WeightEntry({ value, min, max, unit, hint, onChange, onValidityC
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   container: { width: '100%', maxWidth: 360, alignSelf: 'center', gap: 12 },
+  compactWrap: { gap: 6 },
+  row: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 16 },
+  rowLabel: { flexShrink: 1, color: colors.text, fontSize: 16, fontWeight: '600' },
+  rowControls: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 8 },
+  rowValue: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', minWidth: 96 },
+  compactInput: { minWidth: 58, paddingVertical: 6, fontSize: 26, fontWeight: '700', color: colors.text, textAlign: 'right', fontVariant: ['tabular-nums'] },
+  rowUnit: { marginLeft: 4, fontSize: 15, fontWeight: '600', color: colors.muted },
+  round: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neutralSoft },
+  roundText: { fontSize: 22, lineHeight: 24, fontWeight: '600', color: colors.text },
   label: { fontSize: 14, fontWeight: '600', color: colors.muted },
   field: { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: colors.border, borderRadius: 18, paddingHorizontal: 18, backgroundColor: colors.surface },
   focused: { borderColor: colors.accentDeep },

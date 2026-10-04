@@ -23,7 +23,7 @@ function contact() {
 }
 
 export const legalEn: LegalCopySet = {
-  version: '2.0 · Last updated 4 October 2026',
+  version: '2.1 · Last updated 4 October 2026',
   privacy: {
     title: 'Privacy notice',
     intro: 'This notice explains in plain language which data Kandro processes, why, and how you can delete it again at any time.',
@@ -38,7 +38,7 @@ export const legalEn: LegalCopySet = {
       {
         title: '2. What data is processed',
         paragraphs: [
-          'For the limited access test, Supabase stores the one-time variant or exclusion reason and timestamp against your account ID. Only demonstrably new adults with a verified, voluntarily linked account, explicitly confirmed age and confirmed trial eligibility can qualify. Anonymous, existing and uncertain users remain outside the experiment. Linking an account later does not cause retrospective enrollment. This functional access assignment remains until account deletion and is not redrawn at sign-in or restore. Individual permissions for meal saves already begun preserve their later synchronization. Optional events about the paywall actually shown remain subject to your separate analytics consent. No device fingerprinting is used.',
+          'For the limited access test, Supabase stores the one-time variant or exclusion reason and timestamp against your account ID. Only new installs by adults with no prior use and confirmed trial eligibility can qualify; a linked account is not required. This functional access assignment remains until account deletion and is not redrawn at sign-in or restore. Individual permissions for meal saves already begun preserve their later synchronization. Optional events about the paywall actually shown remain subject to your separate analytics consent. No device fingerprinting is used.',
           'On your device, Kandro processes your profile, your targets, weight entries, confirmed meals and at most three failed, compressed photo scans kept for a retry you trigger yourself.',
           'Optional daily reminders are scheduled locally and contain no nutrition totals. In your profile, you can allow home screen widgets to show today’s calories, protein and confirmed targets on this device. Without this choice, and on the Lock Screen, widgets only offer shortcuts. A protected shared app container holds a small, time-limited daily snapshot without names, meal descriptions, images or credentials. Turning sharing off clears it; iOS may briefly retain a previously rendered widget image. Local usage and request counters limit the optional native review request; Kandro does not upload these counters.',
           'When the cloud is active, Supabase stores in the EU a random account ID, your profile, your current targets, confirmed meals, ingredients, recommendations and feedback. Weight entries stay on your device; an email address is only stored if you deliberately secure your guest account.',
