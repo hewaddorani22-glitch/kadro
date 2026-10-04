@@ -3,6 +3,7 @@ import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useState } from 'react';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import Constants from 'expo-constants';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Card, PrimaryButton } from '@/components/ui';
@@ -44,6 +45,8 @@ export function AccountLinkCard() {
 
   useEffect(() => {
     let active = true;
+    // Only builds signed with the Sign in with Apple entitlement show the button.
+    if (Constants.expoConfig?.ios?.usesAppleSignIn !== true) return () => { active = false; };
     void AppleAuthentication.isAvailableAsync().then(value => { if (active) setAppleAvailable(value); }).catch(() => undefined);
     return () => { active = false; };
   }, []);

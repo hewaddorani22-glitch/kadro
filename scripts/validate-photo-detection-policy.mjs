@@ -23,8 +23,10 @@ export function assertPhotoOutcome(detection, expectation, label = expectation) 
     assert.equal(detection.dishCount, 1, `${label}: one intended meal`);
     assert.equal(classification, null, `${label}: no blanket image rejection`);
   } else if (expectation === 'multiple-meals') {
-    assert.ok(detection.dishCount > 1, `${label}: preserve ambiguous separate meals`);
-    assert.equal(classification?.body.code, 'multiple_dishes', `${label}: do not silently pick or combine meals`);
+    // Owner decision 04.10.2026: a photo with recognised food always yields a
+    // result; several plates stay editable instead of forcing a new photo.
+    assert.ok(detection.items.length > 0, `${label}: recognised foods stay usable`);
+    assert.equal(classification, null, `${label}: no retake for a second plate`);
   } else {
     throw new Error(`Unsupported photo expectation: ${expectation}`);
   }

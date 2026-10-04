@@ -31,7 +31,7 @@
         },
         "ITSAppUsesNonExemptEncryption": false
       },
-      "usesAppleSignIn": true
+      "usesAppleSignIn": false
     },
     "android": {
       "package": "com.hewaddorani.kandro",
@@ -64,8 +64,7 @@
           "color": "#3F5233"
         }
       ],
-      "./plugins/withKandroWidgets",
-      "expo-apple-authentication"
+      "./plugins/withKandroWidgets"
     ],
     "experiments": {
       "typedRoutes": true

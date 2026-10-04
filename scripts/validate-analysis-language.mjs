@@ -33,7 +33,8 @@ const {
 const { requestedLanguage, classifyDetection } = await import(new URL('../supabase/functions/_shared/nutrition.mjs', import.meta.url));
 const uncertainTextMeal = { clarity: 'unclear', dishCount: 2, items: [{ name: 'Gulasch' }, { name: 'Apfelsoße' }] };
 assert.equal(classifyDetection(uncertainTextMeal, 'text'), null, 'identifiable text must not fail photo-only clarity/plate gates');
-assert.equal(classifyDetection(uncertainTextMeal, 'photo').status, 422, 'unclear photos still need correction');
+assert.equal(classifyDetection(uncertainTextMeal, 'photo'), null, 'a photo with recognised food never forces a retake');
+assert.equal(classifyDetection({ ...uncertainTextMeal, items: [] }, 'photo').status, 422, 'a photo without food still asks for a new photo');
 assert.equal(classifyDetection({ ...uncertainTextMeal, items: [] }, 'text').status, 422, 'no invented nutrition for unidentifiable text');
 for (const page of ['src/app/analyzing.tsx', 'src/app/confirm.tsx']) {
   assert.match(await read(page), /description=\{scanMode === 'description' \? descriptionInput/, 'the original input must remain visible');

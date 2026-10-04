@@ -53,8 +53,10 @@ export function validateAnalysisInput(input) {
  */
 export function classifyDetection(detection, source = 'photo') {
   const fromPhoto = source !== 'text';
-
-  if (!detection || (fromPhoto && detection.clarity === 'unclear') || !Array.isArray(detection.items) || detection.items.length === 0) {
+  // Only a photo without any identifiable food is a dead end. A slightly
+  // blurred photo or a second plate still yields the recognised foods: the
+  // person can untick what they did not eat instead of taking a new photo.
+  if (!detection || !Array.isArray(detection.items) || detection.items.length === 0) {
     return {
       status: 422,
       body: {
@@ -65,17 +67,6 @@ export function classifyDetection(detection, source = 'photo') {
       },
     };
   }
-
-  if (fromPhoto && detection.dishCount > 1) {
-    return {
-      status: 422,
-      body: {
-        code: 'multiple_dishes',
-        message: 'Es wurden mehrere getrennte Mahlzeiten erkannt. Bitte fotografiere nur einen Teller.',
-      },
-    };
-  }
-
   return null;
 }
 

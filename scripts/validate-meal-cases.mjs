@@ -76,10 +76,10 @@ for (const [index, [id, title, grams, calories, protein, carbs, fat]] of represe
 }
 
 const edgeCases = [
-  ['poor-light', { clarity: 'unclear', dishCount: 1, items: [{ nameDe: 'Teller' }] }, 'unclear_image'],
+  ['poor-light', { clarity: 'unclear', dishCount: 1, items: [{ nameDe: 'Teller' }] }, undefined],
   ['blurred', { clarity: 'unclear', dishCount: 1, items: [] }, 'unclear_image'],
   ['partial-plate', { clarity: 'clear', dishCount: 1, items: [] }, 'unclear_image'],
-  ['multiple-dishes', { clarity: 'clear', dishCount: 2, items: [{ nameDe: 'Teller 1' }] }, 'multiple_dishes'],
+  ['multiple-dishes', { clarity: 'clear', dishCount: 2, items: [{ nameDe: 'Teller 1' }] }, undefined],
 ];
 
 for (const [id, detection, code] of edgeCases) {
