@@ -471,6 +471,7 @@ export default function OnboardingScreen() {
                         const active = (targetDateInput || null) === option.value;
                         return (
                           <Pressable
+                            aria-checked={active}
                             accessibilityLabel={option.label}
                             accessibilityRole="radio"
                             accessibilityState={{ checked: active }}
@@ -744,6 +745,7 @@ function Segmented<T extends string>({ labels, onSelect, selected, values }: { l
         const active = value === selected;
         return (
           <Pressable
+            aria-checked={active}
             accessibilityRole="radio"
             accessibilityState={{ checked: active }}
             key={value}

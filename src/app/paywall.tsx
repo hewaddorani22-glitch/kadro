@@ -10,7 +10,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PrimaryButton } from '@/components/ui';
 import { KandroMark } from '@/components/KandroMark';
-import { RevenueCatExperimentPreferences } from '@/components/RevenueCatExperimentPreferences';
 import { radii } from '@/constants/theme';
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { useAccess } from '@/context/AccessContext';
@@ -282,7 +281,6 @@ export default function PaywallScreen() {
         {access.state === 'verification' ? <Text accessibilityLiveRegion="polite" style={styles.error}>{t.access.verify}</Text> : null}
         <Pressable accessibilityRole="button" style={{ padding: 14, minHeight: 48 }} onPress={() => router.push('/account-help' as never)}><Text style={styles.legal}>{t.access.accountHelp} · {t.access.signIn}</Text></Pressable>
         {!largeText ? <View style={styles.inlineTerms}>{renewalTerms}</View> : null}
-        <View style={styles.measurement}><RevenueCatExperimentPreferences /></View>
         {largeText ? purchaseControls : null}
       </ScrollView>
 

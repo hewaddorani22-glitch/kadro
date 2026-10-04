@@ -86,37 +86,44 @@ export function ReminderPreferences({ onDone, initialSetup = false }: { onDone?:
     finally { setBusy(false); }
   };
 
-  return <Card>
-    <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{copy.reminderTitle}</Text>
+  // First setup is a full onboarding page (icon, headline, one line of value);
+  // in settings the same controls sit in a regular card.
+  const Wrapper = initialSetup ? View : Card;
+  return <Wrapper style={initialSetup ? { gap: 14, paddingTop: 12 } : undefined}>
+    {initialSetup ? <View style={{ width: 56, height: 56, borderRadius: 20, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
+      <Ionicons color={colors.onAccent} name="notifications" size={26} />
+    </View> : null}
+    <Text accessibilityRole="header" style={initialSetup ? { color: colors.text, fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -1 } : { color: colors.text, fontSize: 22, fontWeight: '700' }}>{copy.reminderTitle}</Text>
     <Text style={{ color: colors.muted, fontSize: 16, lineHeight: 23 }}>{singleSelection ? copy.reminderSingleText : copy.reminderText}</Text>
     {access.ready && !access.canUse && !onDone ? <Text style={{ color: colors.muted, fontSize: 16 }}>{t.access.pausedReminder}</Text> : null}
     {slots ? <View style={{ gap: 10, marginTop: 8 }}>
       {MEAL_SLOTS.map(slot => {
         const value = slots[slot];
         const time = `${pad(value.hour)}:${pad(value.minute)}`;
+        // Time nudges sit inline beside the time: one row per meal.
         const stepButton = (minutes: number, label: string, icon: 'remove' | 'add') => (
-          <Pressable accessibilityRole="button" accessibilityLabel={`${labels[slot]}: ${label}`} disabled={busy} onPress={() => update(slot, shift(value, minutes))} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, minHeight: 44, paddingHorizontal: 12, borderRadius: 22, borderWidth: 1, borderColor: colors.border }}>
+          <Pressable accessibilityRole="button" accessibilityLabel={`${labels[slot]}: ${label}`} disabled={busy} hitSlop={6} onPress={() => update(slot, shift(value, minutes))} style={({ pressed }) => ({ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neutralSoft, opacity: pressed ? 0.6 : 1 })}>
             <Ionicons color={colors.text} name={icon} size={18} />
-            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600' }}>{label}</Text>
           </Pressable>
         );
-        return <View key={slot} style={{ borderWidth: 1, borderColor: value.enabled ? colors.accentText : colors.border, borderRadius: 14, paddingHorizontal: 12, paddingBottom: value.enabled ? 10 : 0 }}>
+        return <View key={slot} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 64, borderWidth: 1, borderColor: value.enabled ? colors.accentText : colors.border, backgroundColor: value.enabled ? colors.accentSoft : colors.surface, borderRadius: 18, paddingHorizontal: 14 }}>
           <Pressable
             accessibilityRole="checkbox"
             accessibilityState={{ checked: value.enabled, disabled: busy }}
             accessibilityLabel={`${labels[slot]}, ${time}`}
             disabled={busy}
             onPress={() => update(slot, { ...value, enabled: !value.enabled })}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 54 }}
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56 }}
           >
             <Ionicons color={value.enabled ? colors.accentText : colors.muted} name={value.enabled ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
-            <Text style={{ flex: 1, color: colors.text, fontSize: 17, fontWeight: '600' }}>{labels[slot]}</Text>
-            <Text accessibilityLiveRegion="polite" style={{ color: value.enabled ? colors.text : colors.muted, fontSize: 18, fontWeight: '600', fontVariant: ['tabular-nums'] }}>{time}</Text>
+            <Text numberOfLines={1} style={{ flex: 1, color: colors.text, fontSize: 16, fontWeight: '600' }}>{labels[slot]}</Text>
+            {!value.enabled ? <Text style={{ color: colors.muted, fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'] }}>{time}</Text> : null}
           </Pressable>
-          {value.enabled ? <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+          {value.enabled ? <>
             {stepButton(-STEP_MINUTES, copy.earlier, 'remove')}
+            <Text accessibilityLiveRegion="polite" style={{ minWidth: 56, textAlign: 'center', color: colors.text, fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{time}</Text>
             {stepButton(STEP_MINUTES, copy.later, 'add')}
-          </View> : null}
+          </> : null}
         </View>;
       })}
     </View> : null}
@@ -126,5 +133,5 @@ export function ReminderPreferences({ onDone, initialSetup = false }: { onDone?:
     <PrimaryButton disabled={busy || !settings || !slots || permission === 'unavailable'} label={busy ? t.common.moment : settings?.enabled ? copy.save : copy.activate} onPress={() => void apply(true)} />
     {settings?.enabled ? <PrimaryButton disabled={busy} variant="ghost" label={copy.disable} onPress={() => void apply(false)} /> : null}
     {onDone ? <PrimaryButton disabled={busy} variant="ghost" label={copy.skip} onPress={() => onDone('skipped')} /> : null}
-  </Card>;
+  </Wrapper>;
 }

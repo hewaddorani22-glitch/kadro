@@ -365,7 +365,9 @@ export default function ScanScreen() {
         .then((results) => {
           if (latestSearch.current !== request || generation !== searchGeneration.current) return;
           trackEvent('food search completed', { result_count: results.length === 0 ? '0' : results.length <= 15 ? '1-15' : results.length <= 30 ? '16-30' : '31+', duration: durationBucket(startedAt) });
-          setSearchNotice(results.searchStatus === 'partial' ? t.errors.searchPartial : results.searchStatus === 'catalogue' ? t.errors.searchCatalogue : null);
+          // Catalogue-only results are normal while typing; the brand search
+          // sits as a quiet action under the list instead of a notice.
+          setSearchNotice(results.searchStatus === 'partial' ? t.errors.searchPartial : null);
           setCompletedEmptySearch(submitted && results.searchStatus === 'complete' && !results.length);
           setSearchResults(mergeSuggestions(local, results));
           setSearching(false);
@@ -704,9 +706,7 @@ export default function ScanScreen() {
               style={styles.searchInput}
               value={searchQuery}
             />
-            <PrimaryButton label={t.errors.searchSubmit} disabled={searching || searchQuery.trim().length < 2} variant="secondary" onPress={() => {Keyboard.dismiss(); runSearch(searchQuery, true);}} />
             {searchNotice ? <Text accessibilityLiveRegion="polite" style={styles.searchStatus}>{searchNotice}</Text> : null}
-            {searchResults.length ? <Text accessibilityLiveRegion="polite" style={styles.searchStatus}>{t.scan.searchCount(Math.min(visibleSearchCount, searchResults.length), searchResults.length)}</Text> : null}
             <View>
               {searching && !searchResults.length ? <Text style={styles.searchStatus}>{t.scan.searchSearching}</Text> : null}
               {!searching && searchError ? (
@@ -734,6 +734,15 @@ export default function ScanScreen() {
                 </Pressable>
               ))}
               {searchResults.length > visibleSearchCount ? <PrimaryButton label={t.scan.searchMore} variant="secondary" onPress={() => setVisibleSearchCount((count) => count + 15)} /> : null}
+              {searchQuery.trim().length >= 2 && !searching ? (
+                <Pressable accessibilityRole="button" onPress={() => { Keyboard.dismiss(); runSearch(searchQuery, true); }} style={styles.searchRow}>
+                  <View style={styles.searchRowCopy}>
+                    <Text numberOfLines={2} style={styles.searchRowName}>{t.errors.searchSubmit}</Text>
+                    <Text style={styles.searchRowMeta}>{t.scan.brandSearchHint}</Text>
+                  </View>
+                  <Ionicons color={colors.accentText} name="search" size={22} />
+                </Pressable>
+              ) : null}
               {searchQuery.trim().length >= 2 && !searching ? (
                 <Pressable accessibilityRole="button" onPress={() => { Keyboard.dismiss(); setManualFor(searchQuery.trim()); }} style={styles.searchRow}>
                   <View style={styles.searchRowCopy}>

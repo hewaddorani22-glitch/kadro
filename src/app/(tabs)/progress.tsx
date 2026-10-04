@@ -95,10 +95,60 @@ export default function ProgressScreen() {
           <Eyebrow>{t.progress.eyebrow}</Eyebrow>
           <PageTitle>{context === 'teen' ? t.progress.title : t.progress.goalTitle[context]}</PageTitle>
           <Text style={styles.subtitle}>{context === 'teen' ? t.progress.teenContext : t.progress.goalContext[context]}</Text>
-          <Text style={styles.heroFoot}>{t.progress.energyContext(Math.round(targets.calories).toLocaleString(locale))}</Text>
         </View>
         <IconCircle name="trending-up" size={48} />
       </View>
+
+      <Card style={styles.consistencyHero}>
+        <Text style={styles.heroLabel}>{t.progress.caloriesWeek}</Text>
+        <View style={styles.heroValueRow}>
+          <Text style={[styles.heroValue, !loggedCalorieDays.length && styles.heroValueEmpty]}>{loggedCalorieDays.length ? formatNumber(averageCalories, locale) : '0'}</Text>
+          <Text style={styles.heroOf}>{t.progress.caloriesAverage(formatNumber(Math.round(targets.calories), locale))}</Text>
+        </View>
+        <View style={styles.strip}>
+          {calorieWeek.map((day) => {
+            const ratio = targets.calories > 0 ? day.calories / targets.calories : 0;
+            const within = day.logged && Math.abs(ratio - 1) <= 0.1;
+            return (
+              <View accessibilityLabel={`${day.label}: ${day.logged ? `${formatNumber(day.calories, locale)} kcal` : t.progress.notLogged}`} key={day.key} style={styles.stripDay}>
+                <View style={styles.stripTrack}>
+                  <View style={[styles.stripFill, { height: `${day.logged ? Math.max(6, Math.min(100, Math.round((ratio / 1.3) * 100))) : 6}%` }, day.logged && styles.stripFillLogged, within && styles.stripFillReached]} />
+                </View>
+                <Text style={[styles.stripLabel, day.today && styles.stripLabelToday]}>{day.label}</Text>
+              </View>
+            );
+          })}
+        </View>
+        <Text style={styles.heroFoot}>{loggedCalorieDays.length ? t.progress.caloriesFoot(withinCalories, loggedCalorieDays.length) : t.progress.caloriesEmpty}</Text>
+      </Card>
+
+      <Card style={styles.weightCard}>
+        <View style={styles.weightTop}>
+          <View>
+            <Text style={styles.cardLabel}>{visibleWeights.length ? t.progress.currentWeight : t.progress.profileWeight}</Text>
+            <Text style={styles.currentWeight}>{formatWeight(currentWeight, units, locale)}</Text>
+          </View>
+          {visibleWeights.length > 1 ? (
+            <View style={styles.changePill}>
+              <Ionicons color={colors.accentText} name={weightChange > 0 ? 'arrow-up' : weightChange < 0 ? 'arrow-down' : 'remove'} size={15} />
+              <Text style={styles.changeText}>{formatWeightDelta(Math.abs(weightChange), units, locale)}</Text>
+            </View>
+          ) : (
+            <View style={styles.firstPill}><Text style={styles.firstPillText}>{visibleWeights.length ? t.progress.firstValue : t.progress.noMeasurement}</Text></View>
+          )}
+        </View>
+        <Text style={styles.heroFoot}>{t.progress.weightWindow}</Text>
+        <WeightChart entries={chartWeights} />
+        {visibleWeights.length > 1 ? (
+          <View style={styles.chartLabels}>
+            <Text style={styles.chartLabel}>{formatDateParts(chartWeights[0].date, { day: 'numeric', month: 'short' }, locale)}</Text>
+            <Text style={styles.chartLabel}>{formatDateParts(chartWeights.at(-1)?.date ?? '', { day: 'numeric', month: 'short' }, locale)}</Text>
+          </View>
+        ) : null}
+        {chartWeights.length > 1 ? <Text style={styles.heroFoot}>{t.progress.measurementSpacing}</Text> : null}
+        <PrimaryButton icon="add" label={t.progress.logWeight} onPress={openWeightEntry} variant="secondary" />
+        <Text style={styles.heroFoot}>{t.progress.localWeightNote}</Text>
+      </Card>
 
       {/* Protein is the thing this audience controls day to day; weight swings on
           water and inverts when someone is building. It leads for a reason. */}
@@ -145,57 +195,6 @@ export default function ProgressScreen() {
               : t.progress.footEmpty}
         </Text>
         <Text style={styles.heroFoot}>{t.progress.currentTargetNote}</Text>
-      </Card>
-
-      <Card style={styles.consistencyHero}>
-        <Text style={styles.heroLabel}>{t.progress.caloriesWeek}</Text>
-        <View style={styles.heroValueRow}>
-          <Text style={styles.heroValue}>{loggedCalorieDays.length ? formatNumber(averageCalories, locale) : '–'}</Text>
-          <Text style={styles.heroOf}>{t.progress.caloriesAverage(formatNumber(Math.round(targets.calories), locale))}</Text>
-        </View>
-        <View style={styles.strip}>
-          {calorieWeek.map((day) => {
-            const ratio = targets.calories > 0 ? day.calories / targets.calories : 0;
-            const within = day.logged && Math.abs(ratio - 1) <= 0.1;
-            return (
-              <View accessibilityLabel={`${day.label}: ${day.logged ? `${formatNumber(day.calories, locale)} kcal` : t.progress.notLogged}`} key={day.key} style={styles.stripDay}>
-                <View style={styles.stripTrack}>
-                  <View style={[styles.stripFill, { height: `${day.logged ? Math.max(6, Math.min(100, Math.round((ratio / 1.3) * 100))) : 6}%` }, day.logged && styles.stripFillLogged, within && styles.stripFillReached]} />
-                </View>
-                <Text style={[styles.stripLabel, day.today && styles.stripLabelToday]}>{day.label}</Text>
-              </View>
-            );
-          })}
-        </View>
-        <Text style={styles.heroFoot}>{loggedCalorieDays.length ? t.progress.caloriesFoot(withinCalories, loggedCalorieDays.length) : t.progress.caloriesEmpty}</Text>
-      </Card>
-
-      <Card style={styles.weightCard}>
-        <View style={styles.weightTop}>
-          <View>
-            <Text style={styles.cardLabel}>{visibleWeights.length ? t.progress.currentWeight : t.progress.profileWeight}</Text>
-            <Text style={styles.currentWeight}>{formatWeight(currentWeight, units, locale)}</Text>
-          </View>
-          {visibleWeights.length > 1 ? (
-            <View style={styles.changePill}>
-              <Ionicons color={colors.accentText} name={weightChange > 0 ? 'arrow-up' : weightChange < 0 ? 'arrow-down' : 'remove'} size={15} />
-              <Text style={styles.changeText}>{formatWeightDelta(Math.abs(weightChange), units, locale)}</Text>
-            </View>
-          ) : (
-            <View style={styles.firstPill}><Text style={styles.firstPillText}>{visibleWeights.length ? t.progress.firstValue : t.progress.noMeasurement}</Text></View>
-          )}
-        </View>
-        <Text style={styles.heroFoot}>{t.progress.weightWindow}</Text>
-        <WeightChart entries={chartWeights} />
-        {visibleWeights.length > 1 ? (
-          <View style={styles.chartLabels}>
-            <Text style={styles.chartLabel}>{formatDateParts(chartWeights[0].date, { day: 'numeric', month: 'short' }, locale)}</Text>
-            <Text style={styles.chartLabel}>{formatDateParts(chartWeights.at(-1)?.date ?? '', { day: 'numeric', month: 'short' }, locale)}</Text>
-          </View>
-        ) : null}
-        {chartWeights.length > 1 ? <Text style={styles.heroFoot}>{t.progress.measurementSpacing}</Text> : null}
-        <PrimaryButton icon="add" label={t.progress.logWeight} onPress={openWeightEntry} variant="secondary" />
-        <Text style={styles.heroFoot}>{t.progress.localWeightNote}</Text>
       </Card>
 
       <View style={styles.statsRow}>
@@ -329,6 +328,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   headerCopy: { flex: 1, gap: 8 },
   subtitle: { color: colors.muted, fontSize: 15, lineHeight: 22 },
+  heroValueEmpty: { color: colors.border },
   consistencyHero: { padding: 20, gap: 14 },
   heroLabel: { color: colors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
   heroValueRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 8 },

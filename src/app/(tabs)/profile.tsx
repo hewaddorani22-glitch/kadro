@@ -78,11 +78,6 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <View style={styles.section}>
-        <SectionTitle>{t.profile.account}</SectionTitle>
-        <AccountLinkCard />
-      </View>
-
       <Pressable accessibilityLabel={t.profile.proView} accessibilityRole="button" onPress={() => router.push('/paywall')}>
         <Card style={styles.proCard}>
           <View style={styles.proIcon}><Ionicons color={colors.onAccent} name="infinite" size={26} /></View>
@@ -115,6 +110,11 @@ export default function ProfileScreen() {
           */}
           <MenuRow icon="create-outline" label={t.profile.changePlan} onPress={() => router.push('/onboarding?edit=1' as never)} />
         </Card>
+      </View>
+
+      <View style={styles.section}>
+        <SectionTitle>{t.profile.account}</SectionTitle>
+        <AccountLinkCard />
       </View>
 
       <View style={styles.section}>

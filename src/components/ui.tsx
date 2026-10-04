@@ -172,11 +172,14 @@ export function MacroCard({
   unit = 'g',
   icon,
   minimum = false,
+  tint,
 }: {
   label: string;
   current: number;
   target: number;
   unit?: string;
+  /** Macro colour for the bar; defaults to the accent. */
+  tint?: string;
   icon: keyof typeof Ionicons.glyphMap;
   /** Protein is a minimum: more is fine. Carbs/fat are guides: far above is not "done". */
   minimum?: boolean;
@@ -194,9 +197,8 @@ export function MacroCard({
         <Ionicons color={reached ? colors.onAccent : colors.text} name={reached ? 'checkmark' : over ? 'information-circle-outline' : icon} size={16} />
       </View>
       <Text numberOfLines={1} style={styles.macroLabel}>{label}</Text>
-      <Text style={styles.macroValue}>{current}</Text>
-      <Text style={styles.macroTarget}>{t.common.outOf(current, target, unit)}</Text>
-      <ProgressBar value={current / target} />
+      <Text numberOfLines={1} style={styles.macroValue}>{current}<Text style={styles.macroUnit}> / {target} {unit}</Text></Text>
+      <ProgressBar color={tint} value={current / target} />
     </Card>
   );
 }
@@ -415,15 +417,21 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   macroValue: {
     color: colors.text,
     fontSize: 20,
-    lineHeight: 22,
+    lineHeight: 24,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
+    marginBottom: 8,
   },
   macroTarget: {
     color: colors.muted,
     fontSize: 11,
     marginBottom: 7,
     fontVariant: ['tabular-nums'],
+  },
+  macroUnit: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '600',
   },
   confidence: {
     alignSelf: 'flex-start',

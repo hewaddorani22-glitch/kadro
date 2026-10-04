@@ -28,7 +28,9 @@ export function CalorieRing({
   const { locale, t } = useLanguage();
   // The ring used to be a hard 220pt, which overflowed the hero card on the
   // narrowest phones. It now shrinks with the viewport instead.
-  const size = Math.round(Math.min(MAX_SIZE, Math.max(MIN_SIZE, width - HORIZONTAL_CHROME)));
+  // Side figures (eaten · goal) only when the phone is wide enough for both.
+  const showSides = width >= 360;
+  const size = Math.round(Math.min(showSides ? 188 : MAX_SIZE, Math.max(MIN_SIZE - (showSides ? 18 : 0), width - HORIZONTAL_CHROME - (showSides ? 150 : 0))));
   const stroke = Math.round(size * 0.077);
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -40,6 +42,13 @@ export function CalorieRing({
   const statusColor = over > 0 ? colors.attention : colors.success;
   const celebrating = proteinReached && over === 0;
 
+  const side = (value: number, label: string) => (
+    <View style={styles.side}>
+      <Text adjustsFontSizeToFit numberOfLines={1} style={styles.sideValue}>{formatNumber(value, locale)}</Text>
+      <Text numberOfLines={1} style={styles.sideLabel}>{label}</Text>
+    </View>
+  );
+
   return (
     <View
       accessibilityLabel={over > 0
@@ -47,6 +56,7 @@ export function CalorieRing({
         : `${remaining} ${t.ring.left}`}
       style={styles.outer}
     >
+      {showSides ? side(consumed, t.ring.eaten) : null}
       <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
         <Svg height={size} style={styles.svg} width={size}>
           <Circle
@@ -89,14 +99,34 @@ export function CalorieRing({
           </View>
         </View>
       </View>
+      {showSides ? side(total, t.ring.goal) : null}
     </View>
   );
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   outer: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 10,
+  },
+  side: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    gap: 2,
+  },
+  sideValue: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  sideLabel: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: '600',
   },
   svg: {
     position: 'absolute',

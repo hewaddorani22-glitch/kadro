@@ -153,13 +153,19 @@ export function foodUsage(history: Meal[]): Map<string, FoodUsage> {
   return usage;
 }
 
+// BLS splits a few everyday compounds ("Hafer Flocken"). Shown as people write
+// them; matching already treats both spellings as the same food.
+function displayGerman(name: string) {
+  return name.replace(/^Hafer ([A-ZÄÖÜ][a-zäöüß]+)/, (_match: string, rest: string) => `Hafer${rest.toLowerCase()}`);
+}
+
 function toResult(row: Row, language: string, usage?: FoodUsage): FoodSearchResult {
   const labels = portionLabels();
   const [code, nameDe, nameEn, calories, protein, carbs, fat, fiber] = row;
   const portions = (PORTIONS[code] ?? []).map(([kind, grams]) => ({ label: labels[kind], grams, estimated: true, kind }));
   return {
     id: `bls-${code}`,
-    name: language === 'de' ? nameDe : nameEn,
+    name: language === 'de' ? displayGerman(nameDe) : nameEn,
     per100g: { calories, protein, carbs, fat, fiber },
     defaultGrams: usage?.lastGrams ?? portions[0]?.grams ?? 100,
     portions,

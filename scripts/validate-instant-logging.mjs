@@ -60,7 +60,7 @@ await test('audit search cases: preparation, typos, plurals, plant drinks and no
     assert.ok(!names.some(name => /egg-free|eifrei|Eierkuchen|Pfannkuchen/i.test(name)), `${query}: ${names.join(' | ')}`);
   }
   assert.match(first('gekochtes ei'), /gekocht/);
-  assert.equal(first('haferfloken'), 'Hafer Flocken');
+  assert.equal(first('haferfloken'), 'Haferflocken');
   assert.match(first('rosinen'), /^Rosine/);
   assert.match(first('milchreis'), /^Milchreis mit Milch/);
   assert.match(first('mandelmilch'), /^Mandeldrink/);

@@ -5,7 +5,7 @@ import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { MealSyncStatus } from '@/components/MealSyncStatus';
 import { CalorieRing } from '@/components/CalorieRing';
@@ -89,6 +89,7 @@ export default function TodayScreen() {
     }
   };
 
+  const { width } = useWindowDimensions();
   return (
     <Screen>
       <View style={styles.header}>
@@ -128,13 +129,13 @@ export default function TodayScreen() {
           </View>
         </View>
         <CalorieRing consumed={consumed.calories} proteinReached={targets.protein > 0 && consumed.protein >= targets.protein * 0.9} total={targets.calories} />
-        <Text style={styles.consumed}>{formatNumber(consumed.calories, locale)} {t.today.eaten} · {formatNumber(targets.calories, locale)} {t.today.goal}</Text>
+        {width < 360 ? <Text style={styles.consumed}>{formatNumber(consumed.calories, locale)} {t.today.eaten} · {formatNumber(targets.calories, locale)} {t.today.goal}</Text> : null}
       </Card>
 
       <View style={styles.macroRow}>
-        <MacroCard current={consumed.protein} icon="barbell-outline" label={t.common.protein} minimum target={targets.protein} />
-        <MacroCard current={consumed.carbs} icon="flash-outline" label={t.common.carbs} target={targets.carbs} />
-        <MacroCard current={consumed.fat} icon="water-outline" label={t.common.fat} target={targets.fat} />
+        <MacroCard current={consumed.protein} icon="barbell-outline" label={t.common.protein} minimum target={targets.protein} tint={colors.macroProtein} />
+        <MacroCard current={consumed.carbs} icon="flash-outline" label={t.common.carbs} target={targets.carbs} tint={colors.macroCarbs} />
+        <MacroCard current={consumed.fat} icon="water-outline" label={t.common.fat} target={targets.fat} tint={colors.macroFat} />
       </View>
 
       {/* Keep the target status visible; small meal ideas remain optional and
