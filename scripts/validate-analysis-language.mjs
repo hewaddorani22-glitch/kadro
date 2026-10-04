@@ -84,6 +84,19 @@ for (const file of ['supabase/functions/nutrition/index.ts', 'server/index.mjs']
 
 // --- The app must send it ---------------------------------------------------
 const mealAnalysis = await read('src/services/mealAnalysis.ts');
+const localizeBody = mealAnalysis.slice(mealAnalysis.indexOf('function localizeResult'), mealAnalysis.indexOf('\nfunction gatewayMessage'));
+const localizeJs = ts.transpileModule(localizeBody, {compilerOptions: {target: ts.ScriptTarget.ES2022}}).outputText;
+for (const language of ['de', 'en']) {
+  const dictionarySource = await read(`src/i18n/${language}.ts`);
+  const warning = dictionarySource.match(/warnGenericReference: '([^']+)'/)?.[1];
+  assert.ok(warning, `${language}: generic source disclosure`);
+  const localize = new Function('getDictionary', `${localizeJs}; return localizeResult;`)(() => ({errors:{warnGenericReference:warning}}));
+  const result = {items:[{source:{estimatedReference:true}},{source:{estimatedReference:true}}],warnings:[]};
+  assert.deepEqual(localize(result).warnings, [warning], 'one disclosure per result');
+  assert.deepEqual(localize(localize(result)).warnings, [warning], 'localization is idempotent');
+  assert.deepEqual(localize({items:[{source:{}}],warnings:[]}).warnings, [], 'exact sources need no family warning');
+  assert.deepEqual(result.warnings, [], 'do not mutate gateway response');
+}
 // Photo and typed description are separate requests; both have to carry it.
 const sends = mealAnalysis.match(/language: getLanguage\(\)/g) ?? [];
 assert.equal(sends.length, 2, `both the photo and the description request must send the language, found ${sends.length}`);
@@ -129,3 +142,4 @@ for (const file of ['supabase/functions/nutrition/index.ts', 'server/index.mjs']
 }
 
 console.log('Validated the analysis language contract: prompts, schema, both gateways, the app request and the error mapping.');
+await import('./validate-network-boundary.mjs');

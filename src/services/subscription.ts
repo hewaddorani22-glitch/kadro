@@ -22,6 +22,7 @@ export type SubscriptionPlan = {
   hasFreeTrial: boolean;
   /** Localised trial length, e.g. "7 Tage", when the store offers one. */
   trialLabel: string | null;
+  trialDays: number | null;
   /** Raw amounts so the UI can compare plans instead of asserting a saving. */
   priceAmount: number;
   monthlyEquivalent: number | null;
@@ -125,6 +126,7 @@ function toPlan(id: SubscriptionPlanId, purchasePackage: PurchasesPackage | null
     billing: t.billing.billingLine(product.priceString, yearly),
     hasFreeTrial,
     trialLabel,
+    trialDays: hasFreeTrial ? (product.introPrice?.periodUnit === 'DAY' ? product.introPrice.periodNumberOfUnits : product.introPrice?.periodUnit === 'WEEK' ? product.introPrice.periodNumberOfUnits * 7 : null) : null,
     priceAmount: product.price,
     monthlyEquivalent: Number.isFinite(monthlyEquivalent) ? monthlyEquivalent : null,
   };
@@ -169,7 +171,15 @@ export async function loadSubscriptionSnapshot(): Promise<SubscriptionSnapshot> 
 
 export async function purchaseSubscription(plan: SubscriptionPlan) {
   if (!(await ensureRevenueCatConfigured())) throw new Error(getDictionary().errors.billingSetupMissing);
-  const { customerInfo } = await Purchases.purchasePackage(plan.package);
+  // Re-read price, product and intro eligibility immediately before opening
+  // Apple. Changed terms require a new explicit tap after the UI refreshes.
+  const fresh = (await loadSubscriptionSnapshot()).plans[plan.id];
+  if (!fresh || fresh.package.product.identifier !== plan.package.product.identifier
+    || fresh.price !== plan.price || fresh.priceAmount !== plan.priceAmount
+    || fresh.trialLabel !== plan.trialLabel || fresh.trialDays !== plan.trialDays) {
+    throw new Error(getDictionary().access.offerChanged);
+  }
+  const { customerInfo } = await Purchases.purchasePackage(fresh.package);
   return hasPro(customerInfo);
 }
 
@@ -193,6 +203,11 @@ export function isSubscriptionPurchaseCancelled(error: unknown) {
   if (!error || typeof error !== 'object') return false;
   const candidate = error as { code?: string; userCancelled?: boolean | null };
   return candidate.userCancelled === true || candidate.code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR;
+}
+
+export function isSubscriptionPurchasePending(error: unknown) {
+  return Boolean(error && typeof error === 'object' &&
+    (error as { code?: unknown }).code === PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR);
 }
 
 export function subscriptionErrorMessage(error: unknown) {

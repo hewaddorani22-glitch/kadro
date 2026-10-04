@@ -92,8 +92,9 @@ assert.equal(unknown.optional, true, 'unknown-ingredient: Nutzerprüfung bleibt 
 assert.equal(unknown.confidence, 'medium', 'unknown-ingredient: Unsicherheit wird sichtbar');
 
 assert.equal(representativeMeals.length + edgeCases.length + 1, 30, 'Die Tag-4-Matrix muss genau 30 Fälle enthalten.');
-assert.equal(validateAnalysisInput({ mimeType: 'image/jpeg', imageBase64: 'x'.repeat(100) }), true);
+assert.equal(validateAnalysisInput({ mimeType: 'image/jpeg', imageBase64: 'x'.repeat(100) }), false);
 assert.equal(validateAnalysisInput({ mimeType: 'image/png', imageBase64: 'x'.repeat(100) }), false);
+await import('./validate-photo-input.mjs');
 assert.equal(chooseFood([
   { dataType: 'Branded', description: 'Apple, raw' },
   { dataType: 'Foundation', description: 'Apple, raw' },

@@ -12,16 +12,16 @@ const LANGUAGE_KEY = '@kandro/language:v1';
 const dictionaries: Record<Language, Dictionary> = { de, en };
 
 /**
- * English is the default and German is used when the device asks for it.
- *
- * The reach comes from English content, so most installs will not be German :
- * but German users still get the Bundeslebensmittelschlüssel references, which
- * only exist for their market. Defaulting the other way round would hand every
- * international install an app they cannot read.
+ * Choose the first supported language in the device's preference order.
+ * English is the fallback when none is supported; saved app choice wins in
+ * loadLanguage. Food references are available independently of app language.
  */
 export function deviceLanguage(): Language {
-  const tag = getLocales()[0]?.languageCode?.toLowerCase();
-  return tag === 'de' ? 'de' : 'en';
+  for (const locale of getLocales()) {
+    const tag = (locale.languageCode ?? locale.languageTag?.split(/[-_]/)[0])?.toLowerCase();
+    if (tag === 'de' || tag === 'en') return tag;
+  }
+  return 'en';
 }
 
 /**
@@ -33,7 +33,13 @@ export function deviceLanguage(): Language {
  */
 export function deviceRegion(): string | undefined {
   const locale = getLocales()[0];
-  return locale?.regionCode?.toUpperCase() ?? locale?.languageTag?.split(/[-_]/)[1]?.toUpperCase();
+  if (locale?.regionCode) return locale.regionCode.toUpperCase();
+  // A language tag may contain a script before the region, e.g. zh-Hans-SG.
+  try {
+    return locale?.languageTag ? new Intl.Locale(locale.languageTag.replaceAll('_', '-')).region : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export async function loadLanguage(): Promise<Language> {

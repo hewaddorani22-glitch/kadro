@@ -88,7 +88,7 @@ for (const file of ['src/i18n/de.ts', 'src/i18n/en.ts']) {
 
 // A database search has no photo to retake. Its secondary action must return
 // to an already-open search sheet and say what will actually happen.
-assert.match(confirm, /scanMode === 'search' \? t\.confirm\.searchAgain : scanMode === 'description' \? t\.confirm\.editDescription : t\.confirm\.retake/,
+assert.match(confirm, /scanMode === 'search' \? t\.confirm\.searchAgain : scanMode === 'description' \? t\.confirm\.editDescription : scanMode === 'barcode' \? t\.confirm\.scanAgain : t\.confirm\.retake/,
   'search confirmation must not offer to retake a photo');
 assert.match(confirm, /router\.dismissTo\('\/\(tabs\)\/scan\?mode=description'\)/,
   'description confirmation must return to text entry, not the camera');

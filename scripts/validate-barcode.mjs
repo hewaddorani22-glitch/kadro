@@ -58,7 +58,7 @@ assert.match(app, /barcode\/\$\{encodeURIComponent\(barcode\)\}\?language=/, 'th
 const contracts = await read('src/services/contracts.ts');
 assert.match(contracts, /'product-not-found'/, 'an unknown product needs its own error kind');
 assert.ok(
-  app.includes("payload?.code === 'product_not_found'") && app.includes("'missing_nutrition'"),
+  app.includes("product_not_found:'product-not-found'") && app.includes("missing_nutrition:'product-not-found'"),
   'both an unknown product and one without values must map to that kind',
 );
 const analyzing = await read('src/app/analyzing.tsx');
@@ -77,7 +77,7 @@ assert.match(scan, /useState\(requestedMode === 'description'\)/, 'the descripti
 assert.match(scan, /enableTorch=\{mode === 'barcode' && torchOn\}/, 'barcode mode needs a real torch control');
 assert.match(scan, /barcodeTypes: \[[^\]]*'itf14'[^\]]*'code128'/, 'the scanner must cover common numeric retail formats');
 assert.ok(scan.includes('barcodeManualTitle') && scan.includes('submitBarcodeEntry'), 'a barcode must be enterable by hand');
-assert.match(scan, /\^\\d\{8,14\}\$/, 'manual barcode input must reject incomplete codes');
+assert.match(scan, /\^\\d\{7,14\}\$/, 'manual barcode input must reject incomplete codes');
 // Retrying a barcode the database has never heard of cannot help.
 const actions = analyzing.slice(analyzing.indexOf("analysisError === 'product-not-found'"));
 assert.ok(

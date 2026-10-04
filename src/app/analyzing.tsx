@@ -50,6 +50,11 @@ export default function AnalyzingScreen() {
       : { title: t.analyzing.errUnclearTitle, detail: t.analyzing.errUnclearBody },
     'multiple-dishes': { title: t.analyzing.errMultipleTitle, detail: t.analyzing.errMultipleBody },
     'product-not-found': { title: t.analyzing.errProductTitle, detail: t.analyzing.errProductBody },
+    'timeout': {title:t.analyzing.errProviderTitle,detail:t.errors.gatewayTimeout},
+    'rate-limited': {title:t.analyzing.errProviderTitle,detail:t.errors.gatewayRateLimited},
+    'session-required': {title:t.analyzing.errProviderTitle,detail:t.errors.sessionUnavailable},
+    'invalid-response': {title:t.analyzing.errProviderTitle,detail:t.errors.gatewayInvalidResponse},
+    'model-refused': {title:t.analyzing.errInputTitle,detail:t.errors.gatewayRefused},
     'provider-error': { title: t.analyzing.errProviderTitle, detail: t.analyzing.errProviderBody },
   };
   const insets = useSafeAreaInsets();
@@ -66,13 +71,9 @@ export default function AnalyzingScreen() {
 
   useEffect(() => {
     if (analysisStatus !== 'analyzing') return;
-    if (reduceMotion) {
-      setVisible(stages.length);
-      return;
-    }
+    // The gateway reports only the final result. Pending labels describe the
+    // remaining work; elapsed time cannot certify recognition or lookup.
     setVisible(0);
-    const timers = stages.map((_, index) => setTimeout(() => setVisible(index + 1), 300 + index * 430));
-    return () => timers.forEach(clearTimeout);
   }, [analysisStatus, reduceMotion]);
 
   useEffect(() => {
@@ -90,9 +91,11 @@ export default function AnalyzingScreen() {
     void analyzeCurrentPhoto(true);
   };
 
+  // Network loss or a timeout may have finished on the server: the same id then
+  // replays the stored result at no extra cost. Any other failure retries fresh.
   const retry = () => {
     started.current = true;
-    void analyzeCurrentPhoto();
+    void analyzeCurrentPhoto(false, analysisError !== 'offline' && analysisError !== 'timeout');
   };
 
   const changeInput = (path: '/(tabs)/scan' | '/(tabs)/scan?mode=description' = '/(tabs)/scan') => {
@@ -157,7 +160,12 @@ export default function AnalyzingScreen() {
                   <PrimaryButton icon="shield-checkmark-outline" label={t.analyzing.openConsent} onPress={() => router.replace('/data-consent' as never)} />
                   <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
                 </>
-              ) : analysisError === 'product-not-found' || analysisError === 'invalid-input' || analysisError === 'request-expired' ? (
+              ) : analysisError === 'request-expired' ? (
+                <>
+                  <PrimaryButton icon="refresh" label={t.analyzing.retry} onPress={retry} />
+                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
+                </>
+              ) : analysisError === 'product-not-found' || analysisError === 'invalid-input' ? (
                 <>
                   {analysisError === 'product-not-found' ? <PrimaryButton
                     icon="create-outline"

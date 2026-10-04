@@ -1,3 +1,9 @@
+import { runSearchAssistance } from '../_shared/search-assistance.mjs';
+import { referenceCache } from '../_shared/reference-cache.mjs';
+import { isSearchQuery, compatibleSearchIdentity, SEARCH_VERSION } from '../_shared/search-policy.mjs';
+import { offMassNutrition, offMassPortions } from '../_shared/off-product.mjs';
+import { requestStructured, ModelError, GEMINI_MODEL, GEMINI_CONSENT_VERSION, GEMINI_RELEASE_APPROVED } from '../_shared/model-adapter.mjs';
+import { applyDescriptionAmountsTolerant } from '../_shared/description-amounts.mjs';
 import { withSupabase } from 'npm:@supabase/server@1.5.1';
 import { canonicalFoodQuery } from '../_shared/food-query.mjs';
 
@@ -21,7 +27,7 @@ import {
   validateAnalysisInput,
 } from '../_shared/nutrition.mjs';
 import { translateGermanQuery } from '../_shared/german-food-terms.mjs';
-import { getBlsReferenceByCode, resolveBlsFacts } from '../_shared/bls-reference.mjs';
+import { getBlsReferenceByCode, requiresFoodIdentityCorrection, resolveBlsFacts } from '../_shared/bls-reference.mjs';
 import { searchBlsCatalog } from '../_shared/bls-search.mjs';
 import {
   descriptionDetectionPrompt,
@@ -37,6 +43,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Origin': '*',
+  'Access-Control-Expose-Headers': 'Retry-After',
 };
 
 // Production has one disclosed AI path. Keeping a second provider selectable
@@ -89,7 +96,7 @@ type FoodFacts = {
   protein: number;
   carbs: number;
   fat: number;
-  fiber: number;
+  fiber?: number;
 };
 
 /**
@@ -97,14 +104,18 @@ type FoodFacts = {
  * burst of scans skips the database entirely for repeat ingredients.
  */
 const memoryCache = new Map<string, FoodFacts | null>();
+const memoryExpiry = new Map<string, number>();
+const searchCache = referenceCache();
+const barcodeCache = referenceCache({max: 500, ttl: 3_600_000, negativeTtl: 60_000});
 const MEMORY_CACHE_LIMIT = 500;
 
 function rememberInMemory(term: string, facts: FoodFacts | null) {
   if (memoryCache.size >= MEMORY_CACHE_LIMIT) {
     const oldest = memoryCache.keys().next().value;
-    if (oldest !== undefined) memoryCache.delete(oldest);
+    if (oldest !== undefined) { memoryCache.delete(oldest); memoryExpiry.delete(oldest); }
   }
   memoryCache.set(term, facts);
+  memoryExpiry.set(term, Date.now() + (facts ? 86_400_000 : 60_000));
 }
 
 type Result = { status: number; body: Record<string, unknown>; headers?: Record<string, string> };
@@ -318,63 +329,27 @@ async function refreshRevenueCatAccess(admin: any, userId: string, networkHash: 
 }
 
 // deno-lint-ignore no-explicit-any
-function extractResponseText(response: any): string {
-  if (typeof response.output_text === 'string') return response.output_text;
-  for (const output of response.output || []) {
-    for (const content of output.content || []) {
-      if (content.type === 'output_text' && typeof content.text === 'string') return content.text;
-    }
-  }
-  throw new Error('missing_structured_output');
-}
-
-// deno-lint-ignore no-explicit-any
-async function requestDetection(content: unknown[]): Promise<any> {
-  if (!aiApiKey) throw new Error('ai_key_missing');
-
-  const response = await fetch(aiApiUrl, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${aiApiKey}`,
-      'Content-Type': 'application/json',
-      'X-Title': 'Kandro',
-    },
-    body: JSON.stringify({
-      model: visionModel,
-      store: false,
-      max_output_tokens: 2000,
-      provider: {
-        data_collection: 'deny',
-        only: ['azure'],
-        allow_fallbacks: false,
-        zdr: true,
-      },
-      input: [{ role: 'user', content }],
-      text: {
-        format: { type: 'json_schema', name: 'kandro_meal_detection', strict: true, schema: detectionSchema },
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`${aiProvider}_${response.status}`);
-  }
-  return JSON.parse(extractResponseText(await response.json()));
+async function requestDetection(content: unknown[], candidate = false, signal?: AbortSignal) {
+  return requestStructured({apiKey: aiApiKey, content, model: candidate ? GEMINI_MODEL : visionModel, provider: aiProvider, routeAuthorized: candidate && GEMINI_RELEASE_APPROVED, signal});
 }
 
 async function searchUsdaOnce(
   term: string,
   claimUsda?: () => Promise<void>,
+  deadline = Date.now() + 22_000,
 ): Promise<{ facts: FoodFacts | null; cacheable: boolean }> {
   await claimUsda?.();
+  if (Date.now() >= deadline) throw new ModelError('provider_timeout',504);
   const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(Math.max(1,Math.min(7000,deadline-Date.now()))),
     body: JSON.stringify({ query: term, pageSize: 25, dataType: ['Foundation', 'SR Legacy', 'Survey (FNDDS)'] }),
   });
-  if (!response.ok) throw new Error(`usda_${response.status}`);
-  const result = await response.json();
-  const match = chooseFoodMatch((result.foods || []).filter((food: unknown) => toFoodFacts(food)), term);
+  if (!response.ok) throw new ModelError(response.status===429?'provider_rate_limited':'provider_error',response.status===429?429:502,response.headers.get('retry-after'));
+  const result = await response.json().catch(() => { throw new ModelError('provider_response_invalid'); });
+  if (!Array.isArray(result?.foods)) throw new ModelError('provider_response_invalid');
+  const match = chooseFoodMatch(result.foods.filter((food: unknown) => toFoodFacts(food)), term);
   return { facts: toFoodFacts(match.food, match), cacheable: match.cacheable };
 }
 
@@ -386,11 +361,12 @@ async function searchUsdaOnce(
 async function searchUsda(
   term: string,
   claimUsda?: () => Promise<void>,
+  deadline = Date.now() + 22_000,
 ): Promise<{ facts: FoodFacts | null; cacheable: boolean }> {
-  const first = await searchUsdaOnce(term, claimUsda);
+  const first = await searchUsdaOnce(term, claimUsda, deadline);
   if (first.facts) return first;
   for (const variant of searchTermVariants(term)) {
-    const retry = await searchUsdaOnce(variant, claimUsda);
+    const retry = await searchUsdaOnce(variant, claimUsda, deadline);
     if (retry.facts) return retry;
   }
   return first;
@@ -411,7 +387,7 @@ async function resolveFacts(
 
   for (const term of terms) {
     const cacheKey = usdaCacheKey(term);
-    if (memoryCache.has(cacheKey)) resolved.set(term, memoryCache.get(cacheKey) ?? null);
+    if ((memoryExpiry.get(cacheKey) ?? 0) > Date.now() && memoryCache.has(cacheKey)) resolved.set(term, memoryCache.get(cacheKey) ?? null);
     else if (!resolved.has(term)) unknown.push(term);
   }
 
@@ -420,7 +396,7 @@ async function resolveFacts(
     const { data } = await admin
       .from('usda_food_cache')
       .select('search_term, fdc_id, calories, protein, carbs, fat, fiber, fetched_at')
-      .in('search_term', [...termsByCacheKey.keys()]);
+      .in('search_term', [...termsByCacheKey.keys()]).abortSignal(AbortSignal.timeout(3000));
 
     for (const row of data ?? []) {
       const ageDays = (Date.now() - new Date(row.fetched_at).getTime()) / 86_400_000;
@@ -450,14 +426,18 @@ async function resolveFacts(
   // Sequential requests keep quota claims and provider traffic bounded even
   // when a model returns several uncached ingredients in one meal.
   const fetched: { term: string; facts: FoodFacts | null; cacheable: boolean }[] = [];
-  for (const term of missing) fetched.push({ term, ...await searchUsda(term, claimUsda) });
+  const lookupDeadline = Date.now() + 22_000;
+  for (const term of missing) {
+    if (Date.now() > lookupDeadline) throw new ModelError('provider_timeout', 504);
+    fetched.push({ term, ...await searchUsda(term, claimUsda, lookupDeadline) });
+  }
 
   for (const { term, facts, cacheable } of fetched) {
     resolved.set(term, facts);
     if (cacheable) rememberInMemory(usdaCacheKey(term), facts);
   }
 
-  const safeToCache = fetched.filter(({ cacheable }) => cacheable);
+  const safeToCache = fetched.filter(({ cacheable, facts }) => cacheable && (!facts || facts.fiber !== undefined));
   if (safeToCache.length) {
     // Writing the cache must never fail a scan the user already paid for.
     await admin.from('usda_food_cache').upsert(
@@ -472,7 +452,7 @@ async function resolveFacts(
         fetched_at: new Date().toISOString(),
       })),
       { onConflict: 'search_term' },
-    ).then(() => undefined, () => undefined);
+    ).abortSignal(AbortSignal.timeout(3000)).then(() => undefined, () => undefined);
   }
 
   return resolved;
@@ -491,7 +471,7 @@ async function resolveDetection(
 
   // deno-lint-ignore no-explicit-any
   const terms = detection.items
-    .filter((item: any) => !resolveBlsFacts(item))
+    .filter((item: any) => !requiresFoodIdentityCorrection(item) && !resolveBlsFacts(item))
     .map((item: any) => canonicalFoodQuery(item.searchTermEn))
     // A term that names no food would be looked up, cached, and then reused for
     // every other ingredient that produced the same placeholder.
@@ -499,6 +479,9 @@ async function resolveDetection(
   const facts = await resolveFacts(terms, admin, claimUsda);
   // deno-lint-ignore no-explicit-any
   const items = detection.items.map((item: any, index: number) => {
+    // The same term may have been resolved for another, non-conflicting item.
+    // Never let that shared/cache result bypass this ingredient's identity gate.
+    if (requiresFoodIdentityCorrection(item)) return buildMealItem(item, null, index);
     const blsFacts = resolveBlsFacts(item);
     const term = canonicalFoodQuery(item.searchTermEn);
     const usdaFacts = isUsableSearchTerm(term) ? facts.get(term) ?? null : null;
@@ -511,7 +494,7 @@ async function resolveDetection(
 }
 
 // deno-lint-ignore no-explicit-any
-async function analyzePhoto(input: any, admin: any, claimUsda?: () => Promise<void>): Promise<Result> {
+async function analyzePhoto(input: any, admin: any, claimUsda?: () => Promise<void>, candidate = false, signal?: AbortSignal): Promise<Result> {
   if (!validateAnalysisInput(input)) {
     return { status: 400, body: { code: 'invalid_input', message: 'Ungültiges Fotoformat.' } };
   }
@@ -521,19 +504,17 @@ async function analyzePhoto(input: any, admin: any, claimUsda?: () => Promise<vo
   return resolveDetection(await requestDetection([
     { type: 'input_text', text: photoDetectionPrompt(requestedLanguage(input)) },
     { type: 'input_image', image_url: `data:${input.mimeType};base64,${input.imageBase64}`, detail: imageDetail },
-  ]), admin, 'photo', claimUsda, input.ingredientCorrection);
+  ], candidate, signal), admin, 'photo', claimUsda, input.ingredientCorrection);
 }
 
 // deno-lint-ignore no-explicit-any
-async function analyzeDescription(input: any, admin: any, claimUsda?: () => Promise<void>): Promise<Result> {
+async function analyzeDescription(input: any, admin: any, claimUsda?: () => Promise<void>, candidate = false, signal?: AbortSignal): Promise<Result> {
   const description = typeof input?.description === 'string' ? input.description.trim() : '';
   if (description.length < 3 || description.length > 500) {
     return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
   }
-  return resolveDetection(await requestDetection([{
-    type: 'input_text',
-    text: descriptionDetectionPrompt(description, requestedLanguage(input)),
-  }]), admin, 'text', claimUsda, input.ingredientCorrection);
+  const detection = await requestDetection([{ type: 'input_text', text: descriptionDetectionPrompt(description, requestedLanguage(input)) }], candidate, signal);
+  return resolveDetection(applyDescriptionAmountsTolerant(detection, description), admin, 'text', claimUsda, input.ingredientCorrection);
 }
 
 /**
@@ -550,21 +531,34 @@ async function searchFoods(
   query: string,
   language: string,
   claimProvider?: (route: ProviderRoute) => Promise<void>,
+  catalogueOnly = false,
 ): Promise<Result> {
   const term = normalizeSearchTerm(query);
-  if (!isUsableSearchTerm(term)) {
+  if (!isSearchQuery(term)) {
     return { status: 400, body: { code: 'invalid_input', message: 'Query too short.' } };
   }
 
   const results: unknown[] = [];
+  const issues: {code: string; retryAfter?: string}[] = [];
+  const noteFailure = (error: unknown) => {
+    if (error instanceof ProviderQuotaError) issues.push({code: String(error.result.body.code), retryAfter: error.result.headers?.['Retry-After']});
+    else if (error instanceof ModelError) issues.push({code: error.code, retryAfter: error.retryAfter});
+    else issues.push({code: error instanceof Error && /timeout|abort/i.test(error.name) ? 'provider_timeout' : 'provider_error'});
+  };
+  const finish = (): Result => {
+    if (!results.length && issues.length) return {status: issues[0].code === 'provider_rate_limited' ? 429 : 503, body:{code:issues[0].code}, headers:issues[0].retryAfter ? {'Retry-After':issues[0].retryAfter} : undefined};
+    return {status:200,body:{query:term,results:results.slice(0,60),searchStatus:issues.length?'partial':catalogueOnly?'catalogue':'complete',issues}};
+  };
   const seen = new Set<string>();
   const add = (entry: unknown, referenceId: string) => {
+    const row=entry as {name?: unknown};
+    if(typeof row?.name!=='string'||!row.name.trim()||row.name.length>160)return;
     if (seen.has(referenceId)) return;
     seen.add(referenceId);
     results.push(entry);
   };
 
-  const catalogue = searchBlsCatalog(term, language, 15);
+  const catalogue = searchBlsCatalog(term, language, 60);
   // A hit that merely starts with the same letters is not an answer: "pho"
   // prefix-matches the phosphate in a curing salt, and returning that used to
   // end the search before Open Food Facts was ever asked.
@@ -592,7 +586,7 @@ async function searchFoods(
       portions: meal ? [{ label: language === 'de' ? '1 Portion' : '1 portion', grams: meal.defaultGrams }] : [],
       source: { provider: 'bls', referenceId: food.code, label: `BLS 4.0 ${food.code}` },
     }, food.code);
-    if (results.length + weakRows.length >= 15) break;
+    if (results.length + weakRows.length >= 60) break;
   }
 
   // Everyday foods finish here: no network, no quota and no English USDA
@@ -600,8 +594,8 @@ async function searchFoods(
   // search, though — a weak one keeps the catalogue entry and asks the network
   // as well, so the letters that happen to match cannot hide three million
   // products behind them.
-  if (results.length && catalogueAnswered) {
-    return { status: 200, body: { query: term, results: results.slice(0, 15) } };
+  if (catalogueOnly || (results.length && catalogueAnswered)) {
+    appendWeak(); return finish();
   }
 
   // A German query that is absent from the 7,140 bilingual references is most
@@ -619,18 +613,17 @@ async function searchFoods(
         add(product, `off-${String((product as any)?.source?.referenceId ?? '')}`);
       }
     } catch (error) {
-      if (error instanceof ProviderQuotaError) throw error;
-      // A missing brand result is an empty search, not a broken German UI.
+      noteFailure(error);
     }
     appendWeak();
-    return { status: 200, body: { query: term, results: results.slice(0, 15) } };
+    return finish();
   }
 
   let foods: unknown[] = [];
   try {
     foods = await searchUsdaFoods(term, claimProvider ? () => claimProvider('usda_search') : undefined);
   } catch (error) {
-    if (error instanceof ProviderQuotaError) throw error;
+    noteFailure(error);
     foods = [];
   }
 
@@ -638,7 +631,7 @@ async function searchFoods(
     // deno-lint-ignore no-explicit-any
     const entry = food as any;
     const facts = toFoodFacts(entry, { confidence: 'medium' });
-    if (!facts) continue;
+    if (!facts || !Number.isSafeInteger(entry.fdcId) || entry.fdcId < 1 || !compatibleSearchIdentity(term, entry.description)) continue;
     add({
       id: `usda-${entry.fdcId}`,
       name: String(entry.description ?? '').trim(),
@@ -647,7 +640,7 @@ async function searchFoods(
         protein: Number(facts.protein),
         carbs: Number(facts.carbs),
         fat: Number(facts.fat),
-        fiber: Number(facts.fiber ?? 0),
+        ...(facts.fiber !== undefined ? {fiber: Number(facts.fiber)} : {}),
       },
       defaultGrams: 100,
       portions: usdaPortions(entry),
@@ -670,13 +663,12 @@ async function searchFoods(
         add(product, `off-${String((product as any)?.source?.referenceId ?? '')}`);
       }
     } catch (error) {
-      if (error instanceof ProviderQuotaError) throw error;
-      // An extra source going down is not a failed search.
+      noteFailure(error);
     }
   }
 
   appendWeak();
-  return { status: 200, body: { query: term, results: results.slice(0, 15) } };
+  return finish();
 }
 
 /**
@@ -691,48 +683,38 @@ async function searchOpenFoodFacts(
   language: string,
   claimOff?: () => Promise<void>,
 ): Promise<unknown[]> {
-  const fields = 'code,lang,lc,product_name,product_name_de,product_name_en,brands,nutriments,serving_quantity,serving_size';
+  const fields = 'code,lang,lc,product_name,product_name_de,product_name_en,brands,nutriments,serving_quantity,serving_size,serving_quantity_unit,nutrition_data_per,quantity,product_quantity_unit';
   const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(term)}&page_size=10&fields=${fields}`;
   await claimOff?.();
   const response = await fetch(url, {
     headers: { 'User-Agent': 'Kandro/1.0 (https://getkandro.com; hewaddorani22@gmail.com)' },
     signal: AbortSignal.timeout(4000),
   });
-  if (!response.ok) throw new Error(`off_${response.status}`);
-  const payload = await response.json();
-  const hits = Array.isArray(payload?.hits) ? payload.hits : [];
+  if (!response.ok) throw new ModelError(response.status === 429 ? 'provider_rate_limited' : 'provider_error', response.status === 429 ? 429 : 502, response.headers.get('retry-after'));
+  const payload = await response.json().catch(() => { throw new ModelError('provider_response_invalid'); });
+  if (!Array.isArray(payload?.hits)) throw new ModelError('provider_response_invalid');
+  const hits = payload.hits;
 
   const out: unknown[] = [];
   for (const hit of hits) {
     // deno-lint-ignore no-explicit-any
     const product = hit as any;
     const values = product?.nutriments || {};
-    const calories = Number(values['energy-kcal_100g']);
-    // A product without energy is a product the app cannot log. Half the
-    // catalogue is like this, and offering it would be offering a dead end.
-    if (!Number.isFinite(calories)) continue;
-    // Search results are optional. For German readers, omit a product whose
-    // catalogue record only carries an English title instead of leaking that
-    // title into an otherwise German list. Barcode lookup is different: the
-    // scanned product must remain identifiable, so it keeps the broad fallback.
-    const name = localizedProductName(product, language, language === 'de');
-    if (!name) continue;
+    // Search and barcode use one completeness/precision boundary. Unknown
+    // protein, carbs or fat must never look like a measured zero.
+    const per100g = offMassNutrition(product);
+    if (!per100g) continue;
+    // Preserve an identifiable original product name when a translation is absent.
+    const name = localizedProductName(product, language);
+    if (!name || name.length > 130 || !/^\d{7,14}$/.test(String(product.code)) || !compatibleSearchIdentity(term,name)) continue;
     const brand = Array.isArray(product.brands) ? product.brands[0] : product.brands;
     const serving = Number(product.serving_quantity);
     out.push({
       id: `off-${product.code}`,
       name: brand && !name.toLowerCase().includes(String(brand).toLowerCase()) ? `${name} (${brand})` : name,
-      per100g: {
-        calories: Math.round(calories),
-        protein: Math.round(Number(values.proteins_100g) || 0),
-        carbs: Math.round(Number(values.carbohydrates_100g) || 0),
-        fat: Math.round(Number(values.fat_100g) || 0),
-        fiber: Math.round(Number(values.fiber_100g) || 0),
-      },
+      per100g,
       defaultGrams: 100,
-      portions: Number.isFinite(serving) && serving >= 1 && serving <= 2000
-        ? [{ label: String(product.serving_size || (language === 'de' ? '1 Portion' : '1 serving')).trim().slice(0, 40), grams: Math.round(serving) }]
-        : [],
+      portions: offMassPortions(product),
       source: { provider: 'open-food-facts', referenceId: String(product.code), label: `Open Food Facts ${product.code}` },
     });
     if (out.length >= 5) break;
@@ -745,11 +727,13 @@ async function usdaRows(query: string, claimUsda?: () => Promise<void>): Promise
   const response = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?api_key=${encodeURIComponent(usdaApiKey)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(7000),
     body: JSON.stringify({ query, pageSize: 25 }),
   });
-  if (!response.ok) throw new Error(`usda_${response.status}`);
-  const result = await response.json();
-  return result.foods || [];
+  if (!response.ok) throw new ModelError(response.status===429?'provider_rate_limited':'provider_error',response.status===429?429:502,response.headers.get('retry-after'));
+  const result = await response.json().catch(() => { throw new ModelError('provider_response_invalid'); });
+  if (!Array.isArray(result?.foods)) throw new ModelError('provider_response_invalid');
+  return result.foods;
 }
 
 /**
@@ -808,23 +792,27 @@ async function lookupBarcode(barcode: string, language: string, claimOff?: () =>
   if (!/^\d{7,14}$/.test(barcode)) {
     return { status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } };
   }
-  const fields = 'code,product_name_de,product_name_en,product_name,nutriments,serving_size,serving_quantity';
+  const fields = 'code,product_name_de,product_name_en,product_name,nutriments,serving_size,serving_quantity,serving_quantity_unit,nutrition_data_per,quantity,product_quantity_unit';
   await claimOff?.();
   const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`, {
     // Open Food Facts asks callers to identify themselves and throttles the
     // ones that do not. A generic agent is how you get rate limited at scale.
     headers: { 'User-Agent': 'Kandro/1.0 (https://getkandro.com; hewaddorani22@gmail.com)' },
+    signal: AbortSignal.timeout(7000),
   });
   if (!response.ok) {
     return {
-      status: response.status === 404 ? 404 : 502,
-      body: { code: 'product_not_found', message: 'Produkt nicht gefunden.' },
+      status: response.status === 404 ? 404 : response.status === 429 ? 429 : 502,
+      body: { code: response.status === 404 ? 'product_not_found' : response.status === 429 ? 'provider_rate_limited' : 'provider_error' },
+      headers: response.headers.get('retry-after') ? {'Retry-After': response.headers.get('retry-after')!} : undefined,
     };
   }
-  const result = await response.json();
+  const result = await response.json().catch(() => { throw new ModelError('provider_response_invalid'); });
+  if (result?.status === 0) return {status:404,body:{code:'product_not_found'}};
+  if (!result?.product || typeof result.product !== 'object') throw new ModelError('provider_response_invalid');
   const product = result.product;
   const values = product?.nutriments || {};
-  const per100g = openFoodFactsNutrition(values);
+  const per100g = offMassNutrition(product);
   if (!per100g) {
     return {
       status: 422,
@@ -857,16 +845,18 @@ async function lookupBarcode(barcode: string, language: string, claimOff?: () =>
 /** An Open Food Facts serving size, when it is a weight anyone would trust. */
 // deno-lint-ignore no-explicit-any
 function servingPortion(product: any): { label: string; grams: number }[] {
-  const grams = Math.round(Number(product?.serving_quantity));
-  if (!Number.isFinite(grams) || grams < 1 || grams > 2000) return [];
-  const label = String(product?.serving_size ?? '').trim().slice(0, 40);
-  return [{ label: label || '1', grams }];
+  return offMassPortions(product);
 }
 
 /** Strips the /functions/v1/nutrition prefix so routes read the same as locally. */
 function routeOf(request: Request) {
   const path = new URL(request.url).pathname.replace(/^\/functions\/v1/, '');
   return path.replace(/^\/nutrition/, '').replace(/\/+$/, '') || '/';
+}
+
+async function captureFingerprint(value: unknown) {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(value)));
+  return [...new Uint8Array(bytes)].map(byte=>byte.toString(16).padStart(2,'0')).join('');
 }
 
 const handler = withSupabase({ auth: 'user' }, async (request: Request, context) => {
@@ -903,6 +893,93 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
 
   const route = routeOf(request);
   const networkHash = await providerNetworkHash(request);
+  if (request.method === 'GET' && route === '/v1/capture-capabilities') return reply({status:200,body:{gemini:GEMINI_RELEASE_APPROVED,searchAssistance:GEMINI_RELEASE_APPROVED,consentVersion:GEMINI_CONSENT_VERSION}});
+  // Cohort state comes only from protected server records. Build/capability
+  // headers are deliberately irrelevant to identity or free access.
+  const resolveAppAccess = async () => {
+    const { data: access, error } = await context.supabaseAdmin.rpc('resolve_paywall_access_v1', { p_user_id: data.user.id });
+    if (error || !access || typeof access.hard !== 'boolean') throw new ModelError('access_unavailable', 503);
+    return access;
+  };
+  if (request.method === 'POST' && route === '/v1/access/enroll') {
+    const input = await request.json().catch(() => null);
+    if (!input || Object.keys(input).some(key => !['firstUse','ageConfirmed','trialEligible','product','sevenDays'].includes(key))) return reply({status:400,body:{code:'invalid_input'}});
+    const {data:access,error} = await context.supabaseAdmin.rpc('enroll_paywall_access_v1', {
+      p_user_id:data.user.id,p_first_use:input.firstUse===true,p_age_confirmed:input.ageConfirmed===true,
+      p_trial_eligible:input.trialEligible===true,p_product:typeof input.product==='string'?input.product.slice(0,160):null,p_seven_days:input.sevenDays===true,
+    });
+    if(error) throw new ModelError('access_unavailable',503);
+    return reply({status:200,body:access});
+  }
+  if (request.method === 'GET' && route === '/v1/access') return reply({status:200,body:await resolveAppAccess()});
+  if (!['/v1/entitlement/refresh','/v1/ai-consent'].includes(route)) {
+    const {data:priorUse,error:priorUseError} = await context.supabaseAdmin.rpc('record_paywall_prior_use_v1',{p_user_id:data.user.id});
+    if(priorUseError || !priorUse || typeof priorUse.hard !== 'boolean') throw new ModelError('access_unavailable',503);
+    let access = priorUse;
+    // Own saved data remains correctable. This scope authorizes reference
+    // lookup only, never analysis or creation of a new meal.
+    const correctionId = new URL(request.url).searchParams.get('correctionMealId');
+    let correction = false;
+    if (request.method==='GET' && correctionId && correctionId.length<=240 && (route==='/v1/search'||route.startsWith('/v1/barcode/'))) {
+      const {data:meal,error} = await context.supabase.from('meals').select('id').eq('user_id',data.user.id).eq('id',correctionId).maybeSingle();
+      correction = !error && !!meal;
+    }
+    if(access.hard && access.access==='unknown' && !correction) {
+      try { await refreshRevenueCatAccess(context.supabaseAdmin,data.user.id,networkHash); access=await resolveAppAccess(); }
+      catch { /* Only the server's existing bounded grace can permit access. */ }
+    }
+    if(access.hard && access.access!=='active' && !correction) {
+      return reply({status:access.access==='inactive'?402:503,body:{code:access.access==='inactive'?'paywall_access_required':'entitlement_verification_unavailable'}});
+    }
+  }
+  // Additive consent: the old privacy version and all old-client routes remain.
+  if (request.method === 'POST' && route === '/v1/ai-consent') {
+    const input = await request.json().catch(()=>null);
+    if (!GEMINI_RELEASE_APPROVED || input?.version !== GEMINI_CONSENT_VERSION) throw new ModelError('ai_route_not_approved',503);
+    const scope=input?.scope??'search';
+    if(!['search','analysis'].includes(scope)) return reply({status:400,body:{code:'invalid_input'}});
+    const {error} = input.accepted === true
+      ? await context.supabaseAdmin.from('capture_ai_consents').upsert({user_id:data.user.id,version:GEMINI_CONSENT_VERSION,scopes:[scope],accepted_at:new Date().toISOString()})
+      : await context.supabaseAdmin.from('capture_ai_consents').delete().eq('user_id',data.user.id);
+    if(error) throw new ModelError('access_unavailable',503);
+    return reply({status:200,body:{accepted:input.accepted===true}});
+  }
+  const candidateConsent = async (scope = 'search') => {
+    if (!GEMINI_RELEASE_APPROVED) return false;
+    const {data:grant,error} = await context.supabase.from('capture_ai_consents').select('version,scopes,accepted_at').eq('user_id',data.user.id).maybeSingle();
+    return !error && grant?.version === GEMINI_CONSENT_VERSION && Boolean(grant.accepted_at) && Array.isArray(grant.scopes) && grant.scopes.includes(scope);
+  };
+  if (request.method === 'POST' && route === '/v1/search-assist') {
+    if (!GEMINI_RELEASE_APPROVED) throw new ModelError('ai_route_not_approved',503);
+    if (!await candidateConsent()) return reply({status:403,body:{code:'consent_required'}});
+    const input = await request.json().catch(()=>null);
+    if (!isAnalysisRequestId(input?.requestId) || !isSearchQuery(input?.query) || input.query.length>120 || !networkHash) return reply({status:400,body:{code:'invalid_input'}});
+    const language = requestedLanguage(input);
+    const operationArgs={p_user_id:data.user.id,p_request_id:input.requestId,p_kind:'search',p_fingerprint:await captureFingerprint([input.query.trim().toLowerCase(),language,GEMINI_CONSENT_VERSION]),p_network_hash:networkHash};
+    const previous=await accessRpc(context.supabaseAdmin,'lookup_capture_operation',operationArgs);
+    if(previous?.status==='replay' && previous.result) {
+      const receipt=previous.result as unknown as Result;
+      return reply(receipt.status===200?receipt:{status:409,body:{code:'request_completed'}});
+    }
+    if(previous?.status!=='missing') return reply({status:409,body:{code:'request_completed'}});
+    // Re-evaluate with actual database results, never trust a client claim that
+    // the providers succeeded or that arbitrary candidate IDs are real.
+    const base = await searchFoods(input.query,language,(providerRoute)=>claimProviderRequest(context.supabaseAdmin,data.user.id,providerRoute,networkHash));
+    if (base.status!==200 || base.body.searchStatus==='partial') return reply(base);
+    if ((base.body.results as unknown[]).length) return reply({status:200,body:{results:base.body.results,confirmationRequired:false}});
+    const decision = await accessRpc(context.supabaseAdmin,'reserve_capture_operation',operationArgs);
+    if (decision?.status==='replay' && decision.result) return reply(decision.result as unknown as Result);
+    if (decision?.status!=='claimed') return reply({status:decision?.status==='rate_limited'?429:409,body:{code:decision?.status==='rate_limited'?'provider_rate_limited':'request_completed'}});
+    let result: Result;
+    try {
+      result={status:200,body:await runSearchAssistance({query:input.query,language,candidates:[],apiKey:aiApiKey,routeAuthorized:true,signal:request.signal,
+        lookup:(variant: string)=>searchFoods(variant,language,(providerRoute)=>claimProviderRequest(context.supabaseAdmin,data.user.id,providerRoute,networkHash))})};
+    } catch(error) { result={status:error instanceof ModelError?error.status:502,body:{code:error instanceof ModelError?error.code:'provider_error'}}; }
+    const finished = await accessRpc(context.supabaseAdmin,'finish_capture_operation',{p_user_id:data.user.id,p_request_id:input.requestId,p_result:result});
+    if(finished?.status!=='completed') return reply({status:503,body:{code:'access_unavailable'}});
+    return reply(result);
+  }
+
 
   // Barcode and search stay outside the paid quota, but not outside the
   // provider-abuse boundary: Open Food Facts publishes strict read limits.
@@ -912,11 +989,11 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     if (match) {
       const requested = new URL(request.url).searchParams.get('language');
       try {
-        return reply(await lookupBarcode(
+        return reply(await barcodeCache.get(JSON.stringify([SEARCH_VERSION, match[1], requested]), () => lookupBarcode(
           match[1],
           requestedLanguage({ language: requested }),
           () => claimProviderRequest(context.supabaseAdmin, data.user.id, 'off_barcode', networkHash),
-        ));
+        ), (result: Result) => [200,404].includes(result.status), (result: Result) => result.status === 404));
       } catch (error) {
         if (error instanceof ProviderQuotaError) return reply(error.result);
         throw error;
@@ -925,7 +1002,7 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     if (route === '/v1/search') {
       const params = new URL(request.url).searchParams;
       try {
-        return reply(await searchFoods(
+        return reply(await searchCache.get(await captureFingerprint([SEARCH_VERSION, data.user.id, params.get('q'), params.get('language'), params.get('scope')]), () => searchFoods(
           params.get('q') ?? '',
           requestedLanguage({ language: params.get('language') }),
           (providerRoute) => claimProviderRequest(
@@ -934,7 +1011,8 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
             providerRoute,
             networkHash,
           ),
-        ));
+          params.get('scope') === 'catalogue',
+        ), (result: Result) => result.status === 200 && result.body.searchStatus !== 'partial', (result: Result) => (result.body.results as unknown[]).length === 0));
       } catch (error) {
         if (error instanceof ProviderQuotaError) return reply(error.result);
         throw error;
@@ -1001,6 +1079,10 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     }
   }
 
+  const candidate = payload?.analysisProvider === GEMINI_MODEL;
+  if (candidate && !GEMINI_RELEASE_APPROVED) throw new ModelError('ai_route_not_approved',503);
+  if (candidate && !await candidateConsent('analysis')) return reply({status:403,body:{code:'consent_required'}});
+
   const requestId = typeof payload?.requestId === 'string' ? payload.requestId : '';
   if (!isAnalysisRequestId(requestId)) {
     return reply({ status: 400, body: { code: 'invalid_request', message: 'Ungültige Analyseanfrage.' } });
@@ -1012,6 +1094,15 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     });
   }
 
+  const captureArgs={p_user_id:data.user.id,p_request_id:requestId,p_kind:'analysis',p_fingerprint:await captureFingerprint([route,payload.description??payload.imageBase64,requestedLanguage(payload),candidate]),p_network_hash:networkHash};
+  if (payload.captureProtocol === 2) {
+    const previous=await accessRpc(context.supabaseAdmin,'lookup_capture_operation',captureArgs);
+    if(previous?.status==='replay' && previous.result) {
+      const receipt=previous.result as unknown as Result;
+      return reply(receipt.status===200?receipt:{status:409,body:{code:'request_completed'}});
+    }
+    if(previous?.status!=='missing') return reply({status:409,body:{code:'request_completed'}});
+  }
   let access = await reserveAnalysis(context.supabaseAdmin, data.user.id, requestId);
   if (access?.status === 'verification_required') {
     try {
@@ -1079,6 +1170,19 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     await claimProviderRequest(context.supabaseAdmin, data.user.id, 'usda_analysis', networkHash);
   };
 
+  if (payload.captureProtocol === 2) {
+    const decision = await accessRpc(context.supabaseAdmin,'reserve_capture_operation',captureArgs);
+    if(decision?.status !== 'claimed') {
+      await refundAnalysis(context.supabaseAdmin,data.user.id,requestId);
+      if(decision?.status==='replay' && decision.result) return reply(decision.result as unknown as Result);
+      return reply({status:409,body:{code:'request_completed'}});
+    }
+  }
+  const rememberCapture = async (result: Result) => {
+    if(payload.captureProtocol !== 2) return true;
+    return (await accessRpc(context.supabaseAdmin,'finish_capture_operation',{p_user_id:data.user.id,p_request_id:requestId,p_result:result}))?.status === 'completed';
+  };
+
   const started = await accessRpc(context.supabaseAdmin, 'mark_analysis_request_started', {
     p_user_id: data.user.id,
     p_request_id: requestId,
@@ -1091,13 +1195,17 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
   let result: Result;
   try {
     result = route === '/v1/analyze'
-      ? await analyzePhoto(payload, context.supabaseAdmin, claimAnalysisUsda)
-      : await analyzeDescription(payload, context.supabaseAdmin, claimAnalysisUsda);
+      ? await analyzePhoto(payload, context.supabaseAdmin, claimAnalysisUsda, candidate, request.signal)
+      : await analyzeDescription(payload, context.supabaseAdmin, claimAnalysisUsda, candidate, request.signal);
   } catch (error) {
     await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
-    if (error instanceof ProviderQuotaError) return reply(error.result);
-    throw error;
+    if(error instanceof Error && ['mass_required','amount_ambiguous','amount_out_of_range'].includes(error.message)) error=new ModelError(error.message,422);
+    if(error instanceof Error && /^(AbortError|TimeoutError)$/.test(error.name)) error=new ModelError('provider_timeout',504);
+    const failed: Result = error instanceof ProviderQuotaError ? error.result : {status:error instanceof ModelError?error.status:502,body:{code:error instanceof ModelError?error.code:'provider_error'},headers:error instanceof ModelError && error.retryAfter?{'Retry-After':String(error.retryAfter)}:undefined};
+    await rememberCapture(failed);
+    return reply(failed);
   }
+  if (!await rememberCapture(result)) return reply({status:503,body:{code:'access_unavailable'}});
   // A failed lookup still refunds the user's allowance. The new app can repair
   // its draft for free; provider rate limits still account for the real calls.
   if (result.status !== 200 || result.body.correctionRequired === true) {
@@ -1122,6 +1230,8 @@ export default {
   fetch(request: Request) {
     if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
     return handler(request).catch((error: unknown) => {
+      if (error instanceof Error && ['mass_required','amount_ambiguous','amount_out_of_range'].includes(error.message)) return reply({status:422,body:{code:error.message}});
+      if (error instanceof ModelError) return reply({status:error.status,body:{code:error.code},headers:error.retryAfter ? {'Retry-After':String(error.retryAfter)} : undefined});
       const safeCode = safeGatewayFailureCode(error);
       const setupError = safeCode === 'ai_key_missing' || safeCode === 'ai_provider_invalid';
       // Logs receive only a fixed code. Provider bodies, prompts and model output

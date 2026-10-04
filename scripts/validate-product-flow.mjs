@@ -34,7 +34,7 @@ requireText('progress', 'mealHistory', 'progress does not use actual meal histor
 requireText('progress', 'weightEntries', 'progress does not use actual weight entries');
 if (/const weights\s*=\s*\[/.test(files.progress)) failures.push('progress still contains a fixture weight curve');
 if (files.localRepository.includes('INITIAL_MEALS')) failures.push('the daily timeline still injects a fake meal');
-requireText('result', 'isCurrentScanLogged', 'result projection cannot distinguish the current meal from prior scans');
+requireText('result', 'projectMealForDay(targets, meals, scannedMeal)', 'result must replace the saved revision when projecting an edited meal');
 requireText('plan', 'profile.preferences', 'recommendation screen ignores saved preferences');
 requireText('recommendations', 'matchesDietaryConstraints', 'dietary constraints are not applied to the catalog');
 // Checked by wiring, not by wording: the labels live in the dictionaries now,

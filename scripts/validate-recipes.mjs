@@ -7,6 +7,7 @@
  * say the same thing.
  */
 import assert from 'node:assert/strict';
+import { BLS_SEARCH_ROWS } from '../supabase/functions/_shared/bls-search-data.mjs';
 import { readFile } from 'node:fs/promises';
 
 const read = async (name) => JSON.parse(await readFile(new URL(`../src/data/${name}`, import.meta.url), 'utf8'));
@@ -21,7 +22,14 @@ const problems = [];
 
 // --- Every ingredient is sourced and named ---------------------------------
 for (const [key, record] of Object.entries(ingredients)) {
-  if (!record.usda && !record.off) problems.push(`${key}: no USDA id and no Open Food Facts barcode`);
+  if (!record.usda && !record.off && !record.bls) problems.push(`${key}: no source identifier`);
+  assert.ok(['raw','dry','cooked-drained','cooked-peeled','drained','as-sold'].includes(record.referenceState), key + ': missing reference state');
+  assert.equal(record.weighingState, record.referenceState, key + ': conversion requires a separately validated yield, none used here');
+  if (record.bls) {
+    const source = BLS_SEARCH_ROWS.find((row) => row[0] === record.bls);
+    assert.ok(source, key + ': missing BLS source');
+    for (const [i, macro] of MACROS.entries()) assert.equal(record.per100g[macro], source[i + 3], key + ': altered source nutrient');
+  }
   if (!names[key]?.de || !names[key]?.en) problems.push(`${key}: missing a name in one language`);
   for (const macro of MACROS) {
     const value = record.per100g?.[macro];

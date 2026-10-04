@@ -1,0 +1,541 @@
+{
+  "timestamp": "2026-09-06T03:05:18.479Z",
+  "cases": [
+    {
+      "id": "unauthenticated",
+      "status": 401,
+      "body": {
+        "source": "@supabase/server",
+        "code": "UNUSABLE_CREDENTIAL",
+        "message": "[@supabase/server] The request carried a credential this endpoint cannot use: an apikey header, which no accepted auth mode reads. Accepted auth mode(s): \"user\".",
+        "hint": "This endpoint authenticates a user, not a project — an API key can never satisfy it, whichever header it arrives in. Send: Authorization: Bearer <jwt> (for auth mode \"user\").",
+        "docs": "https://github.com/supabase/server/blob/main/docs/error-handling.md#unusable_credential",
+        "details": {
+          "acceptedAuthModes": [
+            "user"
+          ],
+          "received": {
+            "authorization": "absent",
+            "apikey": "publishable"
+          }
+        }
+      },
+      "latencyMs": 628
+    },
+    {
+      "id": "no-consent",
+      "status": 403,
+      "body": {
+        "code": "consent_required",
+        "message": "Bitte bestätige zuerst die aktuelle Datenschutzeinwilligung."
+      },
+      "latencyMs": 1278
+    },
+    {
+      "id": "guardian-missing",
+      "status": 403,
+      "body": {
+        "code": "consent_required",
+        "message": "Bitte bestätige zuerst die aktuelle Datenschutzeinwilligung."
+      },
+      "latencyMs": 486
+    },
+    {
+      "id": "milka-lu-de",
+      "status": 200,
+      "body": {
+        "barcode": "7622210022776",
+        "name": "Milka LU",
+        "nameMissing": false,
+        "per100g": {
+          "calories": 513,
+          "protein": 6.4,
+          "carbs": 62.5,
+          "fat": 25.5,
+          "fiber": 2
+        },
+        "portions": [
+          {
+            "label": "17,4 g",
+            "grams": 17
+          }
+        ],
+        "source": {
+          "provider": "open-food-facts",
+          "referenceId": "7622210022776",
+          "label": "Open Food Facts 7622210022776"
+        }
+      },
+      "latencyMs": 776
+    },
+    {
+      "id": "milka-lu-en",
+      "status": 200,
+      "body": {
+        "barcode": "7622210022776",
+        "name": "Milka LU",
+        "nameMissing": false,
+        "per100g": {
+          "calories": 513,
+          "protein": 6.4,
+          "carbs": 62.5,
+          "fat": 25.5,
+          "fiber": 2
+        },
+        "portions": [
+          {
+            "label": "17,4 g",
+            "grams": 17
+          }
+        ],
+        "source": {
+          "provider": "open-food-facts",
+          "referenceId": "7622210022776",
+          "label": "Open Food Facts 7622210022776"
+        }
+      },
+      "latencyMs": 1161
+    },
+    {
+      "id": "search-Apfel",
+      "status": 200,
+      "body": {
+        "count": 15,
+        "first": {
+          "id": "bls-F110100",
+          "name": "Apfel roh",
+          "per100g": {
+            "calories": 58,
+            "protein": 0.424,
+            "carbs": 11.7,
+            "fat": 0.5,
+            "fiber": 2.275
+          },
+          "defaultGrams": 100,
+          "portions": [],
+          "source": {
+            "provider": "bls",
+            "referenceId": "F110100",
+            "label": "BLS 4.0 F110100"
+          }
+        }
+      },
+      "latencyMs": 532
+    },
+    {
+      "id": "search-oats",
+      "status": 200,
+      "body": {
+        "count": 15,
+        "first": {
+          "id": "bls-C133000",
+          "name": "Oat flakes",
+          "per100g": {
+            "calories": 348,
+            "protein": 13.22,
+            "carbs": 53.3,
+            "fat": 6.65,
+            "fiber": 10.983
+          },
+          "defaultGrams": 100,
+          "portions": [],
+          "source": {
+            "provider": "bls",
+            "referenceId": "C133000",
+            "label": "BLS 4.0 C133000"
+          }
+        }
+      },
+      "latencyMs": 904
+    },
+    {
+      "id": "search-rice",
+      "status": 200,
+      "body": {
+        "count": 15,
+        "first": {
+          "id": "bls-X820162",
+          "name": "Rice boiled",
+          "per100g": {
+            "calories": 112,
+            "protein": 2.535,
+            "carbs": 24.6,
+            "fat": 0.188,
+            "fiber": 0.8
+          },
+          "defaultGrams": 100,
+          "portions": [],
+          "source": {
+            "provider": "bls",
+            "referenceId": "X820162",
+            "label": "BLS 4.0 X820162"
+          }
+        }
+      },
+      "latencyMs": 661
+    },
+    {
+      "id": "search-feijoada",
+      "status": 200,
+      "body": {
+        "count": 5,
+        "first": {
+          "id": "off-5601312046431",
+          "name": "Feijoada",
+          "per100g": {
+            "calories": 94,
+            "protein": 7,
+            "carbs": 7,
+            "fat": 4,
+            "fiber": 3
+          },
+          "defaultGrams": 100,
+          "portions": [],
+          "source": {
+            "provider": "open-food-facts",
+            "referenceId": "5601312046431",
+            "label": "Open Food Facts 5601312046431"
+          }
+        }
+      },
+      "latencyMs": 2865
+    },
+    {
+      "id": "photo-example-1",
+      "language": "de",
+      "imageSha256": "7e1ee6ff492d396b0a1c67b72ed47b6f5ea7fd6ba92dd5fecfb6c8a4df37ce77",
+      "status": 200,
+      "body": {
+        "title": "Gebratener Reis mit gegrillter Hähnchenbrust und Karottenstreifen",
+        "confidence": "high",
+        "items": [
+          {
+            "id": "usda-2708952-0",
+            "name": "gebratener Reis",
+            "amountG": 180,
+            "baseAmountG": 180,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 174,
+              "protein": 3.84,
+              "carbs": 32.5,
+              "fat": 3.19,
+              "fiber": 1.1
+            },
+            "calories": 313,
+            "protein": 7,
+            "carbs": 59,
+            "fat": 6,
+            "fiber": 2,
+            "confidence": "high",
+            "optional": false,
+            "included": true,
+            "source": {
+              "provider": "usda",
+              "referenceId": "2708952",
+              "label": "USDA FDC 2708952"
+            }
+          },
+          {
+            "id": "bls-V416172-1",
+            "name": "gegrillte Hähnchenbruststreifen",
+            "amountG": 120,
+            "baseAmountG": 120,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 140,
+              "protein": 30.29,
+              "carbs": 0,
+              "fat": 2.05,
+              "fiber": 0
+            },
+            "calories": 168,
+            "protein": 36,
+            "carbs": 0,
+            "fat": 2,
+            "fiber": 0,
+            "confidence": "medium",
+            "optional": false,
+            "included": true,
+            "portions": [
+              {
+                "label": "1 Streifen",
+                "grams": 20,
+                "estimated": true
+              }
+            ],
+            "source": {
+              "provider": "bls",
+              "referenceId": "V416172",
+              "label": "BLS 4.0 V416172",
+              "estimatedReference": true
+            }
+          },
+          {
+            "id": "bls-G620100-2",
+            "name": "Karottenstreifen roh",
+            "amountG": 30,
+            "baseAmountG": 30,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 40,
+              "protein": 0.84,
+              "carbs": 6.471,
+              "fat": 0.4,
+              "fiber": 2.9
+            },
+            "calories": 12,
+            "protein": 0,
+            "carbs": 2,
+            "fat": 0,
+            "fiber": 1,
+            "confidence": "high",
+            "optional": false,
+            "included": true,
+            "source": {
+              "provider": "bls",
+              "referenceId": "G620100",
+              "label": "BLS 4.0 G620100"
+            }
+          }
+        ],
+        "warnings": []
+      },
+      "latencyMs": 7250
+    },
+    {
+      "id": "photo-example-2",
+      "language": "en",
+      "imageSha256": "7e1ee6ff492d396b0a1c67b72ed47b6f5ea7fd6ba92dd5fecfb6c8a4df37ce77",
+      "status": 200,
+      "body": {
+        "title": "Grilled chicken with cooked rice and shredded carrots",
+        "confidence": "high",
+        "items": [
+          {
+            "id": "bls-V416172-0",
+            "name": "grilled chicken breast strips",
+            "amountG": 90,
+            "baseAmountG": 90,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 140,
+              "protein": 30.29,
+              "carbs": 0,
+              "fat": 2.05,
+              "fiber": 0
+            },
+            "calories": 126,
+            "protein": 27,
+            "carbs": 0,
+            "fat": 2,
+            "fiber": 0,
+            "confidence": "medium",
+            "optional": false,
+            "included": true,
+            "portions": [
+              {
+                "label": "piece",
+                "grams": 18,
+                "estimated": true
+              }
+            ],
+            "source": {
+              "provider": "bls",
+              "referenceId": "V416172",
+              "label": "BLS 4.0 V416172",
+              "estimatedReference": true
+            }
+          },
+          {
+            "id": "bls-C352032-1",
+            "name": "cooked white rice",
+            "amountG": 150,
+            "baseAmountG": 150,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 117,
+              "protein": 3.3,
+              "carbs": 24.8,
+              "fat": 0.35,
+              "fiber": 0.61
+            },
+            "calories": 176,
+            "protein": 5,
+            "carbs": 37,
+            "fat": 1,
+            "fiber": 1,
+            "confidence": "medium",
+            "optional": false,
+            "included": true,
+            "source": {
+              "provider": "bls",
+              "referenceId": "C352032",
+              "label": "BLS 4.0 C352032",
+              "estimatedReference": true
+            }
+          },
+          {
+            "id": "usda-2709664-2",
+            "name": "shredded cooked carrots",
+            "amountG": 40,
+            "baseAmountG": 40,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 50,
+              "protein": 0.98,
+              "carbs": 10.67,
+              "fat": 0.36,
+              "fiber": 3.2
+            },
+            "calories": 20,
+            "protein": 0,
+            "carbs": 4,
+            "fat": 0,
+            "fiber": 1,
+            "confidence": "medium",
+            "optional": false,
+            "included": true,
+            "source": {
+              "provider": "usda",
+              "referenceId": "2709664",
+              "label": "USDA FDC 2709664"
+            }
+          }
+        ],
+        "warnings": []
+      },
+      "latencyMs": 7753
+    },
+    {
+      "id": "photo-example-3",
+      "language": "de",
+      "imageSha256": "7e1ee6ff492d396b0a1c67b72ed47b6f5ea7fd6ba92dd5fecfb6c8a4df37ce77",
+      "status": 200,
+      "body": {
+        "title": "Gebratener Reis mit Hähnchenstreifen und Karotten",
+        "confidence": "high",
+        "items": [
+          {
+            "id": "usda-2708952-0",
+            "name": "gebratener Reis",
+            "amountG": 200,
+            "baseAmountG": 200,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 174,
+              "protein": 3.84,
+              "carbs": 32.5,
+              "fat": 3.19,
+              "fiber": 1.1
+            },
+            "calories": 348,
+            "protein": 8,
+            "carbs": 65,
+            "fat": 6,
+            "fiber": 2,
+            "confidence": "high",
+            "optional": false,
+            "included": true,
+            "source": {
+              "provider": "usda",
+              "referenceId": "2708952",
+              "label": "USDA FDC 2708952"
+            }
+          },
+          {
+            "id": "bls-V416172-1",
+            "name": "gebratene Hähnchenbruststreifen",
+            "amountG": 120,
+            "baseAmountG": 120,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 140,
+              "protein": 30.29,
+              "carbs": 0,
+              "fat": 2.05,
+              "fiber": 0
+            },
+            "calories": 168,
+            "protein": 36,
+            "carbs": 0,
+            "fat": 2,
+            "fiber": 0,
+            "confidence": "medium",
+            "optional": false,
+            "included": true,
+            "portions": [
+              {
+                "label": "1 Streifen",
+                "grams": 20,
+                "estimated": true
+              }
+            ],
+            "source": {
+              "provider": "bls",
+              "referenceId": "V416172",
+              "label": "BLS 4.0 V416172",
+              "estimatedReference": true
+            }
+          },
+          {
+            "id": "bls-G620100-2",
+            "name": "roh marinierte Karottenstreifen",
+            "amountG": 30,
+            "baseAmountG": 30,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 40,
+              "protein": 0.84,
+              "carbs": 6.471,
+              "fat": 0.4,
+              "fiber": 2.9
+            },
+            "calories": 12,
+            "protein": 0,
+            "carbs": 2,
+            "fat": 0,
+            "fiber": 1,
+            "confidence": "high",
+            "optional": false,
+            "included": true,
+            "source": {
+              "provider": "bls",
+              "referenceId": "G620100",
+              "label": "BLS 4.0 G620100"
+            }
+          }
+        ],
+        "warnings": []
+      },
+      "latencyMs": 8487
+    }
+  ],
+  "cleanup": [
+    {
+      "deleted": true,
+      "profileRemoved": true,
+      "refreshRevoked": true
+    },
+    {
+      "deleted": true,
+      "profileRemoved": true,
+      "refreshRevoked": true
+    }
+  ],
+  "paidCalls": 3,
+  "minorConsentConstraint": "PASS: direct minor consent without guardian rejected by database",
+  "profileIsolation": "PASS: both newly created subjects cannot read one another",
+  "budget": {
+    "ownerCapEur": 0.5,
+    "maxCalls": 4,
+    "maxOutputTokensPerCall": 2000,
+    "model": "openai/gpt-4.1-mini",
+    "pricingUsdPerMillion": {
+      "input": 0.4,
+      "output": 1.6
+    },
+    "note": "Small existing JPEG; conservative 100000 input tokens per call gives USD 0.1728 total, far above image/prompt size. No automatic retries. Actual invoice not exposed by gateway."
+  },
+  "passed": true
+}

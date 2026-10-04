@@ -1,0 +1,36 @@
+{
+  "observedAt": "2026-09-06T12:28:28Z",
+  "submittedLocal": "2026-09-06 14:28 Europe/Berlin",
+  "submissionId": "6124065d-7d86-4075-bfbe-7a17c5427d8e",
+  "status": "Warten auf Prüfung",
+  "confirmation": "4 Elemente übermittelt",
+  "url": "https://appstoreconnect.apple.com/apps/6808622187/distribution/reviewsubmissions/details/6124065d-7d86-4075-bfbe-7a17c5427d8e",
+  "items": [
+    {
+      "name": "Kandro Pro",
+      "type": "Abo-Gruppe",
+      "status": "Warten auf Prüfung"
+    },
+    {
+      "name": "Kandro Pro Monthly",
+      "type": "Abo",
+      "status": "Warten auf Prüfung"
+    },
+    {
+      "name": "Kandro Pro Annual",
+      "type": "Abo",
+      "status": "Warten auf Prüfung"
+    },
+    {
+      "name": "iOS-App 1.0.0",
+      "build": "1.0.0 (16)",
+      "appleBuildId": "d6db40de-39d7-4a54-bdaf-79893fdcef0b",
+      "type": "App-Version",
+      "status": "Warten auf Prüfung"
+    }
+  ],
+  "publication": "manual",
+  "dsa": "In Prüfung",
+  "easBillEstimateUSD": 0,
+  "source": "Authenticated App Store Connect UI: success modal and linked submission detail"
+}

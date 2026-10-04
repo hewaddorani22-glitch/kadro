@@ -2,6 +2,7 @@ import { createContext, PropsWithChildren, useCallback, useContext, useEffect, u
 
 import {
   isSubscriptionPurchaseCancelled,
+  isSubscriptionPurchasePending,
   loadSubscriptionSnapshot,
   purchaseSubscription,
   restoreSubscription,
@@ -16,7 +17,7 @@ import { captureOperationalError } from '@/services/telemetry';
 import { getDictionary } from '@/i18n/active';
 import { useApp } from '@/context/AppContext';
 
-type SubscriptionStatus = 'loading' | 'unconfigured' | 'ready' | 'active' | 'error';
+type SubscriptionStatus = 'loading' | 'unconfigured' | 'ready' | 'active' | 'pending' | 'error';
 
 type SubscriptionContextValue = {
   status: SubscriptionStatus;
@@ -24,8 +25,8 @@ type SubscriptionContextValue = {
   busy: boolean;
   error: string | null;
   refresh: () => Promise<void>;
-  purchase: (planId: SubscriptionPlanId) => Promise<'active' | 'cancelled' | 'failed'>;
-  restore: () => Promise<'active' | 'none' | 'failed'>;
+  purchase: (planId: SubscriptionPlanId) => Promise<'active' | 'cancelled' | 'failed' | 'pending' | 'interrupted'>;
+  restore: () => Promise<'active' | 'none' | 'failed' | 'pending' | 'interrupted'>;
 };
 
 const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
@@ -39,9 +40,11 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
   const refreshGenerationRef = useRef(0);
   const refreshInFlightRef = useRef<{ generation: number; promise: Promise<void> } | null>(null);
   const authUserIdRef = useRef<string | null>(null);
+  const billingGenerationRef = useRef<number | null>(null);
 
   const refresh = useCallback(() => {
     const generation = refreshGenerationRef.current;
+    if (billingGenerationRef.current === generation) return Promise.resolve();
     const existing = refreshInFlightRef.current;
     if (existing?.generation === generation) return existing.promise;
 
@@ -63,21 +66,25 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
         const visible = next.mode === 'test-store' && next.entitlementActive
           ? { ...next, entitlementActive: false }
           : next;
-        const serverActive = !visible.entitlementActive || await refreshServerEntitlement();
+        // The server may already confirm a buyer while the device SDK still
+        // reports an older Free snapshot. Never make that snapshot authoritative.
+        const serverActive = visible.configured && visible.mode === 'native-store'
+          ? await refreshServerEntitlement() : false;
         if (!isCurrent()) return;
-        if (!serverActive) {
+        if (visible.entitlementActive && !serverActive) {
           setSnapshot({ ...visible, entitlementActive: false });
-          setStatus('error');
+          setStatus('pending');
           setError(getDictionary().errors.entitlementConfirmationPending);
           return;
         }
-        setSnapshot(visible);
+        setSnapshot({ ...visible, entitlementActive: serverActive });
         setError(null);
-        setStatus(visible.entitlementActive ? 'active' : visible.configured ? 'ready' : 'unconfigured');
+        setStatus(serverActive ? 'active' : visible.configured ? 'ready' : 'unconfigured');
       } catch (failure) {
         if (!isCurrent()) return;
+        setSnapshot((current) => current ? { ...current, entitlementActive: false } : current);
         setStatus('error');
-        setError(subscriptionErrorMessage(failure));
+        setError(getDictionary().errors.entitlementStatusUnavailable);
         captureOperationalError(failure, { area: 'subscription', operation: 'refresh' });
       }
     })().finally(() => {
@@ -89,6 +96,8 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     refreshGenerationRef.current += 1;
+    billingGenerationRef.current = null;
+    setBusy(false);
     if (!wellnessConsentGranted) {
       setSnapshot(null);
       setError(null);
@@ -108,6 +117,8 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
         authUserIdRef.current = userId;
         refreshGenerationRef.current += 1;
         refreshInFlightRef.current = null;
+        billingGenerationRef.current = null;
+        setBusy(false);
         setSnapshot(null);
         setError(null);
         setStatus('loading');
@@ -117,78 +128,103 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
     return () => data.subscription.unsubscribe();
   }, [refresh, wellnessConsentGranted]);
 
+  useEffect(() => () => { refreshGenerationRef.current += 1; }, []);
+
   const purchase = useCallback(async (planId: SubscriptionPlanId) => {
+    if (billingGenerationRef.current !== null || !wellnessConsentGranted) return 'interrupted';
     const plan = snapshot?.plans[planId];
     if (!plan) {
       setError(getDictionary().errors.packageUnavailable);
       return 'failed';
     }
     refreshGenerationRef.current += 1;
+    const generation = refreshGenerationRef.current;
+    const isCurrent = () => generation === refreshGenerationRef.current;
+    billingGenerationRef.current = generation;
     refreshInFlightRef.current = null;
     setBusy(true);
     setError(null);
     try {
       const active = await purchaseSubscription(plan);
+      if (!isCurrent()) return 'interrupted';
       if (active) {
-        const serverActive = await confirmServerEntitlementWithRetry(refreshServerEntitlement);
+        const serverActive = await confirmServerEntitlementWithRetry(() => isCurrent() ? refreshServerEntitlement() : Promise.resolve(false));
+        if (!isCurrent()) return 'interrupted';
         if (!serverActive) {
           setSnapshot((current) => current ? { ...current, entitlementActive: false } : current);
-          setStatus('error');
+          setStatus('pending');
           setError(getDictionary().errors.entitlementConfirmationPending);
-          return 'failed';
+          return 'pending';
         }
         setSnapshot((current) => current ? { ...current, entitlementActive: true } : current);
         setError(null);
         setStatus('active');
         return 'active';
       }
-      setError(getDictionary().paywall.entitlementMissing);
-      return 'failed';
+      setStatus('pending');
+      setError(getDictionary().errors.entitlementStatusUnavailable);
+      return 'pending';
     } catch (failure) {
+      if (!isCurrent()) return 'interrupted';
       if (isSubscriptionPurchaseCancelled(failure)) return 'cancelled';
+      if (isSubscriptionPurchasePending(failure)) {
+        setStatus('pending');
+        setError(getDictionary().errors.purchasePending);
+        return 'pending';
+      }
       setSnapshot((current) => current ? { ...current, entitlementActive: false } : current);
       setStatus('error');
       setError(subscriptionErrorMessage(failure));
       captureOperationalError(failure, { area: 'subscription', operation: `purchase_${planId}` });
       return 'failed';
     } finally {
-      setBusy(false);
+      if (isCurrent()) { billingGenerationRef.current = null; setBusy(false); }
     }
-  }, [snapshot]);
+  }, [snapshot, wellnessConsentGranted]);
 
   const restore = useCallback(async () => {
+    if (billingGenerationRef.current !== null || !wellnessConsentGranted) return 'interrupted';
     refreshGenerationRef.current += 1;
+    const generation = refreshGenerationRef.current;
+    const isCurrent = () => generation === refreshGenerationRef.current;
+    billingGenerationRef.current = generation;
     refreshInFlightRef.current = null;
     setBusy(true);
     setError(null);
     try {
       const active = await restoreSubscription();
-      if (!active) {
+      if (!isCurrent()) return 'interrupted';
+      // With no SDK entitlement, a server timeout cannot establish "no purchase".
+      const serverActive = active
+        ? await confirmServerEntitlementWithRetry(() => isCurrent() ? refreshServerEntitlement() : Promise.resolve(false))
+        : await refreshServerEntitlement();
+      if (!isCurrent()) return 'interrupted';
+      if (!active && !serverActive) {
         setSnapshot((current) => current ? { ...current, entitlementActive: false } : current);
         setStatus('ready');
         return 'none';
       }
-      const serverActive = await confirmServerEntitlementWithRetry(refreshServerEntitlement);
       if (!serverActive) {
         setSnapshot((current) => current ? { ...current, entitlementActive: false } : current);
-        setStatus('error');
+        setStatus('pending');
         setError(getDictionary().errors.entitlementConfirmationPending);
-        return 'failed';
+        return 'pending';
       }
       setSnapshot((current) => current ? { ...current, entitlementActive: true } : current);
       setError(null);
       setStatus('active');
       return 'active';
     } catch (failure) {
+      if (!isCurrent()) return 'interrupted';
       setSnapshot((current) => current ? { ...current, entitlementActive: false } : current);
       setStatus('error');
       setError(subscriptionErrorMessage(failure));
       captureOperationalError(failure, { area: 'subscription', operation: 'restore' });
       return 'failed';
     } finally {
-      setBusy(false);
+      if (isCurrent()) { billingGenerationRef.current = null; setBusy(false); }
     }
-  }, []);
+  }, [wellnessConsentGranted]);
 
   const value = useMemo<SubscriptionContextValue>(() => ({
     status,

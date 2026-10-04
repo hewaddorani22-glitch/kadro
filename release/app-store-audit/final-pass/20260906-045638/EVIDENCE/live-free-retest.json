@@ -1,0 +1,55 @@
+{
+  "timestamp": "2026-09-06T03:04:39.294Z",
+  "cases": [
+    {
+      "id": "unauthenticated",
+      "status": 401,
+      "body": {
+        "source": "@supabase/server",
+        "code": "UNUSABLE_CREDENTIAL",
+        "message": "[@supabase/server] The request carried a credential this endpoint cannot use: an apikey header, which no accepted auth mode reads. Accepted auth mode(s): \"user\".",
+        "hint": "This endpoint authenticates a user, not a project — an API key can never satisfy it, whichever header it arrives in. Send: Authorization: Bearer <jwt> (for auth mode \"user\").",
+        "docs": "https://github.com/supabase/server/blob/main/docs/error-handling.md#unusable_credential",
+        "details": {
+          "acceptedAuthModes": [
+            "user"
+          ],
+          "received": {
+            "authorization": "absent",
+            "apikey": "publishable"
+          }
+        }
+      },
+      "latencyMs": 648
+    },
+    {
+      "id": "no-consent",
+      "status": 403,
+      "body": {
+        "code": "consent_required",
+        "message": "Bitte bestätige zuerst die aktuelle Datenschutzeinwilligung."
+      },
+      "latencyMs": 759
+    },
+    {
+      "id": "guardian-missing",
+      "status": 403,
+      "body": {
+        "code": "consent_required",
+        "message": "Bitte bestätige zuerst die aktuelle Datenschutzeinwilligung."
+      },
+      "latencyMs": 1888
+    }
+  ],
+  "cleanup": [
+    {
+      "deleted": true,
+      "profileRemoved": true,
+      "refreshRevoked": true
+    }
+  ],
+  "paidCalls": 0,
+  "minorConsentConstraint": "PASS: direct minor consent without guardian rejected by database",
+  "passed": false,
+  "error": "minor age boundary is server managed"
+}

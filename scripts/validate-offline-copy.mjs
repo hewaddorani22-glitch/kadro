@@ -15,7 +15,7 @@ assert.match(screen, /analysisError === 'offline'[\s\S]*analysisStatus === 'queu
   'offline copy must distinguish a real queued photo from an unsaved input');
 assert.match(context, /failure\.kind === 'request-expired' && activeScanMode === 'queued'[\s\S]*removeQueuedAnalysis\(invocationScanId\)/,
   'an expired replay tombstone must remove the unrecoverable queued job');
-assert.match(context, /failure\.kind === 'offline' \|\| failure\.kind === 'provider-error'/,
+assert.match(context, /failure\.kind === 'offline' \|\| failure\.kind === 'timeout'/,
   'only transient failures may re-enter the photo queue');
 assert.match(screen, /analysisError === 'request-expired'[\s\S]*changeInput/,
   'an expired analysis must offer a fresh input instead of another identical retry');

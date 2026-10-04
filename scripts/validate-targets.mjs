@@ -173,7 +173,7 @@ assert.equal(
 assert.match(raw, /export function maintenanceCalories/, 'the shared estimate must be named');
 assert.match(raw, /isTeenProfile/, 'teen profiles must have an explicit calculation path');
 assert.match(raw, /age >= 14 && profile\.age < 18/, 'the teen path must cover every promised age from 14 through 17');
-assert.match(raw, /const offset = teen \? 0 :/, 'teen goals must not apply an adult weight-change offset');
+assert.match(raw, /const requestedOffset = teen \? 0 :/, 'teen goals must not apply an adult weight-change offset');
 
 console.log(`Validated ${checked} target profiles: macros always describe the calorie figure, protein stays under 40% of energy, and the estimate tracks weight, age and activity.`);
 

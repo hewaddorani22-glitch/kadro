@@ -1,0 +1,13 @@
+case,device_language,region,app_language,units,timezone,storefront,status,evidence,remaining
+DE,de-DE,DE,de,metric,Europe/Berlin,Not separately authenticated,PASS,UNIT language/date/unit checks,PHYSICAL_DEVICE;STOREKIT;LEGAL UNVERIFIED
+US,en-US,US,en,US,America/New_York;America/Los_Angeles,Not separately authenticated,PASS,UNIT language/date/unit checks,PHYSICAL_DEVICE;STOREKIT;LEGAL UNVERIFIED
+UK,en-GB,UK,en,UK,Europe/London,Not separately authenticated,PASS,UNIT language/date/unit checks,PHYSICAL_DEVICE;STOREKIT;LEGAL UNVERIFIED
+SG,en-SG,SG,en,metric,Asia/Singapore,Not separately authenticated,PASS,UNIT language/date/unit checks,PHYSICAL_DEVICE;STOREKIT;LEGAL UNVERIFIED
+BR,pt-BR,BR,en fallback,metric,America/Sao_Paulo;America/Manaus,Not separately authenticated,PASS,UNIT language/date/unit checks,PHYSICAL_DEVICE;STOREKIT;LEGAL UNVERIFIED
+Preferred fallback,pt-BR;de-DE,BR,de,independent,independent,independent,PASS,UNIT,Native OS preference change UNVERIFIED; no Arabic/Chinese/Portuguese UI
+Preferred ordering,en-US;de-DE,US,en,independent,independent,independent,PASS,UNIT,Native OS preference change UNVERIFIED; no Arabic/Chinese/Portuguese UI
+Script subtag,zh-Hans-SG;en-SG,SG,en,independent,independent,independent,PASS,UNIT,Native OS preference change UNVERIFIED; no Arabic/Chinese/Portuguese UI
+RTL unsupported,ar-SA;de-DE,SA,de,independent,independent,independent,PASS,UNIT,Native OS preference change UNVERIFIED; no Arabic/Chinese/Portuguese UI
+Language independent of region,de-US,US,de,independent,independent,independent,PASS,UNIT,Native OS preference change UNVERIFIED; no Arabic/Chinese/Portuguese UI
+Native DE→EN profile,de then explicit en,Simulator,en,metric,Simulator current,USD product prices observed,PASS,SIMULATOR,Not complete screen/region matrix
+Other 169 configured territories,various,174 enabled excluding mainland China,DE/EN fallback only,independent,various,Not tested,UNVERIFIED,APP_STORE_CONNECT availability only,No worldwide functional or legal support claim

@@ -108,7 +108,8 @@ for (const [preference, set] of [['vegan', 'veganIngredients'], ['vegetarian', '
  * reimplemented in the catalogue check, so the code that actually decides what
  * a vegetarian is offered had never been executed by a test.
  */
-const module = service
+const portionHelpers = readFileSync(new URL('../src/utils/mealSuggestions.ts', import.meta.url), 'utf8').replace(/^import[^;]+;$/gm, '');
+const module = portionHelpers + service
   .replace(/^import[^;]+;$/gm, '')
   .replace(
     'type CatalogEntry',

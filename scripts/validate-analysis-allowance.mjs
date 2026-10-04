@@ -46,7 +46,9 @@ assert.match(context, /origin: costsAnalysis \? 'scan' : 'plan'/,
 const analysisStart = context.indexOf('const analyzeCurrentPhoto = useCallback');
 const analysisEnd = context.indexOf('const resumeLatestAnalysis = useCallback', analysisStart);
 const analysisFlow = context.slice(analysisStart, analysisEnd);
-const resultReceived = analysisFlow.indexOf('const result = activeScanMode');
+// 04.10.2026: a locally resolved description precedes the AI call and never spends.
+const resultReceived = analysisFlow.indexOf('const result = localDescription ?? (activeScanMode');
+assert.match(analysisFlow, /&& !localDescription\s*&& result\.correctionRequired !== true/, 'a local description result must stay free');
 const countCommitted = analysisFlow.indexOf('countLifetimeScanOnce(invocationScanId)');
 const resultShown = analysisFlow.indexOf("setAnalysisStatus('ready')", resultReceived);
 assert.ok(
@@ -74,8 +76,9 @@ assert.doesNotMatch(context.slice(saveStart, saveEnd), /countLifetimeScanOnce/,
 assert.match(localRepository, /AsyncStorage\.setItem\(COUNTED_SCAN_IDS_KEY,[\s\S]*count: next,[\s\S]*ids: \[\.\.\.ids, scanId\]/,
   'request id and count must be persisted together before mirroring the legacy count');
 
-assert.match(paywall, /paywall\.analysis : t\.paywall\.analyses/,
+assert.match(paywall, /t\.paywall\.freeAnalysesLeft\(freeScansLeft, FREE_SCAN_ALLOWANCE\)/,
   'the paywall must describe the analysis counter as analyses');
+for (const dictionary of [de, en]) assert.match(dictionary, /freeAnalysesLeft: [^\n]*(?:KI-Analysen|AI analyses)/, 'free counter must say analyses');
 for (const [language, dictionary] of [['German', de], ['English', en]]) {
   assert.match(dictionary, /analysis: ['"][^'"]*Analys/i, `${language} singular analysis copy is missing`);
   assert.match(dictionary, /analyses: ['"][^'"]*Analys/i, `${language} plural analysis copy is missing`);

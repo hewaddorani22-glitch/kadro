@@ -1,0 +1,67 @@
+[
+  {
+    "created_at": 1788203531968,
+    "entrypoint_path": "file:///tmp/user_fn_omtmxqzwxvthycyfkggv_4b2cff6c-f929-49e8-bbc5-516de65b2591_12/source/supabase/functions/delete-account/index.ts",
+    "ezbr_sha256": "840bf6677b328523cdff6ec021d90a18e6ce83bf7776768431cb927bb485e970",
+    "id": "4b2cff6c-f929-49e8-bbc5-516de65b2591",
+    "import_map": false,
+    "name": "delete-account",
+    "slug": "delete-account",
+    "status": "ACTIVE",
+    "updated_at": 1788569001821,
+    "verify_jwt": true,
+    "version": 12
+  },
+  {
+    "created_at": 1788265997610,
+    "entrypoint_path": "file:///tmp/user_fn_omtmxqzwxvthycyfkggv_8e2acb17-2150-40c1-a2d1-3b97cf2b022f_51/source/supabase/functions/nutrition/index.ts",
+    "ezbr_sha256": "19a984b1a4ba3323cb5150005a9198dafce2b6e492f5c62b466a3f2f0b5021ff",
+    "id": "8e2acb17-2150-40c1-a2d1-3b97cf2b022f",
+    "import_map": false,
+    "name": "nutrition",
+    "slug": "nutrition",
+    "status": "ACTIVE",
+    "updated_at": 1788664044311,
+    "verify_jwt": true,
+    "version": 51
+  },
+  {
+    "created_at": 1788467153335,
+    "entrypoint_path": "file:///tmp/user_fn_omtmxqzwxvthycyfkggv_6f777b1f-f8f4-4449-94ef-58cb1ca31400_9/source/supabase/functions/waitlist/index.ts",
+    "ezbr_sha256": "8583807da3f11df46a55cc74fe9df0fd24f8698a19e1f8948ce0fbced68c65aa",
+    "id": "6f777b1f-f8f4-4449-94ef-58cb1ca31400",
+    "import_map": false,
+    "name": "waitlist",
+    "slug": "waitlist",
+    "status": "ACTIVE",
+    "updated_at": 1788565240028,
+    "verify_jwt": false,
+    "version": 10
+  },
+  {
+    "created_at": 1788524700673,
+    "entrypoint_path": "file:///tmp/user_fn_omtmxqzwxvthycyfkggv_ee87613c-cedd-49de-ba0d-894556196cdf_4/source/supabase/functions/guardian-consent/index.ts",
+    "ezbr_sha256": "08584178c2d3b9ee4ee33e0345ab82b41af6f1adec70edcebbb1daef54b737fd",
+    "id": "ee87613c-cedd-49de-ba0d-894556196cdf",
+    "import_map": false,
+    "name": "guardian-consent",
+    "slug": "guardian-consent",
+    "status": "ACTIVE",
+    "updated_at": 1788565240028,
+    "verify_jwt": false,
+    "version": 5
+  },
+  {
+    "created_at": 1788565240028,
+    "entrypoint_path": "file:///tmp/user_fn_omtmxqzwxvthycyfkggv_5fabdd4e-f7ff-462b-aabb-1e05d076631e_3/source/supabase/functions/revenuecat-webhook/index.ts",
+    "ezbr_sha256": "923a2483c9b3edcfb59dd0a0b0e939cebe35b2d8d3c3775940377788c960619b",
+    "id": "5fabdd4e-f7ff-462b-aabb-1e05d076631e",
+    "import_map": false,
+    "name": "revenuecat-webhook",
+    "slug": "revenuecat-webhook",
+    "status": "ACTIVE",
+    "updated_at": 1788613152245,
+    "verify_jwt": false,
+    "version": 3
+  }
+]

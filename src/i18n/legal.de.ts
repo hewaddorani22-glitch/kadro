@@ -41,7 +41,7 @@ function contact() {
 }
 
 export const legalDe: LegalCopySet = {
-  version: '1.7 · Stand 5. September 2026',
+  version: '1.9 · Stand 4. Oktober 2026',
   privacy: {
     title: 'Datenschutzhinweise',
     intro: 'Diese Hinweise erklären in klarer Sprache, welche Daten Kandro verarbeitet, warum, und wie du sie jederzeit wieder löschen kannst.',
@@ -56,7 +56,9 @@ export const legalDe: LegalCopySet = {
       {
         title: '2. Welche Daten verarbeitet werden',
         paragraphs: [
+          'Für den begrenzten Zugangstest speichert Supabase an deiner Konto-ID die einmalige Variante oder den Ausschlussgrund und den Zeitpunkt. Infrage kommen nur neue Installationen von Erwachsenen ohne bisherige Nutzung und mit bestätigter Trial-Berechtigung; ein verknüpftes Konto ist nicht erforderlich. Diese funktionale Zugangszuordnung bleibt bis zur Accountlöschung erhalten; sie wird bei Anmeldung oder Wiederherstellung nicht neu ausgelost. Einzelne Freigaben für bereits begonnene Mahlzeitenspeicherungen erhalten deren spätere Synchronisierung. Freiwillige Analyseereignisse zur tatsächlich gezeigten Paywall bleiben an deine gesonderte Analytics-Einwilligung gebunden. Es gibt kein Geräte-Fingerprinting.',
           'Auf deinem Gerät verarbeitet Kandro dein Profil, Zielwerte, Gewichtseinträge, bestätigte Mahlzeiten und höchstens drei fehlgeschlagene, komprimierte Fotoscans für einen von dir ausgelösten Wiederholungsversuch.',
+          'Optionale tägliche Erinnerungen werden lokal geplant und enthalten keine Ernährungswerte. Für Homescreen-Widgets kannst du unter Du die Freigabe deiner heutigen Kalorien, Proteinwerte und bestätigten Ziele auf diesem Gerät aktivieren. Ohne Freigabe und auf dem Sperrbildschirm bleiben nur Einstiege. Ein geschützter gemeinsamer App-Container enthält dazu einen kleinen zeitlich begrenzten Tagesstand ohne Namen, Mahlzeitentexte, Bilder oder Zugangsdaten. Beim Ausschalten wird dieser Stand geleert; iOS kann ein zuvor gerendertes Widgetbild noch kurz behalten. Lokale Nutzungs- und Anfragezähler begrenzen die optionale native Bewertungsanfrage; Kandro lädt diese Zähler nicht hoch.',
           'Wenn die Cloud aktiv ist, speichert Supabase in der EU eine zufällige Account-ID, dein Profil, deine aktuellen Zielwerte, bestätigte Mahlzeiten, Zutaten, Empfehlungen und Feedback. Gewichtseinträge bleiben auf deinem Gerät; eine E-Mail-Adresse wird nur gespeichert, wenn du deinen Gast-Account bewusst sicherst.',
           'Damit USDA, Open Food Facts und RevenueCat nicht automatisiert überlastet werden, speichert Supabase providerspezifische Zähler mit Einweg-Pseudonymen der zufälligen Account-ID und des Ausgangsnetzwerks höchstens zwei Stunden nach ihrer letzten Nutzung. Suchbegriffe und Barcodes werden in diesen Zählern nicht gespeichert.',
           'Bei 14- oder 15-jährigen Nutzern muss ein Elternteil oder eine sorgeberechtigte Person einen Link per E-Mail bestätigen, bevor die Einwilligung abgeschlossen und die Analysefunktionen freigeschaltet werden. Die Eltern-E-Mail bleibt nur im Arbeitsspeicher der Versandfunktion und wird nicht in der Kandro-Datenbank gespeichert. Supabase speichert bis zur Bestätigung oder bis zum Ablauf nach 48 Stunden nur die ausstehende Anfrage mit einem Hash des Einmal-Tokens. Zur Abwehr automatisierten Missbrauchs von Eltern-E-Mails verbraucht jede Anfrage außerdem atomische Limits anhand getrennt gesalzener Hashwerte des App-Accounts, des Ausgangsnetzwerks und der Eltern-E-Mail. Die rohe Netzwerkadresse und Eltern-E-Mail werden dafür nicht gespeichert; diese separaten Limitdatensätze werden spätestens nach drei Stunden gelöscht. Bei erfolgreicher Bestätigung wird die Anfrage sofort gelöscht; Bestätigungszeitpunkt und Hinweisversion bleiben im geschützten Profil als Nachweis. Resend verarbeitet die Adresse und technische Zustelldaten für den Mailversand.',
@@ -138,6 +140,7 @@ export const legalDe: LegalCopySet = {
       {
         title: '4. Abonnements',
         paragraphs: [
+          'Bei einem begrenzten Test unter geeigneten neuen Nutzern ab 18 Jahren wird nach der Einrichtung einmalig zufällig eine von zwei Zugangsvarianten zugeordnet: kostenloser Rückweg mit bisherigen Gratisgrenzen oder Trial beziehungsweise Abo vor neuer regulärer Nutzung. Bestehende und unklar zuzuordnende Nutzer behalten ihren bisherigen kostenlosen Umfang. Bereits gespeicherte Daten sowie Konto- und Rechtsfunktionen bleiben zugänglich. Beide Testvarianten verwenden dasselbe Monatsprodukt und denselben von Apple bestätigten siebentägigen Einführungs-Trial. Ob du den Trial erhalten kannst, entscheidet deine tatsächliche Apple-Berechtigung; der angezeigte Folgepreis und die Verlängerungsbedingungen gelten.',
           'Preise, Laufzeit, Testzeitraum und Verlängerung werden vor dem Kauf angezeigt. Abonnements verlängern sich automatisch um die gewählte Laufzeit, bis du sie kündigst. Die Abbuchung erfolgt über deine Apple-ID; kündigen kannst du jederzeit bis 24 Stunden vor Ablauf in den Einstellungen deiner Apple-ID.',
           'Käufe Minderjähriger brauchen die für ihre Apple-ID geltende Freigabe, etwa „Kaufanfrage“ oder die Zustimmung des Familienorganisators. Kandro umgeht Apples Kaufkontrollen nicht.',
           'Die Löschung des Kandro-Accounts beendet ein Apple-Abonnement nicht automatisch. Käufe können über die Paywall wiederhergestellt werden.',

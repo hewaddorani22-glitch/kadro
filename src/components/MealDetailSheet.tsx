@@ -6,6 +6,9 @@ import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui';
+import { PortionSheet } from '@/components/PortionSheet';
+import { itemNutritionPer100g } from '@/utils/portions';
+import { needsIngredientCorrection } from '@/utils/ingredientCorrection';
 import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { Meal, PortionFactor } from '@/types/nutrition';
@@ -24,10 +27,11 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
-  const { adjustLoggedMealPortion, deleteLoggedMeal, setLoggedMealType } = useApp();
+  const { adjustLoggedMealPortion, deleteLoggedMeal, setLoggedItemAmount, setLoggedMealType } = useApp();
   const { locale, t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [editingItem, setEditingItem] = useState<string | null>(null);
 
   if (!meal) return null;
 
@@ -37,6 +41,7 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
 
   const close = () => {
     setConfirmingDelete(false);
+    setEditingItem(null);
     onClose();
   };
 
@@ -77,6 +82,32 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
   };
 
   const included = meal.items.filter((item) => item.included);
+  const editing = included.find((item) => item.id === editingItem) ?? null;
+
+  const saveItemAmount = async (grams: number) => {
+    if (busy || !editing) return;
+    setBusy(true);
+    try {
+      await setLoggedItemAmount(meal.id, editing.id, grams);
+      close();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (editing) {
+    return (
+      <Modal animationType="fade" onRequestClose={() => setEditingItem(null)} transparent visible>
+        <PortionSheet
+          embedded
+          onCancel={() => setEditingItem(null)}
+          onConfirm={(grams) => { void saveItemAmount(grams); }}
+          target={{ name: editing.name, per100g: itemNutritionPer100g(editing), defaultGrams: editing.amountG, amountIsChosen: true, portions: editing.portions, sourceLabel: editing.source.label }}
+          visible
+        />
+      </Modal>
+    );
+  }
 
   return (
     <Modal animationType="slide" onRequestClose={close} transparent visible>
@@ -95,7 +126,7 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
         </View>
 
         <View style={styles.macroRow}>
-          <Macro label="kcal" value={`~${meal.calories}`} />
+          <Macro label="kcal" value={`~${formatNumber(meal.calories, locale)}`} />
           <Macro label={t.common.protein} value={`${meal.protein} g`} />
           <Macro label={t.common.carbs} value={`${meal.carbs} g`} />
           <Macro label={t.common.fat} value={`${meal.fat} g`} />
@@ -106,12 +137,23 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>{t.mealSheet.contains}</Text>
               {included.map((item) => (
-                <View key={item.id} style={styles.itemRow}>
-                  <Text numberOfLines={1} style={styles.itemName}>{item.name}</Text>
+                <Pressable
+                  accessibilityHint={t.mealSheet.editItemHint}
+                  accessibilityRole="button"
+                  disabled={busy || needsIngredientCorrection(item)}
+                  key={item.id}
+                  onPress={() => { void selectionHaptic(); setEditingItem(item.id); }}
+                  style={styles.itemRow}
+                >
+                  <View style={styles.itemCopy}>
+                    <Text numberOfLines={1} style={styles.itemName}>{item.name}</Text>
+                    <Text numberOfLines={1} style={styles.sourceNote}>{item.source.label}</Text>
+                  </View>
                   <Text style={styles.itemAmount}>{formatNumber(item.amountG, locale)} g · ~{formatNumber(item.calories, locale)} kcal</Text>
-                </View>
+                  <Ionicons color={colors.muted} name="create-outline" size={16} />
+                </Pressable>
               ))}
-              <Text style={styles.sourceNote}>{included[0].source.label}</Text>
+              <Text style={styles.sectionHint}>{t.mealSheet.editItemHint}</Text>
             </View>
           ) : null}
 
@@ -230,8 +272,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   section: { gap: 8, marginBottom: 18 },
   sectionLabel: { color: colors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
   sectionHint: { color: colors.muted, fontSize: 11, lineHeight: 16 },
-  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 34 },
-  itemName: { flex: 1, minWidth: 0, color: colors.text, fontSize: 13, fontWeight: '600' },
+  itemRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 48 },
+  itemCopy: { flex: 1, minWidth: 0 },
+  itemName: { color: colors.text, fontSize: 14, fontWeight: '600' },
   itemAmount: { color: colors.muted, fontSize: 11, fontVariant: ['tabular-nums'] },
   sourceNote: { color: colors.muted, fontSize: 10, marginTop: 2 },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },

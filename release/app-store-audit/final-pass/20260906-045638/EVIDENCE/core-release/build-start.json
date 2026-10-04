@@ -1,0 +1,12 @@
+{
+  "id": "83b44ae8-d2a5-4b97-b003-6d57e49dce2e",
+  "status": "NEW",
+  "platform": "IOS",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "16",
+  "createdAt": "2026-09-06T12:11:27.377Z",
+  "distribution": "STORE",
+  "buildProfile": "production",
+  "resourceClass": null,
+  "priority": "NORMAL"
+}

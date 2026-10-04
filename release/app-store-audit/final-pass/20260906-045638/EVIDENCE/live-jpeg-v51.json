@@ -1,0 +1,211 @@
+{
+  "timestamp": "2026-09-06T03:17:08.886Z",
+  "backendVersion": 51,
+  "cases": [
+    {
+      "name": "plain text",
+      "status": 400,
+      "body": {
+        "code": "invalid_input",
+        "message": "Ungültiges Fotoformat."
+      },
+      "latencyMs": 1828
+    },
+    {
+      "name": "invalid alphabet",
+      "status": 400,
+      "body": {
+        "code": "invalid_input",
+        "message": "Ungültiges Fotoformat."
+      },
+      "latencyMs": 1424
+    },
+    {
+      "name": "base64 text",
+      "status": 400,
+      "body": {
+        "code": "invalid_input",
+        "message": "Ungültiges Fotoformat."
+      },
+      "latencyMs": 473
+    },
+    {
+      "name": "truncated JPEG",
+      "status": 400,
+      "body": {
+        "code": "invalid_input",
+        "message": "Ungültiges Fotoformat."
+      },
+      "latencyMs": 862
+    },
+    {
+      "name": "missing SOI",
+      "status": 400,
+      "body": {
+        "code": "invalid_input",
+        "message": "Ungültiges Fotoformat."
+      },
+      "latencyMs": 485
+    },
+    {
+      "name": "extra content",
+      "status": 400,
+      "body": {
+        "code": "invalid_input",
+        "message": "Ungültiges Fotoformat."
+      },
+      "latencyMs": 473
+    },
+    {
+      "name": "whitespace",
+      "status": 400,
+      "body": {
+        "code": "invalid_input",
+        "message": "Ungültiges Fotoformat."
+      },
+      "latencyMs": 564
+    },
+    {
+      "name": "data URL",
+      "status": 400,
+      "body": {
+        "code": "invalid_input",
+        "message": "Ungültiges Fotoformat."
+      },
+      "latencyMs": 585
+    },
+    {
+      "name": "PNG under JPEG MIME",
+      "status": 400,
+      "body": {
+        "code": "invalid_input",
+        "message": "Ungültiges Fotoformat."
+      },
+      "latencyMs": 546
+    },
+    {
+      "name": "empty",
+      "status": 400,
+      "body": {
+        "code": "invalid_input",
+        "message": "Ungültiges Fotoformat."
+      },
+      "latencyMs": 463
+    },
+    {
+      "name": "oversize",
+      "status": 413,
+      "body": {
+        "code": "invalid_input",
+        "message": "Das Foto ist zu groß."
+      },
+      "latencyMs": 1344
+    },
+    {
+      "name": "valid example",
+      "status": 200,
+      "body": {
+        "title": "Grilled chicken on seasoned rice with shredded pickled carrots",
+        "confidence": "medium",
+        "correctionRequired": true,
+        "items": [
+          {
+            "id": "usda-2708402-0",
+            "name": "seasoned cooked rice",
+            "amountG": 160,
+            "baseAmountG": 160,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 129,
+              "protein": 2.67,
+              "carbs": 27.99,
+              "fat": 0.28,
+              "fiber": 0.4
+            },
+            "calories": 206,
+            "protein": 4,
+            "carbs": 45,
+            "fat": 0,
+            "fiber": 1,
+            "confidence": "medium",
+            "optional": false,
+            "included": true,
+            "source": {
+              "provider": "usda",
+              "referenceId": "2708402",
+              "label": "USDA FDC 2708402"
+            }
+          },
+          {
+            "id": "bls-V416172-1",
+            "name": "grilled chicken breast strips",
+            "amountG": 90,
+            "baseAmountG": 90,
+            "portionFactor": 1,
+            "nutritionPer100g": {
+              "calories": 140,
+              "protein": 30.29,
+              "carbs": 0,
+              "fat": 2.05,
+              "fiber": 0
+            },
+            "calories": 126,
+            "protein": 27,
+            "carbs": 0,
+            "fat": 2,
+            "fiber": 0,
+            "confidence": "medium",
+            "optional": false,
+            "included": true,
+            "portions": [
+              {
+                "label": "pieces",
+                "grams": 15,
+                "estimated": true
+              }
+            ],
+            "source": {
+              "provider": "bls",
+              "referenceId": "V416172",
+              "label": "BLS 4.0 V416172",
+              "estimatedReference": true
+            }
+          },
+          {
+            "id": "detected-2",
+            "name": "shredded pickled carrots",
+            "amountG": 30,
+            "baseAmountG": 30,
+            "portionFactor": 1,
+            "calories": 0,
+            "protein": 0,
+            "carbs": 0,
+            "fat": 0,
+            "fiber": 0,
+            "confidence": "medium",
+            "optional": true,
+            "included": false,
+            "source": {
+              "provider": "usda",
+              "code": "unmatched",
+              "label": ""
+            }
+          }
+        ],
+        "warnings": [
+          "unmatched_ingredient"
+        ]
+      },
+      "latencyMs": 7540
+    }
+  ],
+  "paidCalls": 1,
+  "priorPaidCalls": 3,
+  "imageSha256": "7e1ee6ff492d396b0a1c67b72ed47b6f5ea7fd6ba92dd5fecfb6c8a4df37ce77",
+  "passed": true,
+  "cleanup": {
+    "deleted": true,
+    "profileRemoved": true,
+    "refreshRevoked": true
+  }
+}

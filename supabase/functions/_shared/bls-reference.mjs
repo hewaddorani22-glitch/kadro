@@ -127,6 +127,20 @@ export function getBlsReferenceByCode(code) {
   return byCode.get(String(code ?? '')) ?? null;
 }
 
+/** A reviewed family conflict requires correction, not a different database. */
+export function requiresFoodIdentityCorrection(item) {
+  const name = String(item?.name ?? '').trim().toLowerCase();
+  // Preserve the established German chips/fries translation disambiguation.
+  if (/^(kartoffelchips|stapelchips|pommes frites)$/.test(name)) return false;
+  const reviewedName = reviewedNameAliases.get(exactFoodKey(name));
+  const reviewedQuery = reviewedNameAliases.get(exactFoodKey(item?.searchTermEn));
+  if (reviewedQuery && name && reviewedName?.[0] !== reviewedQuery[0]) return true;
+  if (!reviewedName || !String(item?.searchTermEn ?? '').trim()) return false;
+  const plainMuesliQuery = canonicalFoodQuery(item.searchTermEn) === 'muesli'
+    && ['C514200', 'C514400', 'C514600'].includes(reviewedName[0]);
+  return !plainMuesliQuery && resolveExactBlsFacts(item.searchTermEn)?.referenceId !== reviewedName[0];
+}
+
 export function resolveBlsFacts(item) {
   // These German food identities are unambiguous, unlike the British source
   // translation "potato chips". Do not let a translated query swap them.
@@ -136,6 +150,9 @@ export function resolveBlsFacts(item) {
   // Concrete ingredient identity/preparation outranks a contradictory model key
   // (observed: "hard boiled egg" with referenceKey=fried_egg).
   const ingredient = resolveExactBlsFacts(item?.searchTermEn);
+  const reviewedName = reviewedNameAliases.get(exactFoodKey(name));
+  if (requiresFoodIdentityCorrection(item)) return null;
+  if (reviewedName) return factsFromRow(reviewedName, false);
   if (ingredient) return ingredient;
   const meal = getBlsReference(item?.referenceKey);
   if (!meal) return null;
@@ -157,7 +174,7 @@ export function resolveBlsFacts(item) {
 
 // Exact identity and preparation only. Never use fuzzy search rankings to
 // silently substitute another food or turn dried food into fresh food.
-const exactFoodKey = (text) => (canonicalFoodQuery(text).replace(/\bpitted\b/g, '').match(/[a-z]+|\d+(?:[.,]\d+)?/g) || [])
+const exactFoodKey = (text) => (canonicalFoodQuery(text).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss').replace(/\bpitted\b/g, '').match(/[a-z]+|\d+(?:[.,]\d+)?/g) || [])
   .map(word => word.replace(',', '.'))
   .map(word => word.length > 3 && word.endsWith('s') && !word.endsWith('ss') ? word.slice(0, -1) : word).sort().join(' ');
 const exactBlsRows = new Map();
@@ -170,6 +187,7 @@ for (const row of BLS_SEARCH_ROWS) {
 // nutrient values. Do not erase qualifiers to force a match: roasted/salted,
 // flour, butter, milk and chocolate-coated variants need their own reference.
 const ingredientAliases = new Map();
+const reviewedNameAliases = new Map();
 const rowsByCode = new Map(BLS_SEARCH_ROWS.map(row => [row[0], row]));
 for (const [code, aliases] of [
   ['F840100', ['raisins', 'sultanas', 'golden raisins', 'golden raisins dried', 'dried golden raisins', 'grapes dried']],
@@ -191,21 +209,57 @@ for (const [code, aliases] of [
   ['F533100', ['honeydew melon', 'honeydew raw']],
   ['S145000', ['chocolate hazelnut spread', 'hazelnut chocolate spread', 'cocoa hazelnut spread', 'hazelnut cocoa spread', 'nutella']],
   ['K280100', ['potato chips', 'potato crisps']],
+  // Beta 24 feedback: "2 Toast" became an unresolved row. Ordinary sliced
+  // wheat toast is the everyday meaning; toasted, wholemeal and multigrain
+  // stay separate BLS rows. Typical values, labelled as generic references.
+  ['B314000', ['toast', 'toast bread', 'toast slices', 'slices of toast', 'slice of toast', 'white toast', 'white toast bread', 'wheat toast', 'wheat toast bread', 'sandwich toast', 'butter toast', 'toastbrot', 'weizentoastbrot', 'buttertoast']],
+  ['B314072', ['toasted bread', 'toasted white bread', 'white bread toasted', 'toast toasted', 'toasted toast', 'toasted toast bread', 'toasted white toast', 'toasted wheat toast', 'toasted bread slices']],
+  ['B111200', ['wholemeal toast', 'whole wheat toast', 'whole grain toast', 'wholegrain toast', 'vollkorntoast', 'vollkorntoastbrot']],
+  ['B314200', ['multigrain toast', 'mehrkorntoast', 'mehrkorntoastbrot']],
 ]) {
   const row = rowsByCode.get(code);
   if (!row) throw new Error(`Missing reviewed BLS ingredient ${code}`);
   for (const alias of aliases) ingredientAliases.set(exactFoodKey(alias), row);
 }
+
+// Build 14 feedback: whole food-family names only. These are typical BLS
+// values, not manufacturer labels. Keep light, sugar-free and milk/yogurt
+// preparations separate. Chocolate-with-biscuit is intentionally excluded:
+// the available wholemeal-biscuit bar is not a verified Milka LU reference.
+for (const [code, aliases] of [
+  ['K280100', ['Paprika-Chips', 'knusprige Paprika-Chips', 'Paprika-Kartoffelchips', 'knusprige Paprika-Kartoffelchips', 'Kartoffelchips Paprika', 'knusprige Kartoffelchips', 'paprika potato chips', 'paprika flavoured potato chips', 'paprika flavored potato chips', 'crispy paprika potato chips', 'crispy potato chips', 'potato chips paprika', 'potato chips paprika flavor', 'paprika chips', 'potato crisps paprika', 'potato chips salted', 'salted potato chips']],
+  ['Q999000', ['remoulade', 'remoulade sauce', 'spicy remoulade sauce', 'seasoned remoulade sauce', 'remoulade sauce spicy', 'Remouladensauce', 'würzige Remoulade', 'würzige Remoulade Sauce']],
+  ['C514200', ['crunchy muesli', 'crunchy muesli mix', 'crispy muesli', 'Knuspermüsli', 'knuspriges Müsli', 'Knuspermüslimischung']],
+  ['X0A3000', ['granola', 'crunchy granola']],
+  ['C514400', ['crunchy muesli with dried fruit', 'Knuspermüsli mit Trockenfrüchten']],
+  ['C514600', ['chocolate crunchy muesli', 'crunchy muesli with chocolate', 'Schoko-Knuspermüsli', 'Knuspermüsli mit Schokolade']],
+]) {
+  const row = rowsByCode.get(code);
+  if (!row) throw new Error(`Missing reviewed BLS family ${code}`);
+  for (const alias of aliases) {
+    const key = exactFoodKey(alias);
+    for (const map of [ingredientAliases, reviewedNameAliases]) {
+      if (map.has(key) && map.get(key)[0] !== code) throw new Error(`Conflicting BLS alias: ${alias}`);
+      map.set(key, row);
+    }
+  }
+}
+
 export function resolveExactBlsFacts(term) {
   const key = exactFoodKey(term);
   const exact = exactBlsRows.get(key);
   const row = exact || ingredientAliases.get(key);
   if (!row) return null;
+  return factsFromRow(row, Boolean(exact));
+}
+
+function factsFromRow(row, exact) {
   const [code, , , calories, protein, carbs, fat, fiber] = row;
   const description = blsEnglishName(row);
   if (![calories, protein, carbs, fat].every(value => Number.isFinite(value) && value >= 0)) return null;
   return { provider: 'bls', referenceId: code, label: `BLS 4.0 ${code}`, description,
-    calories, protein, carbs, fat, fiber, matchConfidence: exact ? 'high' : 'medium' };
+    calories, protein, carbs, fat, fiber, matchConfidence: exact ? 'high' : 'medium',
+    ...(!exact ? { estimatedReference: true } : {}) };
 }
 
 /**

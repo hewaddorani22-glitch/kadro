@@ -158,3 +158,13 @@ for (const bad of ['other', 'unknown', '']) {
 }
 
 console.log(`Validated ${checked} USDA rankings against captured responses, plus order independence and placeholder rejection.`);
+
+// Live gateway 2026-10-02: the same boiled food selected a frozen reference
+// solely because the model used the normal English plural. Replay real rows.
+for (const term of ['potatoes boiled', 'boiled potatoes']) {
+  const actual = chooseFoodMatch(fixtures['potato boiled'], term);
+  const singular = chooseFoodMatch(fixtures['potato boiled'], 'potato boiled');
+  assert.equal(actual.food?.fdcId, singular.food?.fdcId, `${term}: plural must preserve the same reference`);
+  assert.ok(!/frozen|sweet|skin only/i.test(actual.food.description));
+}
+console.log('PASS live potato plural preserves the cooked reference identity');

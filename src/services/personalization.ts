@@ -26,20 +26,7 @@ export function isTeenProfile(profile: Pick<UserProfile, 'age'>) {
   return profile.age >= 14 && profile.age < 18;
 }
 
-/**
- * Roughly 7700 kcal are stored in a kilogram of body fat, so a weekly rate
- * converts to a daily offset by (rate * 7700) / 7 = rate * 1100.
- *
- * The old model used a flat -350 / 0 / +250 for everyone, which gave a 55 kg
- * woman and a 95 kg man the same deficit.
- *
- * A surplus is deliberately not capped, while a deficit still is. Eating too
- * little is a health question; eating 550 kcal above maintenance is not: it
- * only shifts how much of the gain is muscle versus fat, and that is the
- * user's call to make. Capping it at a flat 350 meant somebody who picked
- * 0.5 kg a week was quietly given 0.32, a number that matches nothing they
- * were offered.
- */
+/** Existing planning coefficient, not a guarantee of real weight change. */
 const KCAL_PER_KG = 7700;
 
 export const BIOLOGICAL_SEXES: BiologicalSex[] = ['female', 'male', 'unspecified'];
@@ -54,17 +41,15 @@ const SEX_CONSTANT: Record<BiologicalSex, number> = {
   unspecified: -78,
 };
 
-function dailyGoalOffset(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
+export function dailyGoalOffset(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
   if (goal === 'maintain') return 0;
   const daily = (weeklyRateKg * KCAL_PER_KG) / 7;
   return goal === 'lose' ? -daily : daily;
 }
 
 /**
- * The pace the calorie target actually applies.
- *
- * Only the deficit floor can move it now, and that is reported separately by
- * isRateLimited: so for a surplus this is simply the rate the user picked.
+ * The selected planning pace. Actual calorie limits and rounding are reported
+ * by caloriePlan; this label is not a prediction of weight change.
  */
 export function effectiveWeeklyRate(goal: NutritionGoal, weeklyRateKg: WeeklyRateKg) {
   return weeklyRateKg;
@@ -123,19 +108,25 @@ export function maintenanceCalories(profile: UserProfile) {
   return resting * activityMultipliers[profile.activityLevel];
 }
 
-export function calculateDailyTargets(profile: UserProfile): DailyTargets {
+/** Shared arithmetic for the target, pace preview and explanatory UI. */
+export function caloriePlan(profile: UserProfile) {
   const maintenance = maintenanceCalories(profile);
-  // Teen profiles get an energy-balance estimate that includes growth. Kandro
-  // does not prescribe a calorie deficit or surplus to a 14–17-year-old.
   const teen = isTeenProfile(profile);
-  const offset = teen ? 0 : dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
-  // Never cut below 1300 kcal and never below 70% of maintenance, whichever is
-  // higher. A fast rate on a light person would otherwise produce a target that
-  // no responsible app should show.
+  const requestedOffset = teen ? 0 : dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
+  const requestedCalories = roundTo(maintenance + requestedOffset, 10);
   const floor = Math.max(1_300, maintenance * 0.7);
-  const calories = teen
-    ? roundTo(maintenance, 10)
-    : Math.min(4_000, Math.max(floor, roundTo(maintenance + offset, 10)));
+  const calories = teen ? requestedCalories : Math.min(4_000, Math.max(floor, requestedCalories));
+  return {
+    maintenance, requestedOffset, requestedCalories, calories,
+    appliedOffset: calories - maintenance,
+    roundingOffset: requestedCalories - maintenance - requestedOffset,
+    limit: teen || calories === requestedCalories ? null : calories > requestedCalories ? 'floor' as const : 'cap' as const,
+  };
+}
+
+export function calculateDailyTargets(profile: UserProfile): DailyTargets {
+  const { calories } = caloriePlan(profile);
+  const teen = isTeenProfile(profile);
   if (teen) {
     // A moderate protein planning target and 30% fat keep the day balanced;
     // carbohydrates take the remaining energy. These are planning references,
@@ -200,7 +191,8 @@ export function explainTargets(profile: UserProfile): TargetStep[] {
     ];
   }
   const resting = maintenance / activityMultipliers[profile.activityLevel];
-  const offset = dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
+  const plan = caloriePlan(profile);
+  const offset = plan.requestedOffset;
   const targets = calculateDailyTargets(profile);
   // Rounded to ten like the target itself, so the chain ends on exactly the
   // number the next screen shows rather than four kilocalories beside it.
@@ -248,12 +240,7 @@ export function estimatedPace(
   return weeklyRateLabel(goal, weeklyRateKg, labels, unitSystem);
 }
 
-/** True when the safety floor overrode the requested rate. */
-/** True when the safety floor overrode the requested rate. Only a deficit can. */
+/** True when an existing product bound changes the rounded calorie target. */
 export function isRateLimited(profile: UserProfile) {
-  if (isTeenProfile(profile)) return false;
-  if (profile.goal !== 'lose') return false;
-  const maintenance = maintenanceCalories(profile);
-  const requested = maintenance + dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
-  return requested < Math.max(1_300, maintenance * 0.7);
+  return caloriePlan(profile).limit !== null;
 }

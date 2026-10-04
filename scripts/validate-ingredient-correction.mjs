@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { buildMealItem, buildAccuracyWarnings, incompleteNutritionError, ingredientCorrectionDraft } from '../server/core.mjs';
+import * as bls from '../supabase/functions/_shared/bls-reference.mjs';
+import { canonicalFoodQuery } from '../supabase/functions/_shared/food-query.mjs';
+import { isUsableSearchTerm } from '../server/core.mjs';
+import { searchBlsCatalog } from '../supabase/functions/_shared/bls-search.mjs';
 
 const read = path => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const compile = source => {
@@ -61,7 +65,8 @@ function loadFunction(path, name, dependencies) {
   const node = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name);
   assert.ok(node, name);
   const code = ts.transpileModule(node.getText(ast).replace(/^export /, ''), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
-  return new Function(...Object.keys(dependencies), `${code}\nreturn ${name};`)(...Object.values(dependencies));
+  const scope = { ...bls, ...dependencies };
+  return new Function(...Object.keys(scope), `${code}\nreturn ${name};`)(...Object.values(scope));
 }
 // Execute both shipped resolvers; one missing lookup does not drop the others.
 for (const path of ['server/index.mjs', 'supabase/functions/nutrition/index.ts']) {
@@ -79,9 +84,53 @@ for (const path of ['server/index.mjs', 'supabase/functions/nutrition/index.ts']
   assert.deepEqual(await call(1), draft, `${path}: new builds receive the intact correction draft`);
 }
 
+// A rejected identity must stay unresolved across database fallback and even
+// when another ingredient legitimately looks up the same English query.
+for (const path of ['server/index.mjs', 'supabase/functions/nutrition/index.ts']) {
+  const requested = [];
+  const resolveItem = loadFunction('server/index.mjs', 'resolveItem', {
+    buildMealItem,
+    resolveUsdaItem: async (item, index) => {
+      requested.push(canonicalFoodQuery(item.searchTermEn));
+      return buildMealItem(item, facts, index);
+    },
+  });
+  const resolve = loadFunction(path, 'resolveDetection', {
+    classifyDetection: () => null, resolveItem, canonicalFoodQuery,
+    isUsableSearchTerm, buildMealItem, incompleteNutritionError,
+    ingredientCorrectionDraft, buildAccuracyWarnings,
+    resolveFacts: async terms => {
+      requested.push(...terms);
+      return new Map(terms.map(term => [term, facts]));
+    },
+  });
+  const conflicting = { name: 'Knuspriges Müsli', searchTermEn: 'muesli with yogurt', referenceKey: 'other', estimatedGrams: 100, confidence: 'high' };
+  const mixed = { title: 'Identity regression', confidence: 'high', items: [
+    conflicting,
+    { ...conflicting, name: 'Müsli mit Joghurt', estimatedGrams: 200 },
+    { ...conflicting, name: 'Knuspermüsli zuckerfrei', searchTermEn: 'crunchy muesli', estimatedGrams: 50 },
+    { ...conflicting, searchTermEn: 'crunchy muesli' },
+  ] };
+  const call = (value, protocol) => path.startsWith('server/')
+    ? resolve(value, 'text', protocol)
+    : resolve(value, {}, 'text', undefined, protocol);
+  const result = await call(mixed, 1);
+  assert.equal(result.body.correctionRequired, true, `${path}: identity conflicts must survive USDA fallback`);
+  assert.equal(needsIngredientCorrection(result.body.items[0]), true, `${path}: same-query facts cannot fill a conflicting item`);
+  assert.equal(needsIngredientCorrection(result.body.items[2]), true, `${path}: sugar-free modifier cannot be lost`);
+  assert.equal(result.body.items[1].calories, 400, `${path}: unrelated valid fallback still scales correctly`);
+  assert.equal(result.body.items[3].source.referenceId, 'C514200');
+  assert.deepEqual(requested, ['muesli with yogurt'], `${path}: only eligible ingredients may query USDA`);
+  requested.length = 0;
+  const conflictsOnly = { ...mixed, items: [conflicting, mixed.items[2]] };
+  assert.equal((await call(conflictsOnly, undefined)).status, 422, `${path}: legacy clients fail closed`);
+  assert.deepEqual(requested, [], `${path}: identity conflicts do not consume USDA calls`);
+}
+
 class AnalysisError extends Error {}
 const readResponse = loadFunction('src/services/mealAnalysis.ts', 'readAnalysisResponse', {
   needsIngredientCorrection, MealAnalysisError: AnalysisError,
+  validSearchResult: loadFunction('src/services/mealAnalysis.ts', 'validSearchResult', {}),
   getDictionary: () => ({ errors: { noClearMeal: 'unclear', gatewayMissingNutrition: 'missing' } }),
   gatewayMessage: () => 'error', localizeResult: value => value,
 });
@@ -120,4 +169,38 @@ assert.match(search, /current !== generation\.current/);
 assert.match(search, /useFocusEffect/);
 assert.match(search, /replaceDetectedItem\(item\.id, pendingFood, grams\)/);
 assert.doesNotMatch(search, /applySearchResult|startBarcodeScan|setCapturedPhoto/);
+
+// Reported typo: the exact query has no source row. Suggestions keep source
+// nutrients and require an explicit selection; they do not "repair" the fat %.
+const { milkCorrectionQuery } = compile(read('src/utils/foodCorrectionQuery.ts'));
+assert.deepEqual(searchBlsCatalog('45% Milch', 'de', 15), []);
+for (const name of ['45% Milch', 'Milch 45 % Fett', 'Milch (45% Fettanteil)', 'Kuhmilch mit 45 % Fett', '1,5% Milch']) {
+  assert.equal(milkCorrectionQuery(name), 'Milch', name);
+}
+for (const name of ['45% milk', 'Milk (45 % fat)', "cow's milk with 45% fat"]) {
+  assert.equal(milkCorrectionQuery(name), 'milk', name);
+}
+for (const name of ['Milch', 'Milchreis 45%', '45% Hafermilch', '45% soy milk', '45% goat milk',
+  '45% laktosefreie Milch', '45% lactose-free milk', '45% condensed milk', '45% Milchpulver',
+  '45% Schokomilch', '45% Milch mit Kaffee', '45% Milch und Banane', '3,5% / 1,5% Milch', '45%% Milch']) {
+  assert.equal(milkCorrectionQuery(name), null, `${name}: qualifiers must not be silently discarded`);
+}
+for (const language of ['de', 'en']) {
+  const suggestions = searchBlsCatalog(language === 'de' ? 'Milch' : 'milk', language, 3);
+  assert.deepEqual(suggestions.slice(0, 2).map(row => row.code), ['M111200', 'M111300']);
+  for (const row of suggestions) {
+    const chosen = buildMealItem({ name: language === 'de' ? row.nameDe : row.nameEn, estimatedGrams: 101.3, confidence: 'high' },
+      { ...row.per100g, provider: 'bls', referenceId: row.code, label: 'BLS 4.0' }, 0);
+    const corrected = replaceMealIngredient(items, unknown.id, chosen);
+    assert.equal(corrected[0], known);
+    assert.equal(corrected[1].id, unknown.id);
+    assert.equal(corrected[1].amountG, 101.3);
+    assert.equal(corrected[1].source.referenceId, row.code);
+    assert.equal(canSaveMealDraft(corrected), true);
+  }
+}
+assert.equal(JSON.stringify(items), inputSnapshot, 'suggestions must never mutate the initial meal');
+assert.match(search, /needsIngredientCorrection\(item\) \? milkCorrectionQuery\(item.name\)/);
+assert.match(search, /void search\(suggestionQuery\)/);
+assert.match(search, /defaultGrams: item.amountG, amountIsChosen: true/);
 console.log('PASS: correction protocol, legacy rejection, replacement isolation, save/route guards, 1-12 ingredient sums, no silent missing values, free lookup repair.');

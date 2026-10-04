@@ -13,8 +13,10 @@ export type Nutrition = {
 export type NutritionSource = {
   /** Only unresolved analysis drafts carry this code. Never log them. */
   code?: 'unmatched';
-  provider: 'usda' | 'bls' | 'open-food-facts' | 'kandro-catalog' | 'demo';
+  provider: 'usda' | 'bls' | 'open-food-facts' | 'kandro-catalog' | 'demo' | 'manual';
   referenceId?: string;
+  /** Typical food-family values, not an exact product/manufacturer label. */
+  estimatedReference?: boolean;
   label: string;
 };
 
@@ -34,6 +36,15 @@ export type MealItem = Nutrition & {
   source: NutritionSource;
 };
 
+export type MealSync = {
+  mealId: string;
+  ownerId?: string;
+  revision: number;
+  mutationId?: string;
+  ancestors?: string[];
+  status: 'pending' | 'synced' | 'conflict';
+};
+
 export type Meal = Nutrition & {
   id: string;
   title: string;
@@ -45,6 +56,8 @@ export type Meal = Nutrition & {
   origin?: 'seed' | 'scan' | 'plan';
   date?: string;
   savedAt?: string;
+  /** Sync protocol only; never sent to analytics or counted as a meal edit. */
+  sync?: MealSync;
 };
 
 export type DailyTargets = Nutrition;
@@ -59,6 +72,10 @@ export type MealSuggestion = Nutrition & {
   contexts?: MealContext[];
   preferences?: string[];
   source?: NutritionSource;
+  /** Fraction of the catalogue/recipe serving represented by these values. */
+  portionScale?: number;
+  /** Unrounded scaling always starts from this original reference. */
+  referenceNutrition?: Nutrition;
 };
 
 export type PortionFactor = 0.7 | 1 | 1.4;

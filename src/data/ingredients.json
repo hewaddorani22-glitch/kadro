@@ -1,91 +1,107 @@
 {
   "chicken-breast": {
-    "usda": "171477",
-    "name": "Chicken, broilers or fryers, breast, meat only, cooked, roasted",
+    "bls": "V416100",
+    "name": "Chicken breast fillet, raw",
     "per100g": {
-      "calories": 165,
-      "protein": 31,
+      "calories": 109,
+      "protein": 23.25,
       "carbs": 0,
-      "fat": 3.6,
+      "fat": 1.81,
       "fiber": 0
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "turkey-breast": {
-    "usda": "171496",
-    "name": "Turkey, whole, breast, meat only, cooked, roasted",
-    "per100g": {
-      "calories": 147,
-      "protein": 30.1,
-      "carbs": 0,
-      "fat": 2.1,
-      "fiber": 0
-    }
-  },
-  "turkey-mince": {
-    "usda": "171506",
-    "name": "Turkey, Ground, cooked",
-    "per100g": {
-      "calories": 203,
-      "protein": 27.4,
-      "carbs": 0,
-      "fat": 10.4,
-      "fiber": 0
-    }
-  },
-  "beef-lean": {
-    "usda": "170235",
-    "name": "Beef, round, top round, separable lean only, trimmed to 0\" fat, choice, cooked, braised",
-    "per100g": {
-      "calories": 207,
-      "protein": 36.1,
-      "carbs": 0,
-      "fat": 5.8,
-      "fiber": 0
-    }
-  },
-  "beef-mince-lean": {
-    "usda": "174755",
-    "name": "Beef, ground, 93% lean meat / 7% fat, crumbles, cooked, pan-browned",
-    "per100g": {
-      "calories": 209,
-      "protein": 28.9,
-      "carbs": 0,
-      "fat": 9.5,
-      "fiber": 0
-    }
-  },
-  "salmon": {
-    "usda": "175168",
-    "name": "Fish, salmon, Atlantic, farmed, cooked, dry heat",
-    "per100g": {
-      "calories": 206,
-      "protein": 22.1,
-      "carbs": 0,
-      "fat": 12.4,
-      "fiber": 0
-    }
-  },
-  "cod": {
-    "usda": "171956",
-    "name": "Fish, cod, Atlantic, cooked, dry heat",
+    "bls": "V486100",
+    "name": "Turkey breast, without skin, raw",
     "per100g": {
       "calories": 105,
-      "protein": 22.8,
+      "protein": 24.1,
       "carbs": 0,
-      "fat": 0.9,
+      "fat": 0.99,
       "fiber": 0
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
+  },
+  "turkey-mince": {
+    "bls": "V486100",
+    "name": "Turkey breast, without skin, raw",
+    "per100g": {
+      "calories": 105,
+      "protein": 24.1,
+      "carbs": 0,
+      "fat": 0.99,
+      "fiber": 0
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
+  },
+  "beef-lean": {
+    "bls": "U287100",
+    "name": "Beef topside/top round, raw",
+    "per100g": {
+      "calories": 124,
+      "protein": 20.86,
+      "carbs": 0,
+      "fat": 4.527,
+      "fiber": 0
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
+  },
+  "beef-mince-lean": {
+    "bls": "U070100",
+    "name": "Beef mince, lean, raw",
+    "per100g": {
+      "calories": 115,
+      "protein": 22,
+      "carbs": 0,
+      "fat": 3,
+      "fiber": 0
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
+  },
+  "salmon": {
+    "bls": "T410100",
+    "name": "Salmon raw",
+    "per100g": {
+      "calories": 180,
+      "protein": 19.9,
+      "carbs": 0,
+      "fat": 11.2,
+      "fiber": 0
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
+  },
+  "cod": {
+    "bls": "T204100",
+    "name": "Cod raw",
+    "per100g": {
+      "calories": 79,
+      "protein": 17.8,
+      "carbs": 0,
+      "fat": 0.84,
+      "fiber": 0
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "pollock": {
-    "usda": "173726",
-    "name": "Fish, pollock, Alaska, cooked",
+    "bls": "T213100",
+    "name": "Alaska pollock raw",
     "per100g": {
-      "calories": 86.6,
-      "protein": 19.4,
+      "calories": 57,
+      "protein": 12.3,
       "carbs": 0,
-      "fat": 1,
+      "fat": 0.82,
       "fiber": 0
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "tuna-canned": {
     "usda": "334194",
@@ -96,18 +112,22 @@
       "carbs": 0.1,
       "fat": 0.9,
       "fiber": 0
-    }
+    },
+    "referenceState": "drained",
+    "weighingState": "drained"
   },
   "prawns": {
-    "usda": "175180",
-    "name": "Crustaceans, shrimp, cooked",
+    "bls": "T753100",
+    "name": "Common shrimp raw",
     "per100g": {
-      "calories": 99,
-      "protein": 24,
-      "carbs": 0.2,
-      "fat": 0.3,
+      "calories": 87,
+      "protein": 18.6,
+      "carbs": 0,
+      "fat": 1.44,
       "fiber": 0
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "egg": {
     "usda": "173424",
@@ -118,7 +138,9 @@
       "carbs": 1.1,
       "fat": 10.6,
       "fiber": 0
-    }
+    },
+    "referenceState": "cooked-peeled",
+    "weighingState": "cooked-peeled"
   },
   "tofu": {
     "usda": "172448",
@@ -129,7 +151,9 @@
       "carbs": 2.9,
       "fat": 4.2,
       "fiber": 0.9
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "tempeh": {
     "usda": "174272",
@@ -140,7 +164,9 @@
       "carbs": 7.6,
       "fat": 10.8,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "skyr": {
     "usda": "171312",
@@ -151,7 +177,9 @@
       "carbs": 3.4,
       "fat": 0.2,
       "fiber": 0.2
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "yoghurt-plain": {
     "usda": "170886",
@@ -162,7 +190,9 @@
       "carbs": 7,
       "fat": 1.6,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "cottage-cheese": {
     "usda": "328841",
@@ -173,7 +203,9 @@
       "carbs": 4.3,
       "fat": 2.3,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "cream-cheese-light": {
     "usda": "169079",
@@ -184,7 +216,9 @@
       "carbs": 6.7,
       "fat": 16.7,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "feta": {
     "usda": "173420",
@@ -195,7 +229,9 @@
       "carbs": 3.9,
       "fat": 21.5,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "ricotta": {
     "usda": "171248",
@@ -206,7 +242,9 @@
       "carbs": 5.1,
       "fat": 7.9,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "parmesan": {
     "usda": "171247",
@@ -217,7 +255,9 @@
       "carbs": 13.9,
       "fat": 27.8,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "milk-lowfat": {
     "usda": "746772",
@@ -228,7 +268,9 @@
       "carbs": 5.2,
       "fat": 1,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "rice-white-cooked": {
     "usda": "168878",
@@ -239,7 +281,9 @@
       "carbs": 28.2,
       "fat": 0.3,
       "fiber": 0.4
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "rice-basmati-cooked": {
     "usda": "168878",
@@ -250,7 +294,9 @@
       "carbs": 28.2,
       "fat": 0.3,
       "fiber": 0.4
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "rice-risotto-dry": {
     "usda": "168931",
@@ -261,7 +307,9 @@
       "carbs": 79.2,
       "fat": 0.5,
       "fiber": 0
-    }
+    },
+    "referenceState": "dry",
+    "weighingState": "dry"
   },
   "pasta-wholegrain-cooked": {
     "usda": "168910",
@@ -272,7 +320,9 @@
       "carbs": 30.1,
       "fat": 1.7,
       "fiber": 3.9
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "pasta-cooked": {
     "usda": "169751",
@@ -283,7 +333,9 @@
       "carbs": 30.6,
       "fat": 0.9,
       "fiber": 1.8
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "rice-noodles-cooked": {
     "usda": "2708356",
@@ -294,7 +346,9 @@
       "carbs": 23.9,
       "fat": 0.2,
       "fiber": 1
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "couscous-cooked": {
     "usda": "169700",
@@ -305,7 +359,9 @@
       "carbs": 23.2,
       "fat": 0.2,
       "fiber": 1.4
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "bulgur-cooked": {
     "usda": "170287",
@@ -316,7 +372,9 @@
       "carbs": 18.6,
       "fat": 0.2,
       "fiber": 4.5
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "quinoa-cooked": {
     "usda": "168917",
@@ -327,7 +385,9 @@
       "carbs": 21.3,
       "fat": 1.9,
       "fiber": 2.8
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "oats-dry": {
     "usda": "2708489",
@@ -338,7 +398,9 @@
       "carbs": 67.7,
       "fat": 6.5,
       "fiber": 10.1
-    }
+    },
+    "referenceState": "dry",
+    "weighingState": "dry"
   },
   "semolina-dry": {
     "usda": "169715",
@@ -349,40 +411,22 @@
       "carbs": 72.8,
       "fat": 1.1,
       "fiber": 3.9
-    }
-  },
-  "potato-cooked": {
-    "usda": "170440",
-    "name": "Potatoes, boiled, cooked without skin, flesh, without salt",
-    "per100g": {
-      "calories": 86,
-      "protein": 1.7,
-      "carbs": 20,
-      "fat": 0.1,
-      "fiber": 1.8
-    }
-  },
-  "sweet-potato-cooked": {
-    "usda": "168483",
-    "name": "Sweet potato, cooked, baked in skin, flesh, without salt",
-    "per100g": {
-      "calories": 90,
-      "protein": 2,
-      "carbs": 20.7,
-      "fat": 0.2,
-      "fiber": 3.3
-    }
+    },
+    "referenceState": "dry",
+    "weighingState": "dry"
   },
   "gnocchi": {
-    "usda": "2708722",
-    "name": "Gnocchi, potato",
+    "bls": "K270000",
+    "name": "Gnocchi raw",
     "per100g": {
-      "calories": 135,
-      "protein": 2.4,
-      "carbs": 17.2,
-      "fat": 6.3,
-      "fiber": 1
-    }
+      "calories": 152,
+      "protein": 3.88,
+      "carbs": 31.9,
+      "fat": 0.61,
+      "fiber": 1.84
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "bread-wholegrain": {
     "usda": "172688",
@@ -393,7 +437,9 @@
       "carbs": 42.7,
       "fat": 3.5,
       "fiber": 6
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "bread-rye": {
     "usda": "2707755",
@@ -404,7 +450,9 @@
       "carbs": 48.3,
       "fat": 3.3,
       "fiber": 5.8
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "flatbread": {
     "usda": "174915",
@@ -415,7 +463,9 @@
       "carbs": 55.7,
       "fat": 1.2,
       "fiber": 2.2
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "lasagne-sheets-dry": {
     "usda": "169736",
@@ -426,7 +476,9 @@
       "carbs": 74.7,
       "fat": 1.5,
       "fiber": 3.2
-    }
+    },
+    "referenceState": "dry",
+    "weighingState": "dry"
   },
   "lentils-cooked": {
     "usda": "172421",
@@ -437,7 +489,9 @@
       "carbs": 20.1,
       "fat": 0.4,
       "fiber": 7.9
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "lentils-red-dry": {
     "usda": "172420",
@@ -448,7 +502,9 @@
       "carbs": 63.4,
       "fat": 1.1,
       "fiber": 10.7
-    }
+    },
+    "referenceState": "dry",
+    "weighingState": "dry"
   },
   "chickpeas-cooked": {
     "usda": "173757",
@@ -459,7 +515,9 @@
       "carbs": 27.4,
       "fat": 2.6,
       "fiber": 7.6
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "black-beans-cooked": {
     "usda": "173735",
@@ -470,7 +528,9 @@
       "carbs": 23.7,
       "fat": 0.5,
       "fiber": 8.7
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "kidney-beans-cooked": {
     "usda": "173740",
@@ -481,7 +541,9 @@
       "carbs": 22.8,
       "fat": 0.5,
       "fiber": 6.4
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "white-beans-cooked": {
     "usda": "175203",
@@ -492,7 +554,9 @@
       "carbs": 25.1,
       "fat": 0.4,
       "fiber": 6.3
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "peas-cooked": {
     "usda": "170420",
@@ -503,40 +567,22 @@
       "carbs": 15.6,
       "fat": 0.2,
       "fiber": 5.5
-    }
-  },
-  "broccoli-cooked": {
-    "usda": "169967",
-    "name": "Broccoli, cooked, boiled, drained, without salt",
-    "per100g": {
-      "calories": 35,
-      "protein": 2.4,
-      "carbs": 7.2,
-      "fat": 0.4,
-      "fiber": 3.3
-    }
-  },
-  "spinach-cooked": {
-    "usda": "168463",
-    "name": "Spinach, cooked, boiled, drained, without salt",
-    "per100g": {
-      "calories": 23,
-      "protein": 3,
-      "carbs": 3.8,
-      "fat": 0.3,
-      "fiber": 2.4
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "spinach-raw": {
-    "usda": "2709614",
-    "name": "Spinach, raw",
+    "bls": "G211100",
+    "name": "Spinach raw",
     "per100g": {
-      "calories": 27,
-      "protein": 2.9,
-      "carbs": 2.4,
-      "fat": 0.6,
-      "fiber": 1.6
-    }
+      "calories": 18,
+      "protein": 2.067,
+      "carbs": 0.93,
+      "fat": 0.3,
+      "fiber": 1.8
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "tomato-raw": {
     "usda": "170457",
@@ -547,7 +593,9 @@
       "carbs": 3.9,
       "fat": 0.2,
       "fiber": 1.2
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "tomato-passata": {
     "usda": "170460",
@@ -558,7 +606,9 @@
       "carbs": 9,
       "fat": 0.2,
       "fiber": 1.9
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "bell-pepper": {
     "usda": "170108",
@@ -569,7 +619,9 @@
       "carbs": 6,
       "fat": 0.3,
       "fiber": 2.1
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "courgette": {
     "usda": "169291",
@@ -580,18 +632,9 @@
       "carbs": 3.1,
       "fat": 0.3,
       "fiber": 1
-    }
-  },
-  "aubergine-cooked": {
-    "usda": "169229",
-    "name": "Eggplant, cooked, boiled, drained, without salt",
-    "per100g": {
-      "calories": 35,
-      "protein": 0.8,
-      "carbs": 8.7,
-      "fat": 0.2,
-      "fiber": 2.5
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "carrot": {
     "usda": "2709660",
@@ -602,7 +645,9 @@
       "carbs": 9.7,
       "fat": 0.2,
       "fiber": 2.9
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "onion": {
     "usda": "2709795",
@@ -613,7 +658,9 @@
       "carbs": 8.5,
       "fat": 0.1,
       "fiber": 1.7
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "leek": {
     "usda": "169246",
@@ -624,7 +671,9 @@
       "carbs": 14.2,
       "fat": 0.3,
       "fiber": 1.8
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "mushrooms": {
     "usda": "169251",
@@ -635,7 +684,9 @@
       "carbs": 3.3,
       "fat": 0.3,
       "fiber": 1
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "cucumber": {
     "usda": "168409",
@@ -646,7 +697,9 @@
       "carbs": 3.6,
       "fat": 0.1,
       "fiber": 0.5
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "rocket": {
     "usda": "169387",
@@ -657,7 +710,9 @@
       "carbs": 3.7,
       "fat": 0.7,
       "fiber": 1.6
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "lettuce": {
     "usda": "169247",
@@ -668,7 +723,9 @@
       "carbs": 3.3,
       "fat": 0.3,
       "fiber": 2.1
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "red-cabbage": {
     "usda": "2709775",
@@ -679,7 +736,9 @@
       "carbs": 6.8,
       "fat": 0.2,
       "fiber": 2.1
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "pak-choi": {
     "usda": "170390",
@@ -690,7 +749,9 @@
       "carbs": 2.2,
       "fat": 0.2,
       "fiber": 1
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "green-beans-cooked": {
     "usda": "169141",
@@ -701,7 +762,9 @@
       "carbs": 7.9,
       "fat": 0.3,
       "fiber": 3.2
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "sweetcorn": {
     "usda": "169214",
@@ -712,7 +775,9 @@
       "carbs": 14.3,
       "fat": 1.2,
       "fiber": 2
-    }
+    },
+    "referenceState": "drained",
+    "weighingState": "drained"
   },
   "mixed-stirfry-veg": {
     "usda": "170472",
@@ -723,7 +788,9 @@
       "carbs": 13.1,
       "fat": 0.2,
       "fiber": 4.4
-    }
+    },
+    "referenceState": "cooked-drained",
+    "weighingState": "cooked-drained"
   },
   "salsa": {
     "usda": "746777",
@@ -734,7 +801,9 @@
       "carbs": 6.7,
       "fat": 0.2,
       "fiber": 1.8
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "olives": {
     "usda": "169094",
@@ -745,7 +814,9 @@
       "carbs": 6,
       "fat": 10.9,
       "fiber": 1.6
-    }
+    },
+    "referenceState": "drained",
+    "weighingState": "drained"
   },
   "banana": {
     "usda": "173944",
@@ -756,7 +827,9 @@
       "carbs": 22.8,
       "fat": 0.3,
       "fiber": 2.6
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "berries-mixed": {
     "usda": "2709283",
@@ -767,7 +840,9 @@
       "carbs": 8,
       "fat": 0.2,
       "fiber": 1.8
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "plums": {
     "usda": "169949",
@@ -778,7 +853,9 @@
       "carbs": 11.4,
       "fat": 0.3,
       "fiber": 1.4
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "apple": {
     "usda": "171689",
@@ -789,7 +866,9 @@
       "carbs": 12.8,
       "fat": 0.1,
       "fiber": 1.3
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "lemon-juice": {
     "usda": "167747",
@@ -800,7 +879,9 @@
       "carbs": 6.9,
       "fat": 0.2,
       "fiber": 0.3
-    }
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   },
   "olive-oil": {
     "usda": "171413",
@@ -811,7 +892,9 @@
       "carbs": 0,
       "fat": 100,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "rapeseed-oil": {
     "usda": "172336",
@@ -822,7 +905,9 @@
       "carbs": 0,
       "fat": 100,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "almonds": {
     "usda": "170567",
@@ -833,7 +918,9 @@
       "carbs": 21.6,
       "fat": 49.9,
       "fiber": 12.5
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "peanut-butter": {
     "usda": "172470",
@@ -844,7 +931,9 @@
       "carbs": 22.3,
       "fat": 51.4,
       "fiber": 5
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "tahini": {
     "usda": "168604",
@@ -855,7 +944,9 @@
       "carbs": 21.5,
       "fat": 53,
       "fiber": 4.7
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "pesto": {
     "usda": "171579",
@@ -866,7 +957,9 @@
       "carbs": 10.1,
       "fat": 37.6,
       "fiber": 1.8
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "coconut-milk-light": {
     "usda": "170173",
@@ -877,7 +970,9 @@
       "carbs": 2.8,
       "fat": 21.3,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "soy-sauce": {
     "usda": "174277",
@@ -888,7 +983,9 @@
       "carbs": 4.9,
       "fat": 0.6,
       "fiber": 0.8
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "mustard": {
     "usda": "326698",
@@ -899,7 +996,9 @@
       "carbs": 5.3,
       "fat": 3.4,
       "fiber": 4.3
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "quark-lowfat": {
     "off": "7061318012171",
@@ -910,7 +1009,9 @@
       "carbs": 4.1,
       "fat": 0.2,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "halloumi": {
     "off": "5291803005148",
@@ -921,7 +1022,9 @@
       "carbs": 3.6,
       "fat": 25,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
   },
   "seitan": {
     "off": "5600722732057",
@@ -932,6 +1035,73 @@
       "carbs": 1.9,
       "fat": 1.3,
       "fiber": 0
-    }
+    },
+    "referenceState": "as-sold",
+    "weighingState": "as-sold"
+  },
+  "egg-raw": {
+    "bls": "E111100",
+    "name": "Chicken egg raw",
+    "per100g": {
+      "calories": 135,
+      "protein": 13.175,
+      "carbs": 0.34,
+      "fat": 9,
+      "fiber": 0
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
+  },
+  "potato-raw": {
+    "bls": "K110100",
+    "name": "Potatoe peeled, raw",
+    "per100g": {
+      "calories": 83,
+      "protein": 1.94,
+      "carbs": 17.9,
+      "fat": 0.1,
+      "fiber": 1.42
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
+  },
+  "sweet-potato-raw": {
+    "bls": "K420100",
+    "name": "Batata/sweet potato, raw",
+    "per100g": {
+      "calories": 119,
+      "protein": 1.63,
+      "carbs": 25.2,
+      "fat": 0.6,
+      "fiber": 3.14
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
+  },
+  "broccoli-raw": {
+    "bls": "G312100",
+    "name": "Broccoli raw",
+    "per100g": {
+      "calories": 35,
+      "protein": 3.622,
+      "carbs": 2.3,
+      "fat": 0.597,
+      "fiber": 3
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
+  },
+  "aubergine-raw": {
+    "bls": "G510100",
+    "name": "Aubergine raw",
+    "per100g": {
+      "calories": 19,
+      "protein": 0.57,
+      "carbs": 3.02,
+      "fat": 0.18,
+      "fiber": 1.4
+    },
+    "referenceState": "raw",
+    "weighingState": "raw"
   }
 }

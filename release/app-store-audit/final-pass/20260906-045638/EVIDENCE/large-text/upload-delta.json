@@ -1,0 +1,19 @@
+{
+  "file_count": 296,
+  "changed_from_build15_context": [
+    "docs/ARCHITECTURE.md",
+    "docs/ROADMAP.md",
+    "scripts/validate-final-live.mjs",
+    "scripts/validate-jpeg-live.mjs",
+    "src/app/paywall.tsx",
+    "src/components/ui.tsx"
+  ],
+  "removed_from_build15_context": [],
+  "additional_product_changes": [
+    "src/app/paywall.tsx",
+    "src/components/ui.tsx"
+  ],
+  "production_build_started": false,
+  "testflight_uploaded": false,
+  "excluded_metadata": ".git/ omitted consistently with the Build15 source inventory; local build:inspect copy includes Git metadata"
+}

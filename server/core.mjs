@@ -33,6 +33,7 @@ export {
   BLS_SOURCE,
   getBlsReference,
   getBlsReferenceByCode,
+  requiresFoodIdentityCorrection,
   resolveBlsFacts,
   searchBlsReferences,
 } from '../supabase/functions/_shared/bls-reference.mjs';

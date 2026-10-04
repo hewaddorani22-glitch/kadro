@@ -32,29 +32,18 @@ assert.match(progress, /\[currentDay, locale, mealHistory, targets\.protein\]/);
 assert.match(progress, /currentLoggingStreak\(mealHistory\), \[currentDay, mealHistory\]/);
 assert.match(read('src/context/AppContext.tsx'), /setMeals\(mealHistory\.filter\(\(meal\) => meal\.date === currentDay\)\)/);
 
-for (const [label, source] of [['today.tsx', today], ['plan.tsx', plan]]) {
-  if (!/const dayIsDone = remaining\.calories < \d+;/.test(source)) {
-    problems.push(`${label}: no dayIsDone guard derived from remaining.calories`);
-  }
-}
-
-// Today: the "show ideas" button must sit inside the not-done branch.
-const ideasAt = today.indexOf('t.today.showIdeas');
-const branchAt = today.indexOf('dayIsDone ?');
-if (ideasAt < 0 || branchAt < 0 || ideasAt < branchAt) {
-  problems.push('today.tsx: the meal-ideas button is not behind the dayIsDone branch');
-}
-if (!today.includes('t.today.dayComplete') || !today.includes('t.today.dayOver')) {
-  problems.push('today.tsx: missing the finished-day copy');
-}
-
-// Plan: recommendMeals must not even run once the budget is spent.
-if (!/selected && !dayIsDone \? recommendMeals\(/.test(plan)) {
-  problems.push('plan.tsx: recommendMeals still runs when the day is done');
-}
-if (!plan.includes('t.plan.dayDoneTitle')) {
-  problems.push('plan.tsx: missing the finished-day card');
-}
+// Reaching the target must remain visible without locking meal ideas away.
+assert.match(today, /const dayIsDone = remaining\.calories < 200;/);
+assert.match(today, /t.today.dayComplete/);
+assert.match(today, /t.today.dayOver/);
+assert.match(today, /label=\{t.plan.smallIdeas\}/);
+assert.match(plan, /selected \? recommendMeals\(/);
+assert.doesNotMatch(plan, /selected && !dayIsDone/);
+assert.match(plan, /smallBudget \? \(/);
+assert.match(plan, /t.plan.dayDoneText/);
+assert.match(plan, /t.plan.afterOver/);
+const result = read('src/app/result.tsx');
+assert.match(result, /label=\{t.plan.smallIdeas\}/);
 
 for (const dict of ['src/i18n/de.ts', 'src/i18n/en.ts']) {
   const source = read(dict);
@@ -68,4 +57,4 @@ if (problems.length) {
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
-console.log('Day-complete state guarded in Today and Plan.');
+console.log('Daily target status stays visible; optional small meals remain reachable.');

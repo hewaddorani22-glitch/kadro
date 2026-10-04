@@ -1,0 +1,5 @@
+
+> kandro@1.0.0 validate:eas:remote
+> node scripts/validate-eas-remote.mjs
+
+EAS production is wired to RevenueCat, EU PostHog and the hosted Supabase gateway.

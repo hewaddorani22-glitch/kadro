@@ -407,8 +407,8 @@ assert.match(gatewayDoc, /`store=app_store`[\s\S]{0,500}(?:Test Store|`rc_billin
   'the runbook must identify the server store allowlist, not Sandbox Testing Access, as the Test Store boundary');
 
 for (const [language, source] of [['en', english], ['de', german]]) {
-  assert.match(source, /benefit1: '[^'\n]*60[^'\n]*(?:per day|pro Tag)[^'\n]*'/i, `${language}: paywall must disclose the 60/day cap`);
-  assert.match(source, /keeps: '[^'\n]*60[^'\n]*(?:per day|pro Tag)[^'\n]*'/i, `${language}: paywall footer must disclose the 60/day cap`);
+  assert.match(source, /benefit2Detail: ["'][^\n]*60[^\n]*(?:per day|pro Tag)[^\n]*["']/i, `${language}: visible paid benefit must disclose the combined 60/day cap`);
+  assert.match(source, /freeTitle:/, `${language}: permanently free features have their own heading`);
   assert.doesNotMatch(source, /(?:unlimited (?:AI |photo)|unbegrenzte (?:Foto|Scans)|ohne Limit)/i, `${language}: paid analysis must not be described as unlimited`);
 }
 
@@ -445,7 +445,7 @@ for (const name of [
   assert.match(gatewayEnv, new RegExp(`^${name}=`, 'm'), `${name} must be documented as an Edge secret`);
   assert.doesNotMatch(client + serverEntitlement + subscriptionContext + appContext + localRepository, new RegExp(`EXPO_PUBLIC_${name}`));
 }
-assert.match(client, /body: \{ \.\.\.input, requestId, ingredientCorrection: 1 \}/);
+assert.match(client, /body: \{ imageBase64: input\.imageBase64, mimeType: input\.mimeType, language: input\.language, locale: input\.locale, requestId, ingredientCorrection: 1, captureProtocol: 2 \}/);
 assert.match(client, /description: description\.trim\(\)[\s\S]*requestId/);
 assert.match(appContext, /analyzeDescription\(descriptionInput, invocationScanId\)/);
 assert.match(appContext, /analyzePreparedPhoto\(input!, invocationScanId\)/);
@@ -469,19 +469,20 @@ assert.equal(await confirmationModule.confirmServerEntitlementWithRetry(
 assert.deepEqual(observedWaits, [1_500, 19_500]);
 assert.ok(observedWaits.reduce((sum, value) => sum + value, 0) > 20_000,
   'the final purchase probe must cross the server refresh cooldown');
-assert.ok(
-  subscriptionContext.indexOf('await confirmServerEntitlementWithRetry(refreshServerEntitlement)')
-    < subscriptionContext.indexOf("setStatus('active')"),
-  'the UI must not claim Pro before the server confirms it',
-);
-assert.match(subscriptionContext, /confirmServerEntitlementWithRetry\(refreshServerEntitlement\)[\s\S]*if \(!serverActive\)[\s\S]*return 'failed'/);
-assert.match(subscriptionContext, /const serverActive = !visible\.entitlementActive \|\| await refreshServerEntitlement\(\)[\s\S]*if \(!isCurrent\(\)\) return;[\s\S]*if \(!serverActive\)/,
-  'SDK refresh must not resurrect Pro UI without server confirmation');
+const purchaseBody = subscriptionContext.slice(subscriptionContext.indexOf('const purchase = useCallback'));
+const confirmationIndex = purchaseBody.indexOf('await confirmServerEntitlementWithRetry(');
+assert.ok(confirmationIndex >= 0 && confirmationIndex < purchaseBody.indexOf("setStatus('active')"),
+  'the UI must not claim Pro before the server confirms it');
+// The controller regressions execute these branches. A positive store result
+// with no server confirmation now stays pending, not falsely failed.
+assert.match(purchaseBody, /confirmServerEntitlementWithRetry\([\s\S]*if \(!serverActive\)[\s\S]*return 'pending'/);
+assert.match(subscriptionContext, /const serverActive = visible\.configured && visible\.mode === 'native-store'[\s\S]*await refreshServerEntitlement\(\)[\s\S]*if \(!isCurrent\(\)\) return;[\s\S]*if \(visible\.entitlementActive && !serverActive\)/,
+  'SDK refresh must not resurrect Pro UI without server confirmation, nor overrule server-confirmed Pro with SDK Free');
 assert.match(subscriptionContext, /const existing = refreshInFlightRef\.current;[\s\S]*if \(existing\?\.generation === generation\) return existing\.promise/,
   'simultaneous hydration, auth and paywall refreshes must share one in-flight operation');
 assert.match(subscriptionContext, /const isCurrent = \(\) => refreshGenerationRef\.current === generation[\s\S]*if \(!isCurrent\(\)\) return;/,
   'an invalidated refresh must not overwrite a newer purchase or consent state');
-assert.match(subscriptionContext, /setSnapshot\(visible\);\s*setError\(null\);\s*setStatus\(/,
+assert.match(subscriptionContext, /setSnapshot\(\{ \.\.\.visible, entitlementActive: serverActive \}\);\s*setError\(null\);\s*setStatus\(/,
   'a successful refresh must clear a losing/stale error in the same commit path');
 assert.match(serverEntitlement, /if \(lastRefreshResult\?\.userId === access\.userId && now - lastRefreshResult\.checkedAt < REFRESH_RESULT_CACHE_MS\)[\s\S]*if \(refreshInFlight\?\.userId === access\.userId\) return refreshInFlight\.promise/,
   'server entitlement checks must coalesce and cache inside the 20-second server cooldown');

@@ -1,15 +1,18 @@
+import { usePresentationBlock } from '@/services/presentation';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { MealSyncStatus } from '@/components/MealSyncStatus';
 import { CalorieRing } from '@/components/CalorieRing';
 import { MealDetailSheet } from '@/components/MealDetailSheet';
 import { Card, Eyebrow, IconCircle, MacroCard, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
 import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { recommendationPreview } from '@/services/recommendations';
 import { Meal } from '@/types/nutrition';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatDateParts, formatNumber, mealTypeIcon, mealTypeLabel } from '@/utils/format';
@@ -18,10 +21,11 @@ export default function TodayScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { consumed, hasLoggedScan, logRepeatMeal, meals, pendingAnalysisCount, remaining, repeatMeals, resetScan, resumeLatestAnalysis, setPlannedMealType, targets, userName } = useApp();
+  const { consumed, hasLoggedScan, logRepeatMeal, meals, pendingAnalysisCount, profile, remaining, repeatMeals, resetScan, resumeLatestAnalysis, setPlannedMealType, targets, userName } = useApp();
   const [repeating, setRepeating] = useState<string | null>(null);
   const [openMeal, setOpenMeal] = useState<Meal | null>(null);
-  const { locale, t } = useLanguage();
+  usePresentationBlock(Boolean(openMeal || repeating));
+  const { language, locale, t } = useLanguage();
   const dateLabel = formatDateParts(new Date(), { weekday: 'short', day: 'numeric', month: 'long' }, locale);
   // The greeting was hard-coded to "Guten Morgen", so the app said good morning
   // at 22:00.
@@ -29,13 +33,14 @@ export default function TodayScreen() {
   const daypart = hour < 11 ? t.today.goodMorning : hour < 18 ? t.today.goodDay : t.today.goodEvening;
   const eveningReady = hour >= 18;
   const greeting = userName.trim() ? `${daypart}, ${userName}` : daypart;
-  // Below a snack there is nothing useful left to suggest.
-  const dayIsDone = remaining.calories < 150;
+  // Keep the target status visible while still offering optional small meals.
+  const dayIsDone = remaining.calories < 200;
   const overBudget = consumed.calories > targets.calories;
-  const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
-  const calorieRange = `${Math.max(300, calorieCenter - 50)}–${calorieCenter + 50}`;
-  const proteinCenter = Math.round(Math.min(45, Math.max(28, remaining.protein * 0.48)) / 5) * 5;
-  const proteinRange = `${Math.max(20, proteinCenter - 5)}–${proteinCenter + 5}`;
+  const nextMeal = useMemo(() => recommendationPreview(remaining, profile.preferences), [language, remaining, profile.preferences]);
+  const [calorieLow, calorieHigh] = nextMeal.calories;
+  const calorieRange = calorieLow === calorieHigh ? `${calorieLow}` : `${calorieLow}–${calorieHigh}`;
+  const [proteinLow, proteinHigh] = nextMeal.protein;
+  const proteinRange = proteinLow === proteinHigh ? `${proteinLow}` : `${proteinLow}–${proteinHigh}`;
 
   const startScan = (slot?: Meal['type']) => {
     resetScan();
@@ -68,6 +73,8 @@ export default function TodayScreen() {
     setRepeating(key);
     try {
       await logRepeatMeal(candidate);
+    } catch {
+      Alert.alert(t.result.saveFailed);
     } finally {
       setRepeating(null);
     }
@@ -84,6 +91,8 @@ export default function TodayScreen() {
           <Text style={styles.avatarText}>{userName.trim().charAt(0).toUpperCase() || 'K'}</Text>
         </Pressable>
       </View>
+
+      <MealSyncStatus />
 
       {pendingAnalysisCount > 0 ? (
         <Pressable onPress={resumePending} style={styles.pendingBanner}>
@@ -114,17 +123,13 @@ export default function TodayScreen() {
       </Card>
 
       <View style={styles.macroRow}>
-        <MacroCard current={consumed.protein} icon="barbell-outline" label={t.common.protein} target={targets.protein} />
+        <MacroCard current={consumed.protein} icon="barbell-outline" label={t.common.protein} minimum target={targets.protein} />
         <MacroCard current={consumed.carbs} icon="flash-outline" label={t.common.carbs} target={targets.carbs} />
         <MacroCard current={consumed.fat} icon="water-outline" label={t.common.fat} target={targets.fat} />
       </View>
 
-      {/*
-        Once the budget is spent, pushing three more meal ideas is advice that
-        contradicts the number directly above it. The card still lets someone
-        log what they eat: people do eat more, and hiding the button would
-        just mean the day goes unrecorded.
-      */}
+      {/* Keep the target status visible; small meal ideas remain optional and
+          disclose their projected overage before the user records a meal. */}
       {dayIsDone ? (
         <Card style={styles.nextCard}>
           <View style={styles.nextHeader}>
@@ -135,6 +140,7 @@ export default function TodayScreen() {
             </View>
           </View>
           <Text style={styles.dayDoneText}>{overBudget ? t.today.dayOverText : t.today.dayCompleteText}</Text>
+          <PrimaryButton icon="arrow-forward" label={t.plan.smallIdeas} onPress={() => router.push('/(tabs)/plan')} variant="secondary" />
           <PrimaryButton icon="add" label={t.today.logAnyway} onPress={() => router.push('/(tabs)/scan')} variant="ghost" />
         </Card>
       ) : (
@@ -191,7 +197,7 @@ export default function TodayScreen() {
                   {candidate.count > 1 ? <Text style={styles.repeatCount}>{candidate.count}×</Text> : null}
                 </View>
                 <Text numberOfLines={2} style={styles.repeatTitle}>{candidate.title}</Text>
-                <Text style={styles.repeatMacros}>~{candidate.calories} kcal · {candidate.protein} g P</Text>
+                <Text style={styles.repeatMacros}>~{formatNumber(candidate.calories, locale)} kcal · {candidate.protein} g P</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -235,7 +241,7 @@ export default function TodayScreen() {
                     <Text style={styles.mealTime}>{meal.time}</Text>
                   </View>
                   <View style={styles.mealNumbers}>
-                    <Text style={styles.mealCalories}>~{meal.calories}</Text>
+                    <Text style={styles.mealCalories}>~{formatNumber(meal.calories, locale)}</Text>
                     <Text style={styles.mealUnit}>kcal</Text>
                   </View>
                   <Ionicons color={colors.muted} name="chevron-forward" size={16} />

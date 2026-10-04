@@ -37,6 +37,7 @@ export function scaleNutrition(per100g: Nutrition, grams: number): Nutrition {
     protein: Math.round(per100g.protein * scale),
     carbs: Math.round(per100g.carbs * scale),
     fat: Math.round(per100g.fat * scale),
+    ...(per100g.fiber === undefined ? {} : {fiber: Math.round(per100g.fiber * scale)}),
   };
 }
 

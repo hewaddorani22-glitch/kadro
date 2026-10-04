@@ -1,0 +1,15 @@
+{
+  "nutritionVersion": 51,
+  "checks": {
+    "supabase/functions/_shared/detection.mjs": true,
+    "supabase/functions/_shared/german-food-terms.mjs": true,
+    "supabase/functions/_shared/bls-reference.mjs": true,
+    "supabase/functions/_shared/nutrition.mjs": true,
+    "supabase/functions/_shared/bls-search-data.mjs": true,
+    "supabase/functions/_shared/food-query.mjs": true,
+    "supabase/functions/_shared/bls-search.mjs": true,
+    "supabase/functions/_shared/bls-names.mjs": true,
+    "supabase/functions/_shared/revenuecat.mjs": true,
+    "supabase/functions/nutrition/index.ts": true
+  }
+}

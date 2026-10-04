@@ -12,6 +12,7 @@ import { hasRecipe } from '@/services/recipes';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { recordRecommendationFeedback, recordRecommendationSet } from '@/services/cloudRepository';
 import { recommendMeals } from '@/services/recommendations';
+import { SMALL_MEAL_CALORIES, suggestedNutrition } from '@/utils/mealSuggestions';
 import { trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { MealContext, MealSuggestion, PortionFactor } from '@/types/nutrition';
@@ -24,7 +25,7 @@ export default function PlanScreen() {
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ context?: string; fromScan?: string }>();
   const router = useRouter();
-  const { freeScansLeft, hasLoggedScan, logPlannedMeal, profile, remaining } = useApp();
+  const { consumed, freeScansLeft, hasLoggedScan, logPlannedMeal, profile, remaining, targets } = useApp();
   const { language, locale, t } = useLanguage();
   const contexts: { id: MealContext; title: string; detail: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { id: 'home', title: t.plan.ctxHome, detail: t.plan.ctxHomeDetail, icon: 'home-outline' },
@@ -45,17 +46,19 @@ export default function PlanScreen() {
     }
   }, [params.context]);
 
-  // Nothing left to spend means nothing sensible to suggest; a "300–400 kcal"
-  // idea under a "0 kcal left" line is advice arguing with its own headline.
-  const dayIsDone = remaining.calories < 150;
+  const availableCalories = targets.calories - consumed.calories;
+  const smallBudget = availableCalories < SMALL_MEAL_CALORIES;
   const suggestions = useMemo(
-    () => (selected && !dayIsDone ? recommendMeals(selected, remaining, profile.preferences) : []),
+    () => (selected ? recommendMeals(selected, remaining, profile.preferences) : []),
     // `language` picks the catalogue, and it arrives one render after the
     // device guess.
-    [dayIsDone, language, profile.preferences, remaining, selected],
+    [language, profile.preferences, remaining, selected],
   );
-  const calorieCenter = Math.round(Math.min(550, Math.max(380, remaining.calories * 0.38)) / 10) * 10;
-  const proteinCenter = Math.round(Math.min(45, Math.max(28, remaining.protein * 0.48)) / 5) * 5;
+  const range = (key: 'calories' | 'protein') => {
+    const values = suggestions.map((suggestion) => suggestion[key]);
+    const low = Math.min(...values), high = Math.max(...values);
+    return low === high ? formatNumber(low, locale) : `${formatNumber(low, locale)}–${formatNumber(high, locale)}`;
+  };
 
   useEffect(() => {
     if (!selected || suggestions.length !== 3) return;
@@ -110,7 +113,6 @@ export default function PlanScreen() {
     try {
       await logPlannedMeal(suggestion, portion);
       void successHaptic();
-      trackEvent('meal saved', { next_destination: 'today' });
       setLoggedTitle(suggestion.title);
       setChosen(null);
       // The paywall belongs after the value, never between choosing and eating.
@@ -137,7 +139,7 @@ export default function PlanScreen() {
       <Card style={styles.balanceCard}>
         <View>
           <Text style={styles.balanceLabel}>{t.plan.afterMeals}</Text>
-          <Text style={styles.balanceValue}>{t.plan.kcalLeft(formatNumber(remaining.calories, locale))}</Text>
+          <Text style={styles.balanceValue}>{availableCalories < 0 ? t.plan.kcalOver(formatNumber(-availableCalories, locale)) : t.plan.kcalLeft(formatNumber(availableCalories, locale))}</Text>
         </View>
         <View style={styles.proteinPill}>
           <Ionicons color={colors.success} name="barbell-outline" size={16} />
@@ -182,27 +184,28 @@ export default function PlanScreen() {
             </Pressable>
           ) : null}
 
-          {dayIsDone ? (
+          {smallBudget ? (
             <Card style={styles.dayDone}>
-              <IconCircle name="checkmark" size={48} tone="accent" />
+              <IconCircle name="information-circle-outline" size={40} tone="neutral" />
               <Text style={styles.dayDoneTitle}>{t.plan.dayDoneTitle}</Text>
               <Text style={styles.dayDoneText}>{t.plan.dayDoneText}</Text>
-              <PrimaryButton icon="arrow-back" label={t.plan.backToToday} onPress={() => router.push('/(tabs)/today')} variant="secondary" />
             </Card>
           ) : null}
 
-          {dayIsDone ? null : (
           <View style={styles.resultsHeading}>
             <View>
               <Text style={styles.resultsTitle}>{t.plan.optionsTitle}</Text>
-              <Text style={styles.resultsMeta}>{t.plan.optionsMeta(`${Math.max(300, calorieCenter - 50)}–${calorieCenter + 50}`, `${Math.max(20, proteinCenter - 5)}–${proteinCenter + 5}`)}</Text>
+              <Text style={styles.resultsMeta}>{t.plan.optionsMeta(range('calories'), range('protein'))}</Text>
             </View>
             <Ionicons color={colors.accentText} name="checkmark-done" size={24} />
           </View>
-          )}
 
           {suggestions.map((suggestion, index) => {
             const isChosen = chosen === suggestion.id;
+            const relativePortion = isChosen ? portion : 1;
+            const nutrition = suggestedNutrition(suggestion, relativePortion);
+            const recipeScale = (suggestion.portionScale ?? 1) * relativePortion;
+            const afterMeal = Math.round(availableCalories - nutrition.calories);
             return (
               <Card key={suggestion.id} style={[styles.suggestion, isChosen && styles.suggestionChosen]}>
                 <View style={styles.suggestionTop}>
@@ -215,10 +218,14 @@ export default function PlanScreen() {
                   <Text numberOfLines={2} style={styles.time}>{suggestion.time}</Text>
                 </View>
                 <View style={styles.nutritionRow}>
-                  <NutritionStat label="kcal" value={`~${suggestion.calories}`} />
-                  <NutritionStat label={t.common.protein} value={`~${suggestion.protein} g`} />
-                  <NutritionStat label={t.common.carbs} value={`~${suggestion.carbs} g`} />
+                  <NutritionStat label="kcal" value={`~${nutrition.calories}`} />
+                  <NutritionStat label={t.common.protein} value={`~${nutrition.protein} g`} />
+                  <NutritionStat label={t.common.carbs} value={`~${nutrition.carbs} g`} />
                 </View>
+                {recipeScale !== 1 ? <Text style={styles.source}>{t.plan.portionOfStandard(formatNumber(Math.round(recipeScale * 100), locale))}</Text> : null}
+                <Text style={styles.portionResult}>
+                  {afterMeal < 0 ? t.plan.afterOver(formatNumber(-afterMeal, locale)) : t.plan.afterLeft(formatNumber(afterMeal, locale))}
+                </Text>
                 <PrimaryButton
                   icon={isChosen ? 'chevron-up' : 'arrow-forward'}
                   label={isChosen ? t.plan.dropIt : t.plan.take}
@@ -232,7 +239,7 @@ export default function PlanScreen() {
                 {hasRecipe(suggestion.id) ? (
                   <Pressable
                     accessibilityRole="button"
-                    onPress={() => router.push(`/recipe?id=${suggestion.id}` as never)}
+                    onPress={() => router.push(`/recipe?id=${suggestion.id}&portion=${recipeScale}` as never)}
                     style={styles.recipeLink}
                   >
                     <Ionicons color={colors.accentText} name="book-outline" size={18} />
@@ -266,7 +273,7 @@ export default function PlanScreen() {
                       })}
                     </View>
                     <Text style={styles.portionResult}>
-                      ~{Math.round(suggestion.calories * portion)} kcal · ~{Math.round(suggestion.protein * portion)} g {t.common.protein}
+                      ~{formatNumber(nutrition.calories, locale)} kcal · ~{nutrition.protein} g {t.common.protein}
                     </Text>
                     <PrimaryButton
                       disabled={logging}
@@ -280,11 +287,7 @@ export default function PlanScreen() {
             );
           })}
 
-          {dayIsDone ? null : (
-            <Text style={styles.catalogNote}>
-              {t.plan.catalogNote}
-            </Text>
-          )}
+          <Text style={styles.catalogNote}>{t.plan.catalogNote}</Text>
 
           {hasLoggedScan && params.fromScan !== '1' && subscriptionStatus !== 'active' ? (
             <Pressable accessibilityRole="button" onPress={() => router.push('/paywall')} style={styles.proBanner}>

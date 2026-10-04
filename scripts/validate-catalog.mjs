@@ -27,7 +27,9 @@ const numericRanges = {
   calories: [350, 700],
   protein: [18, 65],
   carbs: [20, 100],
-  fat: [5, 30],
+  // Sourced lean turkey breast with beans can legitimately total below 5 g.
+  // Recipe checks independently verify the complete ingredient sum.
+  fat: [0, 30],
   // Three, not four: a tomato risotto and a fish-with-rice plate genuinely
   // land there once the fibre is summed from sourced ingredients.
   fiber: [3, 25],

@@ -1,0 +1,36 @@
+{
+  "checked_at_utc": "2026-09-06T11:35:27Z",
+  "method": "Read-only Supabase CLI Management API queries against omtmxqzwxvthycyfkggv; no mutations",
+  "owner_report": "After full app restart and explicit Restore: purchases restored / Kandro Pro is active again.",
+  "matching_recent_accounts": 1,
+  "identity_limit": "Account selected by most recent entitlement check in last 2 hours; exactly one row. Timing matches owner flow; exact owner-to-Supabase-ID not independently established.",
+  "account": {
+    "fingerprint": "90cc030c94",
+    "created_at": "2026-09-06T11:28:48.740736Z",
+    "entitlement_active": true,
+    "entitlement_checked_at": "2026-09-06T11:33:34.936Z",
+    "entitlement_expires_at": "2026-09-06T12:32:11Z",
+    "entitlement_refresh_at": "2026-09-06T11:33:34.911731Z"
+  },
+  "events": [
+    {
+      "type": "CANCELLATION",
+      "environment": "SANDBOX",
+      "event_at": "2026-09-06T11:30:01.598Z",
+      "received_at": "2026-09-06T11:30:03.875222Z"
+    },
+    {
+      "type": "INITIAL_PURCHASE",
+      "environment": "SANDBOX",
+      "event_at": "2026-09-06T11:30:01.589Z",
+      "received_at": "2026-09-06T11:30:04.107501Z"
+    }
+  ],
+  "limits": [
+    "No actual expiration observed",
+    "No independent screen recording or exact transaction ID",
+    "INITIAL_PURCHASE on recreated customer does not prove a new charge",
+    "Monthly and annual separate purchase flows are not both covered"
+  ],
+  "dsa": "App Store Connect fresh UI read ~13:37 MESZ: In Prüfung; paid/free agreements active"
+}

@@ -1,3 +1,4 @@
+import {modelRequest,GEMINI_MODEL,requestStructured} from '../supabase/functions/_shared/model-adapter.mjs';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -51,9 +52,9 @@ for (const [language, dictionary] of [['de', de], ['en', en]]) {
 assert.ok(gateway.includes('https://openrouter.ai/api/v1/responses'), 'the configured OpenRouter endpoint must stay explicit');
 assert.ok(!gateway.includes('https://api.openai.com'), 'the hosted gateway must not expose an undisclosed direct-provider route');
 assert.ok(!gateway.includes("Deno.env.get('AI_PROVIDER')"), 'the production AI recipient must not be switchable by configuration');
-assert.ok(gateway.includes("only: ['azure']"), 'the disclosed Azure processor must be pinned');
-assert.ok(gateway.includes('allow_fallbacks: false'), 'provider fallback would invalidate the named-recipient disclosure');
-assert.ok(gateway.includes('zdr: true'), 'Zero Data Retention must be enforced in code');
+assert.deepEqual(modelRequest({content:[]}).body.provider.only, ['azure'], 'the disclosed Azure processor must be pinned');
+assert.equal(modelRequest({content:[]}).body.provider.allow_fallbacks, false, 'provider fallback would invalidate the named-recipient disclosure');
+assert.equal(modelRequest({content:[]}).body.provider.zdr, true, 'Zero Data Retention must be enforced in code');
 assert.ok(!gateway.includes("Deno.env.get('OPENROUTER_ZDR')"), 'ZDR must not be disableable by production configuration');
 assert.ok(!gateway.includes('response.text()'), 'the hosted gateway must never read a provider error body into an exception');
 assert.ok(!localGateway.includes('response.text()'), 'the local gateway must never read a provider error body into an exception');
@@ -76,7 +77,7 @@ assert.match(onboarding, /onChange=\{\(nextAge\) => \{[\s\S]*setAge\(nextAge\);[
   'interacting with the age picker does not explicitly declare the selected age');
 assert.match(onboarding, /if \(step === 'age' && !ageConfirmed\) return;/,
   'a non-UI caller can advance past an undeclared age');
-assert.match(onboarding, /disabled=\{step === 'age' && !ageConfirmed\}/,
+assert.match(onboarding, /disabled=\{\(step === 'age' && !ageConfirmed\) \|\| \(step === 'weight' && !weightInputValid\)\}/,
   'the onboarding button allows the default age through without confirmation');
 assert.match(onboarding, /EDIT_STEPS = STEPS\.filter\(\(id\) => id !== 'building' && id !== 'age'\)/,
   'an already-recorded minor must not become an adult in local state before the protected cloud update fails');
@@ -289,7 +290,7 @@ assert.match(profileScreen, /const analyticsEligible = hydrationReady && Boolean
 assert.match(profileScreen, /getAnalyticsCollectionEnabled\(\)[\s\S]*\}, \[hydrationReady, profile\.age, profile\.completedAt\]\)/,
   'the analytics switch must re-read explicit consent after authoritative profile hydration');
 assert.match(profileScreen, /disabled=\{!analyticsEligible \|\| !isTelemetryConfigured\}/, 'minors must not be able to enable optional analytics');
-assert.match(personalization, /const offset = teen \? 0 :/, 'teen goals must never turn into an adult calorie deficit or surplus');
+assert.match(personalization, /const requestedOffset = teen \? 0 :/, 'teen goals must never turn into an adult calorie deficit or surplus');
 
 const cameraPlugin = appJson.expo.plugins.find((entry) => Array.isArray(entry) && entry[0] === 'expo-camera');
 assert.equal(cameraPlugin?.[1]?.microphonePermission, false, 'a still-photo app must not request microphone access');
@@ -298,3 +299,5 @@ assert.ok(appJson.expo.locales?.en && appJson.expo.locales?.de, 'permission copy
 assert.equal(appJson.expo.ios?.infoPlist?.NSAppTransportSecurity?.NSAllowsArbitraryLoads, false, 'iOS must reject arbitrary unencrypted network loads');
 
 console.log('Validated explicit AI consent, withdrawal, 14+ guardian enforcement and minimal native permissions.');
+
+await assert.rejects(requestStructured({apiKey:'synthetic',content:[],model:GEMINI_MODEL,fetchImpl:()=>{throw new Error('must not call');}}),/ai_route_not_approved/);

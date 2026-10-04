@@ -1,3 +1,7 @@
+import { isSearchQuery } from '../supabase/functions/_shared/search-policy.mjs';
+import { offMassNutrition, offMassPortions } from '../supabase/functions/_shared/off-product.mjs';
+import { requestStructured, ModelError } from '../supabase/functions/_shared/model-adapter.mjs';
+import { applyDescriptionAmountsTolerant } from '../supabase/functions/_shared/description-amounts.mjs';
 import 'dotenv/config';
 import { createServer } from 'node:http';
 
@@ -21,6 +25,7 @@ import {
   searchBlsCatalog,
   searchTermVariants,
   resolveBlsFacts,
+  requiresFoodIdentityCorrection,
   toFoodFacts,
   usdaCacheKey,
   validateAnalysisInput,
@@ -59,58 +64,11 @@ async function readBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-function extractResponseText(response) {
-  if (typeof response.output_text === 'string') return response.output_text;
-  for (const output of response.output || []) {
-    for (const content of output.content || []) {
-      if (content.type === 'output_text' && typeof content.text === 'string') return content.text;
-    }
-  }
-  throw new Error('missing_structured_output');
-}
-
 async function requestDetection(content) {
-  if (!['openai', 'openrouter'].includes(aiProvider)) throw new Error('ai_provider_invalid');
-  if (!aiApiKey) throw new Error('ai_key_missing');
-  const response = await fetch(aiApiUrl, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${aiApiKey}`,
-      'Content-Type': 'application/json',
-      ...(isOpenRouter ? { 'X-Title': 'Kandro' } : {}),
-    },
-    body: JSON.stringify({
-      model: visionModel,
-      store: false,
-      max_output_tokens: 2000,
-      ...(isOpenRouter ? {
-        provider: {
-          data_collection: 'deny',
-          only: ['azure'],
-          allow_fallbacks: false,
-          zdr: true,
-        },
-      } : {}),
-      input: [{
-        role: 'user',
-        content,
-      }],
-      text: {
-        format: {
-          type: 'json_schema',
-          name: 'kandro_meal_detection',
-          strict: true,
-          schema: detectionSchema,
-        },
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`${aiProvider}_${response.status}`);
-  }
-  return JSON.parse(extractResponseText(await response.json()));
+  return requestStructured({apiKey: aiApiKey, content, model: visionModel, provider: aiProvider});
 }
+
+
 
 async function detectFoods({ imageBase64, mimeType, language }) {
   return requestDetection([
@@ -164,6 +122,7 @@ async function resolveUsdaItem(item, index) {
 }
 
 async function resolveItem(item, index) {
+  if (requiresFoodIdentityCorrection(item)) return buildMealItem(item, null, index);
   const blsFacts = resolveBlsFacts(item);
   return blsFacts ? buildMealItem(item, blsFacts, index) : resolveUsdaItem(item, index);
 }
@@ -193,18 +152,18 @@ async function analyzeDescription(input) {
   if (description.length < 3 || description.length > 500) {
     return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
   }
-  return resolveDetection(await detectDescription(description, requestedLanguage(input)), 'text', input.ingredientCorrection);
+  return resolveDetection(applyDescriptionAmountsTolerant(await detectDescription(description, requestedLanguage(input)), description), 'text', input.ingredientCorrection);
 }
 
 function searchFoods(query, language) {
   const term = normalizeSearchTerm(query);
-  if (!isUsableSearchTerm(term)) {
+  if (!isSearchQuery(term)) {
     return { status: 400, body: { code: 'invalid_input', message: 'Query too short.' } };
   }
 
   const results = [];
   const seen = new Set();
-  for (const food of searchBlsCatalog(term, language, 15)) {
+  for (const food of searchBlsCatalog(term, language, 60)) {
     const meal = getBlsReferenceByCode(food.code);
     if (seen.has(food.code)) continue;
     seen.add(food.code);
@@ -216,9 +175,9 @@ function searchFoods(query, language) {
       portions: meal ? [{ label: language === 'de' ? '1 Portion' : '1 portion', grams: meal.defaultGrams }] : [],
       source: { provider: 'bls', referenceId: food.code, label: `BLS 4.0 ${food.code}` },
     });
-    if (results.length >= 15) break;
+    if (results.length >= 60) break;
   }
-  return { status: 200, body: { query: term, results: results.slice(0, 15) } };
+  return { status: 200, body: { query: term, results: results.slice(0, 60) } };
 }
 
 function localizedProductName(product, language) {
@@ -230,17 +189,20 @@ function localizedProductName(product, language) {
 
 async function lookupBarcode(barcode, language) {
   if (!/^\d{7,14}$/.test(barcode)) return { status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } };
-  const fields = 'code,product_name_de,product_name_en,product_name,nutriments,serving_size,serving_quantity';
+  const fields = 'code,product_name_de,product_name_en,product_name,nutriments,serving_size,serving_quantity,serving_quantity_unit,nutrition_data_per,quantity,product_quantity_unit';
   const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`, {
-    headers: { 'User-Agent': 'Kandro-MVP/1.0' },
+    headers: { 'User-Agent': 'Kandro/1.0 (https://getkandro.com)' },
+    signal: AbortSignal.timeout(7000),
   });
-  if (!response.ok) return { status: response.status === 404 ? 404 : 502, body: { code: 'product_not_found', message: 'Produkt nicht gefunden.' } };
+  if (!response.ok) return { status: response.status === 404 ? 404 : response.status === 429 ? 429 : 502, body: { code: response.status === 404 ? 'product_not_found' : response.status === 429 ? 'provider_rate_limited' : 'provider_error' } };
   const result = await response.json();
+  if (result?.status === 0) return {status:404,body:{code:'product_not_found'}};
+  if (!result?.product || typeof result.product !== 'object') throw new ModelError('provider_response_invalid');
   const product = result.product;
   const values = product?.nutriments || {};
   const name = localizedProductName(product, language);
   const servingGrams = Math.round(Number(product?.serving_quantity));
-  const per100g = openFoodFactsNutrition(values);
+  const per100g = offMassNutrition(product);
   if (!per100g) {
     return {
       status: 422,
@@ -257,12 +219,7 @@ async function lookupBarcode(barcode, language) {
       name,
       nameMissing: !name,
       per100g,
-      portions: Number.isFinite(servingGrams) && servingGrams >= 1 && servingGrams <= 2000
-        ? [{
-          label: String(product.serving_size || (language === 'de' ? '1 Portion' : '1 serving')).trim().slice(0, 40),
-          grams: servingGrams,
-        }]
-        : [],
+      portions: offMassPortions(product),
       source: { provider: 'open-food-facts', referenceId: barcode, label: `Open Food Facts ${barcode}` },
     },
   };
@@ -302,6 +259,8 @@ const server = createServer(async (request, response) => {
     }
     return json(response, 404, { code: 'not_found', message: 'Route nicht gefunden.' });
   } catch (error) {
+    if (error instanceof Error && ['mass_required','amount_ambiguous','amount_out_of_range'].includes(error.message)) return json(response,422,{code:error.message});
+    if (error instanceof ModelError) { if (error.retryAfter) response.setHeader('Retry-After',String(error.retryAfter)); return json(response,error.status,{code:error.code}); }
     const safeCode = safeGatewayFailureCode(error);
     const setupError = safeCode === 'ai_key_missing' || safeCode === 'ai_provider_invalid';
     return json(response, setupError ? 503 : 502, {

@@ -1,0 +1,5 @@
+
+> kandro@1.0.0 validate:release:production:remote
+> npx eas-cli env:exec production "node scripts/validate-release.mjs --production" --non-interactive
+
+Release checks passed for production: provider identity, legal copy, subscription disclosure, iOS config and gateway wiring.

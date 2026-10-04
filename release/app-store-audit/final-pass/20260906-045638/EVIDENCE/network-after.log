@@ -1,0 +1,1 @@
+PASS: gateway 90-second deadline covers headers/body, aborts transport, retains successful JSON and suppresses unmapped provider prose. INTEGRATION with fake transport/timers.

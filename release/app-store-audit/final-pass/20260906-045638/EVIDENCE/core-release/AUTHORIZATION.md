@@ -1,0 +1,3 @@
+# Aktueller Auftrag — 6. September 2026
+
+Nutzer verlangt ausdrücklich erneute Prüfung der Kernfunktionen (Kalorien erfassen, Foto, Datenbanksuche, nächste Mahlzeiten, Pro) und anschließende App-Review-Einreichung. Möglichst keine Ausgaben. Der zusätzliche Standard-iOS-Build und Upload sind damit für den unverändert geprüften F08-Kandidaten im aktuell bestätigten kostenlosen Expo-Kontingent autorisiert. Kein kostenpflichtiger Fallback, kein Tarifwechsel, keine zusätzlichen bezahlten KI-Testaufrufe. Einreichung erst nach positiver Kandidatenprüfung. Keine erfundenen Testresultate; Restumfang gesondert ausweisen. DSA-EU-Veröffentlichung und App-Review-Einreichung getrennt behandeln. Manuelle Veröffentlichung bleibt eingestellt.

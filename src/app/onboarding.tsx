@@ -1,3 +1,5 @@
+import { prepareAccessEnrollment } from '@/services/appAccess';
+import { prepareReminderOnboarding } from '@/services/reminders';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -6,12 +8,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { WeightEntry } from '@/components/WeightEntry';
 import { KandroMark } from '@/components/KandroMark';
 import { PlanBuilder, BUILDING_MS } from '@/components/PlanBuilder';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { radii, spacing } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { BIOLOGICAL_SEXES, calculateDailyTargets, estimatedPace, isRateLimited, isTeenProfile, weeklyRateLabel } from '@/services/personalization';
+import { BIOLOGICAL_SEXES, caloriePlan, dailyGoalOffset, calculateDailyTargets, estimatedPace, isRateLimited, isTeenProfile, weeklyRateLabel } from '@/services/personalization';
 import { getGuardianConsentStatus, requestGuardianConsent } from '@/services/guardianConsent';
 import { trackEvent } from '@/services/telemetry';
 import { errorHaptic, selectionHaptic, stepHaptic, successHaptic } from '@/services/haptics';
@@ -109,7 +112,7 @@ export default function OnboardingScreen() {
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { height: windowHeight } = useWindowDimensions();
+  const { height: windowHeight, fontScale } = useWindowDimensions();
   const compactHeight = windowHeight <= 600;
   const { completeOnboarding, grantWellnessConsent, profile } = useApp();
   const { language, locale, t } = useLanguage();
@@ -134,6 +137,7 @@ export default function OnboardingScreen() {
   const [ageConfirmed, setAgeConfirmed] = useState(() => editing);
   const [height, setHeight] = useState(() => (editing ? profile.heightCm : 178));
   const [weight, setWeight] = useState(() => (editing ? profile.weightKg : 78));
+  const [weightInputValid, setWeightInputValid] = useState(true);
   const [activity, setActivity] = useState<UserProfile['activityLevel']>(() => (editing ? profile.activityLevel : 'light'));
   const [weeklyRate, setWeeklyRate] = useState<WeeklyRateKg>(() => (editing ? profile.weeklyRateKg : 0.5));
   const [preferences, setPreferences] = useState<string[]>(() => (editing ? profile.preferences : ['high-protein']));
@@ -149,6 +153,7 @@ export default function OnboardingScreen() {
   ageRef.current = age;
 
   const step = steps[stepIndex];
+  useEffect(() => { trackEvent('setup step viewed', { step, editing }); }, [step, editing]);
 
   const goNext = useCallback(() => {
     setStepIndex((current) => {
@@ -218,11 +223,13 @@ export default function OnboardingScreen() {
 
   const finishOnboarding = async () => {
     await grantWellnessConsent(draftProfile.age);
+    if (!editing && !profile.completedAt) await prepareReminderOnboarding().catch(() => undefined);
+    if (!editing && !profile.completedAt) await prepareAccessEnrollment(ageConfirmed);
     await completeOnboarding(draftProfile);
     trackEvent('onboarding completed', { completion: skippedAnything ? 'skipped' : 'finished' });
     void successHaptic();
     setShowConsent(false);
-    router.replace('/(tabs)/scan');
+    router.replace(editing ? '/(tabs)/profile' : '/reminder-setup');
   };
 
   const acceptConsent = async () => {
@@ -270,6 +277,7 @@ export default function OnboardingScreen() {
     // Keep the invariant here as well as on the disabled button: navigation
     // must not persist the convenient picker default through another caller.
     if (step === 'age' && !ageConfirmed) return;
+    if (step === 'weight' && !weightInputValid) return;
     if (step === 'plan') {
       if (editing) {
         if (draftProfile.age < 16 && !await getGuardianConsentStatus().catch(() => false)) {
@@ -290,10 +298,10 @@ export default function OnboardingScreen() {
   };
 
   const showFooterButton = step !== 'building';
-  const footerLabel = step === 'plan' ? (editing ? t.onboarding.saveChanges : t.onboarding.scanFirstMeal) : t.common.next;
+  const footerLabel = step === 'plan' ? (editing ? t.onboarding.saveChanges : t.onboarding.openApp) : t.common.next;
 
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe}>
+    <SafeAreaView key={fontScale} edges={['top', 'left', 'right']} style={styles.safe}>
       <View style={styles.topBar}>
         <Pressable
           accessibilityLabel={t.common.back}
@@ -308,7 +316,7 @@ export default function OnboardingScreen() {
         </Pressable>
         <Text style={styles.stepLabel}>{t.onboarding.step(stepIndex + 1, steps.length)}</Text>
         {skippableSteps.has(step) ? (
-          <Pressable accessibilityRole="button" hitSlop={10} onPress={skipStep}>
+          <Pressable accessibilityRole="button" hitSlop={10} onPress={skipStep} style={styles.skipAction}>
             <Text style={styles.skip}>{t.common.skip}</Text>
           </Pressable>
         ) : <View style={styles.skipPlaceholder} />}
@@ -318,6 +326,7 @@ export default function OnboardingScreen() {
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
         <ScrollView
+          key={step}
           contentContainerStyle={[styles.content, compactHeight && styles.contentCompact]}
           keyboardDismissMode="on-drag"
           keyboardShouldPersistTaps="handled"
@@ -352,8 +361,7 @@ export default function OnboardingScreen() {
                 <View style={styles.choiceList}>
                 {([0.25, 0.5] as WeeklyRateKg[]).map((rate) => {
                   const active = weeklyRate === rate;
-                  const daily = Math.round((rate * 7700) / 7);
-                  const applied = draftProfile.goal === 'gain' ? Math.min(350, daily) : daily;
+                  const requested = dailyGoalOffset(draftProfile.goal, rate);
                   return (
                     <Pressable
                       aria-checked={active}
@@ -377,7 +385,7 @@ export default function OnboardingScreen() {
                           {draftProfile.goal === 'gain'
                             ? (rate === 0.25 ? t.onboarding.rateCalmGain : t.onboarding.rateBriskGain)
                             : (rate === 0.25 ? t.onboarding.rateCalm : t.onboarding.rateBrisk)}
-                          {' · '}{draftProfile.goal === 'lose' ? '−' : '+'}{applied} {t.onboarding.perDay}
+                          {' · '}{requested < 0 ? '−' : '+'}{Math.abs(requested)} {t.onboarding.perDay}
                         </Text>
                       </View>
                       <Ionicons color={active ? colors.accentText : colors.border} name={active ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
@@ -472,28 +480,24 @@ export default function OnboardingScreen() {
                 <UnitToggle onChange={setUnitSystem} value={unitSystem} />
                 <View style={styles.unitStepValue}>
                   {usesMetricWeight(unitSystem) ? (
-                    <NumberStep
-                      editable
-                      format={(kilos) => formatNumber(kilos, locale)}
+                    <WeightEntry
+                      key={unitSystem}
+                      onValidityChange={setWeightInputValid}
                       max={200}
                       min={40}
                       onChange={setWeight}
-                      step={0.1}
                       unit="kg"
                       value={weight}
                     />
                   ) : (
-                    <NumberStep
-                      editable
-                      accessibilityUnit="lb"
-                      format={(pounds) => (unitSystem === 'uk'
-                        ? formatWeight(poundsToKg(pounds), 'uk', locale)
-                        : formatNumber(pounds, locale))}
+                    <WeightEntry
+                      key={unitSystem}
+                      onValidityChange={setWeightInputValid}
+                      hint={unitSystem === 'uk' ? formatWeight(weight, 'uk', locale) : undefined}
                       max={Math.floor(kgToPounds(200) * 10) / 10}
                       min={Math.ceil(kgToPounds(40) * 10) / 10}
                       onChange={(pounds) => setWeight(poundsToKg(pounds))}
-                      step={unitSystem === 'us' ? 0.1 : 1}
-                      unit={unitSystem === 'uk' ? '' : 'lb'}
+                      unit="lb"
                       value={Math.round(kgToPounds(weight) * 10) / 10}
                     />
                   )}
@@ -546,8 +550,8 @@ export default function OnboardingScreen() {
         {showFooterButton ? (
           <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
             <PrimaryButton
-              disabled={step === 'age' && !ageConfirmed}
-              icon={step === 'plan' ? 'camera' : 'arrow-forward'}
+              disabled={(step === 'age' && !ageConfirmed) || (step === 'weight' && !weightInputValid)}
+              icon="arrow-forward"
               label={footerLabel}
               onPress={() => void primaryAction()}
             />
@@ -556,8 +560,9 @@ export default function OnboardingScreen() {
       </KeyboardAvoidingView>
 
       <Modal animationType="fade" onRequestClose={() => setShowConsent(false)} transparent visible={showConsent}>
-        <View style={styles.modalScrim}>
-          <View accessibilityViewIsModal style={[styles.consentSheet, { paddingBottom: insets.bottom + 18 }]}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.modalScrim, { paddingTop: insets.top + 12 }]}>
+          <View accessibilityViewIsModal style={styles.consentSheet}>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.consentContent, { paddingBottom: insets.bottom + 18 }]}>
             <View style={styles.consentIcon}><Ionicons color={colors.onAccent} name="shield-checkmark-outline" size={26} /></View>
             <Text accessibilityRole="header" style={styles.consentTitle}>
               {draftProfile.age < 16 ? t.onboarding.guardianTitle : t.onboarding.consentTitle}
@@ -599,8 +604,9 @@ export default function OnboardingScreen() {
               onPress={() => void acceptConsent()}
             />
             <PrimaryButton disabled={consentBusy} label={t.common.back} onPress={() => setShowConsent(false)} variant="ghost" />
+            </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
@@ -744,9 +750,9 @@ function NumberStep({ editable = false, accessibilityUnit, format, max, min, onC
     <View style={styles.numberStep}>
       <View style={styles.numberCenter}>
         <View style={styles.numberRow}>
-          {editable ? <Pressable accessibilityRole="button" accessibilityLabel={`${t.onboarding.editWeight}: ${display} ${accessibilityUnit ?? unit}`} onPress={() => { stop(); setDraft(formatNumber(value, locale)); setEditingNumber(true); }}>
+          {editable ? <Pressable style={styles.numberValue} accessibilityRole="button" accessibilityLabel={`${t.onboarding.editWeight}: ${display} ${accessibilityUnit ?? unit}`} onPress={() => { stop(); setDraft(formatNumber(value, locale)); setEditingNumber(true); }}>
             <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.number, numberSize(display)]}>{display}</Text>
-          </Pressable> : <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.number, numberSize(display)]}>{display}</Text>}
+          </Pressable> : <Text adjustsFontSizeToFit numberOfLines={1} style={[styles.number, styles.numberValue, numberSize(display)]}>{display}</Text>}
           {unit ? <Text style={styles.numberUnit}>{unit}</Text> : null}
         </View>
       </View>
@@ -805,7 +811,7 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
   return (
     <View style={styles.startingCard}>
       <Text style={styles.cardEyebrow}>{t.onboarding.dailyGoal}</Text>
-      <Text style={styles.calories}>{new Intl.NumberFormat(locale).format(targets.calories)}</Text>
+      <Text adjustsFontSizeToFit numberOfLines={1} style={styles.calories}>{new Intl.NumberFormat(locale).format(targets.calories)}</Text>
       <Text style={styles.caloriesLabel}>{t.onboarding.kilocalories}</Text>
       <View style={styles.divider} />
       <View style={styles.planStats}>
@@ -844,6 +850,7 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
           <Text style={styles.teenText}>{t.onboarding.teenPlanNotice}</Text>
         </View>
       ) : null}
+      {!isTeenProfile(profile) ? <Text style={styles.safetyText}>{t.onboarding.appliedOffset(Math.round(caloriePlan(profile).appliedOffset).toLocaleString(locale, { signDisplay: 'always' }))}</Text> : null}
       <Text style={styles.safetyText}>{t.onboarding.safety}</Text>
     </View>
   );
@@ -852,11 +859,12 @@ function StartingPlan({ limited, profile, targets }: { limited: boolean; profile
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background, paddingHorizontal: 20 },
   flex: { flex: 1 },
-  topBar: { height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  topBar: { minHeight: 54, paddingVertical: 8, gap: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   backButton: { width: 40, height: 40, alignItems: 'flex-start', justifyContent: 'center' },
   invisible: { opacity: 0 },
-  stepLabel: { color: colors.muted, fontSize: 13, fontWeight: '600' },
-  skip: { minWidth: 92, color: colors.muted, fontSize: 13, fontWeight: '600', textAlign: 'right' },
+  stepLabel: { flex: 1, color: colors.muted, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  skipAction: { flexShrink: 1, maxWidth: '38%' },
+  skip: { color: colors.muted, fontSize: 13, fontWeight: '600', textAlign: 'right' },
   skipPlaceholder: { width: 92 },
   content: { flexGrow: 1, paddingTop: 26, paddingBottom: 8 },
   contentCompact: { paddingTop: 12, paddingBottom: 6 },
@@ -907,8 +915,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   number: { color: colors.text, fontSize: 100, lineHeight: 112, fontWeight: '700', letterSpacing: -3, fontVariant: ['tabular-nums'] },
   // Beside the value, on its baseline: underneath it read as a caption, and
   // people reported not seeing the unit at all.
-  numberRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 6 },
-  numberUnit: { color: colors.muted, fontSize: 30, fontWeight: '700' },
+  numberRow: { width: '100%', flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: 6 },
+  numberValue: { flexShrink: 1, minWidth: 0 },
+  numberUnit: { flexShrink: 1, color: colors.muted, fontSize: 30, fontWeight: '700' },
   adjustHint: { color: colors.muted, fontSize: 13, lineHeight: 18, textAlign: 'center' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   chip: { minHeight: 52, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -942,7 +951,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   numberEditorScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'center', padding: 24 },
   numberEditor: { backgroundColor: colors.surface, borderRadius: radii.card, padding: 20, gap: 14 },
   numberEditorTitle: { color: colors.text, fontSize: 20, fontWeight: '700' },
-  consentSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 24, gap: 14 },
+  consentSheet: { maxHeight: '100%', flexShrink: 1, overflow: 'hidden', borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface },
+  consentContent: { paddingHorizontal: 22, paddingTop: 24, gap: 14 },
   consentIcon: { width: 50, height: 50, borderRadius: 18, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   consentTitle: { color: colors.text, fontSize: 25, lineHeight: 30, fontWeight: '700' },
   consentText: { color: colors.muted, fontSize: 13, lineHeight: 20 },

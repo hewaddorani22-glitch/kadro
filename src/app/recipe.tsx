@@ -9,6 +9,7 @@ import { Card, Eyebrow, PageTitle, Screen } from '@/components/ui';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { recipeTitle } from '@/services/recommendations';
 import { getRecipe } from '@/services/recipes';
+import { recipePortion } from '@/utils/mealSuggestions';
 import { formatNumber } from '@/utils/format';
 
 export default function RecipeScreen() {
@@ -16,13 +17,17 @@ export default function RecipeScreen() {
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { language, locale, t } = useLanguage();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, portion } = useLocalSearchParams<{ id?: string; portion?: string }>();
+  const portionScale = recipePortion(portion);
   // `language` is in the dependencies because these read it through the
   // non-React mirror. The stored language lands one render after the device
   // guess, and without it a German phone showed an English reader German
   // ingredients under English headings.
-  const recipe = useMemo(() => (id ? getRecipe(id) : null), [id, language]);
+  const recipe = useMemo(() => (id ? getRecipe(id, portionScale) : null), [id, language, portionScale]);
   const title = useMemo(() => (id ? recipeTitle(id) : ''), [id, language]);
+  // The weighing rule is a note about the amounts, not a cooking step.
+  const weighingNote = recipe?.steps[0] === t.recipe.weighingInstructions ? recipe.steps[0] : null;
+  const cookingSteps = weighingNote ? recipe!.steps.slice(1) : recipe?.steps ?? [];
 
   if (!recipe) {
     return (
@@ -47,7 +52,7 @@ export default function RecipeScreen() {
       </View>
 
       <View style={styles.heading}>
-        <Eyebrow>{t.recipe.forServings(recipe.servings)}</Eyebrow>
+        <Eyebrow>{portionScale === 1 ? t.recipe.forServings(recipe.servings) : t.plan.portionOfStandard(formatNumber(Math.round(portionScale * 100), locale))}</Eyebrow>
         <PageTitle>{title}</PageTitle>
       </View>
 
@@ -67,8 +72,9 @@ export default function RecipeScreen() {
           {recipe.ingredients.map((ingredient, index) => (
             <View key={ingredient.key}>
               <View style={styles.ingredientRow}>
-                <Text style={styles.ingredientName}>{ingredient.name}</Text>
-                <Text style={styles.ingredientAmount}>{ingredient.grams} g</Text>
+                <View style={{ flex: 1, paddingVertical: 8, gap: 3 }}><Text style={styles.ingredientName}>{ingredient.name}</Text><Text style={styles.ingredientState}>{ingredient.weighingLabel}</Text></View>
+                {/* Kitchen precision: whole grams from 10 g; the calories use the exact amounts. */}
+                <Text style={styles.ingredientAmount}>{ingredient.grams.toLocaleString(locale, { maximumFractionDigits: ingredient.grams >= 10 ? 0 : 1 })} g</Text>
               </View>
               {index < recipe.ingredients.length - 1 ? <View style={styles.divider} /> : null}
             </View>
@@ -80,11 +86,12 @@ export default function RecipeScreen() {
           recipe and a number somebody asserted.
         */}
         <Text style={styles.note}>{t.recipe.note}</Text>
+        {weighingNote ? <Text style={styles.note}>{weighingNote}</Text> : null}
       </View>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t.recipe.steps}</Text>
-        {recipe.steps.map((step, index) => (
+        {cookingSteps.map((step, index) => (
           <View key={step} style={styles.stepRow}>
             <View style={styles.stepNumber}><Text style={styles.stepNumberText}>{index + 1}</Text></View>
             <Text style={styles.stepText}>{step}</Text>
@@ -112,6 +119,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   listCard: { padding: 6 },
   ingredientRow: { minHeight: 46, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, gap: 12 },
   ingredientName: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
+  ingredientState: { color: colors.muted, fontSize: 12, lineHeight: 17 },
   ingredientAmount: { color: colors.muted, fontSize: 14, fontWeight: '700' },
   divider: { height: 1, backgroundColor: colors.border, marginHorizontal: 12 },
   note: { color: colors.muted, fontSize: 11, lineHeight: 16 },

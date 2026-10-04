@@ -7,11 +7,11 @@
         "grams": 125
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 185
       },
       {
-        "key": "broccoli-cooked",
+        "key": "broccoli-raw",
         "grams": 105
       },
       {
@@ -24,18 +24,18 @@
       }
     ],
     "nutrition": {
-      "calories": 502,
-      "protein": 48,
-      "carbs": 50,
-      "fat": 12,
-      "fiber": 7
+      "calories": 427,
+      "protein": 40,
+      "carbs": 41,
+      "fat": 10,
+      "fiber": 6
     }
   },
   "home-02": {
     "servings": 1,
     "ingredients": [
       {
-        "key": "egg",
+        "key": "egg-raw",
         "grams": 145
       },
       {
@@ -56,10 +56,10 @@
       }
     ],
     "nutrition": {
-      "calories": 500,
-      "protein": 31,
-      "carbs": 56,
-      "fat": 16,
+      "calories": 471,
+      "protein": 32,
+      "carbs": 55,
+      "fat": 14,
       "fiber": 11
     }
   },
@@ -135,11 +135,11 @@
         "grams": 150
       },
       {
-        "key": "broccoli-cooked",
+        "key": "broccoli-raw",
         "grams": 155
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 140
       },
       {
@@ -152,11 +152,11 @@
       }
     ],
     "nutrition": {
-      "calories": 548,
-      "protein": 39,
-      "carbs": 40,
-      "fat": 26,
-      "fiber": 8
+      "calories": 505,
+      "protein": 38,
+      "carbs": 29,
+      "fat": 25,
+      "fiber": 7
     }
   },
   "home-06": {
@@ -216,10 +216,10 @@
       }
     ],
     "nutrition": {
-      "calories": 489,
-      "protein": 46,
+      "calories": 376,
+      "protein": 42,
       "carbs": 50,
-      "fat": 13,
+      "fat": 3,
       "fiber": 12
     }
   },
@@ -235,7 +235,7 @@
         "grams": 270
       },
       {
-        "key": "egg",
+        "key": "egg-raw",
         "grams": 30
       },
       {
@@ -248,7 +248,7 @@
       }
     ],
     "nutrition": {
-      "calories": 470,
+      "calories": 464,
       "protein": 37,
       "carbs": 52,
       "fat": 12,
@@ -263,7 +263,7 @@
         "grams": 155
       },
       {
-        "key": "spinach-cooked",
+        "key": "spinach-raw",
         "grams": 180
       },
       {
@@ -280,11 +280,11 @@
       }
     ],
     "nutrition": {
-      "calories": 521,
-      "protein": 23,
-      "carbs": 83,
+      "calories": 512,
+      "protein": 21,
+      "carbs": 78,
       "fat": 13,
-      "fiber": 18
+      "fiber": 17
     }
   },
   "home-10": {
@@ -312,10 +312,10 @@
       }
     ],
     "nutrition": {
-      "calories": 550,
-      "protein": 45,
+      "calories": 463,
+      "protein": 29,
       "carbs": 59,
-      "fat": 14,
+      "fat": 13,
       "fiber": 4
     }
   },
@@ -323,7 +323,7 @@
     "servings": 1,
     "ingredients": [
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 225
       },
       {
@@ -340,11 +340,11 @@
       }
     ],
     "nutrition": {
-      "calories": 479,
+      "calories": 473,
       "protein": 33,
-      "carbs": 60,
+      "carbs": 56,
       "fat": 12,
-      "fiber": 5
+      "fiber": 4
     }
   },
   "home-12": {
@@ -372,10 +372,10 @@
       }
     ],
     "nutrition": {
-      "calories": 483,
-      "protein": 42,
+      "calories": 467,
+      "protein": 35,
       "carbs": 59,
-      "fat": 9,
+      "fat": 11,
       "fiber": 5
     }
   },
@@ -387,7 +387,7 @@
         "grams": 115
       },
       {
-        "key": "sweet-potato-cooked",
+        "key": "sweet-potato-raw",
         "grams": 230
       },
       {
@@ -404,10 +404,10 @@
       }
     ],
     "nutrition": {
-      "calories": 527,
-      "protein": 30,
-      "carbs": 64,
-      "fat": 20,
+      "calories": 594,
+      "protein": 29,
+      "carbs": 75,
+      "fat": 21,
       "fiber": 10
     }
   },
@@ -415,7 +415,7 @@
     "servings": 1,
     "ingredients": [
       {
-        "key": "egg",
+        "key": "egg-raw",
         "grams": 90
       },
       {
@@ -436,10 +436,10 @@
       }
     ],
     "nutrition": {
-      "calories": 515,
-      "protein": 48,
+      "calories": 450,
+      "protein": 42,
       "carbs": 42,
-      "fat": 17,
+      "fat": 14,
       "fiber": 7
     }
   },
@@ -500,10 +500,10 @@
       }
     ],
     "nutrition": {
-      "calories": 518,
-      "protein": 46,
+      "calories": 457,
+      "protein": 37,
       "carbs": 61,
-      "fat": 9,
+      "fat": 7,
       "fiber": 4
     }
   },
@@ -515,11 +515,11 @@
         "grams": 145
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 205
       },
       {
-        "key": "spinach-cooked",
+        "key": "spinach-raw",
         "grams": 90
       },
       {
@@ -536,11 +536,11 @@
       }
     ],
     "nutrition": {
-      "calories": 478,
-      "protein": 42,
-      "carbs": 48,
+      "calories": 429,
+      "protein": 34,
+      "carbs": 41,
       "fat": 14,
-      "fiber": 6
+      "fiber": 5
     }
   },
   "home-18": {
@@ -604,10 +604,10 @@
       }
     ],
     "nutrition": {
-      "calories": 559,
-      "protein": 41,
+      "calories": 452,
+      "protein": 37,
       "carbs": 58,
-      "fat": 19,
+      "fat": 8,
       "fiber": 5
     }
   },
@@ -615,11 +615,11 @@
     "servings": 1,
     "ingredients": [
       {
-        "key": "egg",
+        "key": "egg-raw",
         "grams": 90
       },
       {
-        "key": "spinach-cooked",
+        "key": "spinach-raw",
         "grams": 195
       },
       {
@@ -636,11 +636,11 @@
       }
     ],
     "nutrition": {
-      "calories": 493,
-      "protein": 30,
-      "carbs": 39,
-      "fat": 25,
-      "fiber": 9
+      "calories": 466,
+      "protein": 29,
+      "carbs": 33,
+      "fat": 24,
+      "fiber": 8
     }
   },
   "home-21": {
@@ -651,7 +651,7 @@
         "grams": 160
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 230
       },
       {
@@ -668,11 +668,11 @@
       }
     ],
     "nutrition": {
-      "calories": 517,
-      "protein": 42,
-      "carbs": 58,
+      "calories": 510,
+      "protein": 43,
+      "carbs": 54,
       "fat": 13,
-      "fiber": 7
+      "fiber": 6
     }
   },
   "home-22": {
@@ -704,10 +704,10 @@
       }
     ],
     "nutrition": {
-      "calories": 550,
-      "protein": 45,
+      "calories": 437,
+      "protein": 37,
       "carbs": 48,
-      "fat": 20,
+      "fat": 12,
       "fiber": 5
     }
   },
@@ -723,7 +723,7 @@
         "grams": 165
       },
       {
-        "key": "spinach-cooked",
+        "key": "spinach-raw",
         "grams": 150
       },
       {
@@ -736,11 +736,11 @@
       }
     ],
     "nutrition": {
-      "calories": 540,
-      "protein": 39,
-      "carbs": 57,
-      "fat": 20,
-      "fiber": 10
+      "calories": 506,
+      "protein": 36,
+      "carbs": 53,
+      "fat": 18,
+      "fiber": 9
     }
   },
   "home-24": {
@@ -800,10 +800,10 @@
       }
     ],
     "nutrition": {
-      "calories": 510,
-      "protein": 47,
+      "calories": 446,
+      "protein": 38,
       "carbs": 55,
-      "fat": 13,
+      "fat": 11,
       "fiber": 13
     }
   },
@@ -811,7 +811,7 @@
     "servings": 1,
     "ingredients": [
       {
-        "key": "egg",
+        "key": "egg-raw",
         "grams": 70
       },
       {
@@ -832,10 +832,10 @@
       }
     ],
     "nutrition": {
-      "calories": 449,
+      "calories": 435,
       "protein": 37,
-      "carbs": 33,
-      "fat": 19,
+      "carbs": 32,
+      "fat": 18,
       "fiber": 4
     }
   },
@@ -892,10 +892,10 @@
       }
     ],
     "nutrition": {
-      "calories": 531,
-      "protein": 47,
+      "calories": 485,
+      "protein": 40,
       "carbs": 60,
-      "fat": 13,
+      "fat": 12,
       "fiber": 8
     }
   },
@@ -924,10 +924,10 @@
       }
     ],
     "nutrition": {
-      "calories": 514,
-      "protein": 38,
+      "calories": 498,
+      "protein": 31,
       "carbs": 59,
-      "fat": 14,
+      "fat": 16,
       "fiber": 4
     }
   },
@@ -984,10 +984,10 @@
       }
     ],
     "nutrition": {
-      "calories": 515,
-      "protein": 45,
+      "calories": 454,
+      "protein": 37,
       "carbs": 57,
-      "fat": 12,
+      "fat": 10,
       "fiber": 9
     }
   },
@@ -1003,7 +1003,7 @@
         "grams": 235
       },
       {
-        "key": "spinach-cooked",
+        "key": "spinach-raw",
         "grams": 165
       },
       {
@@ -1012,11 +1012,11 @@
       }
     ],
     "nutrition": {
-      "calories": 544,
-      "protein": 42,
-      "carbs": 48,
-      "fat": 21,
-      "fiber": 6
+      "calories": 534,
+      "protein": 38,
+      "carbs": 78,
+      "fat": 6,
+      "fiber": 7
     }
   },
   "home-33": {
@@ -1031,7 +1031,7 @@
         "grams": 190
       },
       {
-        "key": "aubergine-cooked",
+        "key": "aubergine-raw",
         "grams": 130
       },
       {
@@ -1044,11 +1044,11 @@
       }
     ],
     "nutrition": {
-      "calories": 538,
-      "protein": 43,
-      "carbs": 60,
-      "fat": 13,
-      "fiber": 7
+      "calories": 438,
+      "protein": 29,
+      "carbs": 53,
+      "fat": 12,
+      "fiber": 6
     }
   },
   "home-34": {
@@ -1059,7 +1059,7 @@
         "grams": 145
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 180
       },
       {
@@ -1076,11 +1076,11 @@
       }
     ],
     "nutrition": {
-      "calories": 469,
-      "protein": 41,
-      "carbs": 56,
+      "calories": 426,
+      "protein": 34,
+      "carbs": 52,
       "fat": 9,
-      "fiber": 10
+      "fiber": 9
     }
   },
   "home-35": {
@@ -1108,10 +1108,10 @@
       }
     ],
     "nutrition": {
-      "calories": 510,
-      "protein": 39,
-      "carbs": 68,
-      "fat": 10,
+      "calories": 495,
+      "protein": 32,
+      "carbs": 67,
+      "fat": 11,
       "fiber": 4
     }
   },
@@ -1195,7 +1195,7 @@
         "grams": 100
       },
       {
-        "key": "spinach-cooked",
+        "key": "spinach-raw",
         "grams": 165
       },
       {
@@ -1208,11 +1208,11 @@
       }
     ],
     "nutrition": {
-      "calories": 494,
-      "protein": 24,
-      "carbs": 77,
+      "calories": 485,
+      "protein": 22,
+      "carbs": 73,
       "fat": 14,
-      "fiber": 19
+      "fiber": 18
     }
   },
   "home-39": {
@@ -1227,7 +1227,7 @@
         "grams": 160
       },
       {
-        "key": "broccoli-cooked",
+        "key": "broccoli-raw",
         "grams": 100
       },
       {
@@ -1241,10 +1241,10 @@
     ],
     "nutrition": {
       "calories": 500,
-      "protein": 34,
-      "carbs": 64,
+      "protein": 35,
+      "carbs": 59,
       "fat": 17,
-      "fiber": 10
+      "fiber": 9
     }
   },
   "home-40": {
@@ -1263,7 +1263,7 @@
         "grams": 50
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 125
       },
       {
@@ -1272,9 +1272,9 @@
       }
     ],
     "nutrition": {
-      "calories": 494,
+      "calories": 490,
       "protein": 22,
-      "carbs": 75,
+      "carbs": 72,
       "fat": 13,
       "fiber": 21
     }
@@ -1323,7 +1323,7 @@
         "grams": 55
       },
       {
-        "key": "egg",
+        "key": "egg-raw",
         "grams": 30
       },
       {
@@ -1336,9 +1336,9 @@
       }
     ],
     "nutrition": {
-      "calories": 472,
+      "calories": 466,
       "protein": 36,
-      "carbs": 54,
+      "carbs": 53,
       "fat": 12,
       "fiber": 8
     }
@@ -1427,7 +1427,7 @@
         "grams": 140
       },
       {
-        "key": "spinach-cooked",
+        "key": "spinach-raw",
         "grams": 130
       },
       {
@@ -1440,9 +1440,9 @@
       }
     ],
     "nutrition": {
-      "calories": 523,
-      "protein": 33,
-      "carbs": 64,
+      "calories": 516,
+      "protein": 32,
+      "carbs": 60,
       "fat": 17,
       "fiber": 7
     }
@@ -1472,10 +1472,10 @@
       }
     ],
     "nutrition": {
-      "calories": 490,
-      "protein": 45,
+      "calories": 440,
+      "protein": 38,
       "carbs": 50,
-      "fat": 12,
+      "fat": 10,
       "fiber": 16
     }
   },
@@ -1487,7 +1487,7 @@
         "grams": 135
       },
       {
-        "key": "sweet-potato-cooked",
+        "key": "sweet-potato-raw",
         "grams": 220
       },
       {
@@ -1504,10 +1504,10 @@
       }
     ],
     "nutrition": {
-      "calories": 521,
-      "protein": 48,
-      "carbs": 58,
-      "fat": 12,
+      "calories": 528,
+      "protein": 39,
+      "carbs": 68,
+      "fat": 11,
       "fiber": 12
     }
   },
@@ -1536,10 +1536,10 @@
       }
     ],
     "nutrition": {
-      "calories": 526,
-      "protein": 46,
+      "calories": 452,
+      "protein": 33,
       "carbs": 69,
-      "fat": 6,
+      "fat": 5,
       "fiber": 11
     }
   },
@@ -1568,10 +1568,10 @@
       }
     ],
     "nutrition": {
-      "calories": 513,
-      "protein": 46,
+      "calories": 446,
+      "protein": 37,
       "carbs": 53,
-      "fat": 12,
+      "fat": 10,
       "fiber": 4
     }
   },
@@ -1587,7 +1587,7 @@
         "grams": 155
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 200
       },
       {
@@ -1600,11 +1600,11 @@
       }
     ],
     "nutrition": {
-      "calories": 508,
-      "protein": 43,
-      "carbs": 48,
-      "fat": 17,
-      "fiber": 5
+      "calories": 375,
+      "protein": 39,
+      "carbs": 44,
+      "fat": 5,
+      "fiber": 4
     }
   },
   "home-51": {
@@ -1632,8 +1632,8 @@
       }
     ],
     "nutrition": {
-      "calories": 494,
-      "protein": 42,
+      "calories": 439,
+      "protein": 29,
       "carbs": 55,
       "fat": 12,
       "fiber": 3
@@ -1647,7 +1647,7 @@
         "grams": 115
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 165
       },
       {
@@ -1664,11 +1664,11 @@
       }
     ],
     "nutrition": {
-      "calories": 535,
-      "protein": 35,
-      "carbs": 49,
-      "fat": 22,
-      "fiber": 4
+      "calories": 501,
+      "protein": 33,
+      "carbs": 45,
+      "fat": 21,
+      "fiber": 3
     }
   },
   "home-53": {
@@ -1728,10 +1728,10 @@
       }
     ],
     "nutrition": {
-      "calories": 535,
-      "protein": 38,
+      "calories": 521,
+      "protein": 32,
       "carbs": 64,
-      "fat": 14,
+      "fat": 15,
       "fiber": 6
     }
   },
@@ -1747,7 +1747,7 @@
         "grams": 115
       },
       {
-        "key": "spinach-cooked",
+        "key": "spinach-raw",
         "grams": 60
       },
       {
@@ -1760,9 +1760,9 @@
       }
     ],
     "nutrition": {
-      "calories": 505,
+      "calories": 502,
       "protein": 28,
-      "carbs": 73,
+      "carbs": 72,
       "fat": 13,
       "fiber": 12
     }
@@ -1783,7 +1783,7 @@
         "grams": 135
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 235
       },
       {
@@ -1792,11 +1792,11 @@
       }
     ],
     "nutrition": {
-      "calories": 493,
-      "protein": 41,
-      "carbs": 61,
+      "calories": 486,
+      "protein": 42,
+      "carbs": 56,
       "fat": 11,
-      "fiber": 8
+      "fiber": 7
     }
   },
   "home-57": {
@@ -1892,26 +1892,26 @@
       }
     ],
     "nutrition": {
-      "calories": 511,
-      "protein": 34,
-      "carbs": 45,
-      "fat": 22,
-      "fiber": 4
+      "calories": 536,
+      "protein": 37,
+      "carbs": 67,
+      "fat": 13,
+      "fiber": 5
     }
   },
   "home-60": {
     "servings": 1,
     "ingredients": [
       {
-        "key": "egg",
+        "key": "egg-raw",
         "grams": 120
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 195
       },
       {
-        "key": "spinach-cooked",
+        "key": "spinach-raw",
         "grams": 125
       },
       {
@@ -1924,11 +1924,11 @@
       }
     ],
     "nutrition": {
-      "calories": 488,
+      "calories": 452,
       "protein": 34,
-      "carbs": 50,
-      "fat": 18,
-      "fiber": 7
+      "carbs": 41,
+      "fat": 16,
+      "fiber": 5
     }
   },
   "home-61": {
@@ -2003,7 +2003,7 @@
         "grams": 130
       },
       {
-        "key": "potato-cooked",
+        "key": "potato-raw",
         "grams": 185
       },
       {
@@ -2020,11 +2020,11 @@
       }
     ],
     "nutrition": {
-      "calories": 519,
-      "protein": 48,
-      "carbs": 53,
-      "fat": 12,
-      "fiber": 9
+      "calories": 440,
+      "protein": 38,
+      "carbs": 50,
+      "fat": 10,
+      "fiber": 8
     }
   },
   "home-64": {
@@ -2052,10 +2052,10 @@
       }
     ],
     "nutrition": {
-      "calories": 526,
-      "protein": 44,
+      "calories": 408,
+      "protein": 41,
       "carbs": 59,
-      "fat": 14,
+      "fat": 2,
       "fiber": 9
     }
   },
@@ -2071,7 +2071,7 @@
         "grams": 180
       },
       {
-        "key": "broccoli-cooked",
+        "key": "broccoli-raw",
         "grams": 105
       },
       {
@@ -2084,11 +2084,11 @@
       }
     ],
     "nutrition": {
-      "calories": 517,
-      "protein": 47,
-      "carbs": 62,
-      "fat": 11,
-      "fiber": 11
+      "calories": 442,
+      "protein": 35,
+      "carbs": 57,
+      "fat": 10,
+      "fiber": 10
     }
   },
   "home-66": {
@@ -2103,7 +2103,7 @@
         "grams": 185
       },
       {
-        "key": "egg",
+        "key": "egg-raw",
         "grams": 30
       },
       {
@@ -2120,10 +2120,10 @@
       }
     ],
     "nutrition": {
-      "calories": 554,
-      "protein": 34,
+      "calories": 530,
+      "protein": 33,
       "carbs": 52,
-      "fat": 23,
+      "fat": 22,
       "fiber": 6
     }
   },

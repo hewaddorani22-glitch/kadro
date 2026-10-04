@@ -1,6 +1,7 @@
+import { nutritionFitsStorage } from '@/utils/ingredientCorrection';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -41,12 +42,16 @@ export function PortionSheet({
   onCancel,
   onConfirm,
   embedded = false,
+  initialDraft,
+  onDraftChange,
 }: {
   target: PortionTarget | null;
   visible: boolean;
   onCancel: () => void;
   onConfirm: (grams: number) => void;
   embedded?: boolean;
+  initialDraft?: { amount: string; unitIndex: number } | null;
+  onDraftChange?: (draft: { amount: string; unitIndex: number }) => void;
 }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -69,13 +74,14 @@ export function PortionSheet({
   if (seen !== signature) {
     const opening = initialSelection(target?.defaultGrams ?? 100, target?.preferGrams ? [] : portions, { chosen: target?.amountIsChosen });
     setSeen(signature);
-    setUnitIndex(opening.unitIndex);
-    setAmount(opening.amount);
+    setUnitIndex(initialDraft?.unitIndex ?? opening.unitIndex);
+    setAmount(initialDraft?.amount ?? opening.amount);
   }
+  useEffect(() => { if (visible && target) onDraftChange?.({ amount, unitIndex }); }, [visible, target?.name, amount, unitIndex, onDraftChange]);
 
   const activePortion = unitIndex >= 0 ? portions[unitIndex] : undefined;
   const grams = resolveGrams(amount, activePortion);
-  const valid = grams !== null;
+  const valid = grams !== null && Boolean(target && nutritionFitsStorage(scaleNutrition(target.per100g, grams)));
 
   const preview = useMemo(
     () => (target && grams !== null ? scaleNutrition(target.per100g, grams) : null),
@@ -172,13 +178,13 @@ export function PortionSheet({
           ) : null}
 
           <View style={styles.preview}>
-            <Text style={styles.previewValue}>{preview ? `~${preview.calories} kcal` : ':'}</Text>
+            <Text style={styles.previewValue}>{preview ? `~${formatNumber(preview.calories, locale)} kcal` : ':'}</Text>
             {preview ? (
               <Text style={styles.previewMacros}>
                 {preview.protein} g P · {preview.carbs} g C · {preview.fat} g F · {formatNumber(grams!, locale)} g
               </Text>
             ) : (
-              <Text style={styles.previewMacros}>{t.portion.invalid}</Text>
+              <Text style={styles.previewMacros}>{grams !== null && !valid ? t.errors.gatewayNutritionRange : t.portion.invalid}</Text>
             )}
           </View>
 

@@ -1,24 +1,17 @@
 import { useEffect } from 'react';
-
+import { AppState } from 'react-native';
 import { useApp } from '@/context/AppContext';
-import { remindersSupported, syncEveningReminder } from '@/services/reminders';
-
-/**
- * Keeps the scheduled reminders in step with the user's actual targets.
- *
- * A repeating notification carries fixed text, so the morning message would
- * otherwise keep announcing the calorie goal the user had when they first
- * enabled it. Rescheduling on every target change keeps it true.
- *
- * Lives inside AppProvider because the root layout sits outside it.
- */
+import { useAccess } from '@/context/AccessContext';
+import { syncEveningReminder } from '@/services/reminders';
 export function ReminderScheduler() {
-  const { hydrationReady, targets, wellnessConsentGranted } = useApp();
-
+  const { hydrationReady, wellnessConsentGranted } = useApp();
+  const { canUse } = useAccess();
   useEffect(() => {
-    if (!remindersSupported || !hydrationReady || !wellnessConsentGranted) return;
-    void syncEveningReminder({ calories: targets.calories, protein: targets.protein });
-  }, [hydrationReady, targets.calories, targets.protein, wellnessConsentGranted]);
-
+    if (!hydrationReady || !wellnessConsentGranted) return;
+    const refresh = () => { void syncEveningReminder().catch(() => undefined); };
+    refresh();
+    const sub = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
+    return () => sub.remove();
+  }, [hydrationReady, wellnessConsentGranted, canUse]);
   return null;
 }

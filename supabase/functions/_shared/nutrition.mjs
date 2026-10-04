@@ -27,9 +27,20 @@ export function safeGatewayFailureCode(error) {
 }
 
 export function validateAnalysisInput(input) {
-  return input?.mimeType === 'image/jpeg'
-    && typeof input?.imageBase64 === 'string'
-    && input.imageBase64.length >= 100;
+  const encoded = input?.imageBase64;
+  if (input?.mimeType !== 'image/jpeg' || typeof encoded !== 'string' || encoded.length < 100) return false;
+  // The route owns the 413 size response; avoid scanning an oversized body.
+  if (encoded.length > 3_000_000) return true;
+  if (encoded.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) return false;
+  try {
+    // Check actual JPEG framing before spending a provider request. This is a
+    // bounded structural check, not a claim to fully decode/validate the image.
+    const head = atob(encoded.slice(0, 8));
+    const tail = atob(encoded.slice(-8));
+    return head.startsWith('\xff\xd8\xff') && tail.endsWith('\xff\xd9');
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -117,7 +128,7 @@ export function isUsableSearchTerm(term) {
 }
 
 /** Changing the matcher invalidates previous choices without deleting data. */
-export const USDA_MATCHER_VERSION = 8;
+export const USDA_MATCHER_VERSION = 10;
 
 export function usdaCacheKey(term) {
   return `v${USDA_MATCHER_VERSION}:${normalizeSearchTerm(term)}`;
@@ -169,6 +180,8 @@ const NO_ADDED_FAT = /\bno(?:t)? +(?:added +)?(?:fat|oil|butter)\b|\bwithout +(?
  * difference between matching the reference and matching something near it.
  */
 function singular(word) {
+  if (word === 'potatoes') return 'potato';
+  if (word === 'tomatoes') return 'tomato';
   if (word.length <= 3) return word;
   if (word.endsWith('ss') || word.endsWith('us') || word.endsWith('is')) return word;
   if (word.endsWith('ies') && word.length > 4) return `${word.slice(0, -3)}y`;
@@ -403,6 +416,10 @@ export function chooseFood(foods, term = '') {
  */
 export function toFoodFacts(food, match = null) {
   if (!food) return null;
+  // USDA branded records can use a 100 ml basis. Only an explicit gram
+  // serving establishes the mass basis for that data type.
+  const servingUnit=String(food.servingSizeUnit??'').toLowerCase();
+  if (['ml','l','cl','dl','fl oz'].includes(servingUnit) || (food.dataType==='Branded' && servingUnit!=='g')) return null;
   const calories = energyKcal(food);
   const protein = nutrient(food, [1003, 203]);
   const carbs = nutrient(food, [1005, 205]);
@@ -422,7 +439,7 @@ export function toFoodFacts(food, match = null) {
     protein,
     carbs,
     fat,
-    fiber: nutrient(food, [1079, 291]) ?? 0,
+    ...(nutrient(food, [1079, 291]) === null ? {} : { fiber: nutrient(food, [1079, 291]) }),
   };
 }
 
@@ -488,12 +505,12 @@ export function buildMealItem(item, facts, index) {
     amountG: item.estimatedGrams,
     baseAmountG: item.estimatedGrams,
     portionFactor: 1,
-    nutritionPer100g: { calories: facts.calories, protein: facts.protein, carbs: facts.carbs, fat: facts.fat, fiber: facts.fiber ?? 0 },
+    nutritionPer100g: { calories: facts.calories, protein: facts.protein, carbs: facts.carbs, fat: facts.fat, ...(facts.fiber === undefined ? {} : { fiber: facts.fiber }) },
     calories: Math.round(Number(facts.calories) * factor),
     protein: Math.round(Number(facts.protein) * factor),
     carbs: Math.round(Number(facts.carbs) * factor),
     fat: Math.round(Number(facts.fat) * factor),
-    fiber: Math.round(Number(facts.fiber) * factor),
+    ...(facts.fiber === undefined ? {} : { fiber: Math.round(Number(facts.fiber) * factor) }),
     confidence: item.confidence === 'medium' || facts.matchConfidence === 'medium' ? 'medium' : 'high',
     optional: item.optional,
     included: true,
@@ -502,6 +519,7 @@ export function buildMealItem(item, facts, index) {
       provider,
       referenceId,
       label: facts.label || `USDA FDC ${referenceId}`,
+      ...(facts.estimatedReference ? { estimatedReference: true } : {}),
     },
   };
 }
@@ -516,6 +534,9 @@ export function mapUsdaFood(item, food, index) {
  */
 export function buildAccuracyWarnings(detection, items) {
   const warnings = [];
+  if (detection.items.some(item => item.milkVolumeEstimated)) warnings.push('milk_volume_estimated');
+  if (detection.items.some(item => item.drinkVolumeEstimated)) warnings.push('drink_volume_estimated');
+  if (detection.amountFallback) warnings.push('amount_estimated');
   if (items.some((item) => item.source?.code === 'unmatched')) {
     warnings.push('unmatched_ingredient');
   }
@@ -576,7 +597,7 @@ export function usdaPortions(entry) {
     // picker reads better without the shouting.
     const raw = String(label ?? '').trim();
     const name = raw === raw.toUpperCase() ? raw.toLowerCase() : raw;
-    const weight = Math.round(Number(grams));
+    const weight = Number(grams);
     if (!name || !Number.isFinite(weight) || weight < 1 || weight > 2000) return;
     if (PORTION_NOISE.test(name)) return;
     const key = name.toLowerCase();
@@ -587,9 +608,8 @@ export function usdaPortions(entry) {
 
   if (entry && typeof entry === 'object') {
     const servingUnit = String(entry.servingSizeUnit ?? '').toLowerCase();
-    // ml is only grams for water; treating a drink as 1 g/ml is close enough
-    // for a portion picker and far better than offering nothing.
-    if (servingUnit === 'g' || servingUnit === 'ml') {
+    // Only explicit mass, never assume a density of 1 g/ml.
+    if (servingUnit === 'g') {
       push(entry.householdServingFullText || '1 serving', entry.servingSize);
     }
     const measures = Array.isArray(entry.foodMeasures) ? entry.foodMeasures : [];
@@ -607,7 +627,11 @@ export function openFoodFactsNutrition(values = {}) {
     const parsed = Number(value);
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
   };
-  const calories = number(values['energy-kcal_100g']);
+  if (!values || typeof values !== 'object' || Array.isArray(values)) return null;
+  // Only an explicitly labelled kJ field is converted; never guess a unit.
+  const kcalPresent = Object.prototype.hasOwnProperty.call(values, 'energy-kcal_100g');
+  const kj = number(values['energy-kj_100g']);
+  const calories = kcalPresent ? number(values['energy-kcal_100g']) : kj === null ? null : kj / 4.184;
   const protein = number(values.proteins_100g);
   const carbs = number(values.carbohydrates_100g);
   const fat = number(values.fat_100g);

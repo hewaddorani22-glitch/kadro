@@ -20,6 +20,17 @@ export function normalizeFoodQuery(value) {
 // Dried is redundant for raisins, not for grapes, dates, rice or any other food.
 export function canonicalFoodQuery(value) {
   const term = normalizeFoodQuery(value);
+  // Plain white bread rolls are the existing BLS wheat-roll identity. Keep
+  // this whole-term only: toppings, brands, grain types and sweet pastries
+  // must retain their own lookup rather than inherit the plain roll's values.
+  if (/^(?:plain )?white bread rolls?$/.test(term)) return 'wheat roll';
+
+  // Shredding/grating changes raw carrot's presentation, not its preparation.
+  // Require explicit raw wording and no other ingredients: a carrot salad,
+  // juice, cooked carrot or a branded product cannot collapse to this row.
+  if (/\braw\b/.test(term) && /\b(?:shredded|grated)\b/.test(term)
+    && /^(?:(?:raw|shredded|grated)\s+)*carrots?(?:\s+(?:raw|shredded|grated))*$/.test(term)) return 'carrot raw';
+
   // A generic raisin reference is an estimate across varieties. Colour and
   // seedless wording must not make an identifiable raisin an unknown food.
   // Whole-term allowlist: coatings, bread, oil, fresh grapes, etc. stay distinct.

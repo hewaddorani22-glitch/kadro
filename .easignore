@@ -52,3 +52,16 @@ supabase/.env.gateway
 
 # TypeScript cache
 *.tsbuildinfo
+
+# Local QA evidence and environment files never enter the Store build context.
+.env.*
+supabase/.env.*
+/docs/qa/
+*.log
+/.claude/
+/.codex/
+/supabase/.temp/
+/supabase/.branches/
+
+# Do not transmit local Git history with the application sources.
+.git

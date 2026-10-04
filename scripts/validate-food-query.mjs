@@ -110,6 +110,59 @@ assert.equal(resolveExactBlsFacts('plain yogurt 3,5% fat')?.referenceId, 'M14130
 assert.notEqual(resolveExactBlsFacts('greek yogurt 3.5% fat')?.referenceId, 'M141300');
 assert.equal(incompleteNutritionError([buildMealItem({name:'Unknown',estimatedGrams:50},null,0)]).status,422);
 
+// Actual Build 14 feedback names, not substitute generated photo fixtures.
+// BLS family references preserve gram scaling and disclose their uncertainty.
+for (const [name, searchTermEn, code] of [
+  ['Knuspriges Müsli', 'crunchy muesli', 'C514200'],
+  ['würzige Remoulade Sauce', 'spicy remoulade sauce', 'Q999000'],
+  ['Knusprige Paprika-Chips', 'crispy paprika potato chips', 'K280100'],
+  ['knusprige Paprika-Kartoffelchips', 'paprika potato chips', 'K280100'],
+  ['Granola', 'granola', 'X0A3000'],
+  ['Knuspermüsli mit Trockenfrüchten', 'crunchy muesli with dried fruit', 'C514400'],
+  ['Schoko-Knuspermüsli', 'crunchy muesli with chocolate', 'C514600'],
+]) {
+  const reference = BLS_SEARCH_ROWS.find(row => row[0] === code);
+  for (const grams of [12.5, 50, 100, 237.4]) {
+    const detection = { name, searchTermEn, referenceKey: 'other', estimatedGrams: grams, confidence: 'high' };
+    const snapshot = structuredClone(detection);
+    const facts = resolveBlsFacts(detection);
+    const item = buildMealItem(detection, facts, 0);
+    assert.equal(facts?.referenceId, code, name);
+    assert.deepEqual([facts.calories, facts.protein, facts.carbs, facts.fat], reference.slice(3, 7));
+    assert.equal(item.amountG, grams);
+    assert.equal(item.calories, Math.round(reference[3] * grams / 100));
+    assert.equal(item.confidence, 'medium');
+    assert.equal(item.source.estimatedReference, true);
+    assert.equal(incompleteNutritionError([item]), null);
+    assert.deepEqual(detection, snapshot);
+  }
+  assert.equal(resolveExactBlsFacts(name.normalize('NFD'))?.referenceId, code, 'decomposed German umlauts');
+}
+for (const [name, term, forbidden] of [
+  ['Knusprige Paprika-Chips', 'banana chips paprika', 'K280100'],
+  ['Knusprige Paprika-Chips', 'tortilla chips paprika', 'K280100'],
+  ['Knusprige Paprika-Chips', 'potato chips light', 'K280100'],
+  ['knusprige Paprika-Kartoffelchips', 'potato chips light', 'K280100'],
+  ['würzige Remoulade Sauce', 'light remoulade sauce', 'Q999000'],
+  ['Remoulade', 'remoulade with yogurt', 'Q999000'],
+  ['Knuspriges Müsli', 'crunchy muesli sugar-free', 'C514200'],
+  ['Knuspriges Müsli', 'crunchy muesli with milk', 'C514200'],
+  ['Knuspriges Müsli', 'crunchy muesli with yogurt', 'C514200'],
+  ['Knuspermüsli zuckerfrei', 'Knuspermüsli zuckerfrei', 'C514200'],
+  ['Knuspermüsli zuckerfrei', 'crunchy muesli', 'C514200'],
+  ['Knuspermüsli mit Milch', 'crunchy muesli', 'C514200'],
+  ['Remoulade light', 'remoulade sauce', 'Q999000'],
+  ['Bananenchips', 'paprika potato chips', 'K280100'],
+  ['Milchschokolade mit Keks', 'milk chocolate with biscuit', 'S581300'],
+]) {
+  assert.notEqual(resolveBlsFacts({name,searchTermEn:term,referenceKey:'other'})?.referenceId, forbidden, term);
+}
+for (const term of ['banana chips paprika','tortilla chips paprika','potato chips light','light remoulade sauce','remoulade with yogurt','crunchy muesli sugar-free','crunchy muesli with milk','crunchy muesli with yogurt','Knuspermüsli zuckerfrei','milk chocolate with biscuit']) {
+  assert.equal(resolveExactBlsFacts(term), null, term);
+}
+assert.equal(resolveBlsFacts({name:'crunchy muesli',searchTermEn:'muesli',referenceKey:'muesli_yogurt_fruit'})?.referenceId, 'C514200', 'dry crunchy muesli must not become the 117 kcal yogurt/fruit dish');
+assert.equal(resolveBlsFacts({name:'Knuspriges Müsli',searchTermEn:'muesli with yogurt',referenceKey:'muesli_yogurt_fruit'}), null, 'conflicting dry/with-yogurt labels require clarification');
+
 // Captured failure shape: the model returns a portion word that USDA doesn't.
 const bread = {fdcId:172688, dataType:'SR Legacy', description:'Bread, whole-wheat, commercially prepared'};
 assert.ok(chooseFoodMatch([bread], 'whole wheat bread slice').food);

@@ -31,7 +31,7 @@ assert.match(record, /if \(error\) throw error;/, 'a failed server write must no
 // --- A refused analysis must clear the stale local record ------------------
 assert.match(consent, /export async function forgetLocalWellnessConsent/, 'there must be a way to drop a stale local consent');
 assert.match(contracts, /'consent-required'/, 'a refused consent needs its own error kind');
-assert.match(analysis, /payload\?\.code === 'consent_required'/, 'the gateway code must map to that kind');
+assert.match(analysis, /consent_required:\s*'consent-required'/, 'the gateway code must map to that kind');
 assert.match(
   context,
   /error\.kind === 'consent-required'[\s\S]{0,200}forgetLocalWellnessConsent\(\)/,
@@ -57,6 +57,6 @@ assert.match(
   'the catch must set an error message, not just clear the results',
 );
 assert.match(scan, /searchError \? \(/, 'the sheet must render the error');
-assert.match(scan, /!searchError && searchQuery/, 'the empty state must not show alongside an error');
+assert.match(scan, /!searchError && !searchNotice && searchQuery/, 'the empty state must not show alongside an error');
 
 console.log('Validated consent recovery: the server decides, a stale local record is dropped, and a refusal is never shown as "nothing found".');

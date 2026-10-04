@@ -1,0 +1,1 @@
+PASS: bundled JPEG accepted; 10 malformed/mislabeled payloads and 5 unsupported MIME declarations rejected. Structural validation; not full JPEG decoding or a physical camera test.

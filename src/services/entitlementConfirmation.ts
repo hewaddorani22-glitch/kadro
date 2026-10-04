@@ -23,7 +23,7 @@ export async function confirmServerEntitlementWithRetry(
       if (await probe()) return true;
     } catch {
       // A bounded later probe handles a transient timeout without trusting the
-      // device. The caller displays one fixed, actionable failure if all fail.
+      // device. The caller keeps confirmation pending if all probes fail.
     }
   }
   return false;

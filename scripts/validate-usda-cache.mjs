@@ -36,7 +36,7 @@ assert.equal(incompleteNutritionError([{...dates,protein:NaN}]).status,422);
 for (const file of ['server/index.mjs','supabase/functions/nutrition/index.ts']) {
   const source=readFileSync(new URL('../'+file,import.meta.url),'utf8');
   assert.match(source,/const nutritionError = incompleteNutritionError\(items\);\s*if \(nutritionError\) return ingredientCorrectionDraft\(detection, items, correctionProtocol\) \?\? nutritionError;/);
-  assert.match(source,/chooseFoodMatch\(\(result.foods \|\| \[\]\)\.filter/);
+  assert.match(source,/chooseFoodMatch\((?:\(result.foods \|\| \[\]\)|result\.foods)\.filter/);
 }
 
 /** Shapes a USDA search hit the way FoodData Central returns one. */

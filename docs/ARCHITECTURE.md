@@ -1,6 +1,89 @@
 # Architecture
 
+## Focused description/photo follow-up, 2026-10-03
+
+The mounted scan tab now restores the active, unsaved description when returning
+from confirmation or an analysis error. A newer local edit takes precedence.
+Scan identity, completed saves, explicit scanner close and private-data invalidation
+clear the form and its RAM-only draft; an obsolete account revision cannot restore
+or re-save it. Focus uses current refs without adding unstable context values to
+the navigation effect. This client repair requires a new binary after Build23.
+
+The shared description amount binder preserves separate explicit quantities across
+DE/EN connectors, fractions and per-portion multipliers. Exclusions remove only an
+exact, uniquely identified constituent; contradictory affirmative mentions require
+clarification. Plain chicken cannot bind a composite soup. A model-omitted weighed
+food may recover its query only from an exact high-confidence existing BLS identity,
+without a conflicting detected row; unresolved identities retain correction.
+Postposed per-piece amounts preserve their count and total; exact weighed pure
+olive oil does not retain a spurious hidden-amount warning. Other ingredients,
+unweighed oil, mixtures and the photo path retain their uncertainty checks.
+The photo prompt distinguishes identifiable food from sharp non-food imagery and
+a dominant foreground meal from equally prominent separate meals. Reference
+wording accepts only plain white bread rolls and explicitly raw shredded carrots.
+These helpers are shared by hosted and development gateways. Native targets,
+consent, authorization, model route and nutrition formulas remain unchanged.
+See the continuing capture QA report for bounded real model outcomes and remaining
+physical-camera/weighed-portion limits; no universal accuracy is claimed.
+
+## Scan feedback, 2026-09-30 (local only)
+
+The correction screen uses the existing authenticated, free database search for unresolved plain milk names containing a fat percentage. A narrow identity helper suggests a category query while retaining the original name visibly. It never discards plant-based, lactose-free, flavour or mixed-food qualifiers; it never auto-selects a food or changes nutrition. Selection uses the existing portion sheet and ingredient-ID replacement. Late/duplicate lookup responses remain guarded. No backend or nutrition resolver change. Real photo URIs use contain in the shared MealPhoto component; the demo image retains cover. Image compression/upload and temporary-photo retention are unchanged.
+
+
+## Sync follow-up, 2026-09-27 (local candidate)
+
+Legacy snapshot comparison tolerates only factor rounding within the old
+`numeric(6,3)` precision and ingredient ordering. Identity, grams, reference
+grams, nutrients, source and inclusion must still match. This also rechecks
+legacy conflicts without a mutation ID already flagged by Build 19; genuine
+pending/conflicting mutations are never automatically overwritten. Normal
+save equality remains strict. Missing historical per-100g / portion metadata
+is still enriched by ingredient ID and queued as a new mutation.
+
+Proposed migration `20260926221131_meal_portion_factor_range.sql` widens the
+factor column to `numeric(10,6)` with a finite upper bound of 5000, supporting
+ratios from the already accepted 1..5000 g inputs without rebasing or clamping
+the user's quantity. Existing nutrition/gram checks, RLS, RPCs, retry receipts
+and owner isolation remain unchanged. This migration is **local only** until
+separately authorized for production. The previously deployed atomic-sync
+migration remains unchanged. See `docs/qa/SYNC-KORREKTUREN-2026-09-27.md`.
+
+## Local stabilization candidate, 2026-09-26 (not published)
+
+Local JSON reads now fail explicitly when damaged; absence alone means an empty
+value. Initial hydration blocks protected UI and offers a non-destructive retry.
+Weight/profile/analysis-queue writes are serialized and account replacement waits
+for them. A durable deletion marker hides its meal even if the later diary write
+was interrupted. Async save/delete callbacks reject an obsolete account generation.
+Unit changes persist before display; a pending-write counter keeps a rapid return
+to the original unit from being discarded as an unchanged selection.
+
+Store and server states distinguish active, pending, cancelled, interrupted and
+failed outcomes. Native-store refresh always consults server entitlement, even if
+the SDK reports Free. Purchase/restore locks are synchronous and late results after
+account/consent changes are ignored. Server authority, cache lifetimes and grace
+periods are unchanged; a store success alone never grants Pro.
+
+Whole-meal portions preserve tenth-gram base amounts within the existing 1–5000 g
+input bounds. Repeating a saved meal uses the free `plan` origin and a shared
+in-flight operation. The existing same-day recommendation filter is unchanged.
+Progress explicitly compares all seven days with the **current** protein target;
+no historical target or weight-cloud-sync system was added.
+The confirmation heading wraps the uncertainty badge at larger text sizes.
+
+See [stabilization QA](qa/KANDRO-STABILISIERUNG-2026-09-26.md) for evidence and
+limits, including the initial native test isolation failure. QA SDK/network
+adapters live outside this repository and must never enter a production bundle.
+
+
 ## Appearance and amount editing (Build 8 remediation)
+
+- Reviewed food-family conflicts are a separate decision from a BLS lookup miss. Both gateways block automatic USDA fallback for those ingredients, including results cached or fetched for another item with the same query. Existing correction-protocol/legacy rejection behavior remains authoritative; eligible unrelated ingredients still resolve normally.
+
+- Result projection replaces any saved meal with the current draft's ID before computing consumed and remaining nutrients. Confirmation upserts the revision once per Result mount, including already-logged scans. The reveal's starting budget excludes that same meal, keeping edits and unrelated meals consistent without double-counting.
+
+- Local recovery candidate, September 6: reviewed whole-term crispy muesli, remoulade and paprika-potato-chip aliases use existing BLS family rows with `estimatedReference` provenance and medium confidence. The app adds one localized typical-value disclosure. Granola uses its dedicated baked-granola row; fruit/chocolate muesli remain separate. A localized alias cannot override a different English preparation qualifier. No Milka LU-to-wholemeal-biscuit substitution is added. The server portion was deployed as nutrition version 50 after explicit user approval and passed DE/EN live checks; the disclosure UI still requires a new mobile build for TestFlight users.
 
 - Build 13 feedback: `food-query.mjs` separates lookup identity from portion words and normalizes a bounded set of equivalent terms. Both gateways use the same canonical query; the user's name, gram amount and piece count are unchanged. Reviewed whole-term aliases bridge common ingredients to existing BLS rows, with medium confidence for generic references. Decimal fat percentages remain atomic, so 3.5% cannot collide with 5.3%.
 - Follow-up screenshot tests exposed `pistachios in shell`; a live description exposed `raisins green dried`. Whole-term raisin colour/seedless variants now use the generic medium-confidence raisin reference. Shell presentation is removed only for an allowlisted nut identity while roasting/salt qualifiers and the detected edible grams/count remain unchanged. This is lookup normalization, not a shell-to-kernel weight conversion or a claim of measured cultivar nutrition.
@@ -98,7 +181,7 @@ Progress uses the same date signal for its window and streak calculations.
 Trial copy is advertised only after StoreKit reports introductory eligibility;
 unknown eligibility falls back to the regular subscription price.
 
-Empty scan confirmations are blocked both in the screen and the app-state save handler. Adolescent targets round the adolescent maintenance estimate directly, without adult calorie caps/floors. The Result recommendation card observes the same below-150-kcal completion threshold as Today and Plan.
+Empty scan confirmations are blocked both in the screen and the app-state save handler. Adolescent targets round the adolescent maintenance estimate directly, without adult calorie caps/floors. Below 200 remaining kcal, Today and Result show the target status with an explicit route to optional small-meal ideas; Plan continues to offer three options with their projected overage disclosed.
 
 `AppProvider` owns active UI state, hydrates local storage first, and then optionally reconciles with Supabase:
 
@@ -121,6 +204,12 @@ Empty scan confirmations are blocked both in the screen and the app-state save h
 - `getRemaining` derives the daily balance;
 
 `recommendations.ts` scores the paired 200-entry German/English catalogs by context, remaining calories/protein/fat, and saved preferences. Vegetarian, pork-free, and lactose-free choices are hard constraints; high-protein and quick choices affect ranking. It sorts deterministically and returns exactly three entries. The values are explicitly labeled Kandro planning references, not sourced measurements. The catalog validator enforces balanced context coverage, known tags, plausible nutrition ranges, calorie-to-macro consistency, translation parity, and 90 deterministic recommendation sets across 30 budget/preference scenarios.
+
+Small-budget portions use `mealSuggestions.ts`: default suggestions are capped at the greater of 200 kcal and the remaining budget. Thus 200 kcal remaining produces at most 200 kcal suggestions; 20 kcal remaining still permits an optional roughly 200 kcal meal, explicitly shown as 180 kcal above the daily target. Plan computes this disclosure from the signed target-minus-consumed balance, including days already over target. This is proportional sizing of existing catalog meals, not AI recipe generation. Original nutrition and `portionScale` travel with the suggestion so preview, portion controls, recipe ingredients/amounts and saved nutrition use the same combined scale without cumulative rounding. Direct recipe routes retain the standard serving unless given a validated portion.
+
+Today and Result use the calorie/protein range of the actual nine available suggestions across the three contexts, including saved dietary preferences. They no longer advertise an independent fixed protein range that smaller portions cannot meet.
+
+The Pro paywall presents photo and text analysis as the paid benefits. Search, barcode, daily balance, next-meal suggestions and history remain explicitly labeled as permanently free. Purchase/restore behavior and RevenueCat prices are unchanged.
 
 Screens must not maintain separate copies of these totals.
 
@@ -177,8 +266,186 @@ The `delete-account` Edge Function requires a valid user JWT, deletes that exact
 
 ## Supabase ownership boundary
 
+### Final-pass network and image boundary (2026-09-06)
+
+The mobile gateway uses a single 90-second deadline across session acquisition,
+HTTP headers and JSON body consumption. Expiry aborts the fetch and follows the
+existing localized offline/retry path; a token arriving after expiry cannot
+start an upload. Unknown provider error prose and warning codes are not exposed
+as untranslated UI text. Tests exercise the transpiled client module with
+controlled timers and fetch responses.
+
+The hosted nutrition function validates base64 syntax and JPEG SOI/EOI markers
+before invoking vision. Oversized bodies still reach the existing 413 guard.
+This is structural input validation, not a complete image decoder. Version 51
+was deployed with explicit owner approval and source-readback/live regression
+checks; production JWT verification stays enabled.
+
+Device language selection follows the first supported DE/EN language in the
+ordered locale list; an explicit stored app choice takes precedence. Device
+region uses regionCode or Intl.Locale region parsing, independently of language,
+units and StoreKit storefront. Unsupported languages fall back to English when
+there is no supported preference. This does not claim worldwide localization.
+
 Meal ingredient amounts use `numeric(8,1)` for both current and base grams, preserving the one-decimal portion editor through cloud round trips. Existing 1–5000 g constraints remain authoritative. Cold confirm/result routes require a ready in-memory draft before mounting; `logScannedMeal` independently rejects initial demo state.
 
 The mobile app receives only the project URL and publishable key. Supabase Auth supplies a per-user JWT, and Postgres RLS limits product rows to `(select auth.uid()) = user_id`. The client never receives a provider secret or `service_role` key. `profiles`, `daily_targets`, `meals`, `meal_items`, `recommendations`, `recommendation_feedback`, and `analysis_usage` all enable RLS and revoke access from the unauthenticated `anon` role. The quota table additionally has no client policies or table grants.
 
 Anonymous sign-in is used to avoid blocking the first scan. It is an authenticated Supabase user, not unauthenticated public database access. The Profile account card upgrades it with a verified email through `updateUser`, verifies that the returned identity still has the same user ID, and then lets the user set a password. Existing accounts can sign back in and rehydrate their RLS-owned cloud data. Clearing app data before the upgrade can still make an anonymous account inaccessible.
+
+### Paywall Dynamic Type layout (2026-09-06, local post-Build-15 fix)
+
+`paywall.tsx` uses `useWindowDimensions().fontScale`: above the default scale,
+plans and purchase/legal controls share the same ScrollView. Default text keeps
+the bottom purchase area fixed. Enlarged plan prices flow below descriptions;
+restore and legal links can wrap. The root native subtree remounts on a font-scale
+change to invalidate stale iOS text measurements while React subscription/plan
+state stays owned by the screen. `PrimaryButton` grows for wrapped text and lets
+the label shrink alongside its icon. No billing or entitlement logic changed.
+
+
+### Onboarding introduction and search UX (2026-09-18, LOCAL ONLY)
+
+- `WeightEntry` replaces the hidden modal/0.1-unit picker for onboarding weight with a visible decimal input and ±1 kg/lb shortcuts. It accepts a comma or point and one decimal place, keeps the existing 40–200 kg bounds, and disables Continue for invalid drafts. Kilograms remain the internal representation; unit changes remount the input to prevent stale drafts. The Done control keeps its layout space on blur, preventing the first shortcut tap from being lost through layout movement.
+- Successful first-run consent/setup now routes to `today?tour=1`, not directly to the camera. `AppIntroduction` points to the five existing tabs. It can be closed at any step, started again from Profile, or finished by opening Scan. The route parameter is cleared on dismissal, so it does not gate subsequent navigation. No persistent tutorial flag, schema change, permission prompt or analytics event was added. Profile editing still saves through its existing path.
+- The introduction distinguishes free meal suggestions/search/barcodes from the lifetime allowance of three photo/text AI analyses (value read from `FREE_SCAN_ALLOWANCE`). No recommendation paywall or change to entitlements was introduced.
+- Local and hosted search handlers return at most 60 existing reference results. Scan initially renders 15 and reveals additional batches locally. Every new query resets that count; debounce/stale-response guards remain. Common bare queries for bread, milk and yogurt receive targeted bilingual aliases and ordering from existing BLS rows. Explicit requests for chocolate, breadcrumbs, gluten-free bread and yogurt dip retain their identities. Nutrition values and the 7,140-row source snapshot are unchanged.
+- Full configured verification and DE/EN web interactions passed. Native simulator launch hung, including after a device restart; no native or physical-device pass is claimed. The simulator's prior AsyncStorage files were backed up and restored byte-for-byte. No new iOS build, TestFlight upload or gateway deployment was performed. Release still requires native checks and a paired deployment/build; save/sync and canonical meal-save analytics fixes remain outstanding.
+
+### Native QA follow-up, 2026-09-18
+
+The onboarding weight input now attaches an iOS `InputAccessoryView` to its decimal keyboard. The bar keeps Done and the current value/validation hint visible when the keyboard covers the inline controls. Web/Android retain the existing inline Done control. No native package upgrade is required. Version 1.0.1 is the next TestFlight candidate; remote build number remains EAS-managed. See the workspace `Native-Test-2026-09-18/` evidence for the simulator scope and separate physical-device limitations.
+
+## Release A integrity changes, 2026-09-25 (local candidate, not deployed)
+
+The following supersedes earlier descriptions of two independent meal UPSERTs
+and missing cloud reference metadata. It does not describe the currently public binary.
+
+- A canonical local meal save is serialized and stores `Meal.sync`: account owner,
+  base cloud revision, stable UUID mutation, bounded ancestor mutation IDs and
+  pending/synced/conflict state. Local success remains separate from cloud success.
+  Stable `savedAt` and mutation IDs survive process restarts and retries. Repeated
+  unchanged taps retain the same draft; local edits do not inflate `meal saved`.
+- The matching schema migration is `20260925142154_atomic_meal_sync.sql`.
+  `public.mutate_meal_v2` is an authenticated invoker wrapper around a private,
+  owner-checked definer. It locks one account/meal, checks the expected revision,
+  replaces parent and complete child set in one transaction, validates included
+  nutrient sums and stores per-100g references, household portions, estimated
+  provenance, item ordering and metadata version. An invalid child rolls back
+  parent, children and sync state. Empty ingredient sets require zero totals.
+- Private `meal_sync_state` contains revisions, deletion tombstones and the last
+  64 mutation receipts per meal. It has RLS and no client table privileges. A
+  retained receipt makes retries idempotent; older receipts eventually produce
+  a conflict rather than authorizing a stale write. No analysis quota is touched.
+- Legacy direct writes advance revisions through triggers. Existing rows are not
+  rewritten. Legacy clients still have their original two-request save limitations;
+  the full fix requires this migration AND the matching mobile build. Rollback
+  must preserve stored metadata and tombstones; do not automatically drop them.
+- Cloud history is read in pages within the existing 90-day history window;
+  tombstone lookups are batched. Cloud hydration persists remote meals locally,
+  preserves pending edits, recovers compatible legacy local reference metadata,
+  and never silently uploads an ambiguous older local copy. Account generation
+  and session checks reject late responses during an account switch.
+- Conflicts persist until an explicit choice on Today. The latest cloud copy can
+  replace the local draft; a chosen local copy uses a fresh expected revision.
+  A remotely deleted meal is restored only under a new ID. Pending local deletes
+  hide the meal until acknowledgement; conflicting deletes require a separate
+  explicit choice. The local record remains available if the network fails.
+- OFF search and barcode share `openFoodFactsNutrition`. All four core nutrients
+  must be valid; missing/null/empty/negative/non-finite fields are not synthesized
+  as zero. Explicit kJ energy is converted only if the kcal field is absent.
+  Source and serving decimals are retained until display/portion calculation.
+- `caloriePlan` is the shared source for requested/applied offsets, rounding,
+  floor/cap and final calorie target. The underlying target rules are unchanged.
+  The onboarding rate is described as a planning estimate, not a promised outcome.
+- All 85 recipe ingredient references declare reference and weighing states.
+  Raw BLS records replace contradictory cooked meat/fish/vegetable references;
+  raw eggs and peeled boiled eggs remain distinct. Turkey mince recipes explicitly
+  use minced skinless turkey breast; beef mince uses lean beef mince (Tatar).
+  Gnocchi use a raw BLS reference. No universal cooking-yield factor is introduced.
+  All 67 recipes and both catalogues were recalculated from their actual inputs.
+  The protein preference now uses the offered portion's protein values as a
+  ranking signal instead of relying on the previous editorial tag alone.
+- Tests: `validate-release-a.mjs` exercises runtime adapters/local persistence and
+  all recipe states. `validate-meal-sync-postgres.py` uses a separately initialized
+  Unix-socket PostgreSQL cluster and synthetic auth fixtures for real rollback,
+  concurrent connections, RLS, deletion and metadata tests. Neither is a live
+  Supabase, StoreKit, physical camera or public-binary test.
+
+Production ordering: read-only integrity inventory, authorized migration and
+advisors, authorized gateway publication and smoke test, then matching mobile
+candidate and physical TestFlight QA. Existing discrepancies require a separate
+reviewed repair; `supabase/queries/audit_meal_integrity.sql` reports counts only.
+There is deliberately no fallback to the old partial-write protocol if the new
+RPC is unavailable: the meal stays local and synchronization remains unconfirmed.
+
+## Lokaler Erfassungskandidat vom 01.10.2026
+
+Der Erfassungspfad besitzt einen gemeinsamen streng validierten Modelladapter, eine deterministische Bindung expliziter Textmengen und eine Massenprüfung für USDA/OFF. Normale Suche trennt Katalog während der Eingabe von ausdrücklich abgesendeten Anbieterabfragen und liefert Teil-/Fehlerstatus. Warme Caches ersetzen keine verteilten Quoten. Protokoll 2 ergänzt persistente Auftragsquittungen für Korrektur- und Fehlerfälle, bevor Wiederholungen Kostenzähler erreichen. Alte Clients/Consent bleiben kompatibel.
+
+Gemini `google/gemini-3.8-flash` über `google-vertex/global` und die getrennt budgetierte Suchhilfe sind lokal implementiert und durch eine harte Serversperre deaktiviert. Neue versionierte Zustimmung ist scopegebunden; eine Suchzustimmung erlaubt keine Fotoübertragung. Der bisherige Responses-/Azure-Pfad bleibt erhalten. Neue Migrationen sind lokal; Modell-/Vertrags-/Gerätenachweise fehlen. Details und Datenlebensdauer: [Erfassungskandidat](qa/ERFASSUNG-GEMINI-2026-10-01.md).
+
+## Erweiterter lokaler Kandidat vom 02.10.2026
+
+- Suche normalisiert begrenzte belegte DE/EN-Wortformen beidseitig, erhält Zubereitung und Produktnamen und priorisiert vollständige Grundzutaten vor zusammengesetzten Gerichten. Reihenfolgeunabhängige Komponententreffer und Matcher-Version `2026-10-02-v4` verhindern alte Cachetreffer nach der Reparatur. Nährwerte und Referenz-IDs werden dadurch nicht verändert.
+- Der erste abgeschlossene Onboardinglauf führt optional über `reminder-setup`. Erst die bewusste Aktivierung fordert eine OS-Berechtigung an. `reminders.ts` verwaltet eine tägliche lokale Erinnerung beziehungsweise die beiden bewusst übernommenen alten Termine, ausschließlich eigene IDs und generische DE/EN-Inhalte. Profilverwaltung, Ablehnung, Fehler und Überspringen benötigen keinen Pushserver. Der frühere automatische Nach-Save-Prompt entfällt.
+- `syncRepository` meldet ausschließlich erfolgreich neu lokal angelegte Mahlzeiten an `CaptureCompanion`. `reviewRequest` speichert lokale Nutzungs- und Anfragezähler; Demo/Updates/Replay zählen nicht erneut. Nach mindestens fünf Mahlzeiten, drei lokalen Tagen und 72 Stunden wird eine bewusste ruhige Rückkehr zu Heute abgewartet. Kamera/Entwurf/Tastatur/Fehler und die gemeinsame Präsentationssperre verhindern störende Angebote. StoreKit entscheidet über die Anzeige; ein API-Versuch ist kein Ratingnachweis. Version, 120-Tage-Abstand und drei Versuche in 365 Tagen sind lokale Grenzen.
+- Konto-/Privacywechsel invalidieren zunächst private Begleitdaten. JS-Generation und synchroner nativer Generationstausch verhindern verspätete Widget-Schreibvorgänge; wartende Freigaben überleben den Wechsel nicht. Review-Nutzung wird gelöscht, datensparsame gerätebezogene Anfragegrenzen bleiben erhalten. Diese Zähler werden nicht als Analytics übertragen.
+- Der lokale Expo-Modul `KandroWidgets` und das SDK-54-CNG-Plugin erzeugen eine echte WidgetKit-Extension mit drei Kinds: Today (small/medium), Entry und Photo (je circular/rectangular). Die App Group enthält nur einen atomaren versionierten Snapshot der vorhandenen App-Summen/Ziele, Sprache, lokalem Datum, Zeitstempel und neutraler Generation. Standard ist ein Aktionswidget; Summen verlangen explizite Auswahl im Profil. Lock-Screen-Kinds zeigen keine Nährwerte. Kein Widget-Netzwerk, kein Sessionzugriff, keine separate Ernährungsberechnung.
+- Swift prüft Schema, numerische Grenzen, Tages-/Zeitzonenwechsel und zwei Stunden Maximalalter. Complete File Protection schützt den Snapshot, sensible Summaryansichten sind entsprechend markiert. Gezielte Reloads und eine Ablauf-Timeline ersetzen kein garantiert sofortiges Löschen bereits von iOS gerenderter Bilder. Galeriebeispiele enthalten keine echten Nutzerdaten.
+- Widget-/Reminder-Links dürfen nur feste Erfassungsmodi öffnen. `+native-intent`, `captureIntents` und `capture` warten auf Hydrierung/Consent/Onboarding, deduplizieren letzte Antworten und schützen laufende Entwürfe. Ein Link startet weder Analyse noch Speicherung oder Kauf.
+- EAS lädt `plugins/`, `widgets/` und `modules/` hoch, nicht das lokale `ios/`. Host und Extension müssen gleiche Version/Buildnummern erhalten. Gruppe `group.com.hewaddorani.kandro.widgets`, Extension `com.hewaddorani.kandro.widgets`, Team `85S69CVRAY`; entsprechende Apple-Capabilities/Profile sind noch nicht remote eingerichtet oder bestätigt. Native Simulator-Kompilierung ist kein signierter Store-Kandidat.
+
+
+02.10.2026, freigegebene Fortsetzung: Beide Faktor-/Capture-Migrationen remote angewendet, Retention/Rechte geprüft; nutrition 55 ACTIVE/JWT nach realem Gratis-Smoke. Drei echte GPT-4.1-mini/Azure-Textfälle erhalten alle expliziten Mengen. Der daraus bestätigte USDA-Pluralfehler potatoes→potatoe ist behoben, Cacheversion 10, rote/grüne Regression und vollständiges Verify bestanden. Originalfehler bleibt im Nenner, kein Gemini-/Fotoqualitätsnachweis. Alle vier Medium-Widgetlinks tatsächlich nativ geöffnet. Sprach-/Warmstart-Entwurfsfehler repariert und nachgetestet. Apple-Anmeldung/Signierung und physische Pflichtfälle bleiben offen, kein Cloudbuild/Upload/Submit; genaue Ergebnisse/Budget im laufenden Erfassungsbericht.
+
+
+### 02.10.2026 – Erfassungskandidat 1.0.3, echter Textvergleich
+
+34 begrenzte echte Azure-Modellaufrufe einschließlich Ausgangs-/Nachtests; kein Gemini. Belegte Mengenbindungsfehler bei gezählten Eiern und Fettprozentformatierung behoben, Rot-Grün-Regressionen, gespeicherte Antworten replayt und vier gezielte neue Livefälle bestanden. Identität/Masse getrennt von Referenz-/Fotoqualität dokumentiert. `nutrition` 56 ACTIVE/JWT kompatibel veröffentlicht und kostenlos live nachgeprüft. Kompletter Verify-Gate und nativer Simulator-Host/Widget-Build 1.0.3 bestanden. EAS-Apple-Anmeldung/Store-Signierung, physische Pflichtfälle und Gemini-/Suchhilfeabnahme bleiben offen; kein Cloudbuild/Upload/Submit. Kosten, Quellmanifest und tatsächliche Grenzen im bestehenden `docs/qa/ERFASSUNG-GEMINI-2026-10-01.md`.
+
+
+### 02.10.2026 – Store-Build 20: Privacy-Dateizuordnung korrigiert
+
+Apple-Profile/App Group für Host und Widgets sind eingerichtet und direkt geprüft. Genau ein Store-Build 1.0.3 (20) erfolgreich kompiliert, aber vor TestFlight gesperrt: Bei frischem CNG griff React Natives Privacy-Aggregation für den Host auf die vorhandene Widget-Dateireferenz zurück. Im echten IPA fehlen dadurch die aggregierten Required-Reason-API-Angaben der Hauptapp. Der frühere wiederverwendete Simulator-Projektbaum enthielt bereits eine korrekte Hostreferenz und deckte diesen Fehler nicht ab.
+
+`ios.privacyManifests` in `app.json` erzeugt jetzt durch das vorhandene SDK-54-Plugin vor CocoaPods eine eigene Hostdatei mit eigener Ressourcenreferenz. Keine SDK-/Anbieteränderung. `scripts/validate-widget-native-project.mjs <private-ios-dir> [--aggregated]` prüft tatsächliche Target-/Ressourcenreferenzen, getrennte Dateien, Duplikate und nach Pod-Installation die vier erforderlichen API-Kategorien. Regression am frischen alten Projekt rot; nach Reparatur mit zweimaligem Prebuild und echtem Pod-Install grün. Vollständiger Verify bestanden. Ein zusätzlicher Store-Build ist von der bisherigen Ein-Build-Freigabe noch nicht gedeckt; kein TestFlight-Upload oder Review. Frischer nativer Host-/Extension-Nachbuild jetzt ebenfalls bestanden; tatsächliche gebaute Manifeste getrennt und exakt geprüft. Ersatzkandidat `KANDRO-1.0.3-20261002-PRIVACY-FIX`; konkreter Ersatzvorschlag im bestehenden Kandidatenbericht.
+
+
+### 03.10.2026 – Zugangsexperiment und finaler Testkandidat
+
+`paywall_access_v1` trennt dauerhafte Kontozuordnung von Kaufrechten und Analysekontingenten. Die private serverseitige Konfiguration startet öffentlich ausgeschaltet. Nur ausdrücklich neue, verifizierte freiwillig verknüpfte Erwachsene mit bestätigtem Alter und gültigem sieben Tage Monats-Trial können einmalig A/B erhalten. Bestehende Historie, vorherige Gratisnutzung, unbekannte Identität oder Eligibility schließen dauerhaft aus; es entsteht kein neuer unbegrenzter Pro-Anspruch. Ohne Fingerprinting kann eine vollständig neue Identität nicht sicher demselben Menschen zugeordnet werden.
+
+AccessProvider/RouteGuard schützen sämtliche normalen Einstiege und halten eine erlaubte Zielaktion bis zur bestätigten Freigabe. Aktive Rechte haben Vorrang. Konto, Recht, Widerruf/Löschung und vorhandene Mahlzeiten bleiben zugänglich. Der Gateway prüft die private Zuordnung vor Referenz-/Analysezugriff; ein Trigger schützt neue Cloudmahlzeiten. Spezifische vorher autorisierte Meal-ID-Belege erlauben noch ausstehende Saves nach Ablauf, ohne neue IDs freizuschalten (höchstens 64 unverbrauchte Belege). Korrektur und Tombstones bleiben erhalten. Cachefehler können einen bekannten B-Zugang nicht in Free umwandeln.
+
+Die beiden Paywalls teilen Produktangebot und Inhalt; B hat kein X/Gratisziel. Der vorhandene freiwillige Kontoverknüpfungsbaustein erscheint nur im ersten Onboarding vor einer möglichen Teilnahme. Getrennte expirable QA-Konten ermöglichen A/B bei ausgeschaltetem öffentlichen Experiment; sie ändern keine Apple-Entitlements. Die Erinnerungsentscheidung wird getrennt vom OS-Berechtigungsstatus gespeichert; gesperrter B-Zugang pausiert Erinnerungen. Widgets zeigen größere tabellarische Summen, eine dezente Zielanzeige und im Mediumformat vier einzelne Aktionsflächen. Native Kinds, Datenschutz und Deep-Link-Allowlist bleiben erhalten.
+
+Aktuell: nutrition 57 mit JWT und additive Migration 20261002210021 extern geprüft; A-Suche erlaubt und B vor Suche gesperrt mit echten eigenen QA-JWTs. Vollständige Suite, neun lokale Auth/PostgREST-Gruppen und frischer nativer Host/Widget-Build bestanden. Physische Kauf-/Widgetpflichtfälle sind separate TestFlight-Gates. Frühere offene Angaben oben sind historische Zwischenstände.
+
+
+### Beta22 reminder/capture repair (2026-10-03)
+
+Reminder onboarding completion has one observable owner in `services/reminders.ts`. Both the route guard and reminder screen subscribe through `useReminderOnboarding`; completion publishes before asynchronous persistence/navigation, with a revision guard against stale reads. Only the screen's declarative redirect completes navigation. Existing access/consent/save guards remain in place.
+
+Description amounts permit a narrowly source-backed estimate for plain dairy milk volume (FAO/INFOODS1.030g/ml,1.02–1.05 range). This is medium-confidence, locally explained and editable; unsupported volume types are still rejected. Nutrition continues to come from BLS/USDA. Exact food/fat qualifiers bind quantities, and contradictory milk recognition remains one unresolved ingredient. Bilingual milk searches prioritize existing plain dairy references; search cache version is2026-10-03-v5. Gemini/search-assistance release gates remain off.
+
+
+### 04.10.2026 – Beta-24-Feedback (lokal, nicht deployt)
+
+- **Beschreibung:** `applyDescriptionAmountsTolerant` ersetzt in beiden Gateways die harte Ablehnung. Eindeutige Mengen binden weiter exakt; nicht sicher zuordenbare Angaben („100 g Reis mit Hähnchen“, „200 ml Öl“, >5000 g) behalten die Modellschätzung mit mittlerer Konfidenz und Warnung `amount_estimated`. Die Vorabprüfung vor der Modellanfrage entfällt. Alltagsgetränke (Wasser, Kaffee/Tee, Saft/Schorle, Softdrinks, Bier, Wein, Smoothie/Kakao) dürfen in ml/l angegeben werden (gerundete typische Dichten, Warnung `drink_volume_estimated`); Pflanzenmilch und Öl bleiben ohne Volumenumrechnung.
+- **Toast:** Reviewte BLS-Aliase für Weizentoast (B314000), getoastet (B314072), Vollkorn (B111200), Mehrkorn (B314200) als typische Referenzwerte. Die Suche nach „Toast/Toastbrot“ zeigt gewöhnlichen Toast zuerst statt glutenfreiem.
+- **Bestätigen:** Nicht aufgelöste Zutaten zeigen einen Ein-Tipp-Vorschlag aus der kostenlosen Suche; die erkannte Grammzahl bleibt, nichts ändert sich ohne Tippen.
+- **Suche:** Die Liste bleibt beim Tippen stehen; liefert der lokale Katalog weniger als fünf Treffer, startet nach einer Tipp-Pause automatisch die volle Suche (Marken/OFF), ohne Return.
+- **Paywall-Experiment:** Migration `20261004120000_paywall_open_to_new_installs.sql` entfernt die Pflicht zum verifizierten E-Mail-Konto; `access-setup` meldet neue Installationen automatisch an (50/50 A/B). Bestandsnutzer, Minderjährige, Vorabnutzung, aktives Pro und fehlende Trial-Berechtigung bleiben ausgeschlossen. Das Einschalten (`public_enabled`) ist eine getrennte Eigentümeraktion: `supabase/queries/enable_paywall_experiment.sql`. Datenschutz/AGB 1.9 entsprechend angepasst.
+- **Erinnerungen:** Modus `meals` mit vier antippbaren Zeitfenstern (Frühstück, Mittag, Abendessen, Tagesabschluss), Zeit per −/+ in 15-Minuten-Schritten. Mahlzeiten öffnen die Kamera, der Tagesabschluss die Beschreibung. Ältere Einzel-Erinnerungen werden als Abendessen übernommen.
+- **Demo-Mahlzeit:** Wird angezeigt, aber nie mehr im Tagebuch gespeichert.
+- Tests: `scripts/validate-beta24-feedback.mjs` (10 Fälle) im Verify-Gate; vollständiger `npm run verify` bestanden. Kein Deployment, kein Build, keine KI-Aufrufe.
+
+### 04.10.2026 – Sofort-Erfassung (lokal, nicht deployt)
+
+- `services/foodSuggest.ts`: Der gebündelte BLS-4.0-Snapshot und das Gateway-Ranking (`_shared/bls-search.mjs`) laufen auch auf dem Gerät. Tippen liefert ab 2 Zeichen sofort Treffer, offline, mit Alltags-Priorität, Synonymen, Plural/Tippfehlern, eigener Historie und typischen Portionen (als Schätzung gekennzeichnet). Gateway-Treffer (Marken, Open Food Facts) werden danach ohne Dubletten ergänzt.
+- Suche → Menge → `AppContext.logFoodDirect` speichert sofort (kostenlos, `origin: plan`); die Suche bleibt für weitere Lebensmittel offen. Leeres Suchfeld zeigt „Zuletzt gegessen“ mit letzter Menge.
+- `ManualFoodForm`: unbekannte Lebensmittel mit Quelle `manual` (Migration `20261004130000_manual_food_source.sql`, additiv).
+- `services/localDescription.ts`: einfache Beschreibungen mit eindeutigen Lebensmitteln und Mengen werden lokal aufgelöst (kein KI-Aufruf, kein Kontingent). Negationen, Bereiche, unquantifizierte „mit“-Zugaben und unbekannte Wörter gehen unverändert an die KI.
+- Lokale Web-Exporte müssen Backend-Variablen leeren (siehe Masteraudit F01); `.env.local` wird sonst trotz `EXPO_NO_DOTENV` eingebunden.
+- Tests: `scripts/validate-instant-logging.mjs` im Verify-Gate. Audit: `docs/qa/MASTERAUDIT-2026-10-04.md`.

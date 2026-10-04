@@ -1,0 +1,12 @@
+{
+  "id": "46d24f60-c300-47ed-95ac-2fa366a30124",
+  "status": "FINISHED",
+  "platform": "IOS",
+  "distribution": "STORE",
+  "appVersion": "1.0.0",
+  "appBuildVersion": "15",
+  "gitCommitHash": "633d688e6a6247a6e1cc66f85788c157b6e12863",
+  "createdAt": "2026-09-06T03:16:00.735Z",
+  "completedAt": "2026-09-06T03:20:50.459Z",
+  "buildProfile": "production"
+}

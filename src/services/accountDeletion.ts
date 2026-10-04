@@ -1,4 +1,4 @@
-import { clearLocalKandroData } from '@/services/localRepository';
+import { clearLocalKandroData, invalidatePrivateData } from '@/services/localRepository';
 import { clearLocalWellnessConsent } from '@/services/consent';
 import {
   disableCloudSyncAfterDeletion,
@@ -15,6 +15,7 @@ export async function deleteKandroAccount() {
   // Erase analytics before the irreversible server mutation. If current
   // AsyncStorage or the SDK cannot be drained, deletion stays retryable and no
   // stale adult opt-in/queue can survive into the replacement account.
+  await invalidatePrivateData();
   await clearTelemetryAfterAccountDeletion();
   if (!supabase || !isSupabaseConfigured) {
     await Promise.all([clearLocalKandroData(), clearLocalWellnessConsent(), clearRemindersAfterAccountDeletion()]);

@@ -5,6 +5,7 @@ import catalogDe from '@/data/mealCatalog.de.json';
 import catalogEn from '@/data/mealCatalog.en.json';
 import { getDictionary, getLanguage } from '@/i18n/active';
 import { MealContext, MealSuggestion, Nutrition } from '@/types/nutrition';
+import { scaleSuggestedNutrition, suggestionBudget, suggestionCalorieTarget } from '@/utils/mealSuggestions';
 
 type CatalogEntry = Omit<MealSuggestion, 'contexts' | 'preferences' | 'source'> & {
   context: MealContext;
@@ -60,7 +61,7 @@ function matchesDietaryConstraints(entry: CatalogEntry, preferences: string[]) {
 }
 
 function score(entry: CatalogEntry, remaining: Nutrition, preferences: string[]) {
-  const calorieTarget = Math.min(550, Math.max(380, remaining.calories * 0.38));
+  const calorieTarget = suggestionCalorieTarget(remaining.calories);
   const proteinTarget = Math.min(45, Math.max(28, remaining.protein * 0.48));
   const macroDistance = Math.abs(entry.calories - calorieTarget) / 80
     + Math.abs(entry.protein - proteinTarget) / 12
@@ -69,8 +70,37 @@ function score(entry: CatalogEntry, remaining: Nutrition, preferences: string[])
   // things you care about outranks a meal that only happens to fit one.
   // 'quick' is a tag now rather than a phrase parsed out of the localised time
   // string, which only ever matched German.
-  const matched = preferences.filter((preference) => entry.tags.includes(preference)).length;
-  return macroDistance - matched * 1.5;
+  const matched = preferences.filter((preference) => preference !== 'high-protein' && entry.tags.includes(preference)).length;
+  // Raw/cooked recipe corrections change real protein amounts. Rank this
+  // preference from the offered portion, not the old editorial category tag.
+  const proteinPreference = preferences.includes('high-protein') ? Math.min(entry.protein, 60) / 8 : 0;
+  return macroDistance - matched * 1.5 - proteinPreference;
+}
+
+// Main protein source, read from the German catalogue (stable across languages).
+const PROTEIN_SOURCES = /(puten|truthahn|hähnchen|huhn|rind|kalb|schwein|lachs|thunfisch|kabeljau|seelachs|garnele|fisch|tofu|tempeh|seitan|linsen|kichererbse|bohnen|halloumi|feta|mozzarella|quark|skyr|hüttenkäse|joghurt|eier|ei\b)/i;
+const proteinKeyById = new Map((catalogDe as CatalogEntry[]).map((entry) => [entry.id, (`${entry.title} ${entry.detail}`.match(PROTEIN_SOURCES)?.[1] ?? entry.id).toLowerCase()]));
+
+/**
+ * Three ideas should be three different choices. Greedily take the best match,
+ * then let a dish built on an already chosen protein compete with a penalty,
+ * so "Puten-Chili, Puten-Taler, Puten-Paprika" becomes turkey, fish, lentils
+ * whenever comparable alternatives exist. Order and nutrition stay deterministic.
+ */
+function pickVaried<T extends { entry: CatalogEntry; score: number }>(ranked: T[], count = 3) {
+  const chosen: T[] = [];
+  const pool = [...ranked];
+  while (chosen.length < count && pool.length) {
+    const used = new Set(chosen.map((item) => proteinKeyById.get(item.entry.id)));
+    let bestIndex = 0;
+    let best = Infinity;
+    pool.forEach((item, index) => {
+      const adjusted = item.score + (used.has(proteinKeyById.get(item.entry.id)) ? 2.5 : 0);
+      if (adjusted < best) { best = adjusted; bestIndex = index; }
+    });
+    chosen.push(pool.splice(bestIndex, 1)[0]);
+  }
+  return chosen;
 }
 
 /** The dish name in the reader's language, for screens that only have an id. */
@@ -85,12 +115,19 @@ export function recommendMeals(
   preferences: string[] = [],
 ): MealSuggestion[] {
   const catalog = (getLanguage() === 'de' ? catalogDe : catalogEn) as CatalogEntry[];
-  return catalog
+  const ranked = catalog
     .filter((entry) => entry.context === context)
     .filter((entry) => matchesDietaryConstraints(entry, preferences))
+    .map((entry) => {
+      const portionScale = Math.min(1, suggestionBudget(remaining.calories) / entry.calories);
+      const referenceNutrition: Nutrition = {
+        calories: entry.calories, protein: entry.protein, carbs: entry.carbs, fat: entry.fat, fiber: entry.fiber,
+      };
+      return { ...entry, ...scaleSuggestedNutrition(referenceNutrition, portionScale), portionScale, referenceNutrition };
+    })
     .map((entry) => ({ entry, score: score(entry, remaining, preferences) }))
-    .sort((a, b) => a.score - b.score || a.entry.id.localeCompare(b.entry.id))
-    .slice(0, 3)
+    .sort((a, b) => a.score - b.score || a.entry.id.localeCompare(b.entry.id));
+  return pickVaried(ranked)
     .map(({ entry }) => ({
       ...entry,
       contexts: [entry.context],
@@ -99,4 +136,16 @@ export function recommendMeals(
       // them "geprüft" claimed a provenance the catalog does not have.
       source: { provider: 'kandro-catalog', label: getDictionary().errors.catalogSourceLabel },
     }));
+}
+
+// Before a context is selected, preview the actual available suggestions,
+// including their scaled portions, rather than promising a fixed macro range.
+export function recommendationPreview(remaining: Nutrition, preferences: string[] = []) {
+  const suggestions = (['home', 'supermarket', 'eating-out'] as const)
+    .flatMap((context) => recommendMeals(context, remaining, preferences));
+  const range = (key: 'calories' | 'protein'): [number, number] => {
+    const values = suggestions.map((suggestion) => suggestion[key]);
+    return values.length ? [Math.min(...values), Math.max(...values)] : [0, 0];
+  };
+  return { calories: range('calories'), protein: range('protein') };
 }

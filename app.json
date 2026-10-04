@@ -2,7 +2,7 @@
   "expo": {
     "name": "Kandro",
     "slug": "kandro",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "scheme": "kandro",
     "icon": "./assets/icon.png",
@@ -21,6 +21,9 @@
       "supportsTablet": false,
       "appleTeamId": "85S69CVRAY",
       "bundleIdentifier": "com.hewaddorani.kandro",
+      "privacyManifests": {
+        "NSPrivacyTracking": false
+      },
       "infoPlist": {
         "NSCameraUsageDescription": "Kandro uses the camera to photograph your meal and estimate nutrition. The original photo is discarded after analysis and is not stored.",
         "NSAppTransportSecurity": {
@@ -59,7 +62,8 @@
         {
           "color": "#3F5233"
         }
-      ]
+      ],
+      "./plugins/withKandroWidgets"
     ],
     "experiments": {
       "typedRoutes": true

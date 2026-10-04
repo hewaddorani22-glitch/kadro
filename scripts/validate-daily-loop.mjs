@@ -111,10 +111,10 @@ if (!today.includes('setOpenMeal') || !today.includes('MealDetailSheet')) {
 }
 if (!detailSheet.includes('confirmingDelete')) failures.push('deleting a meal must ask once before it happens');
 // A delete made offline must not be undone by the next sync.
-if (!localRepo.includes('rememberDeletedMeal') || !syncRepo.includes('deleted.has(meal.id)')) {
+if (!localRepo.includes('rememberDeletedMeal') || !localRepo.includes('deleted.has(meal.id)') || !localRepo.includes('localDeleted.has(meal.id)') || !syncRepo.includes('mergeCloudMealSnapshot')) {
   failures.push('a deleted meal can be resurrected by cloud hydration');
 }
-if (!syncRepo.includes('forgetDeletedMeal')) failures.push('tombstones must be cleared once the server confirms the delete');
+if (!cloudRepo.includes('forgetDeletedMeal(id, sync.mutationId, user.id)')) failures.push('tombstones must be cleared once the server confirms the delete');
 // Correcting twice must not compound: scaling runs from baseAmountG.
 if (!appContext.includes('item.baseAmountG * factor')) {
   failures.push('portion correction must scale from the original estimate, not from the current value');
@@ -177,14 +177,21 @@ if (analyzing.includes('needsReview')) {
   failures.push('model confidence must not bypass the user confirmation step');
 }
 
-// 11. The reminder is the only thing that brings anyone back. It has to be
-//     offered where people actually are, and asked exactly once.
-if (!result.includes('hasSeenReminderOffer') || !result.includes('markReminderOfferSeen')) {
-  failures.push('the reminder must be offered after the first meal, and only once');
+// 11. The updated product contract moves the optional offer into first setup.
+// Actual permission/scheduling/race behavior is exercised by validate:companions.
+const onboarding = await read('src/app/onboarding.tsx');
+const reminderSetup = await read('src/app/reminder-setup.tsx');
+if (result.includes('hasSeenReminderOffer') || result.includes('showReminderOffer')) {
+  failures.push('saving a meal must not trigger the retired reminder offer');
 }
-if (!reminders.includes('MORNING_IDENTIFIER')) failures.push('there is no morning trigger');
-if (!reminders.includes('scheduleMorningReminder(targets.calories')) {
-  failures.push('the morning message must be rescheduled when targets change, or it announces stale numbers');
+if (!onboarding.includes('prepareReminderOnboarding') || !reminderSetup.includes('ReminderPreferences')) {
+  failures.push('first setup must wire the explicit optional reminder choice');
+}
+if (!reminders.includes('kandro-morning-plan') || !reminders.includes("settings.mode === 'legacy'")) {
+  failures.push('existing two-reminder preferences must survive migration');
+}
+if (/notificationBody[^\n]*targets|content:[^\n]*targets/.test(reminders)) {
+  failures.push('lock-screen reminder text must not contain personal nutrition targets');
 }
 
 // 12. Repeat grouping, run against the real module rather than its source text.

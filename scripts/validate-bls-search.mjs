@@ -1,5 +1,8 @@
 #!/usr/bin/env node
+import {isSearchQuery} from '../supabase/functions/_shared/search-policy.mjs';
 import assert from 'node:assert/strict';
+import ts from 'typescript';
+import { getBlsReferenceByCode, normalizeSearchTerm, isUsableSearchTerm } from '../server/core.mjs';
 import { readFile } from 'node:fs/promises';
 
 import {
@@ -70,12 +73,12 @@ for (const [query, language, code, expectedName] of [
 
 const gateway = await readFile(new URL('../supabase/functions/nutrition/index.ts', import.meta.url), 'utf8');
 const searchFn = gateway.slice(gateway.indexOf('async function searchFoods'), gateway.indexOf('async function searchOpenFoodFacts'));
-assert.match(searchFn, /searchBlsCatalog\(term, language, 15\)/, 'the gateway must use the complete bilingual catalogue');
+assert.match(searchFn, /searchBlsCatalog\(term, language, 60\)/, 'the gateway must use the complete bilingual catalogue');
 // Still the same requirement — an everyday food must not cost a round trip —
 // but a hit that merely starts with the same letters is not an everyday food.
 // "pho" prefix-matches the phosphate in a curing salt, and letting that end
 // the search hid every product Open Food Facts has behind four letters.
-assert.match(searchFn, /if \(results\.length && catalogueAnswered\) \{\s*return/,
+assert.match(searchFn, /if \(catalogueOnly \|\| \(results\.length && catalogueAnswered\)\) \{\s*appendWeak\(\); return finish\(\)/,
   'a real catalogue match must finish without a provider round trip');
 assert.match(searchFn, /const catalogueAnswered = catalogue\.some\(\(food\) => food\.strong\)/,
   'the gateway must tell a real match from a prefix coincidence');
@@ -83,11 +86,51 @@ assert.match(searchFn, /if \(language === 'de'\)/, 'German provider fallback mus
 assert.ok(!/name: String\(entry\.description/.test(searchFn.slice(searchFn.indexOf("if (language === 'de')"), searchFn.indexOf('let foods'))), 'German results must never expose a raw USDA description');
 
 const offFn = gateway.slice(gateway.indexOf('async function searchOpenFoodFacts'), gateway.indexOf('async function usdaRows'));
-assert.match(offFn, /localizedProductName\(product, language, language === 'de'\)/, 'German product search must reject an English-only title');
+assert.match(offFn, /localizedProductName\(product, language\)/, 'Identifiable branded products retain original names when translation is absent');
 
 const localGateway = await readFile(new URL('../server/index.mjs', import.meta.url), 'utf8');
 assert.match(localGateway, /requestUrl\.pathname === '\/v1\/search'/, 'Expo Go local development needs the same search route');
-assert.match(localGateway, /searchBlsCatalog\(term, language, 15\)/, 'local and hosted search must share the complete catalogue');
+assert.match(localGateway, /searchBlsCatalog\(term, language, 60\)/, 'local and hosted search must share the complete catalogue');
 assert.match(localGateway, /localizedProductName\(product, language\)/, 'local barcode names must follow the reader language too');
 
 console.log('Validated 7,140 bilingual BLS foods and everyday German, American, British, Turkish and Asian search cases.');
+
+// Execute both shipped handlers. A broad query must expose alternatives beyond
+// the old 15-row cutoff without changing the first results or their sources.
+const compileSearch = (code) => new Function(
+  'searchBlsCatalog', 'getBlsReferenceByCode', 'normalizeSearchTerm', 'isUsableSearchTerm', 'isSearchQuery',
+  ts.transpileModule(code, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText + '; return searchFoods;',
+)(searchBlsCatalog, getBlsReferenceByCode, normalizeSearchTerm, isUsableSearchTerm, isSearchQuery);
+const localSearch = compileSearch(localGateway.slice(localGateway.indexOf('function searchFoods'), localGateway.indexOf('function localizedProductName')));
+const hostedSearch = compileSearch(searchFn);
+for (const [query, language] of [['Brot', 'de'], ['Reis', 'de'], ['bread', 'en'], ['rice', 'en']]) {
+  const local = await localSearch(query, language);
+  const hosted = await hostedSearch(query, language, () => { throw new Error('A catalogue search must not call a provider'); });
+  assert.equal(local.status, 200);
+  assert.deepEqual(hosted.body.results, local.body.results, `${query}: hosted/local results differ`);
+  const rows = hosted.body.results;
+  assert.ok(rows.length > 15 && rows.length <= 60, `${query}: expected 16–60 results, got ${rows.length}`);
+  assert.equal(new Set(rows.map(row => row.id)).size, rows.length);
+  assert.deepEqual(rows.slice(0, 15).map(row => row.source.referenceId), searchBlsCatalog(query, language, 15).map(row => row.code));
+  assert.ok(rows.every(row => row.source.provider === 'bls' && Number.isFinite(row.per100g.calories)));
+  console.log(`${language}:${query}: ${rows.length} verified results, same leading 15 at either result limit, no provider call.`);
+}
+
+for (const language of ['de', 'en']) {
+  for (const query of ['Brot', 'bread']) {
+    assert.deepEqual(searchBlsCatalog(query, language, 3).map(row => row.code), ['B101000', 'B221000', 'B710500']);
+  }
+  for (const query of ['Milch', 'milk']) {
+    assert.deepEqual(searchBlsCatalog(query, language, 3).map(row => row.code), ['M111200', 'M111300', 'M111100']);
+  }
+  for (const query of ['Joghurt', 'yogurt', 'yoghurt']) {
+    assert.deepEqual(searchBlsCatalog(query, language, 2).map(row => row.code), ['M141300', 'M141200']);
+  }
+}
+assert.equal(leading('milk chocolate', 'en').code, 'S530000');
+assert.equal(leading('Vollkornbrot glutenfrei', 'de').code, 'B8A9000');
+assert.equal(leading('bread crumbs', 'en').code, 'B821000');
+assert.equal(leading('yogurt dip', 'en').code, 'X3A9010');
+console.log('Bare bread/milk/yogurt queries lead with plain foods in both languages; explicit products remain specific.');
+
+assert.deepEqual(searchBlsCatalog('constructor', 'en', 60), [], 'arbitrary queries must not resolve object prototype properties');

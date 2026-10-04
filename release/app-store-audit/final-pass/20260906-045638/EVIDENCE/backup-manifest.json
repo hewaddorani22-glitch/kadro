@@ -1,0 +1,6 @@
+{
+  "baseCommit": "633d688e6a6247a6e1cc66f85788c157b6e12863",
+  "patchSha256": "9f764fd659cfbc7f731a1f08bcd76d5df7325c6de713e6f46ca1f8791bc770fb",
+  "untrackedArchiveSha256": "e493ad0acb3ecea43f9a86ad0a9e0b54c6c991bd7bfc7bf890abb7eb2c5e7894",
+  "note": "Final audit and source snapshot; no env/secrets; backup-manifest excluded from its own archive."
+}

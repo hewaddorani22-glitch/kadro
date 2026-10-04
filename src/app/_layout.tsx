@@ -1,19 +1,19 @@
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
-import * as Notifications from 'expo-notifications';
-import { router, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { AppRouteGuard } from '@/components/AppRouteGuard';
+import { ProductAnalytics } from '@/components/ProductAnalytics';
 import { ReminderScheduler } from '@/components/ReminderScheduler';
 import { AppProvider } from '@/context/AppContext';
 import { LanguageProvider } from '@/i18n/LanguageProvider';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
-import { configureNotifications, remindersSupported } from '@/services/reminders';
+import { AccessProvider } from '@/context/AccessContext';
+import { CaptureCompanion } from '@/components/CaptureCompanion';
 
 export const unstable_settings = {
   initialRouteName: 'index',
@@ -27,15 +27,6 @@ function ThemedRootLayout() {
   const { colors, mode: themeMode } = useTheme();
   const reduceMotion = useReducedMotion();
 
-  useEffect(() => {
-    if (!remindersSupported) return;
-    configureNotifications();
-    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      const route = response.notification.request.content.data?.route;
-      if (typeof route === 'string' && route.startsWith('/')) router.push(route as never);
-    });
-    return () => subscription.remove();
-  }, []);
 
   return (
     <SafeAreaProvider>
@@ -43,8 +34,11 @@ function ThemedRootLayout() {
         <LanguageProvider>
         <AppProvider>
           <SubscriptionProvider>
+            <AccessProvider>
+            <CaptureCompanion />
             <AppRouteGuard>
               <ReminderScheduler />
+              <ProductAnalytics />
               <StatusBar style={themeMode === 'dark' ? 'light' : 'dark'} />
               <Stack
               screenOptions={{
@@ -56,6 +50,11 @@ function ThemedRootLayout() {
               <Stack.Screen name="index" />
               <Stack.Screen name="onboarding" />
               <Stack.Screen name="data-consent" />
+              <Stack.Screen name="reminder-setup" />
+              <Stack.Screen name="capture" />
+              <Stack.Screen name="access-setup" />
+              <Stack.Screen name="account-help" />
+              <Stack.Screen name="saved-meals" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="analyzing" options={{ gestureEnabled: false }} />
               <Stack.Screen name="confirm" />
@@ -69,6 +68,7 @@ function ThemedRootLayout() {
               <Stack.Screen name="sources" />
               </Stack>
             </AppRouteGuard>
+            </AccessProvider>
           </SubscriptionProvider>
         </AppProvider>
         </LanguageProvider>

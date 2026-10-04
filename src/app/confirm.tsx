@@ -2,8 +2,8 @@ import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { mealPhotoPlaceholder } from '@/utils/format';
 import { PortionSheet } from '@/components/PortionSheet';
@@ -17,12 +17,15 @@ import { PortionFactor } from '@/types/nutrition';
 import { formatNumber } from '@/utils/format';
 import { initialSelection, itemNutritionPer100g } from '@/utils/portions';
 import { canSaveMealDraft, needsIngredientCorrection } from '@/utils/ingredientCorrection';
+import { FoodSearchResult, searchIngredientReplacement } from '@/services/mealAnalysis';
+import { milkCorrectionQuery } from '@/utils/foodCorrectionQuery';
+import { MealItem } from '@/types/nutrition';
 
 export default function ConfirmScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { adjustItem, analysisMessage, descriptionInput, detectedItems, mealPortion, photoUri, removeDetectedItem, scanMode, scannedMeal, setItemAmount, setMealPortion, toggleItem } = useApp();
+  const { adjustItem, analysisMessage, descriptionInput, detectedItems, mealPortion, photoUri, removeDetectedItem, replaceDetectedItem, scanMode, scannedMeal, setItemAmount, setMealPortion, toggleItem } = useApp();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [amountFor, setAmountFor] = useState<string | null>(null);
   const [preferGrams, setPreferGrams] = useState(false);
@@ -179,6 +182,7 @@ export default function ConfirmScreen() {
             <Text style={styles.portionTitle}>{item.name}</Text>
             <Text style={styles.subtitle}>{unresolved ? t.confirm.missingValues : `${amount} · ~${formatNumber(item.calories, locale)} kcal`}</Text>
             {!unresolved && !item.included ? <Text style={styles.subtitle}>{t.confirm.excluded}</Text> : null}
+            {unresolved ? <UnresolvedSuggestion item={item} duplicateOf={possibleDuplicate(item, detectedItems)} onRemove={() => removeDetectedItem(item.id)} onUse={(result) => replaceDetectedItem(item.id, result, item.amountG)} /> : null}
             <View style={styles.ingredientActions}>
               {!unresolved ? <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.editAmount}`} onPress={() => setAmountFor(item.id)} style={styles.ingredientAction}><Text style={styles.actionText}>{t.confirm.editAmount}</Text></Pressable> : null}
               <Pressable accessibilityRole="button" accessibilityLabel={`${item.name}: ${t.confirm.replaceFood}`} onPress={() => replaceFood(item.id)} style={styles.ingredientAction}><Text style={styles.actionText}>{t.confirm.replaceFood}</Text></Pressable>
@@ -253,9 +257,9 @@ export default function ConfirmScreen() {
         <Text style={styles.portionTitle}>{t.confirm.incompleteTotal}</Text>
         <Text style={styles.subtitle}>{t.confirm.resolveFirst}</Text>
       </Card> : <Card style={styles.estimateCard}>
-        <View>
+        <View style={styles.estimateCopy}>
           <Text style={styles.estimateLabel}>{t.confirm.currentEstimate}</Text>
-          <Text style={styles.estimateValue}>~{scannedMeal.calories} kcal</Text>
+          <Text style={styles.estimateValue}>~{formatNumber(scannedMeal.calories, locale)} kcal</Text>
         </View>
         <View style={styles.macroSummary}>
           <Text style={styles.macroSummaryText}>{scannedMeal.protein}g P</Text>
@@ -269,7 +273,7 @@ export default function ConfirmScreen() {
       {!hasIncludedFood ? <Text style={styles.subtitle}>{t.confirm.emptyMeal}</Text> : null}
       <PrimaryButton disabled={!canConfirm} icon="arrow-forward" label={t.confirm.proceed} onPress={confirm} />
       <PrimaryButton
-        label={scanMode === 'search' ? t.confirm.searchAgain : scanMode === 'description' ? t.confirm.editDescription : t.confirm.retake}
+        label={scanMode === 'search' ? t.confirm.searchAgain : scanMode === 'description' ? t.confirm.editDescription : scanMode === 'barcode' ? t.confirm.scanAgain : t.confirm.retake}
         onPress={changeInput}
         variant="ghost"
       />
@@ -277,14 +281,70 @@ export default function ConfirmScreen() {
   );
 }
 
+/**
+ * An unresolved ingredient used to show only "?" and a separate search page.
+ * Offer the best sourced match inline; nothing changes until the user taps it,
+ * and the detected amount is kept.
+ */
+const foldWords = (value: string) => value.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(word => word.length > 2);
+const stripEnding = (word: string) => (word.length > 5 ? word.replace(/(?:e|en|em|er|es)$/, '') : word);
+/** An unresolved row that names a food already counted ("Hähnchenbrust gebraten" vs "gebratene Hähnchenbrust"). */
+function possibleDuplicate(item: MealItem, items: MealItem[]) {
+  const words = foldWords(item.name).map(stripEnding);
+  if (!words.length) return null;
+  return items.find((other) => other.id !== item.id && other.included && !needsIngredientCorrection(other)
+    && words.every((word) => foldWords(other.name).map(stripEnding).includes(word))) ?? null;
+}
+
+function UnresolvedSuggestion({ item, duplicateOf, onRemove, onUse }: { item: MealItem; duplicateOf: MealItem | null; onRemove: () => void; onUse: (result: FoodSearchResult) => void }) {
+  const styles = useThemedStyles(makeStyles);
+  const { colors } = useTheme();
+  const { language, locale, t } = useLanguage();
+  const [suggestion, setSuggestion] = useState<FoodSearchResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setSuggestion(null);
+    searchIngredientReplacement(milkCorrectionQuery(item.name) ?? item.name)
+      .then((results) => { if (active) setSuggestion(results[0] ?? null); })
+      .catch(() => undefined)
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [item.id, item.name, language]);
+  const grams = item.amountG >= 1 && item.amountG <= 5000 ? item.amountG : null;
+  // Never offer to complete a second copy of a food that is already counted.
+  if (duplicateOf) {
+    return (
+      <View style={styles.suggestionBox}>
+        <Text style={styles.subtitle}>{t.confirm.alreadyIncluded(duplicateOf.name)}</Text>
+        <PrimaryButton icon="trash-outline" label={t.confirm.removeDuplicate} onPress={onRemove} variant="secondary" />
+      </View>
+    );
+  }
+  if (loading) {
+    return <View style={styles.suggestionRow}><ActivityIndicator color={colors.accentText} /><Text style={styles.subtitle}>{t.confirm.suggestionLoading}</Text></View>;
+  }
+  if (!suggestion || grams === null) return null;
+  const kcal = formatNumber(Math.round(suggestion.per100g.calories * grams / 100), locale);
+  return (
+    <View style={styles.suggestionBox}>
+      <Text style={styles.subtitle}>{t.confirm.suggestionTitle}</Text>
+      <PrimaryButton icon="checkmark" label={t.confirm.useSuggestion(suggestion.name, kcal)} onPress={() => { void successHaptic(); onUse(suggestion); }} />
+    </View>
+  );
+}
+
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  suggestionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 },
+  suggestionBox: { gap: 8 },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   iconButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   iconButtonSpacer: { width: 42, height: 42 },
   topTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
   heading: { gap: 8 },
-  headingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  title: { color: colors.text, fontSize: 30, fontWeight: '700', letterSpacing: -0.8 },
+  headingRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  title: { maxWidth: '100%', flexShrink: 1, color: colors.text, fontSize: 30, fontWeight: '700', letterSpacing: -0.8 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21 },
   analysisWarning: { minHeight: 48, borderRadius: 15, backgroundColor: colors.attentionSoft, paddingHorizontal: 13, paddingVertical: 10, flexDirection: 'row', alignItems: 'center', gap: 9 },
   analysisWarningText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },
@@ -326,10 +386,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   stepperButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   amount: { minWidth: 44, color: colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center', fontVariant: ['tabular-nums'] },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 52 },
-  estimateCard: { backgroundColor: colors.camera, borderColor: colors.camera, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  estimateCard: { backgroundColor: colors.camera, borderColor: colors.camera, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  estimateCopy: { maxWidth: '100%' },
   estimateLabel: { color: 'rgba(255,255,255,0.58)', fontSize: 9, fontWeight: '800', letterSpacing: 0.9 },
   estimateValue: { color: colors.white, fontSize: 22, fontWeight: '700', marginTop: 4, fontVariant: ['tabular-nums'] },
-  macroSummary: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  macroSummary: { flexDirection: 'row', flexWrap: 'wrap', maxWidth: '100%', alignItems: 'center', gap: 6 },
   macroSummaryText: { color: colors.accent, fontSize: 11, fontWeight: '700' },
   dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' },
 });

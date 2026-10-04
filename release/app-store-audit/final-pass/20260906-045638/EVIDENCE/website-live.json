@@ -1,0 +1,82 @@
+[
+  {
+    "path": "/",
+    "curlExit": 0,
+    "sha256": "de2ed083b98b4ddb2ee4bb8711568b9c193cc913a698d8b2c7852be73d27622e",
+    "localByteEqual": true,
+    "hasTitle": true,
+    "hasMain": true
+  },
+  {
+    "path": "/en/",
+    "curlExit": 0,
+    "sha256": "4c8a4e65cf54bd5434b1d1c6b9342b7e11e7e97f8d9e9ff52efc978fe008c36b",
+    "localByteEqual": true,
+    "hasTitle": true,
+    "hasMain": true
+  },
+  {
+    "path": "/privacy/",
+    "curlExit": 0,
+    "sha256": "baca990ca79b457b1800879f87b330516df0d13f86cda0cec2ff16c98d9e707e",
+    "localByteEqual": true,
+    "hasTitle": true,
+    "hasMain": true
+  },
+  {
+    "path": "/en/privacy/",
+    "curlExit": 0,
+    "sha256": "66ebe96e260a60391608d145e276b077eac57125f30da28bf0ccbcf050a5e428",
+    "localByteEqual": true,
+    "hasTitle": true,
+    "hasMain": true
+  },
+  {
+    "path": "/terms/",
+    "curlExit": 0,
+    "sha256": "e16714dfa4feb2ea2f4d7ca4b3f9e372f480f046ae051107e37139a3950e6042",
+    "localByteEqual": true,
+    "hasTitle": true,
+    "hasMain": true
+  },
+  {
+    "path": "/en/terms/",
+    "curlExit": 0,
+    "sha256": "24ae4588bfb1c6338ff7a6f063731f1e72d23c5df4382a400ff7404dd5543e04",
+    "localByteEqual": true,
+    "hasTitle": true,
+    "hasMain": true
+  },
+  {
+    "path": "/support/",
+    "curlExit": 0,
+    "sha256": "732182e6e4f00ffbb20b2ad9ca333c27562268319e4407c23338e1e10643d66e",
+    "localByteEqual": true,
+    "hasTitle": true,
+    "hasMain": true
+  },
+  {
+    "path": "/en/support/",
+    "curlExit": 0,
+    "sha256": "f1376a68e808bba7a8cb88d194daeb43c76e63d007c98a7572395c3d9ca61cc5",
+    "localByteEqual": true,
+    "hasTitle": true,
+    "hasMain": true
+  },
+  {
+    "path": "/sources/",
+    "curlExit": 0,
+    "sha256": "c558828c65ae45a1c5f5f984522fe7d5c7ee39712b718c708d4776988c8b9879",
+    "localByteEqual": true,
+    "hasTitle": true,
+    "hasMain": true
+  },
+  {
+    "path": "/en/sources/",
+    "curlExit": 0,
+    "sha256": "234408ce473c226a752d0645a0ff269b9eb0d2721419561f87188ea64f4ee223",
+    "localByteEqual": true,
+    "hasTitle": true,
+    "hasMain": true
+  }
+]

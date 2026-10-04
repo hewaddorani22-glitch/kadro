@@ -1,0 +1,1 @@
+PASS: actual locale selection/persisted override, script-region parsing, strict decimal input and 42 local-date cases. UNIT only; no storefront or physical-location claim.

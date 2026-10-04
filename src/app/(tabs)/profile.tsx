@@ -1,3 +1,7 @@
+import * as Application from 'expo-application';
+import Constants from 'expo-constants';
+import { WidgetPreferences } from '@/components/WidgetPreferences';
+import { ReminderPreferences } from '@/components/ReminderPreferences';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -10,13 +14,6 @@ import { Card, Eyebrow, PageTitle, Screen, SectionTitle } from '@/components/ui'
 import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
-import {
-  isEveningReminderEnabled,
-  REMINDER_HOUR,
-  REMINDER_MINUTE,
-  remindersSupported,
-  setEveningReminderEnabled,
-} from '@/services/reminders';
 import {
   getAnalyticsCollectionEnabled,
   isTelemetryConfigured,
@@ -45,10 +42,9 @@ export default function ProfileScreen() {
   const { status: subscriptionStatus } = useSubscription();
   const { language, locale, setLanguage, t } = useLanguage();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
-  const [reminderEnabled, setReminderEnabled] = useState(false);
   const analyticsEligible = hydrationReady && Boolean(profile.completedAt) && profile.age >= 18;
   const isMinor = !analyticsEligible;
-  const reminderTime = `${String(REMINDER_HOUR).padStart(2, '0')}:${String(REMINDER_MINUTE).padStart(2, '0')}`;
+
 
   useEffect(() => {
     if (!hydrationReady) return;
@@ -62,28 +58,12 @@ export default function ProfileScreen() {
   }, [hydrationReady, profile.age, profile.completedAt]);
 
   useEffect(() => {
-    let active = true;
-    void isEveningReminderEnabled().then((enabled) => {
-      if (active) setReminderEnabled(enabled);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
     if (!hydrationReady || analyticsEligible) return;
     void setAnalyticsCollectionEnabled(false).then(() => setAnalyticsEnabled(false));
   }, [analyticsEligible, hydrationReady]);
 
   const updateAnalytics = async (enabled: boolean) => {
     setAnalyticsEnabled(await setAnalyticsCollectionEnabled(enabled));
-  };
-
-  // setEveningReminderEnabled returns what actually applies, so a denied
-  // permission flips the switch back instead of lying to the user.
-  const updateReminder = async (enabled: boolean) => {
-    setReminderEnabled(await setEveningReminderEnabled(enabled, { calories: targets.calories, protein: targets.protein }));
   };
 
   return (
@@ -138,20 +118,9 @@ export default function ProfileScreen() {
 
       <View style={styles.section}>
         <SectionTitle>{t.profile.reminders}</SectionTitle>
-        <Card style={styles.listCard}>
-          <ToggleRow
-            detail={remindersSupported
-              ? t.profile.reminderDetail
-              : t.profile.reminderUnavailable}
-            disabled={!remindersSupported}
-            icon="moon-outline"
-            label={t.profile.reminderLabel}
-            onValueChange={(enabled) => void updateReminder(enabled)}
-            value={reminderEnabled}
-          />
-          <View style={styles.divider} />
-          <MenuRow icon="sparkles-outline" label={t.profile.openEvening} onPress={() => router.push('/evening')} />
-        </Card>
+        <ReminderPreferences />
+      <WidgetPreferences />
+        <MenuRow icon="sparkles-outline" label={t.profile.openEvening} onPress={() => router.push('/evening')} />
       </View>
 
       <View style={styles.section}>
@@ -265,6 +234,7 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <SectionTitle>{t.profile.support}</SectionTitle>
         <Card style={styles.listCard}>
+          <MenuRow icon="compass-outline" label={t.profile.appTour} onPress={() => router.push({ pathname: '/(tabs)/today', params: { tour: '1' } })} />
           <MenuRow icon="shield-checkmark-outline" label={t.profile.privacy} onPress={() => router.push('/privacy')} />
           <View style={styles.divider} />
           <MenuRow icon="document-text-outline" label={t.profile.terms} onPress={() => router.push('/terms')} />
@@ -280,7 +250,7 @@ export default function ProfileScreen() {
         <Text style={styles.wellnessText}>{t.profile.wellness}</Text>
       </View>
 
-      <Text style={styles.version}>{t.profile.version}</Text>
+      <Text style={styles.version}>{t.profile.version(Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? '-')}</Text>
     </Screen>
   );
 }

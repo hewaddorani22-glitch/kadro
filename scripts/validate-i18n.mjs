@@ -157,10 +157,9 @@ for (const key of enKeys) if (!deKeys.has(key)) failures.push(`de.ts is missing 
 // --- English must be the default ------------------------------------------
 // The traffic is international; a device with an unknown locale has to land in
 // English, not in German.
-const detection = await readFile(resolve(projectRoot, 'src/i18n/index.ts'), 'utf8');
-if (!/return tag === 'de' \? 'de' : 'en'/.test(detection)) {
-  failures.push('deviceLanguage() must fall back to English for any non-German locale');
-}
+// Exercise the shipped resolver and storage override rather than pinning one
+// ternary expression (which missed supported secondary language preferences).
+await import('./validate-international-runtime.mjs');
 
 if (failures.length) {
   throw new Error(`i18n validation failed:\n- ${failures.join('\n- ')}`);

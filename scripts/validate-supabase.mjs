@@ -154,7 +154,7 @@ if (!gateway.includes('context.supabaseAdmin') || !gateway.includes('usda_food_c
 }
 // A zero-calorie product is not a product without data. Diet drinks and
 // sparkling water are among the most scanned items and were being rejected.
-if (!gateway.includes('missing_nutrition') || !gateway.includes('openFoodFactsNutrition(values)')) {
+if (!gateway.includes('missing_nutrition') || !gateway.includes('offMassNutrition(product)')) {
   failures.push('the barcode lookup must distinguish absent nutrition from genuine zeroes');
 }
 if (/some\(\(value\) => value > 0\)/.test(mealAnalysis)) {
@@ -194,9 +194,10 @@ for (const routine of [
   if (!runtimeSqlCleanup.includes(routine)) failures.push(`production SQL cleanup omits ${routine}`);
 }
 
-if (!mealAnalysis.includes('functionsBaseUrl') || !mealAnalysis.includes('Authorization: `Bearer ${accessToken}`')) {
-  failures.push('the app must reach the gateway through an authenticated edge function call');
-}
+// Execute the shipped gateway and assert its URL/JWT/public-key headers.
+// A literal object-property grep rejected equivalent header assignment while
+// never checking what the request actually sent.
+await import('./validate-network-boundary.mjs');
 
 // BLS 4.0 is CC BY 4.0 and Open Food Facts is ODbL: both require the credit to
 // be visible in the shipped product, not just in a repository file.

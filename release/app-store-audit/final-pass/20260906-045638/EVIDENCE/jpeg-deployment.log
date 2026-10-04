@@ -1,0 +1,11 @@
+Uploading asset (nutrition): supabase/functions/nutrition/index.ts
+Uploading asset (nutrition): supabase/functions/_shared/revenuecat.mjs
+Uploading asset (nutrition): supabase/functions/_shared/detection.mjs
+Uploading asset (nutrition): supabase/functions/_shared/bls-reference.mjs
+Uploading asset (nutrition): supabase/functions/_shared/bls-names.mjs
+Uploading asset (nutrition): supabase/functions/_shared/food-query.mjs
+Uploading asset (nutrition): supabase/functions/_shared/bls-search-data.mjs
+Uploading asset (nutrition): supabase/functions/_shared/bls-search.mjs
+Uploading asset (nutrition): supabase/functions/_shared/german-food-terms.mjs
+Uploading asset (nutrition): supabase/functions/_shared/nutrition.mjs
+{"project_ref":"omtmxqzwxvthycyfkggv","functions":["nutrition"],"dashboard_url":"https://supabase.com/dashboard/project/omtmxqzwxvthycyfkggv/functions","message":"Deployed Functions."}

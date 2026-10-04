@@ -1,0 +1,21 @@
+{
+  "easBuildId": "83b44ae8-d2a5-4b97-b003-6d57e49dce2e",
+  "version": "1.0.0",
+  "build": "16",
+  "bundleId": "com.hewaddorani.kandro",
+  "minimumOS": "15.1",
+  "sdk": "iphoneos26.0",
+  "xcode": "2600",
+  "ipaSHA256": "b4c713e505b72b898fb27f3d0ea53a1ffdf1efdaf36494abb47ea71e5fc7e500",
+  "jsSHA256": "9f696d539bc58ada966502eeb6641989e6cb2a4df7157a878455afbbae0dcd99",
+  "privacyManifests": 16,
+  "appPath": "/Users/hewaddorani/.codex/backups/kandro-build16-20260906/unpacked/Payload/Kandro.app",
+  "codesignVerifyExit": 0,
+  "deviceFamily": [
+    1
+  ],
+  "arbitraryLoads": false,
+  "nonExemptEncryption": false,
+  "dePermissionResource": true,
+  "enPermissionResource": true
+}

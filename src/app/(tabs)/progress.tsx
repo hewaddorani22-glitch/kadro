@@ -2,15 +2,16 @@ import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useMemo, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Card, Eyebrow, IconCircle, PageTitle, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
 import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
+import { formatNumber } from '@/utils/format';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { currentLoggingStreak, proteinConsistency } from '@/services/consistency';
-import { localDateKey } from '@/utils/date';
+import { progressPresentation } from '@/utils/progressPresentation';
 import { useLocalDay } from '@/hooks/useLocalDay';
 import { formatWeight, formatWeightDelta, kgToStoneParts, parseStoneInput, parseWeightInput, weightInputUnit, weightInputValue } from '@/utils/units';
 import { formatDateParts } from '@/utils/format';
@@ -33,21 +34,26 @@ export default function ProgressScreen() {
   const [saving, setSaving] = useState(false);
   const currentDay = useLocalDay();
 
-  const thirtyDaysAgo = useMemo(() => {
-    const date = new Date();
-    date.setDate(date.getDate() - 29);
-    return localDateKey(date);
-  }, [currentDay]);
-  const visibleWeights = weightEntries.filter((entry) => entry.date >= thirtyDaysAgo);
-  const visibleMeals = mealHistory.filter((meal) => (meal.date ?? '') >= thirtyDaysAgo);
-  const currentWeight = visibleWeights.at(-1)?.weightKg ?? profile.weightKg;
-  const weightChange = visibleWeights.length > 1 ? currentWeight - visibleWeights[0].weightKg : 0;
+  const { context, visibleWeights, chartWeights, visibleMeals, currentWeight, weightChange } = useMemo(
+    () => progressPresentation(profile, mealHistory, weightEntries, currentDay),
+    [profile, mealHistory, weightEntries, currentDay],
+  );
 
   const consistency = useMemo(
     () => proteinConsistency(mealHistory, targets.protein),
     [currentDay, locale, mealHistory, targets.protein],
   );
   const loggingStreak = useMemo(() => currentLoggingStreak(mealHistory), [currentDay, mealHistory]);
+  // Calories per weekday, same seven days as the protein strip. A day without
+  // a logged meal stays empty ("not logged"), never a false 0 kcal success.
+  const calorieWeek = useMemo(() => consistency.days.map((day) => {
+    const dayMeals = mealHistory.filter((meal) => meal.date === day.key);
+    const calories = dayMeals.reduce((sum, meal) => sum + meal.calories, 0);
+    return { key: day.key, label: day.label, today: day.today, logged: dayMeals.length > 0, calories };
+  }), [consistency.days, mealHistory]);
+  const loggedCalorieDays = calorieWeek.filter((day) => day.logged);
+  const averageCalories = loggedCalorieDays.length ? Math.round(loggedCalorieDays.reduce((sum, day) => sum + day.calories, 0) / loggedCalorieDays.length) : 0;
+  const withinCalories = loggedCalorieDays.filter((day) => Math.abs(day.calories - targets.calories) <= targets.calories * 0.1).length;
   const { averageProtein, loggedCount: trackedDays, reachedCount } = consistency;
   const showsScore = trackedDays >= 3;
 
@@ -86,7 +92,9 @@ export default function ProgressScreen() {
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <Eyebrow>{t.progress.eyebrow}</Eyebrow>
-          <PageTitle>{t.progress.title}</PageTitle>
+          <PageTitle>{context === 'teen' ? t.progress.title : t.progress.goalTitle[context]}</PageTitle>
+          <Text style={styles.subtitle}>{context === 'teen' ? t.progress.teenContext : t.progress.goalContext[context]}</Text>
+          <Text style={styles.heroFoot}>{t.progress.energyContext(Math.round(targets.calories).toLocaleString(locale))}</Text>
         </View>
         <IconCircle name="trending-up" size={48} />
       </View>
@@ -97,7 +105,7 @@ export default function ProgressScreen() {
         {/* A ratio needs enough days to mean anything. Scoring someone "0 von 1"
             on their first day is a verdict on a single data point, and this app
             does not do verdicts. Below three tracked days the average leads. */}
-        <Text style={styles.heroLabel}>{showsScore ? t.progress.proteinReached : t.progress.proteinAverage}</Text>
+        <Text style={styles.heroLabel}>{showsScore ? t.progress.proteinReached : trackedDays > 0 ? t.progress.proteinAverage : t.progress.proteinTarget}</Text>
         <View style={styles.heroValueRow}>
           {showsScore ? (
             <>
@@ -135,12 +143,36 @@ export default function ProgressScreen() {
               ? t.progress.footBuilding(trackedDays)
               : t.progress.footEmpty}
         </Text>
+        <Text style={styles.heroFoot}>{t.progress.currentTargetNote}</Text>
+      </Card>
+
+      <Card style={styles.consistencyHero}>
+        <Text style={styles.heroLabel}>{t.progress.caloriesWeek}</Text>
+        <View style={styles.heroValueRow}>
+          <Text style={styles.heroValue}>{loggedCalorieDays.length ? formatNumber(averageCalories, locale) : '–'}</Text>
+          <Text style={styles.heroOf}>{t.progress.caloriesAverage(formatNumber(Math.round(targets.calories), locale))}</Text>
+        </View>
+        <View style={styles.strip}>
+          {calorieWeek.map((day) => {
+            const ratio = targets.calories > 0 ? day.calories / targets.calories : 0;
+            const within = day.logged && Math.abs(ratio - 1) <= 0.1;
+            return (
+              <View accessibilityLabel={`${day.label}: ${day.logged ? `${formatNumber(day.calories, locale)} kcal` : t.progress.notLogged}`} key={day.key} style={styles.stripDay}>
+                <View style={styles.stripTrack}>
+                  <View style={[styles.stripFill, { height: `${day.logged ? Math.max(6, Math.min(100, Math.round((ratio / 1.3) * 100))) : 6}%` }, day.logged && styles.stripFillLogged, within && styles.stripFillReached]} />
+                </View>
+                <Text style={[styles.stripLabel, day.today && styles.stripLabelToday]}>{day.label}</Text>
+              </View>
+            );
+          })}
+        </View>
+        <Text style={styles.heroFoot}>{loggedCalorieDays.length ? t.progress.caloriesFoot(withinCalories, loggedCalorieDays.length) : t.progress.caloriesEmpty}</Text>
       </Card>
 
       <Card style={styles.weightCard}>
         <View style={styles.weightTop}>
           <View>
-            <Text style={styles.cardLabel}>{t.progress.currentWeight}</Text>
+            <Text style={styles.cardLabel}>{visibleWeights.length ? t.progress.currentWeight : t.progress.profileWeight}</Text>
             <Text style={styles.currentWeight}>{formatWeight(currentWeight, units, locale)}</Text>
           </View>
           {visibleWeights.length > 1 ? (
@@ -149,17 +181,20 @@ export default function ProgressScreen() {
               <Text style={styles.changeText}>{formatWeightDelta(Math.abs(weightChange), units, locale)}</Text>
             </View>
           ) : (
-            <View style={styles.firstPill}><Text style={styles.firstPillText}>{t.progress.firstValue}</Text></View>
+            <View style={styles.firstPill}><Text style={styles.firstPillText}>{visibleWeights.length ? t.progress.firstValue : t.progress.noMeasurement}</Text></View>
           )}
         </View>
-        <WeightChart entries={visibleWeights} />
+        <Text style={styles.heroFoot}>{t.progress.weightWindow}</Text>
+        <WeightChart entries={chartWeights} />
         {visibleWeights.length > 1 ? (
           <View style={styles.chartLabels}>
-            <Text style={styles.chartLabel}>{formatDateParts(visibleWeights[0].date, { day: 'numeric', month: 'short' }, locale)}</Text>
-            <Text style={styles.chartLabel}>{formatDateParts(visibleWeights.at(-1)?.date ?? '', { day: 'numeric', month: 'short' }, locale)}</Text>
+            <Text style={styles.chartLabel}>{formatDateParts(chartWeights[0].date, { day: 'numeric', month: 'short' }, locale)}</Text>
+            <Text style={styles.chartLabel}>{formatDateParts(chartWeights.at(-1)?.date ?? '', { day: 'numeric', month: 'short' }, locale)}</Text>
           </View>
         ) : null}
+        {chartWeights.length > 1 ? <Text style={styles.heroFoot}>{t.progress.measurementSpacing}</Text> : null}
         <PrimaryButton icon="add" label={t.progress.logWeight} onPress={openWeightEntry} variant="secondary" />
+        <Text style={styles.heroFoot}>{t.progress.localWeightNote}</Text>
       </Card>
 
       <View style={styles.statsRow}>
@@ -170,7 +205,7 @@ export default function ProgressScreen() {
         </Card>
         <Card style={styles.statCard}>
           <IconCircle name="barbell-outline" size={38} tone="neutral" />
-          <Text style={styles.statValue}>{averageProtein} g</Text>
+          <Text style={styles.statValue}>{trackedDays ? `${averageProtein} g` : t.progress.noLoggedProtein}</Text>
           <Text style={styles.statLabel}>{t.progress.avgProtein}</Text>
         </Card>
         <Card style={styles.statCard}>
@@ -184,12 +219,12 @@ export default function ProgressScreen() {
         <SectionTitle>{t.progress.insight}</SectionTitle>
         <Card style={styles.insightCard}>
           <View style={styles.insightIcon}>
-            <Ionicons color={colors.onAccent} name={visibleMeals.length >= 3 ? 'sparkles' : 'leaf-outline'} size={24} />
+            <Ionicons color={colors.onAccent} name={visibleMeals.length >= 3 && trackedDays > 0 ? 'sparkles' : 'leaf-outline'} size={24} />
           </View>
           <View style={styles.insightCopy}>
-            <Text style={styles.insightTitle}>{visibleMeals.length >= 3 ? t.progress.insightBuilding : t.progress.insightStart}</Text>
+            <Text style={styles.insightTitle}>{visibleMeals.length >= 3 && trackedDays > 0 ? t.progress.insightBuilding : t.progress.insightStart}</Text>
             <Text style={styles.insightText}>
-              {visibleMeals.length >= 3
+              {visibleMeals.length >= 3 && trackedDays > 0
                 ? t.progress.insightBuildingText(visibleMeals.length, averageProtein)
                 : t.progress.insightStartText}
             </Text>
@@ -199,7 +234,7 @@ export default function ProgressScreen() {
 
       <Modal animationType="fade" onRequestClose={() => setShowWeightEntry(false)} transparent visible={showWeightEntry}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalScrim}>
-          <View accessibilityViewIsModal style={[styles.modalCard, { paddingBottom: insets.bottom + 22 }]}>
+          <ScrollView accessibilityViewIsModal keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" style={styles.modalScroll} contentContainerStyle={[styles.modalCard, { paddingBottom: insets.bottom + 22 }]}>
             <Text accessibilityRole="header" style={styles.modalTitle}>{t.progress.weightModalTitle}</Text>
             <Text style={styles.modalText}>{t.progress.weightModalText}</Text>
             {units === 'uk' ? (
@@ -243,7 +278,7 @@ export default function ProgressScreen() {
             {weightError ? <Text accessibilityLiveRegion="assertive" style={styles.error}>{weightError}</Text> : null}
             <PrimaryButton disabled={saving} label={saving ? t.common.saving : t.common.save} onPress={() => void saveWeight()} />
             <PrimaryButton disabled={saving} label={t.common.cancel} onPress={() => setShowWeightEntry(false)} variant="ghost" />
-          </View>
+          </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
     </Screen>
@@ -293,7 +328,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   subtitle: { color: colors.muted, fontSize: 15, lineHeight: 22 },
   consistencyHero: { padding: 20, gap: 14 },
   heroLabel: { color: colors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  heroValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  heroValueRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', gap: 8 },
   heroValue: { color: colors.text, fontSize: 46, lineHeight: 50, fontWeight: '700', letterSpacing: -1.6, fontVariant: ['tabular-nums'] },
   heroOf: { color: colors.muted, fontSize: 15 },
   strip: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
@@ -307,7 +342,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   stripLabelToday: { color: colors.text, fontWeight: '800' },
   heroFoot: { color: colors.muted, fontSize: 11, lineHeight: 16, fontVariant: ['tabular-nums'] },
   weightCard: { padding: 22, gap: 16 },
-  weightTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  weightTop: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-between', alignItems: 'flex-start' },
   cardLabel: { color: colors.muted, fontSize: 10, fontWeight: '800', letterSpacing: 1 },
   currentWeight: { color: colors.text, fontSize: 42, lineHeight: 49, fontWeight: '700', letterSpacing: -1.4, marginTop: 4, fontVariant: ['tabular-nums'] },
   kg: { fontSize: 17, fontWeight: '600', letterSpacing: 0 },
@@ -326,8 +361,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   lastDot: { position: 'absolute', top: -4, left: -4, width: 16, height: 16, borderRadius: 8, backgroundColor: colors.accentDeep, borderWidth: 4, borderColor: colors.surface },
   chartLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   chartLabel: { color: colors.muted, fontSize: 10 },
-  statsRow: { flexDirection: 'row', gap: 9 },
-  statCard: { flex: 1, padding: 13, borderRadius: 20, gap: 6 },
+  statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
+  statCard: { flexGrow: 1, flexBasis: 95, padding: 13, borderRadius: 20, gap: 6 },
   statValue: { color: colors.text, fontSize: 17, fontWeight: '700', marginTop: 4, fontVariant: ['tabular-nums'] },
   statLabel: { color: colors.muted, fontSize: 10, lineHeight: 14 },
   section: { gap: 13 },
@@ -337,6 +372,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   insightTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   insightText: { color: colors.muted, fontSize: 13, lineHeight: 20 },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.42)', justifyContent: 'flex-end' },
+  modalScroll: { flexGrow: 0, maxHeight: '100%', borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface },
   modalCard: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 22, gap: 13 },
   modalTitle: { color: colors.text, fontSize: 25, fontWeight: '700' },
   modalText: { color: colors.muted, fontSize: 13, lineHeight: 19 },

@@ -171,23 +171,27 @@ export function MacroCard({
   target,
   unit = 'g',
   icon,
+  minimum = false,
 }: {
   label: string;
   current: number;
   target: number;
   unit?: string;
   icon: keyof typeof Ionicons.glyphMap;
+  /** Protein is a minimum: more is fine. Carbs/fat are guides: far above is not "done". */
+  minimum?: boolean;
 }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
   // 10% tolerance, same as the weekly strip: 175 of 180 g is a day that went
   // fine, and calling it a miss is the kind of nagging this app avoids.
-  const reached = target > 0 && current >= target * 0.9;
+  const reached = target > 0 && current >= target * 0.9 && (minimum || current <= target * 1.1);
+  const over = !minimum && target > 0 && current > target * 1.1;
   return (
     <Card style={styles.macroCard}>
       <View style={[styles.macroIcon, reached && styles.macroIconReached]}>
-        <Ionicons color={reached ? colors.onAccent : colors.text} name={reached ? 'checkmark' : icon} size={16} />
+        <Ionicons color={reached ? colors.onAccent : colors.text} name={reached ? 'checkmark' : over ? 'information-circle-outline' : icon} size={16} />
       </View>
       <Text numberOfLines={1} style={styles.macroLabel}>{label}</Text>
       <Text style={styles.macroValue}>{current}</Text>
@@ -246,7 +250,7 @@ export function MealPhoto({ uri, height = 250, placeholder = 'demo', description
       <Image
         accessibilityLabel={uri ? t.confirm.photoRealAlt : t.confirm.photoDemoAlt}
         accessible
-        resizeMode="cover"
+        resizeMode={uri ? 'contain' : 'cover'}
         source={source}
         style={styles.photo}
       />
@@ -306,6 +310,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     borderRadius: radii.button,
     backgroundColor: colors.accentDeep,
     paddingHorizontal: 22,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -327,6 +332,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     opacity: 0.42,
   },
   buttonText: {
+    flexShrink: 1,
+    textAlign: 'center',
     color: colors.text,
     fontSize: 16,
     fontWeight: '700',

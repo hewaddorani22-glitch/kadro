@@ -58,12 +58,12 @@ assert.equal(apply(0.1 + 0.2 + 79.7, 1, { min: 40, max: 200 }), 81,
 
 // --- The kilogram display follows the language -----------------------------
 const weightStep = source.slice(source.indexOf("{step === 'weight' ?"), source.indexOf("{step === 'activity' ?"));
-assert.match(weightStep, /onChange=\{setWeight\}\s+step=\{0\.1\}/);
-assert.equal((weightStep.match(/\beditable\b/g) || []).length, 2);
+assert.match(weightStep, /onChange=\{setWeight\}/);
+assert.equal((weightStep.match(/<WeightEntry/g) || []).length, 2);
 assert.match(source, /if \(parsed === null\) return; onChange\(parsed\);/);
 assert.match(source, /weightKg: weight/);
 assert.match(weightStep, /onChange=\{\(pounds\) => setWeight\(poundsToKg\(pounds\)\)\}/);
-assert.match(weightStep, /step=\{unitSystem === 'us' \? 0\.1 : 1\}/);
+assert.match(weightStep, /onValidityChange=\{setWeightInputValid\}/);
 // Execute the actual conversion helpers and the actual UI onChange expression.
 const unitsSource = readFileSync(new URL('../src/utils/units.ts', import.meta.url), 'utf8').replace(/^import .*;\n/gm, '');
 const unitsModule = {exports:{}};
@@ -87,8 +87,20 @@ for(let tap=1;tap<=20;tap++) {
   lb=Math.round(kgToPounds(changePounds(apply(lb,-1,{step:0.1}),poundsToKg))*10)/10;
   assert.equal(lb,Math.round((220.9-tap*0.1)*10)/10);
 }
-assert.match(weightStep, /format=\{\(kilos\) => formatNumber\(kilos, locale\)\}/,
-  'a kilogram with a decimal renders with an English separator on a German screen');
+const entry = readFileSync(new URL('../src/components/WeightEntry.tsx', import.meta.url), 'utf8');
+assert.match(entry, /setDraft\(formatNumber\(next, locale\)\)/);
+assert.match(source, /if \(step === 'weight' && !weightInputValid\) return/);
+const { stepWeightInput } = decimalModule.exports;
+assert.equal(stepWeightInput(78, 1, 40, 200), 79);
+assert.equal(stepWeightInput(90.5, 1, 40, 200), 91.5);
+assert.equal(stepWeightInput(90.5, -1, 40, 200), 89.5);
+assert.equal(stepWeightInput(40.5, -1, 40, 200), 40);
+assert.equal(stepWeightInput(199.5, 1, 40, 200), 200);
+assert.equal(stepWeightInput(88.2, -1, 88.2, 440.9), 88.2);
+assert.equal(stepWeightInput(440.9, 1, 88.2, 440.9), 440.9);
+let quickWeight = 78;
+for (let tap = 0; tap < 12; tap++) quickWeight = stepWeightInput(quickWeight, 1, 40, 200);
+assert.equal(quickWeight, 90, '78 to 90 kg must take 12 shortcuts, not 120');
 
 // --- A gram amount can carry a decimal, so it has to follow the language ---
 /**

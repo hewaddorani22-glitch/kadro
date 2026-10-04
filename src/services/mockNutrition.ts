@@ -118,7 +118,9 @@ export function createScannedMeal(items: MealItem[], title = getDictionary().err
 export function createPlannedMeal(suggestion: MealSuggestion, portion: PortionFactor, id: string): Meal {
   const now = new Date();
   const hour = now.getHours();
-  const scale = (value: number) => Math.round(value * portion);
+  const reference = suggestion.referenceNutrition ?? suggestion;
+  const servingFactor = (suggestion.portionScale ?? 1) * portion;
+  const scale = (value: number) => Math.round(value * servingFactor);
 
   const item: MealItem = {
     id: `${suggestion.id}-portion`,
@@ -128,11 +130,11 @@ export function createPlannedMeal(suggestion: MealSuggestion, portion: PortionFa
     amountG: Math.round(100 * portion),
     baseAmountG: 100,
     portionFactor: portion,
-    calories: scale(suggestion.calories),
-    protein: scale(suggestion.protein),
-    carbs: scale(suggestion.carbs),
-    fat: scale(suggestion.fat),
-    fiber: scale(suggestion.fiber ?? 0),
+    calories: scale(reference.calories),
+    protein: scale(reference.protein),
+    carbs: scale(reference.carbs),
+    fat: scale(reference.fat),
+    fiber: scale(reference.fiber ?? 0),
     // A catalog value is a typical preparation, never a measurement of the
     // plate in front of the user.
     confidence: 'medium',
@@ -172,5 +174,16 @@ export function getRemaining(targets: DailyTargets, consumed: Nutrition): Nutrit
     protein: Math.max(0, targets.protein - consumed.protein),
     carbs: Math.max(0, targets.carbs - consumed.carbs),
     fat: Math.max(0, targets.fat - consumed.fat),
+  };
+}
+
+/** Preview a new or edited meal exactly once, replacing its saved revision. */
+export function projectMealForDay(targets: DailyTargets, meals: Meal[], draft: Meal) {
+  const otherMeals = meals.filter((meal) => meal.id !== draft.id);
+  const consumed = sumMeals([...otherMeals, draft]);
+  return {
+    consumed,
+    remaining: getRemaining(targets, consumed),
+    before: getRemaining(targets, sumMeals(otherMeals)),
   };
 }

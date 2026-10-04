@@ -1,3 +1,5 @@
+import { nativeApplicationVersion, nativeBuildVersion } from 'expo-application';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { File, Paths } from 'expo-file-system';
 import PostHog, { PostHogPersistedProperty } from 'posthog-react-native';
@@ -5,11 +7,37 @@ import PostHog, { PostHogPersistedProperty } from 'posthog-react-native';
 import { AnalysisErrorKind } from '@/services/contracts';
 import { MealContext } from '@/types/nutrition';
 
-type ScanSource = 'camera' | 'demo' | 'queued_retry' | 'description' | 'barcode' | 'search';
+export type ScanSource = 'camera' | 'demo' | 'queued_retry' | 'description' | 'barcode' | 'search';
 type CountBucket = '1' | '2-3' | '4+';
 type BillingMode = 'preview' | 'test_store' | 'native_store' | 'web';
 
+export type MealSaveSource = ScanSource | 'recommendation' | 'repeat' | 'edit';
+export type ScreenName = 'today' | 'plan' | 'scan' | 'progress' | 'profile' | 'onboarding' | 'data-consent' | 'analyzing' | 'confirm' | 'correct-food' | 'result' | 'paywall' | 'privacy' | 'terms' | 'account-deletion' | 'evening' | 'sources' | 'recipe' | 'index';
+
 type AnalyticsEventMap = {
+  'app active': { entry: 'launch' | 'foreground' | 'opt_in' };
+  'screen viewed': { screen: ScreenName };
+  'setup step viewed': { step: 'goal' | 'name' | 'sex' | 'age' | 'rate' | 'height' | 'weight' | 'activity' | 'preferences' | 'building' | 'plan'; editing: boolean };
+  'introduction step viewed': { step: 1 | 2 | 3 | 4 | 5 };
+  'introduction exited': { completed: boolean };
+  'food search started': Record<string, never>;
+  'food search completed': { result_count: '0' | '1-15' | '16-30' | '31+'; duration: DurationBucket };
+  'food search failed': { failure_reason: AnalysisErrorKind; duration: DurationBucket };
+  'food search selected': { rank: '1-3' | '4-15' | '16+' };
+  'camera permission resolved': { granted: boolean };
+  'camera capture failed': { failure_reason: 'not_ready' | 'capture_failed' };
+  'meal save attempted': { source: MealSaveSource };
+  'meal save completed': { source: MealSaveSource; outcome: 'created' | 'updated' | 'unchanged' };
+  'meal save failed': { source: MealSaveSource; failure_reason: 'local_storage' };
+  'meal updated': { source: MealSaveSource };
+  'meal deleted': Record<string, never>;
+  'cloud sync completed': { operation: 'save' | 'delete' | 'hydrate'; outcome: 'synced' | 'local_only' };
+  'cloud sync failed': { operation: 'save' | 'delete' | 'hydrate' };
+  'result continued': { next_destination: 'today' | 'recommendations' };
+  'subscription purchase started': { billing_mode: BillingMode; plan: 'yearly' | 'monthly' };
+  'subscription purchase ended': { billing_mode: BillingMode; plan: 'yearly' | 'monthly'; outcome: 'active' | 'cancelled' | 'failed' | 'pending' | 'interrupted' };
+  'subscription restore started': { billing_mode: BillingMode };
+  'subscription restore ended': { billing_mode: BillingMode; outcome: 'active' | 'none' | 'failed' | 'pending' | 'interrupted' };
   'onboarding completed': { completion: 'finished' | 'skipped' };
   'plan edited': { completion: 'finished' };
   'meal scan started': { scan_source: ScanSource };
@@ -18,10 +46,12 @@ type AnalyticsEventMap = {
     detected_item_count: CountBucket;
     scan_source: ScanSource;
     warning_present: boolean;
+    duration?: DurationBucket;
   };
   'meal analysis failed': {
     failure_reason: AnalysisErrorKind;
     queued_for_retry: boolean;
+    duration?: DurationBucket;
     scan_source: ScanSource;
   };
   'meal confirmed': {
@@ -29,18 +59,19 @@ type AnalyticsEventMap = {
     correction_applied: boolean;
     included_item_count: CountBucket;
   };
-  'meal saved': { next_destination: 'today' | 'recommendations' };
+  'meal saved': { source: MealSaveSource };
   'recommendation set viewed': { meal_context: MealContext };
   'recommendation selected': { meal_context: MealContext; rank: 1 | 2 | 3 };
   'paywall viewed': { billing_mode: BillingMode };
-  'subscription purchase completed': { billing_mode: BillingMode; plan: 'yearly' | 'monthly' };
+  'subscription purchase completed': { billing_mode: BillingMode; plan: 'yearly' | 'monthly'; purchase_kind: 'trial' | 'paid' };
+  'access paywall shown': { experiment: 'paywall_access_v1'; variant: 'A' | 'B'; environment: 'production'; cohort_source: 'public'; access_version: 'v1' };
   'subscription restore completed': { active: boolean; billing_mode: BillingMode };
 };
 
 export type AnalyticsEventName = keyof AnalyticsEventMap;
 
 type ErrorContext = {
-  area: 'analysis' | 'cloud_sync' | 'subscription' | 'ui';
+  area: 'analysis' | 'cloud_sync' | 'subscription' | 'ui' | 'storage';
   operation: string;
   code?: string;
   fatal?: boolean;
@@ -56,6 +87,12 @@ const ANALYTICS_CONSENT_KEY = '@kandro/analytics-consent:v1';
 const POSTHOG_STORAGE_KEYS = ['.posthog-rn.json', '.posthog-rn-logs.json'] as const;
 const allowedEvents = new Set<string>([
   ...([
+    'app active', 'screen viewed', 'setup step viewed', 'introduction step viewed', 'introduction exited',
+    'food search started', 'food search completed', 'food search failed', 'food search selected',
+    'camera permission resolved', 'camera capture failed',
+    'meal save attempted', 'meal save completed', 'meal save failed', 'meal updated', 'meal deleted',
+    'cloud sync completed', 'cloud sync failed', 'result continued',
+    'subscription purchase started', 'subscription purchase ended', 'subscription restore started', 'subscription restore ended',
     'onboarding completed',
     'plan edited',
     'meal scan started',
@@ -65,7 +102,7 @@ const allowedEvents = new Set<string>([
     'meal saved',
     'recommendation set viewed',
     'recommendation selected',
-    'paywall viewed',
+    'paywall viewed', 'access paywall shown',
     'subscription purchase completed',
     'subscription restore completed',
   ] satisfies AnalyticsEventName[]),
@@ -82,6 +119,31 @@ const blockedAutomaticProperties = new Set([
   // Also scrub legacy queued events produced before goals were removed.
   'goal',
 ]);
+
+// A runtime allowlist protects the boundary even from untyped callers. No
+// arbitrary strings, numbers, nested objects or free-text properties pass it.
+const propertyValues: Record<string, readonly unknown[]> = {
+  experiment: ['paywall_access_v1'], variant: ['A', 'B'], environment: ['production'], cohort_source: ['public'], access_version: ['v1'], purchase_kind: ['trial', 'paid'],
+  entry: ['launch', 'foreground', 'opt_in'],
+  screen: ['today', 'plan', 'scan', 'progress', 'profile', 'onboarding', 'data-consent', 'analyzing', 'confirm', 'correct-food', 'result', 'paywall', 'privacy', 'terms', 'account-deletion', 'evening', 'sources', 'recipe', 'index'],
+  step: ['goal', 'name', 'sex', 'age', 'rate', 'height', 'weight', 'activity', 'preferences', 'building', 'plan', 1, 2, 3, 4, 5],
+  editing: [true, false], completed: [true, false], granted: [true, false],
+  completion: ['finished', 'skipped'],
+  source: ['camera', 'demo', 'queued_retry', 'description', 'barcode', 'search', 'recommendation', 'repeat', 'edit'],
+  scan_source: ['camera', 'demo', 'queued_retry', 'description', 'barcode', 'search'],
+  confidence: ['high', 'medium'], detected_item_count: ['1', '2-3', '4+'], included_item_count: ['1', '2-3', '4+'],
+  warning_present: [true, false], queued_for_retry: [true, false], correction_applied: [true, false], active: [true, false],
+  result_count: ['0', '1-15', '16-30', '31+'], rank: [1, 2, 3, '1-3', '4-15', '16+'],
+  duration: ['under_1s', '1_3s', '3_10s', '10_30s', 'over_30s'],
+  failure_reason: ['not-configured', 'consent-required', 'subscription-required', 'daily-limit', 'invalid-input', 'request-expired', 'offline', 'unclear-image', 'multiple-dishes', 'product-not-found', 'provider-error', 'timeout', 'rate-limited', 'session-required', 'invalid-response', 'model-refused', 'local_storage', 'not_ready', 'capture_failed'],
+  outcome: ['created', 'updated', 'unchanged', 'active', 'cancelled', 'failed', 'pending', 'interrupted', 'none', 'synced', 'local_only'],
+  operation: ['save', 'delete', 'hydrate'], next_destination: ['today', 'recommendations'],
+  meal_context: ['home', 'supermarket', 'eating-out'],
+  billing_mode: ['preview', 'test_store', 'native_store', 'web'], plan: ['yearly', 'monthly'],
+};
+export function sanitizeProductProperties(properties: Record<string, unknown>) {
+  return Object.fromEntries(Object.entries(properties).filter(([key, value]) => propertyValues[key]?.includes(value)));
+}
 
 function sanitizeAutomaticProperties<Event extends { properties?: Record<string, unknown> }>(event: Event) {
   if (!event.properties) return event;
@@ -227,8 +289,27 @@ export function countBucket(count: number): CountBucket {
   return '4+';
 }
 
+export type DurationBucket = 'under_1s' | '1_3s' | '3_10s' | '10_30s' | 'over_30s';
+export function durationBucket(startedAt: number): DurationBucket {
+  const ms = Math.max(0, Date.now() - startedAt);
+  return ms < 1000 ? 'under_1s' : ms < 3000 ? '1_3s' : ms < 10000 ? '3_10s' : ms < 30000 ? '10_30s' : 'over_30s';
+}
+
+function releaseProperties() {
+  return {
+    analytics_schema: 2,
+    app_version: nativeApplicationVersion ?? 'web',
+    app_build: nativeBuildVersion ?? 'web',
+    app_platform: Platform.OS,
+    app_environment: __DEV__ ? 'development' : 'release',
+  };
+}
+
 export function trackEvent<Name extends AnalyticsEventName>(name: Name, properties: AnalyticsEventMap[Name]) {
-  if (analyticsAllowedForCurrentProfile()) posthog?.capture(name, properties);
+  // Telemetry failure must never fail a successful local save or purchase.
+  try {
+    if (analyticsAllowedForCurrentProfile()) posthog?.capture(name, { ...sanitizeProductProperties(properties), ...releaseProperties() });
+  } catch { /* Analytics is optional and cannot interrupt the product. */ }
 }
 
 export function captureOperationalError(error: unknown, context: ErrorContext) {
@@ -240,12 +321,13 @@ export function captureOperationalError(error: unknown, context: ErrorContext) {
     const [, ...frames] = original.stack.split('\n');
     safeError.stack = `${safeError.name}: ${safeError.message}\n${frames.join('\n')}`;
   }
-  posthog.captureException(safeError, {
+  try { posthog.captureException(safeError, {
+    ...releaseProperties(),
     error_area: context.area,
     error_code: context.code ?? 'unknown',
     fatal: context.fatal ?? false,
     operation: context.operation,
-  });
+  }); } catch { /* Error reporting must not throw another error. */ }
 }
 
 export async function getAnalyticsCollectionEnabled() {
@@ -287,6 +369,7 @@ export async function setAnalyticsCollectionEnabled(enabled: boolean) {
     return false;
   }
   await client.optIn();
+  trackEvent('app active', { entry: 'opt_in' });
   return analyticsAllowedForCurrentProfile();
 }
 

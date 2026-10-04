@@ -1,3 +1,4 @@
+import {offMassNutrition,offMassPortions} from '../supabase/functions/_shared/off-product.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ts from 'typescript';
@@ -29,7 +30,7 @@ assert.deepEqual(openFoodFactsNutrition(Object.fromEntries(Object.keys(label).ma
   { calories: 0, protein: 0, carbs: 0, fat: 0 }, 'true zeros remain valid');
 assert.equal(openFoodFactsNutrition({ ...label, 'energy-kcal_100g': 0 }), null);
 for (const p of ['server/index.mjs', 'supabase/functions/nutrition/index.ts']) {
-  assert.match(read(p), /const per100g = openFoodFactsNutrition\(values\)/);
+  assert.match(read(p), /const per100g = offMassNutrition\(product\)/);
   assert.doesNotMatch(read(p), /NUTRIMENT_KEYS\.some/);
 }
 
@@ -49,7 +50,7 @@ for (const path of ['server/index.mjs', 'supabase/functions/nutrition/index.ts']
   let nutriments = { ...label, 'energy-kcal_100g': undefined };
   const lookup = loadFunction(path, 'lookupBarcode', {
     fetch: async () => ({ ok: true, json: async () => ({ product: { nutriments } }) }),
-    openFoodFactsNutrition, localizedProductName: () => 'Fixture', servingPortion: () => [],
+    offMassNutrition,offMassPortions,openFoodFactsNutrition, localizedProductName: () => 'Fixture', servingPortion: () => [],
   });
   assert.equal((await lookup('8000500310427', 'de')).status, 422);
   nutriments = label;
@@ -58,9 +59,10 @@ for (const path of ['server/index.mjs', 'supabase/functions/nutrition/index.ts']
 class AnalysisError extends Error {}
 let barcodeNutrition;
 const barcode = loadFunction('src/services/mealAnalysis.ts', 'analyzeBarcode', {
-  gatewayFetch: async () => ({ ok: true, json: async () => ({ name: 'Fixture', per100g: barcodeNutrition }) }),
+  gatewayFetch: async () => ({ ok: true, json: async () => ({ barcode:'8000500310427',name: 'Fixture', per100g: barcodeNutrition,source:{provider:'open-food-facts',referenceId:'8000500310427',label:'Synthetic fixture'} }) }),
   getLanguage: () => 'de', getDictionary: () => ({ errors: { portionStartValue: '100 g' } }),
   gatewayMessage: () => 'missing_nutrition', MealAnalysisError: AnalysisError,
+  validSearchResult:loadFunction('src/services/mealAnalysis.ts','validSearchResult',{}),
 });
 barcodeNutrition = { protein: 10, carbs: 20, fat: 5 };
 await assert.rejects(() => barcode('8000500310427'), AnalysisError);
@@ -92,7 +94,7 @@ const profileRef = { current: initial };
 let queuedState;
 const env = {
   useCallback: callback => callback,
-  profileRef, profile: initial,
+  profileRef, profile: initial, unitWritesInFlightRef: { current: 0 },
   normalizeWeightKg: units.normalizeWeightKg,
   setProfile: next => { assert.notEqual(typeof next, 'function'); profileRef.current = next; queuedState = next; },
   saveProfile: async next => { saved = next; },
@@ -102,6 +104,7 @@ const env = {
   localDateKey: () => '2026-09-05',
   setTargets: () => {}, setWeightEntries: () => {}, setHydrationReady: () => {},
   isSupabaseConfigured: false,
+  getLocalDataGeneration: () => 0,
 };
 await makeCallback('setUnitSystem', env)('us');
 assert.equal(saved.unitSystem, 'us', 'persistence must not depend on React processing its state queue');
@@ -131,12 +134,16 @@ let promoted;
 const local = { ...initial, weightKg: 83, editedAt: '2026-09-05T12:00:00Z' };
 const cloud = { profile: { ...initial, completedAt: '2026-09-04T12:00:00Z' }, ageDeclared: true, targets: {} };
 const sync = compile(read('src/services/syncRepository.ts'), {
+  '@/services/telemetry': { trackEvent: () => {}, captureOperationalError: () => {} },
+  '@/services/supabaseClient': { getCurrentSessionUserId: async () => 'test' },
   '@/services/cloudRepository': {
+    assertCloudOwner: async () => {}, loadCloudDeletedMealIds: async () => [],
     initializeCloudProfile: async () => cloud,
     saveCloudProfile: async profile => { promoted = profile; return true; },
     loadCloudMealHistory: async () => [], hasCloudAnalyzedMeal: async () => false,
   },
-  '@/services/localRepository': { loadProfile: async () => local, loadAllStoredScans: async () => [], loadDeletedMealIds: async () => [] },
+  '@/services/appAccess': { authorizeMealCreate: async () => undefined },
+  '@/services/localRepository': { getLocalDataGeneration: () => 0, loadLocalAccountSwitch: async () => null, mergeCloudMealSnapshot: async (meals) => meals, loadProfile: async () => local, loadAllStoredScans: async () => [], loadDeletedMealIds: async () => [] },
   '@/services/mockNutrition': { DEFAULT_TARGETS: {} },
   '@/services/personalization': { calculateDailyTargets: p => ({ calories: p.weightKg * 20 }), DEFAULT_PROFILE: initial },
   '@/utils/date': { localDateKey: () => '2026-09-05' },

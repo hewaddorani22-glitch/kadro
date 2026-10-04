@@ -53,13 +53,13 @@ assert.match(off, /search\.openfoodfacts\.org\/search/,
   'the classic search endpoint answers anonymous callers with a sign-in page');
 assert.match(off, /User-Agent/, 'Open Food Facts throttles callers that do not identify themselves');
 assert.match(off, /AbortSignal\.timeout\(/, 'a slow extra source must not hold up the whole search');
-assert.match(off, /if \(!Number\.isFinite\(calories\)\) continue;/,
+assert.match(off, /const per100g = offMassNutrition\(product\);[\s\S]*if \(!per100g\) continue;/,
   'a product without energy cannot be logged and must not be offered');
-assert.match(off, /localizedProductName\(product, language, language === 'de'\)/,
-  'German search must not fall back to an English-only product title');
+assert.match(off, /localizedProductName\(product, language\)/,
+  'German search preserves an identifiable original product name when translation is absent');
 assert.match(gateway, /if \(strict\) return '';/,
   'strict localized-name selection must omit products without the requested language');
-assert.match(gateway, /try \{\s*for \(const product of await searchOpenFoodFacts\(\s*term,\s*language,\s*claimProvider \? \(\) => claimProvider\('off_search'\) : undefined,\s*\)\)[\s\S]*catch \(error\) \{\s*if \(error instanceof ProviderQuotaError\) throw error;/,
-  'Open Food Facts going down must not fail the whole search, while quota denials must remain authoritative');
+assert.match(gateway, /try \{\s*for \(const product of await searchOpenFoodFacts\(\s*term,\s*language,\s*claimProvider \? \(\) => claimProvider\('off_search'\) : undefined,\s*\)\)[\s\S]*catch \(error\) \{\s*noteFailure\(error\);/,
+  'Open Food Facts going down must not fail the whole search, while quota denials are preserved as partial status or an explicit error');
 
 console.log(`German search: ${Object.keys(GERMAN_FOOD_TERMS).length} food terms translated, Open Food Facts wired in as a fallback source.`);
