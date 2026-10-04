@@ -1,3 +1,4 @@
+import { friendlySource } from '@/utils/sourceLabel';
 import { nutritionFitsStorage } from '@/utils/ingredientCorrection';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
@@ -108,7 +109,7 @@ export function PortionSheet({
           <Pressable accessibilityRole="button" accessibilityLabel={t.common.cancel} onPress={cancel} style={styles.close}><Text style={styles.closeText}>×</Text></Pressable>
           </View>
           <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" contentContainerStyle={styles.body}>
-          {target?.sourceLabel ? <Text style={styles.source}>{target.sourceLabel}</Text> : null}
+          {friendlySource(target?.sourceLabel) ? <Text style={styles.source}>{friendlySource(target?.sourceLabel)}</Text> : null}
           {activePortion?.estimated ? <Text style={styles.previewMacros}>{t.portion.estimatedPiece}</Text> : null}
 
           <View style={styles.amountRow}>

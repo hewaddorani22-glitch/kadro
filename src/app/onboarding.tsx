@@ -211,6 +211,14 @@ export default function OnboardingScreen() {
   const [skippedAnything, setSkippedAnything] = useState(false);
   const step = steps[stepIndex];
   useEffect(() => { trackEvent('setup step viewed', { step, editing }); }, [step, editing]);
+  // A goal makes the plan concrete (and powers the projection): the target
+  // step opens with a sensible suggestion the user can adjust or remove.
+  const goalSuggested = useRef(editing);
+  useEffect(() => {
+    if (step !== 'target' || goalSuggested.current) return;
+    goalSuggested.current = true;
+    if (!targetWeightInput.trim()) { setTargetWeightInput(String(suggestedTargetWeight)); setTargetDateInput(suggestedTargetDate ?? ''); }
+  }, [step]);
 
   const goNext = useCallback(() => { setStepIndex(current => Math.min(steps.length - 1, current + 1)); }, [steps]);
   const goBack = () => {

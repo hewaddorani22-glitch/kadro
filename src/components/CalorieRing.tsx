@@ -1,10 +1,14 @@
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 import { formatNumber } from '@/utils/format';
 
 // Screen padding (2 x 20) plus hero card padding (2 x 20).
@@ -41,6 +45,14 @@ export function CalorieRing({
   const ringColor = over > 0 ? colors.attention : colors.accentText;
   const statusColor = over > 0 ? colors.attention : colors.success;
   const celebrating = proteinReached && over === 0;
+  // Every logged meal visibly fills the ring: the moment of progress is felt.
+  const reduceMotion = useReducedMotion();
+  const fill = useRef(new Animated.Value(consumedRatio)).current;
+  useEffect(() => {
+    if (reduceMotion) { fill.setValue(consumedRatio); return; }
+    Animated.timing(fill, { toValue: consumedRatio, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+  }, [consumedRatio, fill, reduceMotion]);
+  const dashOffset = fill.interpolate({ inputRange: [0, 1], outputRange: [circumference, 0] });
 
   const side = (value: number, label: string) => (
     <View style={styles.side}>
@@ -67,14 +79,14 @@ export function CalorieRing({
             stroke={colors.neutralSoft}
             strokeWidth={stroke}
           />
-          <Circle
+          <AnimatedCircle
             cx={size / 2}
             cy={size / 2}
             fill="none"
             r={radius}
             stroke={ringColor}
             strokeDasharray={`${circumference} ${circumference}`}
-            strokeDashoffset={circumference * (1 - consumedRatio)}
+            strokeDashoffset={dashOffset}
             strokeLinecap="round"
             strokeWidth={stroke}
             transform={`rotate(-90 ${size / 2} ${size / 2})`}

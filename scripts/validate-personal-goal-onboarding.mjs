@@ -77,7 +77,7 @@ await test('real screen: explicit age, manual next, seven steps and consent boun
  assert.equal(c.find('PrimaryButton',p=>p.icon==='arrow-forward').disabled,true);await c.next();assert.equal(c.step(),'about','direct handler cannot bypass age');
  c.find('Pressable',p=>p.accessibilityRole==='checkbox').onPress();c.render();
  await through(c,['about','body','activity','target','preferences']);assert.equal(c.step(),'plan');await c.next();assert.equal(c.saved.length,0,'needs wellness consent');
- c.find('PrimaryButton',p=>p.label==='consentAccept').onPress();await c.flush();assert.equal(c.saved.length,1);assert.equal(c.saved[0].targetWeightKg,null);assert.equal(c.saved[0].targetDate,null);assert.deepEqual(c.enrolled,[true]);assert.deepEqual(c.routes,['/reminder-setup']);
+ c.find('PrimaryButton',p=>p.label==='consentAccept').onPress();await c.flush();assert.equal(c.saved.length,1);assert.equal(c.saved[0].targetWeightKg,81,'gain: suggested target +3 kg is kept');assert.match(c.saved[0].targetDate,/^\d{4}-\d{2}-\d{2}$/);assert.deepEqual(c.enrolled,[true]);assert.deepEqual(c.routes,['/reminder-setup']);
 });
 await test('real screen: tap-only goal entry, date chips, validation, back retention, unit conversion and profile edit',async()=>{
  const previous={...base,displayName:'Saved',sex:'female',completedAt:'2026-09-01T12:00:00Z',targetWeightKg:70.5,targetDate:'2027-04-01'};
@@ -102,16 +102,14 @@ await test('real screen: tap-only goal entry, date chips, validation, back reten
  await through(c,['target','preferences']);const shown=c.find('PersonalGoalSummary').profile;assert.equal(shown.age,29);assert.ok(Math.abs(shown.targetWeightKg-70.5)<0.06);assert.equal(shown.targetDate,'2027-04-04');assert.equal(shown.completedAt,previous.completedAt);await c.next();
  assert.equal(c.saved.length,1);assert.equal(c.saved[0].targetDate,'2027-04-04');assert.deepEqual(c.grants,[],'adult edits do not re-request consent');assert.deepEqual(c.enrolled,[],'edits never enroll anew');assert.deepEqual(c.routes,['/(tabs)/profile']);
 });
-await test('real screen: adding a target suggests a weight and the matching date; removing clears both',async()=>{
- const c=controller({...base,completedAt:'2026-09-01T12:00:00Z'},true);await through(c,['goal','about','body','activity']);assert.equal(c.step(),'target');
- assert.ok(!c.nodes().some(n=>n.type==='TextInput'&&n.props.accessibilityLabel==='targetWeightLabel'),'no target until the user asks for one');
- c.find('Pressable',p=>p.accessibilityRole==='button'&&c.nodes().length&&true&&p.onPress&&String(p.onPress).includes('suggestedTargetWeight')).onPress();c.render();
- assert.equal(c.find('TextInput',p=>p.accessibilityLabel==='targetWeightLabel').value,'73');
+await test('real screen: a new adult gets a suggested target and matching date; removing clears both',async()=>{
+ const c=controller();await c.next();c.find('Pressable',p=>p.accessibilityRole==='checkbox').onPress();c.render();await through(c,['about','body','activity']);assert.equal(c.step(),'target');c.render();
+ assert.equal(c.find('TextInput',p=>p.accessibilityLabel==='targetWeightLabel').value,'73','suggested target is prefilled');
  const checked=c.find('Pressable',p=>p.accessibilityRole==='radio'&&p.accessibilityState?.checked&&typeof p.accessibilityLabel==='string');
  assert.match(checked.accessibilityLabel,/^datePace/,'the pace date is preselected');
  c.find('Pressable',p=>p.accessibilityRole==='button'&&String(p.onPress).includes("setTargetWeightInput('')")).onPress();c.render();
  assert.ok(!c.nodes().some(n=>n.type==='TextInput'&&n.props.accessibilityLabel==='targetWeightLabel'));
- await through(c,['target','preferences']);await c.next();assert.equal(c.saved[0].targetWeightKg,null);assert.equal(c.saved[0].targetDate,null);
+ await through(c,['target','preferences']);await c.next();c.find('PrimaryButton',p=>p.label==='consentAccept').onPress();await c.flush();assert.equal(c.saved[0].targetWeightKg,null);assert.equal(c.saved[0].targetDate,null);
 });
 await test('real screen: 14–15 guardian gate and no youth target claims; maintain skips target',async()=>{
  const c=controller({...base,age:15,completedAt:'2026-09-01',targetWeightKg:60,targetDate:'2027-01-01'},true);

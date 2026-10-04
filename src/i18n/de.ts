@@ -124,11 +124,32 @@ export const de = {
     proDescription: "Mit Pro vergleichst du zwei abgeschlossene Wochen anhand deiner tatsächlichen Einträge. Dein bisheriger Verlauf bleibt verfügbar.",
     openPro: "Kandro Pro ansehen",
   },
+  sources: {
+    bls: 'Quelle: Bundeslebensmittelschlüssel',
+    usda: 'Quelle: USDA-Nährwertdatenbank',
+    off: 'Quelle: Open Food Facts (Packungsangaben)',
+    kandro: 'Quelle: Kandro-Katalog',
+    manual: 'Selbst eingetragen',
+  },
+  milestones: {
+    firstTitle: 'Erste Mahlzeit erfasst',
+    firstLeft: (kcal: string) => `Noch ${kcal} kcal übrig für heute.`,
+    firstOver: (kcal: string) => `${kcal} kcal über deinem Tagesziel. Morgen ist ein neuer Tag.`,
+    firstProtein: (grams: number, target: number) => `${grams} von ${target} g Protein`,
+    firstCta: 'Weiter so',
+    threeDaysTitle: '3 Tage dran. Stark!',
+    threeDaysBody: (avg: number, target: number, near: boolean) => near
+      ? `Ø ${avg.toLocaleString('de-DE')} kcal pro Tag bei einem Ziel von ${target.toLocaleString('de-DE')}. Du liegst im Plan.`
+      : `Ø ${avg.toLocaleString('de-DE')} kcal pro Tag, dein Ziel sind ${target.toLocaleString('de-DE')}. Ein Foto genügt für heute.`,
+    streakTitle: (days: number) => `${days} Tage dran`,
+    streakNear: 'Du liegst im Plan.',
+    streakAway: 'Jeder Eintrag macht deinen Plan genauer.',
+  },
   trialActivation: {
     title: "Deine ersten Tage mit Pro",
     progressTitle: "Deine Einträge im Überblick",
-    progress: (days: number, calories: string) => `An ${days} Tagen seit Trialbeginn eingetragen: Ø ${calories} kcal pro Tag mit Einträgen.`,
-    firstMeal: "Was hattest du heute schon? Suche ein Lebensmittel, prüfe die Menge und trage es ein. Foto und Beschreibung findest du ebenfalls in der Erfassung.",
+    progress: (days: number, calories: string) => `Ø ${calories} kcal pro Tag mit Einträgen.`,
+    firstMeal: "Was hattest du heute schon? Ein Foto oder ein Satz genügt.",
     keepExploring: "Deine erste Mahlzeit ist eingetragen. Du kannst Mengen jederzeit berichtigen und weitere Lebensmittel ergänzen.",
     dataNote: "Durchschnitt deiner gespeicherten Schätzungen. Ein erfasster Tag kann unvollständig sein; fehlende Tage zählen nicht als null.",
     logMeal: "Mahlzeit eintragen",
@@ -172,6 +193,7 @@ export const de = {
     pendingHint: 'Tippen und in ein paar Sekunden fertig machen',
   },
   onboarding: {
+    projectionToday: 'Heute',
     goalShort: 'Ziel',
     ageLabel: 'Alter',
     heightLabel: 'Größe',

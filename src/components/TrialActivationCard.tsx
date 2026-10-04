@@ -13,7 +13,7 @@ import { trialActivity } from '@/services/weeklyReview';
 export function TrialActivationCard() {
   const { colors } = useTheme();
   const { t, locale } = useLanguage();
-  const { mealHistory, profile, hydrationReady } = useApp();
+  const { mealHistory, profile, hydrationReady, targets } = useApp();
   const { snapshot, status } = useSubscription();
   const today = useLocalDay();
   const router = useRouter();
@@ -40,14 +40,20 @@ export function TrialActivationCard() {
   const activity = trialActivity(mealHistory, snapshot.currentTrial.startedAt, today);
   if (!activity) return null;
   const copy = t.trialActivation;
+  const milestone = t.milestones ?? { streakTitle: (days: number) => String(days), streakNear: '', streakAway: '' };
+  const near = !!targets?.calories && activity.averageCalories !== null && activity.averageCalories !== undefined
+    && Math.abs(activity.averageCalories / targets.calories - 1) <= 0.1;
   const text = { color: colors.muted, fontSize: 15, lineHeight: 22 };
   return <View style={{ gap: 12 }}>
     <Card>
-      <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 21, fontWeight: '700' }}>{activity.loggedDays >= 3 ? copy.progressTitle : copy.title}</Text>
+      {/* Seven trial days as dots: logged days fill in, the goal is visible. */}
+      <View accessibilityLabel={`${activity.loggedDays} / 7`} style={{ flexDirection: 'row', gap: 6 }}>
+        {Array.from({ length: 7 }, (_, index) => <View key={index} style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: index < activity.loggedDays ? colors.accentText : colors.neutralSoft }} />)}
+      </View>
+      <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 21, fontWeight: '700' }}>{activity.loggedDays >= 3 ? milestone.streakTitle(activity.loggedDays) : copy.title}</Text>
       <Text style={text}>{activity.loggedDays >= 3
-        ? copy.progress(activity.loggedDays, activity.averageCalories!.toLocaleString(locale))
+        ? `${copy.progress(activity.loggedDays, activity.averageCalories!.toLocaleString(locale))} ${near ? milestone.streakNear : milestone.streakAway}`
         : activity.loggedDays === 0 ? copy.firstMeal : copy.keepExploring}</Text>
-      {activity.loggedDays >= 3 ? <Text style={text}>{copy.dataNote}</Text> : null}
       <PrimaryButton label={copy.logMeal} icon="add" onPress={() => router.push({ pathname: '/capture', params: { mode: 'search' } })} />
       <Text style={text}>{copy.reminderOffer}</Text>
       <PrimaryButton label={showReminders ? copy.closeReminders : copy.openReminders} variant="ghost" onPress={() => setShowReminders(value => !value)} />

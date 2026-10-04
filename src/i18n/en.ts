@@ -123,11 +123,32 @@ export const en: typeof de = {
     proDescription: "Compare two completed weeks using your actual entries with Pro. Your existing progress remains available.",
     openPro: "View Kandro Pro",
   },
+  sources: {
+    bls: 'Source: German Nutrient Database (BLS)',
+    usda: 'Source: USDA nutrient database',
+    off: 'Source: Open Food Facts (pack label)',
+    kandro: 'Source: Kandro catalogue',
+    manual: 'Added by you',
+  },
+  milestones: {
+    firstTitle: 'First meal logged',
+    firstLeft: (kcal: string) => `${kcal} kcal left for today.`,
+    firstOver: (kcal: string) => `${kcal} kcal over your daily target. Tomorrow is a new day.`,
+    firstProtein: (grams: number, target: number) => `${grams} of ${target} g protein`,
+    firstCta: 'Keep going',
+    threeDaysTitle: '3 days in. Strong!',
+    threeDaysBody: (avg: number, target: number, near: boolean) => near
+      ? `Avg ${avg.toLocaleString('en-GB')} kcal a day against a ${target.toLocaleString('en-GB')} target. You are on plan.`
+      : `Avg ${avg.toLocaleString('en-GB')} kcal a day, your target is ${target.toLocaleString('en-GB')}. One photo is enough for today.`,
+    streakTitle: (days: number) => `${days} days in`,
+    streakNear: 'You are on plan.',
+    streakAway: 'Every entry makes your plan more accurate.',
+  },
   trialActivation: {
     title: "Your first days with Pro",
     progressTitle: "Your entries at a glance",
-    progress: (days: number, calories: string) => `Entries on ${days} days since your trial began: average ${calories} kcal per day with entries.`,
-    firstMeal: "What have you had today? Search for a food, check the amount and log it. Photo and description are also available in the capture screen.",
+    progress: (days: number, calories: string) => `Average ${calories} kcal per logged day.`,
+    firstMeal: "What have you had today? A photo or one sentence is enough.",
     keepExploring: "Your first meal is logged. You can correct amounts at any time and add more foods.",
     dataNote: "Average of your saved estimates. A logged day may be incomplete; missing days do not count as zero.",
     logMeal: "Log a meal",
@@ -171,6 +192,7 @@ export const en: typeof de = {
     pendingHint: 'Tap to finish it in a few seconds',
   },
   onboarding: {
+    projectionToday: 'Today',
     goalShort: 'Goal',
     ageLabel: 'Age',
     heightLabel: 'Height',

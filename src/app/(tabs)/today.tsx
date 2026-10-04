@@ -1,3 +1,4 @@
+import { Milestones } from '@/components/Milestones';
 import { TrialActivationCard } from '@/components/TrialActivationCard';
 import { usePresentationBlock } from '@/services/presentation';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
@@ -187,6 +188,7 @@ export default function TodayScreen() {
       )}
 
       <TrialActivationCard />
+      <Milestones />
 
       {repeatChoices.length ? (
         <View style={styles.sectionBlock}>

@@ -232,12 +232,48 @@ export function scheduleTrialEndingReminder(trial: SubscriptionTrial | null, isC
     } catch { return false; }
   });
 }
+const FIRST_MEAL_KEY = '@kandro/first-meal-celebrated:v1';
+const STREAK_KEY = '@kandro/three-day-milestone:v1';
+const STREAK_ID = 'kandro-three-days';
+/** Shown once per install/account: the first meal ever logged. */
+export async function claimFirstMealCelebration() {
+  if ((await AsyncStorage.getItem(FIRST_MEAL_KEY).catch(() => 'error')) !== null) return false;
+  await AsyncStorage.setItem(FIRST_MEAL_KEY, 'true').catch(() => undefined);
+  return true;
+}
+/** Existing users with history never see the first-meal moment retroactively. */
+export async function markFirstMealCelebrated() {
+  await AsyncStorage.setItem(FIRST_MEAL_KEY, 'true').catch(() => undefined);
+}
+/**
+ * Third distinct logging day: a short, true summary next morning. Values are
+ * computed now from saved meals; nothing is promised that did not happen.
+ */
+export async function scheduleThreeDayMilestone(averageCalories: number, targetCalories: number) {
+  if (!remindersSupported) return 'skipped' as const;
+  if ((await AsyncStorage.getItem(STREAK_KEY).catch(() => 'error')) !== null) return 'done' as const;
+  await AsyncStorage.setItem(STREAK_KEY, 'true').catch(() => undefined);
+  const permission = await getReminderPermission();
+  if ((permission !== 'authorized' && permission !== 'quiet') || !accessAllowed) return 'skipped' as const;
+  try {
+    configureNotifications();
+    const t = getDictionary().milestones;
+    const morning = new Date(); morning.setDate(morning.getDate() + 1); morning.setHours(8, 30, 0, 0);
+    const near = targetCalories > 0 && Math.abs(averageCalories / targetCalories - 1) <= 0.1;
+    await Notifications.scheduleNotificationAsync({ identifier: STREAK_ID, content: { title: t.threeDaysTitle, body: t.threeDaysBody(averageCalories, targetCalories, near) }, trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: morning, ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}) } });
+    return 'scheduled' as const;
+  } catch { return 'skipped' as const; }
+}
+/** Marks the milestone as handled without a notification (long-time users). */
+export async function markThreeDayMilestone() {
+  await AsyncStorage.setItem(STREAK_KEY, 'true').catch(() => undefined);
+}
 export function clearRemindersAfterAccountDeletion() {
   generation += 1;
   publishOnboardingPending(false);
   return serialize(async () => {
-    if (remindersSupported) { await cancelOwn(); await cancelTrial().catch(() => undefined); }
-    await AsyncStorage.multiRemove([KEY, LEGACY_KEY, OFFER_KEY, PENDING_KEY, DECISION_KEY, TRIAL_KEY]);
+    if (remindersSupported) { await cancelOwn(); await cancelTrial().catch(() => undefined); await Notifications.cancelScheduledNotificationAsync(STREAK_ID).catch(() => undefined); }
+    await AsyncStorage.multiRemove([KEY, LEGACY_KEY, OFFER_KEY, PENDING_KEY, DECISION_KEY, TRIAL_KEY, FIRST_MEAL_KEY, STREAK_KEY]);
   });
 }
 export const clearRemindersForAccountSwitch = clearRemindersAfterAccountDeletion;

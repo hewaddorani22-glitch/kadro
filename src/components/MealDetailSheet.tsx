@@ -1,3 +1,4 @@
+import { friendlySource } from '@/utils/sourceLabel';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -147,7 +148,7 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
                 >
                   <View style={styles.itemCopy}>
                     <Text numberOfLines={1} style={styles.itemName}>{item.name}</Text>
-                    <Text numberOfLines={1} style={styles.sourceNote}>{item.source.label}</Text>
+                    <Text numberOfLines={1} style={styles.sourceNote}>{friendlySource(item.source.label) ?? ''}</Text>
                   </View>
                   <Text style={styles.itemAmount}>{formatNumber(item.amountG, locale)} g · ~{formatNumber(item.calories, locale)} kcal</Text>
                   <Ionicons color={colors.muted} name="create-outline" size={16} />
