@@ -1,3 +1,4 @@
+import { reportError } from '@/services/crashReporting';
 import { nativeApplicationVersion, nativeBuildVersion } from 'expo-application';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -313,7 +314,6 @@ export function trackEvent<Name extends AnalyticsEventName>(name: Name, properti
 }
 
 export function captureOperationalError(error: unknown, context: ErrorContext) {
-  if (!posthog || !analyticsAllowedForCurrentProfile()) return;
   const original = error instanceof Error ? error : null;
   const safeError = new Error(`${context.area}:${context.operation}:${context.code ?? original?.name ?? 'unknown'}`);
   safeError.name = original?.name || 'KandroOperationalError';
@@ -321,6 +321,9 @@ export function captureOperationalError(error: unknown, context: ErrorContext) {
     const [, ...frames] = original.stack.split('\n');
     safeError.stack = `${safeError.name}: ${safeError.message}\n${frames.join('\n')}`;
   }
+  // Crash reports carry only this sanitised message and the code location.
+  if (context.fatal) reportError(safeError, context.area);
+  if (!posthog || !analyticsAllowedForCurrentProfile()) return;
   try { posthog.captureException(safeError, {
     ...releaseProperties(),
     error_area: context.area,

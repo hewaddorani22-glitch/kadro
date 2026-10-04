@@ -75,7 +75,8 @@
           ]
         }
       ],
-      "./plugins/withAppleSignInGate"
+      "./plugins/withAppleSignInGate",
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true

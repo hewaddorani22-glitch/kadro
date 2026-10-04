@@ -10,6 +10,7 @@ const load = (file, mocks) => {
   }).outputText;
   new Function('require', 'module', 'exports', '__DEV__', code)((id) => {
     if (id === '@/services/personalGoal') return load('src/services/personalGoal.ts', {});
+    if (id === '@/services/crashReporting') return { reportError() {}, crashReportingEnabled: false, wrapRoot: x => x };
     if (!(id in mocks)) throw Error(`Unexpected module ${id}`);
     return mocks[id];
   }, module, module.exports, true);

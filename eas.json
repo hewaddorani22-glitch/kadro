@@ -13,7 +13,8 @@
         "EXPO_PUBLIC_LEGAL_CONTACT_EMAIL": "hewaddorani22@gmail.com",
         "EXPO_PUBLIC_LEGAL_PRIVACY_URL": "https://getkandro.com/privacy",
         "EXPO_PUBLIC_LEGAL_TERMS_URL": "https://getkandro.com/terms",
-        "EXPO_PUBLIC_LEGAL_SUPPORT_URL": "https://getkandro.com/support"
+        "EXPO_PUBLIC_LEGAL_SUPPORT_URL": "https://getkandro.com/support",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "production": {
@@ -26,7 +27,8 @@
         "EXPO_PUBLIC_LEGAL_CONTACT_EMAIL": "hewaddorani22@gmail.com",
         "EXPO_PUBLIC_LEGAL_PRIVACY_URL": "https://getkandro.com/privacy",
         "EXPO_PUBLIC_LEGAL_TERMS_URL": "https://getkandro.com/terms",
-        "EXPO_PUBLIC_LEGAL_SUPPORT_URL": "https://getkandro.com/support"
+        "EXPO_PUBLIC_LEGAL_SUPPORT_URL": "https://getkandro.com/support",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     }
   },

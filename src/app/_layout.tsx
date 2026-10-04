@@ -1,3 +1,4 @@
+import { wrapRoot } from '@/services/crashReporting';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -19,9 +20,10 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
-export default function RootLayout() {
+function RootLayout() {
   return <ThemeProvider><ThemedRootLayout /></ThemeProvider>;
 }
+export default wrapRoot(RootLayout);
 
 function ThemedRootLayout() {
   const { colors, mode: themeMode } = useTheme();
