@@ -69,7 +69,7 @@
         "expo-speech-recognition",
         {
           "microphonePermission": "Kandro nutzt das Mikrofon nur, während du deine Mahlzeit einsprichst.",
-          "speechRecognitionPermission": "Kandro wandelt deine gesprochene Mahlzeit auf dem Gerät in Text um.",
+          "speechRecognitionPermission": "Kandro wandelt deine gesprochene Mahlzeit mit Apples Spracherkennung in Text um. Es wird keine Aufnahme gespeichert.",
           "androidSpeechServicePackages": [
             "com.google.android.googlequicksearchbox"
           ]
