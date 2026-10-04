@@ -67,13 +67,22 @@ const RAW_ALIASES: Record<string, readonly string[]> = {
   mandeln: ['H210100'], nusse: ['H210100', 'H120100'], nuts: ['H210100', 'H120100'], walnusse: ['H120100'],
   oel: ['Q120000'], ol: ['Q120000'], olivenol: ['Q120000'], oil: ['Q120000'],
   cola: ['N330000'], colazero: ['N331000'], colalight: ['N331000'], cokezero: ['N331000'], coke: ['N330000'],
+  wein: ['P2A3000', 'P210000'], rotwein: ['P2A3000', 'P253000'], weisswein: ['P210000', 'P220000'], wine: ['P2A3000', 'P210000'], redwine: ['P2A3000'], whitewine: ['P210000'],
+  salat: ['X201160', 'G105100', 'G103100'], salad: ['X201160', 'G105100'], kopfsalat: ['G105100'], eisbergsalat: ['G103100'], blattsalat: ['G105100'],
+  paprika: ['G543100', 'G541100', 'G542100'], bellpepper: ['G543100', 'G541100'], gurke: ['G520100'], cucumber: ['G520100'], tomate: ['G561100'], tomaten: ['G561100'], tomato: ['G561100'],
+  eiweiss: ['E113100'], eiklar: ['E113100'], eggwhite: ['E113100'], putenbrust: ['V486182', 'V486100'], pute: ['V486182'], turkey: ['V486182'],
+  erdnussbutter: ['H880200'], peanutbutter: ['H880200'], banane: ['F503100'], banana: ['F503100'],
   musli: ['C512300'], muesli: ['C512300'], porridge: ['C133000'], oats: ['C133000'], oatmeal: ['C133000'], hafer: ['C133000', 'C660000'], haferflocken: ['C133000'],
 };
 function aliasCodes(query: string) {
   const codes = new Map<string, number>();
-  if (query.length < 2 || query.includes(' ')) return codes;
+  // "ei weiß" and "hafer milch" mean the compound word.
+  const joined = query.replace(/ /g, '');
+  if (joined.length < 2 || query.split(' ').length > 2) return codes;
+  query = joined;
   for (const [word, list] of Object.entries(ALIASES)) {
-    if (!word.startsWith(query)) continue;
+    // Two letters only match a whole word ("ei" is egg, not Eisbergsalat).
+    if (!word.startsWith(query) || (query.length < 3 && word !== query)) continue;
     list.forEach((code, position) => {
       const strength = 12 - position - (word.length - query.length) * 0.2;
       codes.set(code, Math.max(codes.get(code) ?? 0, strength));
@@ -96,6 +105,7 @@ const PORTIONS: Record<string, readonly (readonly [PortionKind, number])[]> = {
   M141300: [['pot', 150]], M141200: [['pot', 150]], M710100: [['pot', 150]], M713100: [['pot', 250]], M711100: [['pot', 200]],
   N410100: [['cup', 200]], N630000: [['cup', 250]], N610100: [['cup', 250]], N110000: [['glass', 250]],
   F603600: [['glass', 200]], F110600: [['glass', 200]], N330000: [['can', 330], ['glass', 250]], N331000: [['can', 330], ['glass', 250]], P163000: [['bottle', 330]],
+  P2A3000: [['glass', 200]], P210000: [['glass', 200]], P253000: [['glass', 200]], P220000: [['glass', 200]], G543100: [['piece', 160]], G541100: [['piece', 160]], G542100: [['piece', 160]], G520100: [['piece', 400]], X201160: [['portion', 150]], E113100: [['egg', 33]], V486182: [['fillet', 150]],
   Q611000: [['tsp', 5]], H880200: [['tbsp', 15]], S120000: [['tsp', 8]], Q120000: [['tbsp', 10]],
   M402500: [['slice', 25]], M304600: [['slice', 20]], W424000: [['slice', 20]], W140000: [['slice', 10]], M032100: [['ball', 125]],
   C352032: [['portion', 150]], C351032: [['portion', 150]], E401032: [['portion', 180]], X6A1010: [['portion', 200], ['piece', 80]], K110100: [['portion', 200], ['piece', 80]],

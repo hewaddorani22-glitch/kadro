@@ -193,6 +193,13 @@ export const en: typeof de = {
     pendingHint: 'Tap to finish it in a few seconds',
   },
   onboarding: {
+    showcaseTitle: 'HOW YOU LOG',
+    showcasePhoto: 'Snap a photo – Kandro recognises your food',
+    showcaseVoice: 'Just say what you ate',
+    showcaseBarcode: 'Scan a barcode or search',
+    consentShort: 'I agree that Kandro processes my nutrition, goal and meal data. Photos and descriptions are sent to an AI service for analysis, including in the USA, and are not used for training. You can withdraw any time under “You”.',
+    consentMore: 'Show details',
+    consentLess: 'Hide details',
     projectionToday: 'Today',
     goalShort: 'Goal',
     ageLabel: 'Age',

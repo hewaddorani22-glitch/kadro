@@ -69,9 +69,10 @@ function controller(profile=base,editing=false){
  const step=()=>events.filter(e=>e.event==='setup step viewed').at(-1)?.step;
  const flush=async()=>{for(let i=0;i<6;i++)await Promise.resolve();await new Promise(r=>setTimeout(r,5));render();await new Promise(r=>setTimeout(r,5));render()};
  const next=async()=>{find('PrimaryButton',p=>p.icon==='arrow-forward').onPress();await flush()};
- render();return{render,find,nodes,step,next,flush,saved,routes,grants,enrolled,setGuardian:v=>{guardianApproved=v},back:async()=>{find('Pressable',p=>p.accessibilityLabel==='back').onPress();await flush()}};
+ render();return{sex:profile.sex,render,find,nodes,step,next,flush,saved,routes,grants,enrolled,setGuardian:v=>{guardianApproved=v},back:async()=>{find('Pressable',p=>p.accessibilityLabel==='back').onPress();await flush()}};
 }
-async function through(c,steps){for(const expected of steps){assert.equal(c.step(),expected);await c.next()}}
+// The biological sex is an explicit choice: nothing is preselected on "about".
+async function through(c,steps){for(const expected of steps){assert.equal(c.step(),expected);if(expected==='about'){const sex=c.nodes().find(n=>n.type?.name==='Segmented'&&n.props.selected===null);if(sex){assert.equal(c.find('PrimaryButton',p=>p.icon==='arrow-forward').disabled,true,'sex must be chosen');sex.props.onSelect(c.sex??'female');c.render()}}await c.next()}}
 await test('real screen: explicit age, manual next, seven steps and consent boundary',async()=>{
  const c=controller();assert.equal(c.step(),'goal');c.find('ChoiceList').onSelect('gain');c.render();assert.equal(c.step(),'goal','selection does not navigate');await c.next();assert.equal(c.step(),'about');
  assert.equal(c.find('PrimaryButton',p=>p.icon==='arrow-forward').disabled,true);await c.next();assert.equal(c.step(),'about','direct handler cannot bypass age');

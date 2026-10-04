@@ -144,7 +144,14 @@ export function calculateDailyTargets(profile: UserProfile): DailyTargets {
   // 35% ceilings are what make the three numbers describe the same day.
   const proteinFactor = profile.goal === 'maintain' ? 1.6 : 1.8;
   const proteinCeiling = Math.min(260, Math.floor((calories * 0.35) / 4));
-  const protein = Math.max(70, Math.min(proteinCeiling, roundTo(profile.weightKg * proteinFactor, 5)));
+  // Protein follows lean mass, not fat mass: above BMI 30 the usual "adjusted
+  // body weight" (weight at BMI 25 plus a quarter of the excess) is used, so
+  // 130 kg does not ask for 234 g a day. Independent of any personal wish.
+  const heightM = profile.heightCm / 100;
+  const referenceKg = heightM > 0 && profile.weightKg / (heightM * heightM) > 30
+    ? 25 * heightM * heightM + 0.25 * (profile.weightKg - 25 * heightM * heightM)
+    : profile.weightKg;
+  const protein = Math.max(70, Math.min(proteinCeiling, roundTo(referenceKg * proteinFactor, 5)));
   const fatCeiling = Math.max(45, Math.floor((calories * 0.35) / 9));
   const fat = Math.max(45, Math.min(140, fatCeiling, roundTo(profile.weightKg * 0.8, 5)));
   // Carbs take what is left. The old 80 g floor was applied even when the

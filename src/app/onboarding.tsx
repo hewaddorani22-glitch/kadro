@@ -132,6 +132,8 @@ export default function OnboardingScreen() {
   const [goal, setGoal] = useState<NutritionGoal>(() => (editing ? profile.goal : 'lose'));
   const [displayName, setDisplayName] = useState(() => (editing ? profile.displayName : ''));
   const [sex, setSex] = useState<BiologicalSex>(() => (editing ? profile.sex : 'unspecified'));
+  // A deliberate answer (incl. "Keine Angabe"), never a silent default: it moves the plan by ~80 kcal.
+  const [sexChosen, setSexChosen] = useState(() => editing);
   // Guessed from the device so most people never touch it, but visible and
   // switchable right on the step where it matters.
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => (editing ? profile.unitSystem : defaultUnitSystem()));
@@ -205,6 +207,7 @@ export default function OnboardingScreen() {
   }
   const [preferences, setPreferences] = useState<string[]>(() => (editing ? profile.preferences : ['high-protein']));
   const [showConsent, setShowConsent] = useState(false);
+  const [consentDetails, setConsentDetails] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
   const [guardianEmail, setGuardianEmail] = useState('');
@@ -332,6 +335,7 @@ export default function OnboardingScreen() {
     // Keep the invariant here as well as on the disabled button: navigation
     // must not persist the convenient picker default through another caller.
     if (step !== 'goal' && !ageConfirmed) return;
+    if (step === 'about' && !sexChosen) return;
     if (step === 'body' && !weightInputValid) return;
     if ((step === 'target' || step === 'plan') && targetError) return;
     if (step === 'plan') {
@@ -564,11 +568,11 @@ export default function OnboardingScreen() {
                 <Text style={styles.sectionLabel}>{t.onboarding.sexLabel}</Text>
                 <Segmented
                   labels={sexChoices.map(choice => choice.label)}
-                  onSelect={(value) => selectChoice(() => setSex(value))}
-                  selected={sex}
+                  onSelect={(value) => selectChoice(() => { setSex(value); setSexChosen(true); })}
+                  selected={sexChosen ? sex : null}
                   values={BIOLOGICAL_SEXES}
                 />
-                <Text style={styles.fieldHint}>{sexChoices[BIOLOGICAL_SEXES.indexOf(sex)]?.detail}</Text>
+                {sexChosen ? <Text style={styles.fieldHint}>{sexChoices[BIOLOGICAL_SEXES.indexOf(sex)]?.detail}</Text> : null}
               </View>
             ) : null}
 
@@ -668,7 +672,7 @@ export default function OnboardingScreen() {
               </View>
             ) : null}
 
-            {step === 'plan' && building ? <View style={styles.buildingStage}><PlanBuilder profile={draftProfile} /></View> : null}
+            {step === 'plan' && building ? <View style={styles.buildingStage}><PlanBuilder profile={draftProfile} showcase /></View> : null}
             {step === 'plan' && !building ? <><PersonalGoalSummary profile={draftProfile} /><StartingPlan limited={isRateLimited(draftProfile)} profile={draftProfile} targets={startingTargets} /></> : null}
           </View>
         </ScrollView>
@@ -676,7 +680,7 @@ export default function OnboardingScreen() {
         {showFooterButton && !keyboardOpen && !(step === 'plan' && building) ? (
           <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
             <PrimaryButton
-              disabled={(step === 'about' && !ageConfirmed) || (step === 'body' && !weightInputValid) || ((step === 'target' || step === 'plan') && !!targetError)}
+              disabled={(step === 'about' && !ageConfirmed) || (step === 'about' && !sexChosen) || (step === 'body' && !weightInputValid) || ((step === 'target' || step === 'plan') && !!targetError)}
               icon="arrow-forward"
               label={footerLabel}
               onPress={() => void primaryAction()}
@@ -694,8 +698,11 @@ export default function OnboardingScreen() {
               {draftProfile.age < 16 ? t.onboarding.guardianTitle : t.onboarding.consentTitle}
             </Text>
             <Text style={styles.consentText}>
-              {draftProfile.age < 16 ? t.onboarding.guardianBody : t.onboarding.consentBody}
+              {draftProfile.age < 16 ? t.onboarding.guardianBody : consentDetails ? t.onboarding.consentBody : t.onboarding.consentShort}
             </Text>
+            {draftProfile.age >= 16 ? <Pressable accessibilityRole="button" accessibilityState={{ expanded: consentDetails }} hitSlop={8} onPress={() => setConsentDetails(value => !value)}>
+              <Text style={styles.consentLink}>{consentDetails ? t.onboarding.consentLess : t.onboarding.consentMore}</Text>
+            </Pressable> : null}
             {draftProfile.age < 16 ? (
               <View style={styles.guardianBlock}>
                 <Text style={styles.guardianLabel}>{t.onboarding.guardianEmail}</Text>
@@ -771,7 +778,7 @@ function ChoiceList<T extends string>({ choices, compact = false, onSelect, sele
 }
 
 /** iOS-style segmented control for short, mutually exclusive answers. */
-function Segmented<T extends string>({ labels, onSelect, selected, values }: { labels: string[]; onSelect: (value: T) => void; selected: T; values: readonly T[] }) {
+function Segmented<T extends string>({ labels, onSelect, selected, values }: { labels: string[]; onSelect: (value: T) => void; selected: T | null; values: readonly T[] }) {
   const styles = useThemedStyles(makeStyles);
   return (
     <View accessibilityRole="radiogroup" style={styles.segment}>

@@ -194,6 +194,13 @@ export const de = {
     pendingHint: 'Tippen und in ein paar Sekunden fertig machen',
   },
   onboarding: {
+    showcaseTitle: 'SO TRÄGST DU EIN',
+    showcasePhoto: 'Foto machen – Kandro erkennt dein Essen',
+    showcaseVoice: 'Einfach sagen, was du gegessen hast',
+    showcaseBarcode: 'Barcode scannen oder suchen',
+    consentShort: 'Ich willige ein, dass Kandro meine Ernährungs-, Ziel- und Mahlzeitendaten verarbeitet. Fotos und Beschreibungen werden zur Analyse an einen KI-Dienst übermittelt, auch in die USA, und nicht zum Training genutzt. Widerruf jederzeit unter „Du“.',
+    consentMore: 'Details anzeigen',
+    consentLess: 'Details ausblenden',
     projectionToday: 'Heute',
     goalShort: 'Ziel',
     ageLabel: 'Alter',

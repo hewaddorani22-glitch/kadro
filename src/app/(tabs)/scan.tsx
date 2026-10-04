@@ -347,7 +347,7 @@ export default function ScanScreen() {
     if (!scanFocused.current || captureLock.current) return;
     barcodeLock.current = false;
     setMode(nextMode);
-    if (nextMode !== 'barcode') setTorchOn(false);
+    if (nextMode !== 'barcode' && nextMode !== 'photo') setTorchOn(false);
     if (nextMode === 'description') setShowDescription(true);
     if (nextMode === 'search') setShowSearch(true);
   };
@@ -527,7 +527,7 @@ export default function ScanScreen() {
             active={Platform.OS === 'ios' ? cameraActive : undefined}
             autofocus="on"
             barcodeScannerSettings={{ barcodeTypes: ['ean13', 'ean8', 'upc_a', 'upc_e', 'itf14', 'code128'] }}
-            enableTorch={mode === 'barcode' && torchOn}
+            enableTorch={(mode === 'barcode' || mode === 'photo') && torchOn}
             facing="back"
             onCameraReady={() => setCameraReady(true)}
             onBarcodeScanned={mode === 'barcode' ? handleBarcode : undefined}
@@ -557,7 +557,7 @@ export default function ScanScreen() {
             <Ionicons color={colors.accent} name="sparkles" size={15} />
             <Text style={styles.screenTitle}>{t.scan.title}</Text>
           </View>
-          {mode === 'barcode' && cameraActive ? (
+          {(mode === 'barcode' || mode === 'photo') && cameraActive ? (
             <Pressable
               accessibilityLabel={torchOn ? t.scan.torchOff : t.scan.torchOn}
               accessibilityRole="switch"

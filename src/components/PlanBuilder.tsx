@@ -58,7 +58,7 @@ export function frameAt(progress: number, steps: { value: number; unit: string }
  * real intermediate value: resting energy, then activity, then the goal :
  * landing on exactly the number the next screen shows.
  */
-export function PlanBuilder({ profile }: { profile: UserProfile }) {
+export function PlanBuilder({ profile, showcase = false }: { profile: UserProfile; showcase?: boolean }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { locale, t } = useLanguage();
@@ -158,6 +158,15 @@ export function PlanBuilder({ profile }: { profile: UserProfile }) {
 
       <Text numberOfLines={2} style={styles.caption}>{current ? t.onboarding.targetStep[current.id] : ''}</Text>
 
+      {showcase ? <View style={styles.showcase}>
+        <Text style={styles.showcaseTitle}>{t.onboarding.showcaseTitle}</Text>
+        {([['camera', t.onboarding.showcasePhoto], ['mic', t.onboarding.showcaseVoice], ['barcode-outline', t.onboarding.showcaseBarcode]] as const).map(([icon, label]) => (
+          <View key={icon} style={styles.showcaseRow}>
+            <View style={styles.showcaseIcon}><Ionicons color={colors.accentText} name={icon} size={18} /></View>
+            <Text style={styles.showcaseText}>{label}</Text>
+          </View>
+        ))}
+      </View> : null}
       <View style={styles.dots}>
         {steps.map((step, index) => (
           <View
@@ -185,6 +194,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   unit: { color: colors.muted, fontSize: 13, marginTop: -2 },
   caption: { color: colors.text, fontSize: 15, fontWeight: '600', textAlign: 'center', minHeight: 44, lineHeight: 22, paddingHorizontal: 8 },
   dots: { flexDirection: 'row', gap: 8 },
+  showcase: { alignSelf: 'stretch', gap: 10, marginTop: 6, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 16 },
+  showcaseTitle: { color: colors.muted, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
+  showcaseRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  showcaseIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  showcaseText: { flex: 1, color: colors.text, fontSize: 15, fontWeight: '600' },
   dot: { width: 20, height: 20, borderRadius: 10, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   dotDone: { backgroundColor: colors.accent },
   dotActive: { backgroundColor: colors.accentSoft },

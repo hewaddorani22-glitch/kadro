@@ -26,6 +26,9 @@ const top = (query, usage) => suggest.suggestFoods(query, usage)[0]?.source.refe
 await test('typing a prefix suggests the everyday food first, offline and fast', () => {
   const cases = { ha: 'C133000', haf: 'C133000', bana: 'F503100', ap: 'F110100', mil: 'M111200', ei: 'E111132', bro: 'B101000', nud: 'E401032', reis: 'C352032', kaf: 'N410100', tee: 'N630000', was: 'N110000', jog: 'M141300', sk: 'M710100', toa: 'B314000', 'häh': 'V416172', cola: 'N330000' };
   for (const [query, code] of Object.entries(cases)) assert.equal(top(query), code, query);
+  // Generic words mean the plain food, not a dish or a lookalike (Wein ≠ Weintraube).
+  const plain = { wein: 'P2A3000', weisswein: 'P210000', salat: 'X201160', paprika: 'G543100', 'eiweiß': 'E113100', 'ei weiß': 'E113100', putenbr: 'V486182', gurke: 'G520100' };
+  for (const [query, code] of Object.entries(plain)) assert.equal(top(query), code, query);
   const started = performance.now();
   for (let i = 0; i < 50; i++) suggest.suggestFoods('kart');
   assert.ok((performance.now() - started) / 50 < 40, 'suggestions stay interactive');
