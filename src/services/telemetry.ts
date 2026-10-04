@@ -17,7 +17,7 @@ export type ScreenName = 'today' | 'plan' | 'scan' | 'progress' | 'profile' | 'o
 type AnalyticsEventMap = {
   'app active': { entry: 'launch' | 'foreground' | 'opt_in' };
   'screen viewed': { screen: ScreenName };
-  'setup step viewed': { step: 'goal' | 'name' | 'sex' | 'age' | 'rate' | 'height' | 'weight' | 'activity' | 'preferences' | 'building' | 'plan'; editing: boolean };
+  'setup step viewed': { step: 'about' | 'body' | 'target' | 'goal' | 'name' | 'sex' | 'age' | 'rate' | 'height' | 'weight' | 'activity' | 'preferences' | 'building' | 'plan'; editing: boolean };
   'introduction step viewed': { step: 1 | 2 | 3 | 4 | 5 };
   'introduction exited': { completed: boolean };
   'food search started': Record<string, never>;

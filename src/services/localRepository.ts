@@ -1,3 +1,4 @@
+import { normalizePersonalGoal } from '@/services/personalGoal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { PendingAnalysis } from '@/services/contracts';
@@ -456,7 +457,7 @@ export async function loadProfile(): Promise<UserProfile> {
   // A stored value the app no longer knows: from an older build, a corrupted
   // write, or a cloud row written by a newer one: used to reach the target
   // maths unchecked and surface as "NaN kcal left" on the Today screen.
-  return {
+  const profile: UserProfile = {
     ...DEFAULT_PROFILE,
     ...stored,
     goal: oneOf(stored.goal, ['lose', 'maintain', 'gain'], DEFAULT_PROFILE.goal),
@@ -472,10 +473,11 @@ export async function loadProfile(): Promise<UserProfile> {
     sex: isBiologicalSex(stored.sex) ? stored.sex : 'unspecified',
     preferences: Array.isArray(stored.preferences) ? stored.preferences.filter((item): item is string => typeof item === 'string') : [],
   };
+  return { ...profile, ...normalizePersonalGoal(profile) };
 }
 
 export function saveProfile(profile: UserProfile) {
-  return mutateAuxiliary(() => AsyncStorage.setItem(PROFILE_KEY, JSON.stringify(profile)));
+  return mutateAuxiliary(() => AsyncStorage.setItem(PROFILE_KEY, JSON.stringify({ ...profile, ...normalizePersonalGoal(profile) })));
 }
 
 export async function loadWeightEntries(): Promise<WeightEntry[]> {
@@ -561,7 +563,7 @@ export function replaceLocalAccountData(
     const count = Math.max(0, Math.floor(lifetimeScanCount));
     await AsyncStorage.multiSet([
       [MEALS_KEY, JSON.stringify(cleanMeals)],
-      [PROFILE_KEY, JSON.stringify(profile)],
+      [PROFILE_KEY, JSON.stringify({ ...profile, ...normalizePersonalGoal(profile) })],
       [LIFETIME_SCANS_KEY, JSON.stringify(count)],
       [COUNTED_SCAN_IDS_KEY, JSON.stringify({ version: 1, count, ids: [] })],
     ]);

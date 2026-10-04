@@ -35,12 +35,13 @@ if (!rows.length) {
 }
 
 const number = (value) => {
+  if (value === undefined || value === null || String(value).trim() === '') return null;
   const parsed = Number(String(value).replace(',', '.'));
-  return Number.isFinite(parsed) ? parsed : null;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 };
 
 /** Signed relative error, so bias and spread stay distinguishable. */
-const relative = (actual, truth) => (truth ? (actual - truth) / truth : null);
+const relative = (actual, truth) => (actual !== null && truth !== null && truth > 0 ? (actual - truth) / truth : null);
 
 const percentiles = (values) => {
   if (!values.length) return null;
@@ -74,8 +75,12 @@ const counts = rows.reduce((acc, row) => {
   return acc;
 }, {});
 const hits = counts.hit ?? 0;
+const classified = (counts.hit ?? 0) + (counts.wrong ?? 0) + (counts.miss ?? 0);
 console.log('1. Erkennung');
-console.log(`  richtig erkannt              ${hits}/${rows.length}  (${((hits / rows.length) * 100).toFixed(0)} %)`);
+console.log(classified
+  ? `  richtig erkannt              ${hits}/${classified} bewertete Fälle  (${((hits / classified) * 100).toFixed(0)} %)`
+  : '  richtig erkannt              noch keine bewerteten Fälle');
+console.log(`  Bewertungsabdeckung          ${classified}/${rows.length} Mahlzeiten`);
 for (const [key, value] of Object.entries(counts)) {
   if (key !== 'hit') console.log(`  ${key.padEnd(28)} ${value}`);
 }

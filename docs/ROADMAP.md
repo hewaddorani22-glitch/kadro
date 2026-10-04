@@ -1,5 +1,59 @@
 # Roadmap
 
+## Maßgeblicher Folgestand, 04.10.2026
+
+Die älteren Build-, Budget- und A/B-Angaben darunter sind historische
+Zwischenstände. [Aktueller Bericht](qa/GROWTH-FOLLOWUP-2026-10-04.md) trennt
+Implementierung, lokale Prüfung, tatsächlich bereitgestellten Stand und offene
+Geräte-/Freigabegates.
+
+- [x] Konservative Kohorte auf ausdrücklichen Nutzerwunsch remote
+  wiederhergestellt und Rechte/Funktionsdefinition nachgelesen; öffentlich aus,
+  keine neue Zuteilung und keine Modellaufrufe bei dieser Prüfung.
+- [x] Build 1.0.3 (26) bei Apple `VALID` / intern `IN_BETA_TESTING` nachgewiesen.
+  Dieser Build enthält die nachfolgenden lokalen Änderungen noch nicht.
+- [x] Optionales persönliches Ziel und kürzeres Onboarding, ehrliche
+  Store-Trial-Auswahl/Abbruchhilfe, Trialaktivierung, Pro-Wochenrückblick,
+  enger BLS-Vorrang und tatsächliches gestriges Frühstück lokal implementiert.
+- [x] Separat freiwillige RC-Messzustimmung samt Widerruf, dauerhafter
+  Servergruppe, QA-/StoreKit-Herkunftsfilter und Mess-Frischegate implementiert;
+  gezielte Modul-, Swift-Typecheck- und isolierte SQL-Regressionen bestanden.
+- [x] Vollständiger Verify nach sämtlichen Funktions- und DE/EN-Copykorrekturen:
+  Exitcode 0, Expo Doctor 18/18 und Webexport;
+  `growth-followup-20261004/verify-final-after-copy-result.json` belegt den
+  Abschluss am 04.10.2026 um 15:41:38 UTC.
+- [x] Bestehendes Jahresprodukt in 175/175 Gebieten auf sieben kostenlose
+  Einführungs-Tage eingerichtet und rückgelesen; reguläre Preise unverändert.
+  Geräte-StoreKit-Antwort/Eligibility bleiben gesondert offen.
+- [ ] Native Touchmatrix auf dem final synchronisierten Quellstand;
+  System-App-Boot blockiert vor Kandro. Host-/Widgetbuild einschließlich neuem
+  Swift-Helfer bestanden; Compiler und Export ersetzen keine Bediennachweise.
+- [x] DE-Onboarding/Persistenz, Frühstück genau einmal, Such-/Mengen-/Saveweg,
+  EN-Pasta-Sortierkorrektur, EN-Onboarding mit US-Einheit und einzelne
+  Erinnerungsauswahl/Zeitänderung im lokalen Browser tatsächlich bedient;
+  deklarierte Auth-/Store-Fixtures, keine Cloud-/Kauf-/Fotoqualitätsbehauptung.
+- [x] Zielprofil-/QA-Quellenmigrationen remote rückgelesen, 12/12 Gates;
+  nutrition 63 ACTIVE/JWT einschließlich enger Rankingkorrektur, 9/9 Readbackgates
+  und 16/16 Quellhashes; vier andere Funktionen unverändert.
+- [ ] Websitepaket im tatsächlich freigegebenen Umfang abschließen: sechs Seiten
+  lokal, frühere 0-€-Freigabe benennt nur vier Rechtstexte; nichts neu publiziert.
+- [ ] Konkreten neuen Store-Kandidaten einfrieren; zusätzliche Buildfreigabe,
+  frische Kosten-/Signierungsprüfung, tatsächliche IPA-Prüfung und interner Upload.
+- [ ] Physischer Upgrade ohne Deinstallation, Foto/Beschreiben/Suche/Barcode,
+  Kauf/Restore/Ablauf, Widgets und Mitteilungsentscheidung im tatsächlichen Build.
+- [ ] 20–30 reale gewogene Mahlzeiten nach vorab festgelegtem Protokoll prüfen.
+  Aktuell enthält die Messdatei **0** gewogene Fälle; keine Genauigkeitsquote.
+- [ ] RC-Serverzustellung/Widerruf sowie echter TestFlight-Negativfall und später
+  öffentlicher Store-Herkunftsfall separat prüfen; keine Conversionbehauptung.
+- [ ] Exakte Reviewfreigabe `REVIEW FREIGEBEN: X (Y)` nach Geräteabnahme.
+  Kundenrelease, öffentlicher A/B-Start und ein möglicher späterer 100%-Rollout
+  folgen daraus nicht automatisch.
+
+Modellbudget: mindestens 70 bekannte Aufrufe, höchstens 42 rechnerisch offene
+Aufrufe von 112; 3,50 € reserviert und 6,50 € unreserviert innerhalb 10 €.
+Reservierung ist keine tatsächliche Abrechnung. Vor weiterer kostenpflichtiger
+Serie abgleichen; Gemini und KI-Suchhilfe bleiben aus.
+
 ## Rückmeldung vom 30.09.2026 – lokaler Kandidat
 
 - Fotos in Bestätigung und Ergebnis passen vollständig in den vorhandenen Rahmen (contain bei echten Foto-URIs).

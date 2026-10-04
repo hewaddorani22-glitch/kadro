@@ -17,6 +17,10 @@ const { BLS_SEARCH_ROWS } = require('../../supabase/functions/_shared/bls-search
 // words) runs here too, offline, so local answers never fall below it.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { searchBlsCatalog } = require('../../supabase/functions/_shared/bls-search.mjs') as { searchBlsCatalog: (query: string, language: string, limit: number) => { code: string }[] };
+// Reuse only reviewed whole-term identities; never use a fuzzy suggestion as
+// the automatic answer to a description with a raw/cooked or grain qualifier.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { resolveReviewedStapleFacts } = require('../../supabase/functions/_shared/bls-reference.mjs') as { resolveReviewedStapleFacts: (query: string) => { referenceId: string } | null };
 
 export const fold = (value: string) => value.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^a-z0-9%]+/g, ' ').trim();
 
@@ -206,6 +210,8 @@ export function suggestFoods(query: string, usage: Map<string, FoodUsage> = new 
   const confident = (scored[0]?.score ?? 0) >= 10;
   const needsCatalogue = !confident || tokens.length > 1 || tokens[0].length >= 5;
   const rows = rowsByCode();
+  const reviewed = resolveReviewedStapleFacts(query);
+  const reviewedRow = reviewed ? rows.get(reviewed.referenceId) : undefined;
   const catalog = needsCatalogue
     ? searchBlsCatalog(query, language, limit).map(food => rows.get(food.code)).filter((row): row is Row => Boolean(row))
     : [];
@@ -214,7 +220,9 @@ export function suggestFoods(query: string, usage: Map<string, FoodUsage> = new 
     : [...catalog, ...scored.map(item => item.entry.row)];
   const seen = new Set<string>();
   const out: FoodSearchResult[] = [];
-  for (const row of ordered) {
+  // An exact reviewed kind/preparation leads even when another pasta kind
+  // was used more often. Keep the original source label and editable amount.
+  for (const row of [...(reviewedRow ? [reviewedRow] : []), ...ordered]) {
     if (seen.has(row[0])) continue;
     seen.add(row[0]);
     out.push(toResult(row, language, usage.get(row[0])));
@@ -284,6 +292,11 @@ export function matchFood(query: string, usage: Map<string, FoodUsage> = new Map
   if (!tokens.length || tokens.length > 5) return null;
   const language = getLanguage();
   const rows = rowsByCode();
+  const staple = resolveReviewedStapleFacts(query);
+  if (staple && rows.has(staple.referenceId)) {
+    const result = toResult(rows.get(staple.referenceId)!, language, usage.get(staple.referenceId));
+    return { ...result, source: { ...result.source, estimatedReference: true } };
+  }
   const joined = tokens.join('');
   const alias = ALIASES[joined] ?? (tokens.length === 1 ? ALIASES[tokens[0].replace(/(n|en|e|s)$/, '')] : undefined);
   if (alias?.length && rows.has(alias[0])) {

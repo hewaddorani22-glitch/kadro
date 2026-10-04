@@ -1,9 +1,11 @@
+import { AppState } from 'react-native';
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   isSubscriptionPurchaseCancelled,
   isSubscriptionPurchasePending,
   loadSubscriptionSnapshot,
+  loadSubscriptionTrial,
   purchaseSubscription,
   restoreSubscription,
   SubscriptionPlanId,
@@ -16,6 +18,7 @@ import { confirmServerEntitlementWithRetry } from '@/services/entitlementConfirm
 import { captureOperationalError } from '@/services/telemetry';
 import { getDictionary } from '@/i18n/active';
 import { useApp } from '@/context/AppContext';
+import { scheduleTrialEndingReminder } from '@/services/reminders';
 
 type SubscriptionStatus = 'loading' | 'unconfigured' | 'ready' | 'active' | 'pending' | 'error';
 
@@ -25,6 +28,7 @@ type SubscriptionContextValue = {
   busy: boolean;
   error: string | null;
   refresh: () => Promise<void>;
+  syncTrialReminder: () => Promise<boolean>;
   purchase: (planId: SubscriptionPlanId) => Promise<'active' | 'cancelled' | 'failed' | 'pending' | 'interrupted'>;
   restore: () => Promise<'active' | 'none' | 'failed' | 'pending' | 'interrupted'>;
 };
@@ -41,6 +45,18 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
   const refreshInFlightRef = useRef<{ generation: number; promise: Promise<void> } | null>(null);
   const authUserIdRef = useRef<string | null>(null);
   const billingGenerationRef = useRef<number | null>(null);
+
+  const syncTrialReminder = useCallback(async () => {
+    const generation = refreshGenerationRef.current;
+    const isCurrent = () => refreshGenerationRef.current === generation && wellnessConsentGranted;
+    if (!isCurrent()) return false;
+    try {
+      const trial = await loadSubscriptionTrial();
+      if (!isCurrent()) return false;
+      setSnapshot(current => current ? { ...current, currentTrial: trial } : current);
+      return await scheduleTrialEndingReminder(trial, isCurrent);
+    } catch { return false; } // An optional reminder must never fail a purchase.
+  }, [wellnessConsentGranted]);
 
   const refresh = useCallback(() => {
     const generation = refreshGenerationRef.current;
@@ -66,6 +82,8 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
         const visible = next.mode === 'test-store' && next.entitlementActive
           ? { ...next, entitlementActive: false }
           : next;
+        if (!isCurrent()) return;
+        void scheduleTrialEndingReminder(next.currentTrial, isCurrent).catch(() => undefined);
         // The server may already confirm a buyer while the device SDK still
         // reports an older Free snapshot. Never make that snapshot authoritative.
         const serverActive = visible.configured && visible.mode === 'native-store'
@@ -127,6 +145,14 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
     });
     return () => data.subscription.unsubscribe();
   }, [refresh, wellnessConsentGranted]);
+
+  useEffect(() => {
+    if (!hydrationReady || !wellnessConsentGranted) return;
+    // Store changes (including cancellation) are observed on the next
+    // successful foreground refresh; local alerts cannot receive server pushes.
+    const listener = AppState.addEventListener('change', state => { if (state === 'active') void syncTrialReminder(); });
+    return () => listener.remove();
+  }, [hydrationReady, wellnessConsentGranted, syncTrialReminder]);
 
   useEffect(() => () => { refreshGenerationRef.current += 1; }, []);
 
@@ -199,6 +225,7 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
         ? await confirmServerEntitlementWithRetry(() => isCurrent() ? refreshServerEntitlement() : Promise.resolve(false))
         : await refreshServerEntitlement();
       if (!isCurrent()) return 'interrupted';
+      void syncTrialReminder();
       if (!active && !serverActive) {
         setSnapshot((current) => current ? { ...current, entitlementActive: false } : current);
         setStatus('ready');
@@ -224,7 +251,7 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
     } finally {
       if (isCurrent()) { billingGenerationRef.current = null; setBusy(false); }
     }
-  }, [wellnessConsentGranted]);
+  }, [wellnessConsentGranted, syncTrialReminder]);
 
   const value = useMemo<SubscriptionContextValue>(() => ({
     status,
@@ -232,9 +259,10 @@ export function SubscriptionProvider({ children }: PropsWithChildren) {
     busy,
     error,
     refresh,
+    syncTrialReminder,
     purchase,
     restore,
-  }), [busy, error, purchase, refresh, restore, snapshot, status]);
+  }), [busy, error, purchase, refresh, restore, snapshot, status, syncTrialReminder]);
 
   return <SubscriptionContext.Provider value={value}>{children}</SubscriptionContext.Provider>;
 }

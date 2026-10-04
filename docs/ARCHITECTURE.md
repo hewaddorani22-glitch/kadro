@@ -1,5 +1,66 @@
 # Architecture
 
+## Aktueller Folgestand, 04.10.2026
+
+Die datierten Abschnitte darunter sind historische Zwischenstände. Insbesondere
+die spätere Öffnung für anonyme Neuinstallationen ist wieder zurückgenommen:
+`20261004145423_restore_verified_new_adult_paywall` ist remote geprüft, das
+öffentliche Experiment ist aus. Nur neue, freiwillig verknüpfte und verifizierte
+Erwachsene ohne frühere Nutzung und mit bestätigtem gültigen Sieben-Tage-Angebot
+können künftig teilnehmen. Serverzuordnung, Kaufrechte und Messzustimmung bleiben
+getrennt. Build 1.0.3 (26) ist intern verfügbar; die folgenden lokalen Änderungen
+sind nicht Bestandteil dieses bereits gebauten Artefakts. Maßgeblicher Nachweis:
+[Growth-Folgearbeit](qa/GROWTH-FOLLOWUP-2026-10-04.md).
+
+- Optionale Wunschgewichts-/Datumsfelder erweitern den vorhandenen Profilvertrag
+  additiv. Das kürzere Onboarding und die Plan-Zusammenfassung ändern keine
+  Ernährungsformel. Minderjährige erhalten keine Erwachsenen-Zielgewichtsführung;
+  ein nachträglicher Planeditor darf das bestätigte Alter nicht umstellen.
+- Die gemeinsame Paywall bevorzugt das Jahresprodukt nur bei tatsächlich
+  bestätigter Berechtigung und sieben kostenlosen Store-Tagen. Manuelle Auswahl,
+  Gesamtpreis und Kaufabbruch bleiben erhalten. Trialaktivierung und Erinnerungen
+  lesen reale Entitlement-Zeitpunkte; ein Ablauf-Timer und App-Foreground-Abgleich
+  entfernen veraltete Aktivierungshinweise. Ohne bereits erteilte OS-Erlaubnis
+  wird keine Trial-Enderinnerung heimlich aktiviert.
+- `weeklyReview` wertet abgeschlossene lokale Siebentagesfenster aus. Fehlende
+  Tage sind fehlend, keine Nullaufnahme. Der Proteinvergleich benötigt jeweils
+  mindestens drei erfasste Tage und verwendet ungerundete Summen; gerundet wird
+  erst die Darstellung. Pro-Details und Erwachsenenansprache behalten ihre Gates.
+- `repeatMeals` bildet „Wie gestern“ aus tatsächlichen Frühstückseinträgen mit
+  korrigierten Mengen und Quellen. Der bestehende Speicherweg bleibt zuständig;
+  Anzeigen allein erzeugt keinen Eintrag. Enge Nudeln-/Parmesan-Brücken nutzen
+  bestehende BLS-Identitäten und erhalten Zubereitungs-/Produktgrenzen.
+- Die zusätzliche RevenueCat-Auswertung besitzt eine eigene standardmäßig
+  ausgeschaltete Kontoeinwilligung, erreichbar auch auf der Hard Paywall.
+  [Messvertrag und Nachweise](REVENUECAT-EXPERIMENT-MEASUREMENT.md) beschreiben
+  drei feste Attribute, Widerruf, serialisierte SDK-Identität, frische serverseitige
+  Access-Autorität und den schmalen StoreKit-Herkunftsfilter. QA/TestFlight,
+  unbekannte Herkunft und allein gecachte Zuordnungen gestatten keinen Export.
+  Die gezielt bereitgestellte QA-Quellenmigration erhält den Messausschluss nach
+  QA-Ablauf, ohne den abgelaufenen Zugangs-Override zu verlängern.
+
+Zielprofil-/QA-Migrationen sind remote mit 12/12 Readbackprüfungen bestätigt;
+`nutrition` 63 enthält die BLS-Referenzbrücke und die danach bestätigte enge
+Pasta-Sortierkorrektur. Neun Readbackgates und alle 16 Quellhashes stimmen mit
+dem geprüften Paket überein; JWT bleibt an, die vier anderen Funktionen unverändert.
+Der Sieben-Tage-Jahres-Trial
+ist für 175/175 Gebiete eingerichtet, reguläre Preise unverändert. StoreKit muss
+das Angebot und die individuelle Berechtigung weiterhin auf dem Gerät liefern.
+
+Die vollständige Suite nach sämtlichen Funktions- und DE/EN-Textkorrekturen ist
+am 04.10.2026 um 15:41:38 UTC mit Exitcode 0 bestanden, einschließlich Expo Doctor
+18/18 und Webexport. Host und Widget-Extension kompilieren mit der neuen nativen
+Herkunftspolicy. Tatsächliche Browserwege belegen Onboarding/Persistenz,
+Frühstückwiederholung, Mengenänderung, die enge EN-Suchkorrektur und genau einen
+bewusst ausgewählten ersten EN-Erinnerungstermin einschließlich Auswahlwechsel;
+Auth-/Storegrenzen sind dabei deklarierte lokale Fixtures. Die native Bedienung
+ist wegen hängendem Simulator-Systemstart vor Appstart weiterhin ungeprüft.
+
+Gemini und KI-Suchhilfe bleiben aus. Synthetische UI-/Bildfixtures belegen weder
+reale Fotoqualität noch StoreKit-Kauf oder RevenueCat-Zustellung. Neue native
+Bedien-, physische Upgrade- und Store-Nachweise stehen im datierten Bericht
+getrennt von Modul-/Compilerprüfungen.
+
 ## Focused description/photo follow-up, 2026-10-03
 
 The mounted scan tab now restores the active, unsaved description when returning

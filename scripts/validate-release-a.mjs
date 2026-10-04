@@ -8,7 +8,7 @@ import { openFoodFactsNutrition } from '../supabase/functions/_shared/nutrition.
 const read = f => fs.readFileSync(new URL('../'+f,import.meta.url),'utf8');
 const load = (file,mocks) => {
  const module={exports:{}};
- new Function('require','module','exports',ts.transpileModule(read(file),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(id=>{assert.ok(id in mocks,'unmocked '+id);return mocks[id]},module,module.exports);
+ new Function('require','module','exports',ts.transpileModule(read(file),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(id=>{if(id==='@/services/personalGoal')return load('src/services/personalGoal.ts',{});assert.ok(id in mocks,'unmocked '+id);return mocks[id]},module,module.exports);
  return module.exports;
 };
 const full={'energy-kcal_100g':99.75,proteins_100g:7.25,carbohydrates_100g:9.75,fat_100g:3.5,fiber_100g:1.25};

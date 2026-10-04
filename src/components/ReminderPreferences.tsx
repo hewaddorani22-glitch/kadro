@@ -24,7 +24,7 @@ function shift(slot: SlotSetting, minutes: number): SlotSetting {
  * field. Each meal has a sensible default time that can be nudged in 15-minute
  * steps. Nothing is scheduled and no OS prompt appears until the user saves.
  */
-export function ReminderPreferences({ onDone }: { onDone?: (choice: ReminderOnboardingChoice) => void }) {
+export function ReminderPreferences({ onDone, initialSetup = false }: { onDone?: (choice: ReminderOnboardingChoice) => void; initialSetup?: boolean }) {
   const { colors } = useTheme();
   const access = useAccess();
   const { t } = useLanguage();
@@ -32,6 +32,7 @@ export function ReminderPreferences({ onDone }: { onDone?: (choice: ReminderOnbo
   const labels: Record<MealSlot, string> = { breakfast: copy.slotBreakfast, lunch: copy.slotLunch, dinner: copy.slotDinner, evening: copy.slotEvening };
   const [settings, setSettings] = useState<ReminderSettings | null>(null);
   const [slots, setSlots] = useState<Record<MealSlot, SlotSetting> | null>(null);
+  const [singleSelection, setSingleSelection] = useState<boolean | null>(null);
   const [permission, setPermission] = useState<ReminderPermission>('unavailable');
   const [busy, setBusy] = useState(false);
   usePresentationBlock(busy);
@@ -41,17 +42,34 @@ export function ReminderPreferences({ onDone }: { onDone?: (choice: ReminderOnbo
     const refresh = () => { void Promise.all([getReminderSettings(), getReminderPermission()]).then(([value, status]) => {
       if (!active) return;
       setSettings(value); setPermission(status);
-      setSlots(current => current ?? reminderSlots(value));
+      const defaults = reminderSlots(value);
+      // First onboarding offers one daily time. Preserve explicitly saved
+      // multiple choices; the later trial/profile routine remains unrestricted.
+      const savedMultiple = value.mode === 'meals' && MEAL_SLOTS.filter(slot => defaults[slot].enabled).length > 1;
+      const limited = initialSetup && !savedMultiple;
+      setSingleSelection(current => current ?? limited);
+      setSlots(current => current ?? (limited && !value.enabled && value.mode !== 'meals'
+        ? { ...defaults, lunch: { ...defaults.lunch, enabled: false } }
+        : defaults));
     }).catch(() => { if (active) setError(copy.reminderError); }); };
     refresh();
     const subscription = AppState.addEventListener('change', state => { if (state === 'active') refresh(); });
     return () => { active = false; subscription.remove(); };
-  }, [copy.reminderError]);
+  }, [copy.reminderError, initialSetup]);
 
   const update = (slot: MealSlot, next: SlotSetting) => {
     void selectionHaptic();
     setError(null);
-    setSlots(current => current ? { ...current, [slot]: next } : current);
+    setSlots(current => {
+      if (!current) return current;
+      const updated = { ...current, [slot]: next };
+      if (singleSelection && next.enabled) {
+        for (const other of MEAL_SLOTS) {
+          if (other !== slot) updated[other] = { ...current[other], enabled: false };
+        }
+      }
+      return updated;
+    });
   };
   const apply = async (enabled: boolean) => {
     if (busy || !settings || !slots) return;
@@ -70,7 +88,7 @@ export function ReminderPreferences({ onDone }: { onDone?: (choice: ReminderOnbo
 
   return <Card>
     <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 22, fontWeight: '700' }}>{copy.reminderTitle}</Text>
-    <Text style={{ color: colors.muted, fontSize: 16, lineHeight: 23 }}>{copy.reminderText}</Text>
+    <Text style={{ color: colors.muted, fontSize: 16, lineHeight: 23 }}>{singleSelection ? copy.reminderSingleText : copy.reminderText}</Text>
     {access.ready && !access.canUse && !onDone ? <Text style={{ color: colors.muted, fontSize: 16 }}>{t.access.pausedReminder}</Text> : null}
     {slots ? <View style={{ gap: 10, marginTop: 8 }}>
       {MEAL_SLOTS.map(slot => {

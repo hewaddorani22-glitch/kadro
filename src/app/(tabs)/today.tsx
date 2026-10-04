@@ -1,3 +1,4 @@
+import { TrialActivationCard } from '@/components/TrialActivationCard';
 import { usePresentationBlock } from '@/services/presentation';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
@@ -16,16 +17,23 @@ import { recommendationPreview } from '@/services/recommendations';
 import { Meal } from '@/types/nutrition';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatDateParts, formatNumber, mealTypeIcon, mealTypeLabel } from '@/utils/format';
+import { yesterdayBreakfast } from '@/services/repeatMeals';
+import { useLocalDay } from '@/hooks/useLocalDay';
 
 export default function TodayScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { consumed, hasLoggedScan, logRepeatMeal, meals, pendingAnalysisCount, profile, remaining, repeatMeals, resetScan, resumeLatestAnalysis, setPlannedMealType, targets, userName } = useApp();
+  const { consumed, hasLoggedScan, logRepeatMeal, mealHistory, meals, pendingAnalysisCount, profile, remaining, repeatMeals, resetScan, resumeLatestAnalysis, setPlannedMealType, targets, userName } = useApp();
   const [repeating, setRepeating] = useState<string | null>(null);
   const [openMeal, setOpenMeal] = useState<Meal | null>(null);
   usePresentationBlock(Boolean(openMeal || repeating));
   const { language, locale, t } = useLanguage();
+  const day = useLocalDay();
+  const yesterday = useMemo(() => yesterdayBreakfast(mealHistory, meals, day), [mealHistory, meals, day]);
+  const repeatChoices = useMemo(() => yesterday
+    ? [yesterday, ...repeatMeals.filter(candidate => candidate.key !== yesterday.key)].slice(0, 8)
+    : repeatMeals, [yesterday, repeatMeals]);
   const dateLabel = formatDateParts(new Date(), { weekday: 'short', day: 'numeric', month: 'long' }, locale);
   // The greeting was hard-coded to "Guten Morgen", so the app said good morning
   // at 22:00.
@@ -68,10 +76,11 @@ export default function TodayScreen() {
   // People eat the same things over and over. One tap beats a new scan, costs
   // no analysis call and no waiting.
   const repeat = async (key: string) => {
-    const candidate = repeatMeals.find((entry) => entry.key === key);
+    const candidate = repeatChoices.find((entry) => entry.key === key);
     if (!candidate || repeating) return;
     setRepeating(key);
     try {
+      if (candidate === yesterday) setPlannedMealType('Breakfast');
       await logRepeatMeal(candidate);
     } catch {
       Alert.alert(t.result.saveFailed);
@@ -173,7 +182,9 @@ export default function TodayScreen() {
         </Card>
       )}
 
-      {repeatMeals.length ? (
+      <TrialActivationCard />
+
+      {repeatChoices.length ? (
         <View style={styles.sectionBlock}>
           <SectionTitle>{t.today.eatAgain}</SectionTitle>
           <ScrollView
@@ -182,9 +193,10 @@ export default function TodayScreen() {
             showsHorizontalScrollIndicator={false}
             style={styles.repeatScroll}
           >
-            {repeatMeals.map((candidate) => (
+            {repeatChoices.map((candidate) => (
               <Pressable
-                accessibilityLabel={t.common.repeatLabel(candidate.title)}
+                accessibilityLabel={candidate === yesterday ? `${t.today.yesterdayBreakfast}: ${candidate.title}` : t.common.repeatLabel(candidate.title)}
+                accessibilityHint={candidate === yesterday ? t.today.yesterdayBreakfastHint : undefined}
                 accessibilityRole="button"
                 accessibilityState={{ disabled: repeating !== null }}
                 disabled={repeating !== null}
@@ -196,6 +208,7 @@ export default function TodayScreen() {
                   <Ionicons color={colors.text} name="refresh" size={15} />
                   {candidate.count > 1 ? <Text style={styles.repeatCount}>{candidate.count}×</Text> : null}
                 </View>
+                {candidate === yesterday ? <Text style={styles.repeatYesterday}>{t.today.yesterdayBreakfast}</Text> : null}
                 <Text numberOfLines={2} style={styles.repeatTitle}>{candidate.title}</Text>
                 <Text style={styles.repeatMacros}>~{formatNumber(candidate.calories, locale)} kcal · {candidate.protein} g P</Text>
               </Pressable>
@@ -328,6 +341,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   repeatBusy: { opacity: 0.5 },
   repeatTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   repeatCount: { color: colors.muted, fontSize: 10, fontWeight: '800' },
+  repeatYesterday: { color: colors.text, fontSize: 11, fontWeight: '700', marginTop: 6 },
   repeatTitle: { color: colors.text, fontSize: 13, fontWeight: '600', lineHeight: 17, marginTop: 6 },
   repeatMacros: { color: colors.muted, fontSize: 10, marginTop: 4, fontVariant: ['tabular-nums'] },
   eveningRow: { minHeight: 66, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },

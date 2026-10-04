@@ -108,6 +108,9 @@ export type UserProfile = {
   /** Feeds the resting-energy estimate; 'unspecified' is always allowed. */
   sex: BiologicalSex;
   preferences: string[];
+  /** Optional adult wishes; never used by the calorie or pace calculation. */
+  targetWeightKg?: number | null;
+  targetDate?: string | null;
   completedAt: string | null;
   /** Last explicit edit, separate from initial onboarding completion. */
   editedAt?: string;

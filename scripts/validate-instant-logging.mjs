@@ -5,6 +5,7 @@ import ts from 'typescript';
 // Real modules with the real BLS snapshot; dictionary/meal mapping mocked; zero HTTP.
 globalThis.fetch = async () => { throw new Error('TEST_EXTERNAL_HTTP_BLOCKED'); };
 const bls = await import(new URL('../supabase/functions/_shared/bls-search-data.mjs', import.meta.url));
+const references = await import(new URL('../supabase/functions/_shared/bls-reference.mjs', import.meta.url));
 const catalogue = await import(new URL('../supabase/functions/_shared/bls-search.mjs', import.meta.url));
 const labels = { portionPiece: '1 Stück', portionSlice: '1 Scheibe', portionGlass: '1 Glas', portionCup: '1 Tasse', portionPot: '1 Becher', portionCan: '1 Dose', portionBottle: '1 Flasche', portionTbsp: '1 EL', portionTsp: '1 TL', portionServing: '1 Portion', portionFillet: '1 Filet', portionBall: '1 Kugel', portionEgg: '1 Ei', portionHalf: '½ Stück' };
 let language = 'de';
@@ -12,7 +13,7 @@ const active = { getDictionary: () => ({ scan: labels, errors: { warnAmountEstim
 function load(path, deps) {
   const module = { exports: {} };
   const code = ts.transpileModule(fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-  new Function('require', 'module', 'exports', code)(id => { if (id.endsWith('bls-search-data.mjs')) return bls; if (id.endsWith('bls-search.mjs')) return catalogue; assert.ok(id in deps, `Unmocked dependency ${id}`); return deps[id]; }, module, module.exports);
+  new Function('require', 'module', 'exports', code)(id => { if (id.endsWith('bls-search-data.mjs')) return bls; if (id.endsWith('bls-reference.mjs')) return references; if (id.endsWith('bls-search.mjs')) return catalogue; assert.ok(id in deps, `Unmocked dependency ${id}`); return deps[id]; }, module, module.exports);
   return module.exports;
 }
 const suggest = load('src/services/foodSuggest.ts', { '@/i18n/active': active });

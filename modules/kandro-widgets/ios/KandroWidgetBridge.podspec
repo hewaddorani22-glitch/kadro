@@ -11,6 +11,6 @@ Pod::Spec.new do |s|
   s.swift_version = '5.9'
   s.static_framework = true
   s.dependency 'ExpoModulesCore'
-  s.frameworks = 'WidgetKit'
+  s.frameworks = 'WidgetKit', 'StoreKit'
   s.source_files = '**/*.swift'
 end

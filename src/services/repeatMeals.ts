@@ -86,3 +86,38 @@ export function availableRepeats(history: Meal[], today: Meal[], limit = 8) {
     .filter((candidate) => !eatenToday.has(candidate.key))
     .slice(0, limit);
 }
+
+/** Yesterday's actual breakfast, including foods saved individually by search.
+ * Reuse the ordinary repeat save path; never analyse or modify historical data.
+ * Hide once any breakfast is logged today, including a corrected repeat.
+ */
+export function yesterdayBreakfast(history: Meal[], today: Meal[], day: string): RepeatCandidate | null {
+  const logged = (meal: Meal) => meal.origin === 'scan' || meal.origin === 'plan';
+  if (today.some(meal => logged(meal) && meal.type === 'Breakfast' && meal.date === day)) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
+  // Calendar subtraction at local noon preserves the previous day over DST.
+  const date = new Date(`${day}T12:00:00`);
+  if (!Number.isFinite(date.getTime())) return null;
+  date.setDate(date.getDate() - 1);
+  const yesterday = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const seen = new Set<string>();
+  const breakfast = history.filter(meal => {
+    if (!logged(meal) || meal.type !== 'Breakfast' || meal.date !== yesterday || !meal.title?.trim() || seen.has(meal.id)) return false;
+    seen.add(meal.id); return true;
+  }).sort((a, b) => (a.savedAt ?? a.time).localeCompare(b.savedAt ?? b.time) || a.id.localeCompare(b.id));
+  if (!breakfast.length) return null;
+  const totals = breakfast.reduce((sum, meal) => ({
+    calories: sum.calories + meal.calories, protein: sum.protein + meal.protein,
+    carbs: sum.carbs + meal.carbs, fat: sum.fat + meal.fat, fiber: sum.fiber + (meal.fiber ?? 0),
+  }), { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
+  const source: Meal = {
+    ...breakfast[0], ...totals,
+    id: `yesterday-breakfast-${yesterday}`,
+    title: breakfast.map(meal => meal.title.trim()).join(' + '),
+    confidence: breakfast.some(meal => meal.confidence === 'medium') ? 'medium' : 'high',
+    items: breakfast.flatMap((meal, mealIndex) => meal.items.map((item, itemIndex) => ({ ...item, id: `repeat-${mealIndex}-${itemIndex}-${item.id}` }))),
+    savedAt: breakfast[breakfast.length - 1].savedAt,
+    sync: undefined,
+  };
+  return { key: keyOf(source), title: source.title, ...totals, count: 1, lastEatenAt: source.savedAt ?? '', source };
+}

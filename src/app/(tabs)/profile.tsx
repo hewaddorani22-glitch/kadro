@@ -2,6 +2,7 @@ import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { WidgetPreferences } from '@/components/WidgetPreferences';
 import { ReminderPreferences } from '@/components/ReminderPreferences';
+import { RevenueCatExperimentPreferences } from '@/components/RevenueCatExperimentPreferences';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -147,6 +148,7 @@ export default function ProfileScreen() {
             value={analyticsEnabled}
           />
         </Card>
+        <RevenueCatExperimentPreferences />
       </View>
 
       <View style={styles.section}>

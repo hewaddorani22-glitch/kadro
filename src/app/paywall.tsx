@@ -1,3 +1,4 @@
+import { PersonalGoalSummary } from '@/components/PersonalGoalSummary';
 import { usePresentationBlock } from '@/services/presentation';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
@@ -9,6 +10,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PrimaryButton } from '@/components/ui';
 import { KandroMark } from '@/components/KandroMark';
+import { RevenueCatExperimentPreferences } from '@/components/RevenueCatExperimentPreferences';
 import { radii } from '@/constants/theme';
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { useAccess } from '@/context/AccessContext';
@@ -17,7 +19,7 @@ import { takeAccessDestination } from '@/services/accessPolicy';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { successHaptic } from '@/services/haptics';
-import { scheduleTrialEndingReminder, TRIAL_REMINDER_LEAD_DAYS } from '@/services/reminders';
+import { TRIAL_REMINDER_LEAD_DAYS } from '@/services/reminders';
 import { formatNumber } from '@/utils/format';
 import { toBillingMode, trackEvent } from '@/services/telemetry';
 
@@ -41,7 +43,9 @@ export default function PaywallScreen() {
   const blocked = reason === 'blocked' && !hard;
   const { t, locale } = useLanguage();
   const [selected, setSelected] = useState<Plan>('monthly');
-  const { busy, error, purchase, refresh, restore, snapshot, status } = useSubscription();
+  const [cancelled, setCancelled] = useState(false);
+  const planChosen = useRef(false);
+  const { busy, error, purchase, refresh, restore, snapshot, status, syncTrialReminder } = useSubscription();
   const yearly = snapshot?.plans.yearly ?? null;
   const monthly = snapshot?.plans.monthly ?? null;
   const selectedPlan = snapshot?.plans[selected] ?? null;
@@ -64,10 +68,17 @@ export default function PaywallScreen() {
   }, [access.ready, access.record.variant, access.record.source, billingMode, status, hard]));
 
   useEffect(() => {
-    if (!snapshot?.configured || selectedPlan) return;
-    if (monthly) setSelected('monthly');
-    else if (yearly) setSelected('yearly');
-  }, [monthly, selectedPlan, snapshot?.configured, yearly]);
+    if (!snapshot?.configured) return;
+    // Annual is the default only for this customer's real seven-day offer.
+    // Refreshes must not overwrite a plan the customer deliberately selected.
+    if (!planChosen.current) {
+      setSelected(snapshot.mode === 'native-store' && yearly?.hasFreeTrial && yearly.trialDays === 7
+        ? 'yearly' : monthly ? 'monthly' : 'yearly');
+    } else if (!selectedPlan) {
+      setSelected(monthly ? 'monthly' : 'yearly');
+    }
+  }, [monthly, selectedPlan, snapshot?.configured, snapshot?.mode, yearly]);
+  const choosePlan = (next: Plan) => { planChosen.current = true; setSelected(next); setCancelled(false); };
 
   useEffect(() => {
     void refresh();
@@ -83,19 +94,20 @@ export default function PaywallScreen() {
       return;
     }
     if (busy) return;
+    setCancelled(false);
     trackEvent('subscription purchase started', { billing_mode: billingMode, plan: selected });
     const result = await purchase(selected);
     trackEvent('subscription purchase ended', { billing_mode: billingMode, plan: selected, outcome: result });
+    if (result === 'cancelled') { setCancelled(true); return; }
     if (result !== 'active') return;
     trackEvent('subscription purchase completed', { billing_mode: billingMode, plan: selected, purchase_kind: selectedPlan?.hasFreeTrial ? 'trial' : 'paid' });
     void successHaptic();
-    // The timeline promised a reminder before the trial renews; keep it.
-    const reminded = !testStore && trialTimeline && selectedPlan
-      ? await scheduleTrialEndingReminder(selectedPlan.trialDays!, selectedPlan.price)
-      : true;
+    // Schedule from the purchased entitlement; a declined notification prompt
+    // or accelerated sandbox trial cannot be presented as a scheduled reminder.
+    const reminded = testStore ? true : await syncTrialReminder();
     Alert.alert(
       testStore ? t.paywall.activatedTest : t.paywall.activated,
-      testStore ? t.paywall.activatedTestBody : reminded ? t.paywall.activatedBody : `${t.paywall.activatedBody}\n\n${t.paywall.trialReminderOff}`,
+      testStore ? t.paywall.activatedTestBody : (!trialTimeline || reminded) ? t.paywall.activatedBody : `${t.paywall.activatedBody}\n\n${t.paywall.trialReminderOff}`,
       [{ text: t.paywall.continueLabel, onPress: () => { void resume(); } }],
     );
   };
@@ -221,6 +233,8 @@ export default function PaywallScreen() {
         <Text style={styles.title}>{blocked ? t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE) : hard ? t.paywall.hardTitle : t.access.title}</Text>
         <Text style={styles.subtitle}>{blocked ? t.paywall.blockedSub : hard ? t.paywall.hardSubtitle : t.access.subtitle}</Text>
 
+        {!blocked ? <PersonalGoalSummary profile={profile} /> : null}
+
         <View style={styles.benefits}>
           <Benefit detail={t.paywall.benefit1Detail} icon="scan-outline" title={t.paywall.benefit1} />
           <Benefit detail={t.paywall.benefit2Detail} icon="create-outline" title={t.paywall.benefit2} />
@@ -240,7 +254,7 @@ export default function PaywallScreen() {
             detail={monthly?.trialLabel ? t.paywall.trialFirst(monthly.trialLabel) : (monthly?.detail ?? t.paywall.monthlyFallback)}
             disabled={!monthly}
             label={t.paywall.monthly}
-            onPress={() => setSelected('monthly')}
+            onPress={() => choosePlan('monthly')}
             price={monthly?.price ?? t.paywall.unavailable}
             selected={selected === 'monthly'}
           />
@@ -249,7 +263,7 @@ export default function PaywallScreen() {
             detail={yearly?.trialLabel ? t.paywall.trialFirst(yearly.trialLabel) : (yearly?.detail ?? t.paywall.yearlyFallback)}
             disabled={!yearly}
             label={t.paywall.yearly}
-            onPress={() => setSelected('yearly')}
+            onPress={() => choosePlan('yearly')}
             price={yearly?.price ?? t.paywall.unavailable}
             selected={selected === 'yearly'}
           />
@@ -259,11 +273,16 @@ export default function PaywallScreen() {
           <TimelineStep detail={t.paywall.timelineReminderDetail} icon="notifications-outline" title={t.paywall.timelineDay(selectedPlan.trialDays! - TRIAL_REMINDER_LEAD_DAYS)} />
           <TimelineStep detail={t.paywall.timelineChargeDetail(selectedPlan.price)} icon="card-outline" last title={t.paywall.timelineDay(selectedPlan.trialDays!)} />
         </View> : null}
+        {cancelled && hard ? <View accessibilityLiveRegion="polite" style={styles.cancelNotice}>
+          <Text style={styles.benefitTitle}>{t.paywall.purchaseCancelledTitle}</Text>
+          <Text style={styles.keepsText}>{t.paywall.purchaseCancelledBody}</Text>
+        </View> : null}
         {status === 'loading' ? <ActivityIndicator color={colors.accentText} style={styles.loader} /> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
         {access.state === 'verification' ? <Text accessibilityLiveRegion="polite" style={styles.error}>{t.access.verify}</Text> : null}
         <Pressable accessibilityRole="button" style={{ padding: 14, minHeight: 48 }} onPress={() => router.push('/account-help' as never)}><Text style={styles.legal}>{t.access.accountHelp} · {t.access.signIn}</Text></Pressable>
         {!largeText ? <View style={styles.inlineTerms}>{renewalTerms}</View> : null}
+        <View style={styles.measurement}><RevenueCatExperimentPreferences /></View>
         {largeText ? purchaseControls : null}
       </ScrollView>
 
@@ -380,6 +399,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   planPrice: { flexShrink: 0, color: colors.text, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
   planPriceLarge: { flexShrink: 1 },
   scrollingFooter: { alignSelf: 'stretch', marginTop: 20 },
+  cancelNotice: { alignSelf: 'stretch', gap: 4, paddingVertical: 8 },
+  measurement: { alignSelf: 'stretch', marginTop: 16 },
   footer: { gap: 9, paddingTop: 10, backgroundColor: colors.background },
   loader: { marginTop: 12 },
   error: { color: colors.attention, fontSize: 14, lineHeight: 20, marginTop: 12, textAlign: 'center' },

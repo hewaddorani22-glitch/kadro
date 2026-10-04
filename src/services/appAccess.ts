@@ -9,11 +9,15 @@ const key = (owner: string) => `@kandro/access:v1:${owner}`;
 const entryKey = (owner: string) => `@kandro/access-entry:v1:${owner}`;
 type Cache = { record: AccessRecord; fallback: boolean; ageConfirmed?: boolean; paywallSeen?: boolean };
 let current: { owner: string; record: AccessRecord } | null = null;
+// Optional measurement must not trust a cached pre-migration QA/public label.
+// This freshness bit is deliberately separate from the durable access cache.
+let measurementVerifiedOwner: string | null = null;
+export function isAppAccessMeasurementVerified(owner: string | null) { return !!owner && measurementVerifiedOwner === owner; }
 let generation = 0;
 const listeners = new Set<() => void>();
 export function subscribeAppAccess(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }
 function emit() { for (const fn of listeners) fn(); }
-export function invalidateAppAccess() { generation++; current = null; emit(); }
+export function invalidateAppAccess() { generation++; current = null; measurementVerifiedOwner = null; emit(); }
 
 async function read(owner: string): Promise<Cache> {
   const raw = await AsyncStorage.getItem(key(owner));
@@ -55,6 +59,7 @@ export async function excludeUnassignedAccess() {
   return refreshAppAccess();
 }
 export async function refreshAppAccess(): Promise<AccessRecord> {
+  measurementVerifiedOwner = null;
   const owner = await getCurrentSessionUserId(); const epoch = generation;
   if (!owner) return FREE_ACCESS;
   let cached: Cache;
@@ -69,10 +74,12 @@ export async function refreshAppAccess(): Promise<AccessRecord> {
     const next = await request('access');
     if (epoch !== generation || next.owner !== owner) throw Error('cloud_identity_changed');
     current = next;
+    measurementVerifiedOwner = owner;
     // Storage errors cannot turn a successfully resolved B into a free fallback.
     await AsyncStorage.setItem(key(owner), JSON.stringify({ ...cached, fallback: false, record: next.record })).catch(() => undefined);
     return next.record;
   } catch (error) {
+    measurementVerifiedOwner = null;
     if (epoch !== generation || owner !== await getCurrentSessionUserId()) throw error;
     // Existing B keeps its assignment and only the last server-issued expiry.
     const record = cached.record.variant === 'B' || cached.record.access === 'unknown' ? cached.record : FREE_ACCESS;
@@ -82,6 +89,7 @@ export async function refreshAppAccess(): Promise<AccessRecord> {
   }
 }
 export async function completeAccessEnrollment(firstUse: boolean): Promise<AccessRecord> {
+  measurementVerifiedOwner = null;
   const owner = await getCurrentSessionUserId(); const epoch = generation;
   if (!owner) return FREE_ACCESS;
   const cached = await read(owner);

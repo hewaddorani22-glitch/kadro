@@ -75,11 +75,11 @@ for (const chain of [
 
 assert.deepEqual(frameAt(0.5, []), { index: 0, value: 0, settled: 0 }, 'an empty chain must not crash the screen');
 
-// --- The screen waits for the animation ------------------------------------
+// The shorter flow goes straight to its real plan; no timed waiting step.
 const onboarding = read('src/app/onboarding.tsx');
-assert.match(onboarding, /BUILDING_MS \+ 450/,
-  'the step advances before the last figure is readable');
-assert.ok(BUILDING_MS >= 2500 && BUILDING_MS <= 5000, `${BUILDING_MS} ms is not a believable amount of work`);
+assert.doesNotMatch(onboarding, /import.*PlanBuilder|setTimeout\(goNext/);
+assert.match(onboarding, /onboardingSteps\(age, goal\)/);
+assert.ok(BUILDING_MS > 0, 'retained animation helper stays valid');
 
 // --- Feedback where a finger expects it ------------------------------------
 const stepper = onboarding.slice(onboarding.indexOf('const apply = useCallback'), onboarding.indexOf('const stop = useCallback'));
@@ -108,7 +108,7 @@ for (const [label, pattern] of [
 // boundary, not a slideshow: an accidental answer cannot take the user away.
 assert.doesNotMatch(onboarding, /selectAndAdvance|setTimeout\(goNext/,
   'a single-choice answer still advances the onboarding automatically');
-assert.match(onboarding, /const showFooterButton = step !== 'building';/,
+assert.match(onboarding, /const showFooterButton = true;/,
   'single-choice steps must show the same explicit Next button as numeric steps');
 
 // Measurements are the only dense controls in onboarding. The value needs a

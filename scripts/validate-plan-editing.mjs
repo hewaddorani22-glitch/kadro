@@ -41,8 +41,8 @@ for (const [state, source] of prefilled) {
 if (!/completedAt: editing \? profile\.completedAt : null/.test(onboarding)) {
   problems.push('onboarding: editing would overwrite completedAt and look like a fresh install');
 }
-if (!/EDIT_STEPS = STEPS\.filter\(\(id\) => id !== 'building' && id !== 'age'\)/.test(onboarding)) {
-  problems.push("onboarding: edit mode still plays the first-run 'building' beat");
+if (!onboarding.includes("step === 'about' && !editing")) {
+  problems.push('onboarding: recorded age is editable');
 }
 // Adult editing must not re-open consent. Moving a profile below 16 is the
 // exception: server-approved guardian permission has to exist before saving.

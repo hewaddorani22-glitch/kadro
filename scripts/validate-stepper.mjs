@@ -57,7 +57,7 @@ assert.equal(apply(0.1 + 0.2 + 79.7, 1, { min: 40, max: 200 }), 81,
   'a value that is 80.00000000000001 counted as off the grid');
 
 // --- The kilogram display follows the language -----------------------------
-const weightStep = source.slice(source.indexOf("{step === 'weight' ?"), source.indexOf("{step === 'activity' ?"));
+const weightStep = source.slice(source.indexOf("{step === 'body' ?"), source.indexOf("{step === 'activity' ?"));
 assert.match(weightStep, /onChange=\{setWeight\}/);
 assert.equal((weightStep.match(/<WeightEntry/g) || []).length, 2);
 assert.match(source, /if \(parsed === null\) return; onChange\(parsed\);/);
@@ -89,7 +89,7 @@ for(let tap=1;tap<=20;tap++) {
 }
 const entry = readFileSync(new URL('../src/components/WeightEntry.tsx', import.meta.url), 'utf8');
 assert.match(entry, /setDraft\(formatNumber\(next, locale\)\)/);
-assert.match(source, /if \(step === 'weight' && !weightInputValid\) return/);
+assert.match(source, /if \(step === 'body' && !weightInputValid\) return/);
 const { stepWeightInput } = decimalModule.exports;
 assert.equal(stepWeightInput(78, 1, 40, 200), 79);
 assert.equal(stepWeightInput(90.5, 1, 40, 200), 91.5);

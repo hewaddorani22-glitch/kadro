@@ -9,6 +9,7 @@ const load = (file, mocks) => {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   new Function('require', 'module', 'exports', '__DEV__', code)((id) => {
+    if (id === '@/services/personalGoal') return load('src/services/personalGoal.ts', {});
     if (!(id in mocks)) throw Error(`Unexpected module ${id}`);
     return mocks[id];
   }, module, module.exports, true);

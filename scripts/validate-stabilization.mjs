@@ -11,6 +11,7 @@ const load = (file, mocks) => {
     module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX,
   } }).outputText;
   new Function('require', 'module', 'exports', code)((id) => {
+    if (id === '@/services/personalGoal') return load('src/services/personalGoal.ts', {});
     assert.ok(id in mocks, 'Unexpected dependency: ' + id);
     return mocks[id];
   }, module, module.exports);
@@ -86,12 +87,13 @@ function hooks() {
   return { react, setProvider(p) { Provider = p; }, render() { cursor = 0; const value = Provider({ children: null }).props.value; const pending = effects; effects = []; pending.forEach((f) => f()); return value; } };
 }
 function subscriptionFixture() {
-  const h = hooks(); let authCallback;
+  const h = hooks(); let authCallback; const reminderCalls = [];
   const plan = { id: 'monthly' };
-  const responses = { sdkActive: false, serverActive: false, serverError: false, purchase: async () => true, restore: async () => true };
+  const responses = { sdkActive: false, serverActive: false, serverError: false, trial: null, readTrial: null, purchase: async () => true, restore: async () => true };
   const dictionary = { errors: { packageUnavailable: 'unavailable', entitlementConfirmationPending: 'pending', entitlementStatusUnavailable: 'status unavailable', purchasePending: 'store pending' }, paywall: { entitlementMissing: 'pending' } };
   const service = {
-    loadSubscriptionSnapshot: async () => ({ configured: true, mode: 'native-store', entitlementActive: responses.sdkActive, plans: { monthly: plan, yearly: null } }),
+    loadSubscriptionSnapshot: async () => ({ configured: true, mode: 'native-store', entitlementActive: responses.sdkActive, currentTrial: responses.trial, plans: { monthly: plan, yearly: null } }),
+    loadSubscriptionTrial: async () => responses.readTrial ? responses.readTrial() : responses.trial,
     purchaseSubscription: (...args) => responses.purchase(...args), restoreSubscription: () => responses.restore(),
     subscriptionErrorMessage: (e) => e.message,
     isSubscriptionPurchaseCancelled: (e) => e.code === 'cancelled',
@@ -100,6 +102,8 @@ function subscriptionFixture() {
   const provider = load('src/context/SubscriptionContext.tsx', {
     react: h.react, 'react/jsx-runtime': { jsx: (type, props) => ({ type, props }) },
     '@/services/subscription': service,
+    '@/services/reminders': { scheduleTrialEndingReminder: async (trial, isCurrent) => { if (isCurrent()) reminderCalls.push(trial); return Boolean(trial?.willRenew); } },
+    'react-native': { AppState: { addEventListener: () => ({ remove() {} }) } },
     '@/services/supabaseClient': { supabase: { auth: { onAuthStateChange: (callback) => { authCallback = callback; return { data: { subscription: { unsubscribe() {} } } }; } } } },
     '@/services/serverEntitlement': { refreshServerEntitlement: async () => { if (responses.serverError) throw new Error('timeout'); return responses.serverActive; } },
     '@/services/entitlementConfirmation': { confirmServerEntitlementWithRetry: async (probe) => probe() },
@@ -108,11 +112,35 @@ function subscriptionFixture() {
     '@/context/AppContext': { useApp: () => ({ hydrationReady: false, wellnessConsentGranted: true }) },
   });
   h.setProvider(provider.SubscriptionProvider); h.render();
-  return { ...h, responses, async ready() { await h.render().refresh(); return h.render(); }, switchAccount() { authCallback('SIGNED_IN', { user: { id: 'B' } }); } };
+  return { ...h, responses, reminderCalls, async ready() { await h.render().refresh(); return h.render(); }, switchAccount() { authCallback('SIGNED_IN', { user: { id: 'B' } }); } };
 }
 await test('Server-confirmed Pro survives an SDK Free snapshot', async () => {
   const f = subscriptionFixture(); f.responses.serverActive = true;
   const v = await f.ready(); assert.equal(v.status, 'active'); assert.equal(v.snapshot.entitlementActive, true);
+});
+await test('Subscription refresh and Restore reconcile the real current trial without altering purchase rights', async () => {
+  const f = subscriptionFixture();
+  f.responses.trial = { productId: 'annual', expiresAt: '2026-10-11T12:00:00Z', startedAt: '2026-10-04T12:00:00Z', willRenew: true };
+  const v = await f.ready();
+  assert.deepEqual(f.reminderCalls.at(-1), f.responses.trial);
+  f.responses.serverActive = true;
+  assert.equal(await v.restore(), 'active');
+  await Promise.resolve();
+  assert.deepEqual(f.render().snapshot.currentTrial, f.responses.trial);
+  f.responses.trial = { ...f.responses.trial, willRenew: false };
+  await f.render().syncTrialReminder();
+  assert.equal(f.reminderCalls.at(-1).willRenew, false);
+  assert.equal(f.render().status, 'active');
+});
+await test('A late trial lookup cannot update or schedule for a switched account', async () => {
+  const f = subscriptionFixture(); const v = await f.ready(); const gate = deferred();
+  f.responses.readTrial = () => gate.promise;
+  const before = f.reminderCalls.length;
+  const reminder = v.syncTrialReminder(); f.switchAccount();
+  gate.resolve({ productId: 'old', expiresAt: '2026-10-11T12:00:00Z', startedAt: null, willRenew: true });
+  assert.equal(await reminder, false);
+  assert.ok(!f.reminderCalls.slice(before).some(trial => trial?.productId === 'old'));
+  assert.notEqual(f.render().snapshot?.currentTrial?.productId, 'old');
 });
 await test('Positive store purchase awaiting server is pending, never a failed purchase', async () => {
   const f = subscriptionFixture(); const v = await f.ready();

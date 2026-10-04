@@ -309,4 +309,121 @@ await test('private invalidation clears a mounted input and blocks both stale co
   assert.equal(h.registry.getScanInputState()?.description, 'new account food');
   h.focus(false); h.focus(true, 'description'); assert.equal(h.value(), 'new account food');
 });
+
+// Render the actual reminder setup and preferences against the actual service;
+// only React/native presentation and notification APIs are local boundaries.
+function reminderPreferencesHarness({ onboarding = true } = {}) {
+  const state = [], effects = [], listeners = new Set(), choices = [];
+  let cursor = 0, dirty = true, tree;
+  const same = (a, b) => a && b && a.length === b.length && a.every((x, i) => Object.is(x, b[i]));
+  const hooks = {
+    useState(initial) {
+      const i = cursor++;
+      state[i] ??= { value: typeof initial === 'function' ? initial() : initial };
+      return [state[i].value, update => {
+        const next = typeof update === 'function' ? update(state[i].value) : update;
+        if (!Object.is(next, state[i].value)) { state[i].value = next; dirty = true; }
+      }];
+    },
+    useRef(value) { return state[cursor++] ??= { current: value }; },
+    useEffect(fn, deps) {
+      const i = cursor++;
+      if (!same(state[i]?.deps, deps)) {
+        const previous = state[i]; state[i] = { deps };
+        effects.push(() => { previous?.cleanup?.(); state[i].cleanup = fn(); });
+      }
+    },
+  };
+  const jsx = (type, props) => ({ type, props });
+  const uiCopy = new Proxy({}, { get: (_, key) => String(key) });
+  const Component = compile('src/components/ReminderPreferences.tsx', {
+    '@/services/presentation': { usePresentationBlock() {} },
+    '@expo/vector-icons/Ionicons': 'Icon',
+    react: hooks, 'react/jsx-runtime': { jsx, jsxs: jsx },
+    'react-native': { Text: 'Text', View: 'View', Pressable: 'Pressable', Linking: { openSettings: async () => {} }, AppState: { addEventListener: (_, fn) => { listeners.add(fn); return { remove: () => listeners.delete(fn) }; } } },
+    '@/components/ui': { Card: 'Card', PrimaryButton: 'PrimaryButton' },
+    '@/context/ThemeContext': { useTheme: () => ({ colors: new Proxy({}, { get: () => '#fff' }) }) },
+    '@/context/AccessContext': { useAccess: () => ({ ready: true, canUse: true }) },
+    '@/i18n/LanguageProvider': { useLanguage: () => ({ t: { captureExtras: uiCopy, access: uiCopy, common: uiCopy } }) },
+    '@/services/haptics': { selectionHaptic() {} },
+    '@/services/reminders': reminders,
+  }, process.env.REMINDER_PREFERENCES_SOURCE ? fs.readFileSync(process.env.REMINDER_PREFERENCES_SOURCE, 'utf8') : null).ReminderPreferences;
+  const Setup = compile('src/app/reminder-setup.tsx', {
+    react: { useRef: value => ({ current: value }) }, 'react/jsx-runtime': { jsx, jsxs: jsx },
+    'expo-router': { Redirect: 'Redirect' }, '@/components/ui': { Screen: 'Screen' },
+    '@/components/ReminderPreferences': { ReminderPreferences: Component },
+    '@/services/reminders': { finishReminderOnboarding: async choice => { choices.push(choice); } },
+    '@/hooks/useReminderOnboarding': { useReminderOnboarding: () => true },
+    '@/context/AppContext': { useApp: () => ({ profile: { completedAt: '2026-10-04' }, wellnessConsentGranted: true }) },
+  }).default;
+  const props = onboarding ? Setup().props.children.props : {};
+  function render() {
+    dirty = true;
+    for (let n = 0; dirty; n++) {
+      assert.ok(n < 20, 'Reminder render did not settle'); dirty = false; cursor = 0;
+      tree = Component(props); while (effects.length) effects.shift()();
+    }
+  }
+  function nodes(value = tree, result = []) {
+    if (Array.isArray(value)) value.forEach(x => nodes(x, result));
+    else if (value && typeof value === 'object') { result.push(value); nodes(value.props?.children ?? null, result); }
+    return result;
+  }
+  async function settle() { for (let n = 0; n < 3; n++) { await new Promise(setImmediate); render(); } }
+  const checked = () => nodes().filter(x => x.props?.accessibilityRole === 'checkbox' && x.props.accessibilityState.checked).map(x => x.props.accessibilityLabel);
+  async function press(label) {
+    const button = nodes().find(x => x.props?.label === label || x.props?.accessibilityLabel === label);
+    assert.ok(button, label); assert.notEqual(button.props.disabled, true, label + ' must be enabled');
+    button.props.onPress(); await settle();
+  }
+  render();
+  return { settle, checked, press, choices, text: () => nodes().filter(x => x.type === 'Text').map(x => x.props.children), foreground: async () => { listeners.forEach(fn => fn('active')); await settle(); }, unmount: () => state.forEach(x => x.cleanup?.()) };
+}
+async function resetReminderFixture(saved = null) {
+  await reminders.clearRemindersForAccountSwitch(); memory.clear(); scheduled.clear();
+  permission = 0; requests = 0; answer = 2; language = 'de';
+  if (saved) memory.set('@kandro/reminders:v2', JSON.stringify(saved));
+}
+await test('first reminder setup allows one chosen time and activates exactly one only after explicit consent', async () => {
+  await resetReminderFixture(); const h = reminderPreferencesHarness(); await h.settle();
+  assert.equal(requests, 0); assert.equal(scheduled.size, 0);
+  assert.deepEqual(h.checked(), ['slotDinner, 18:30'], 'An empty account must not preselect two daily reminders');
+  assert.ok(h.text().includes('reminderSingleText')); assert.ok(!h.text().includes('reminderText'));
+  await h.press('slotLunch, 12:30'); assert.deepEqual(h.checked(), ['slotLunch, 12:30']);
+  await h.press('slotLunch: later'); assert.deepEqual(h.checked(), ['slotLunch, 12:45']);
+  await h.press('slotDinner, 18:30'); assert.deepEqual(h.checked(), ['slotDinner, 18:30']);
+  await h.press('slotLunch, 12:45'); await h.press('activate');
+  assert.equal(requests, 1); assert.deepEqual([...scheduled.keys()], ['kandro-reminder-lunch']);
+  assert.deepEqual([...scheduled.values()][0].trigger, { type: 'daily', hour: 12, minute: 45 });
+  assert.equal(Object.values((await reminders.getReminderSettings()).slots).filter(x => x.enabled).length, 1);
+  assert.deepEqual(h.choices, ['enabled']); h.unmount();
+});
+await test('first setup skip, denial, foreground refresh and reopening never silently add a second reminder or OS prompt', async () => {
+  await resetReminderFixture(); const skip = reminderPreferencesHarness(); await skip.settle(); await skip.press('skip');
+  assert.deepEqual(skip.choices, ['skipped']); assert.equal(requests, 0); assert.equal(scheduled.size, 0); skip.unmount();
+  const h = reminderPreferencesHarness(); await h.settle(); answer = 1;
+  await h.press('activate'); assert.equal(requests, 1); assert.equal(scheduled.size, 0); assert.deepEqual(h.choices, []);
+  await h.foreground(); await h.press('slotLunch, 12:30'); assert.deepEqual(h.checked(), ['slotLunch, 12:30']);
+  await h.press('activate'); assert.equal(requests, 1); h.unmount();
+  const reopened = reminderPreferencesHarness(); await reopened.settle();
+  assert.deepEqual(reopened.checked(), ['slotLunch, 12:30']);
+  await reopened.press('slotDinner, 18:30'); assert.deepEqual(reopened.checked(), ['slotDinner, 18:30']);
+  await reopened.press('activate'); assert.equal(requests, 1); assert.equal(scheduled.size, 0); reopened.unmount();
+});
+await test('stored multiple preferences and later explicit trial/profile routine retain both chosen daily times', async () => {
+  const slots = structuredClone(reminders.DEFAULT_SLOTS); slots.lunch.minute = 45; slots.dinner.hour = 19;
+  const saved = { enabled: true, mode: 'meals', hour: 12, minute: 45, slots };
+  await resetReminderFixture(saved); permission = 2;
+  const existing = reminderPreferencesHarness(); await existing.settle();
+  assert.deepEqual(existing.checked(), ['slotLunch, 12:45', 'slotDinner, 19:30']);
+  assert.ok(existing.text().includes('reminderText')); assert.ok(!existing.text().includes('reminderSingleText'));
+  await existing.press('save'); assert.equal(requests, 0); assert.equal(scheduled.size, 2);
+  assert.deepEqual(await reminders.getReminderSettings(), saved); existing.unmount();
+  await resetReminderFixture(); const later = reminderPreferencesHarness({ onboarding: false }); await later.settle();
+  assert.deepEqual(later.checked(), ['slotLunch, 12:30', 'slotDinner, 18:30']);
+  assert.ok(later.text().includes('reminderText')); assert.ok(!later.text().includes('reminderSingleText'));
+  assert.equal(requests, 0); assert.equal(scheduled.size, 0);
+  await later.press('activate'); assert.equal(requests, 1); assert.equal(scheduled.size, 2); later.unmount();
+});
+
 console.log(JSON.stringify({ passed, scope: 'Actual reminder/review/widget/intent services; mocked native boundaries, no OS-dialog/display/tap claims; zero external HTTP' }));

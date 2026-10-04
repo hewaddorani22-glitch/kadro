@@ -15,7 +15,10 @@ for (const [language, clause, dataClause] of [
  assert.ok(terms.includes(clause),`${language}: access/introductory-offer disclosure missing from terms`);
  assert.ok(!privacy.includes(clause),`${language}: commercial access disclosure misplaced in privacy`);
  assert.ok(privacy.includes(dataClause),`${language}: functional access-data disclosure missing from privacy`);
- // 04.10.2026: enrollment no longer requires a linked/verified account.
- assert.ok(!/freiwillig verknüpft|voluntarily link|verifiziert verknüpft|verified, voluntarily/.test(source),`${language}: outdated linked-account eligibility wording`);
+ // Confirmed 04.10.2026: optional verified linking, never anonymous reinstalls.
+ assert.match(privacy, language === 'de' ? /freiwillig verknüpftem, verifiziertem Konto/ : /verified, voluntarily linked account/);
+ assert.doesNotMatch(privacy, /ein verknüpftes Konto ist nicht erforderlich|a linked account is not required/);
+ assert.match(privacy, language === 'de' ? /standardmäßig ausgeschalteten Einwilligung/ : /separate, default-off consent/);
+
 }
 console.log('PASS: bilingual access/trial terms and separate functional-data privacy disclosure.');

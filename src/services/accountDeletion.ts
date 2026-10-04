@@ -9,6 +9,7 @@ import {
 import { clearRemindersAfterAccountDeletion } from '@/services/reminders';
 import { clearTelemetryAfterAccountDeletion } from '@/services/telemetry';
 import { clearSubscriptionIdentityAfterAccountDeletion } from '@/services/subscription';
+import { clearRevenueCatExperimentMeasurementForAccountDeletion } from '@/services/revenueCatExperimentAnalytics';
 import { getDictionary } from '@/i18n/active';
 
 export async function deleteKandroAccount() {
@@ -17,6 +18,7 @@ export async function deleteKandroAccount() {
   // stale adult opt-in/queue can survive into the replacement account.
   await invalidatePrivateData();
   await clearTelemetryAfterAccountDeletion();
+  await clearRevenueCatExperimentMeasurementForAccountDeletion();
   if (!supabase || !isSupabaseConfigured) {
     await Promise.all([clearLocalKandroData(), clearLocalWellnessConsent(), clearRemindersAfterAccountDeletion()]);
     return;

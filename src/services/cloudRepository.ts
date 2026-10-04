@@ -1,3 +1,4 @@
+import { normalizePersonalGoal } from '@/services/personalGoal';
 import { DailyTargets, Meal, MealContext, MealItem, MealSuggestion, Nutrition, UserProfile } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
 
@@ -160,10 +161,13 @@ export async function initializeCloudProfile(
 
   const today = localDateKey();
   const now = new Date().toISOString();
+  const personalGoal = normalizePersonalGoal(defaultProfile);
   const profileWrite = await supabase.from('profiles').upsert(
     {
       user_id: user.id,
       display_name: defaultProfile.displayName,
+      target_weight_kg: personalGoal.targetWeightKg,
+      target_date: personalGoal.targetDate,
       goal: defaultProfile.goal,
       ...(defaultProfile.completedAt ? {
         age: defaultProfile.age,
@@ -185,7 +189,7 @@ export async function initializeCloudProfile(
   // account often has no row yet for a new calendar day; writing generic
   // defaults first would permanently replace its personalised plan.
   const profileResult = await supabase.from('profiles')
-    .select('display_name,goal,age,height_cm,weight_kg,activity_level,weekly_rate_kg,unit_system,sex,preferences,updated_at')
+    .select('display_name,goal,age,height_cm,weight_kg,activity_level,weekly_rate_kg,unit_system,sex,preferences,target_weight_kg,target_date,updated_at')
     .eq('user_id', user.id)
     .single();
   if (profileResult.error) throw profileResult.error;
@@ -201,6 +205,8 @@ export async function initializeCloudProfile(
     unitSystem: isUnitSystem(profileResult.data.unit_system) ? profileResult.data.unit_system : defaultProfile.unitSystem,
     sex: isBiologicalSex(profileResult.data.sex) ? profileResult.data.sex : 'unspecified',
     preferences: profileResult.data.preferences ?? [],
+    ...normalizePersonalGoal({ age: Number(profileResult.data.age ?? defaultProfile.age), goal: profileResult.data.goal,
+      targetWeightKg: profileResult.data.target_weight_kg == null ? null : Number(profileResult.data.target_weight_kg), targetDate: profileResult.data.target_date }),
     completedAt: profileResult.data.age && profileResult.data.height_cm && profileResult.data.weight_kg
       ? profileResult.data.updated_at
       : null,
@@ -242,12 +248,15 @@ export async function saveCloudProfile(profile: UserProfile, targets: DailyTarge
   const user = await ensureSupabaseUser();
   if (!user) return false;
 
+  const personalGoal = normalizePersonalGoal(profile);
   const now = new Date().toISOString();
   const today = localDateKey();
   const [profileWrite, targetWrite] = await Promise.all([
     supabase.from('profiles').upsert({
       user_id: user.id,
       display_name: profile.displayName,
+      target_weight_kg: personalGoal.targetWeightKg,
+      target_date: personalGoal.targetDate,
       goal: profile.goal,
       age: profile.age,
       height_cm: profile.heightCm,

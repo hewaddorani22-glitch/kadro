@@ -129,6 +129,17 @@ export function getBlsReferenceByCode(code) {
 
 /** A reviewed family conflict requires correction, not a different database. */
 export function requiresFoodIdentityCorrection(item) {
+  const staple = preferredStapleRows.get(exactFoodKey(item?.searchTermEn));
+  if (staple) {
+    const named = preferredStapleNames.get(exactFoodKey(item?.name));
+    if (item?.name && (!named || named.family !== staple.family
+      || (named.preparation && named.preparation !== staple.preparation))) return true;
+    if (staple.preparation) {
+      const preparation = String(item?.preparation ?? 'unknown');
+      if (preparation !== 'unknown' && !(staple.preparation === 'raw'
+        ? preparation === 'raw' : ['boiled', 'steamed'].includes(preparation))) return true;
+    }
+  }
   const name = String(item?.name ?? '').trim().toLowerCase();
   // Preserve the established German chips/fries translation disambiguation.
   if (/^(kartoffelchips|stapelchips|pommes frites)$/.test(name)) return false;
@@ -189,6 +200,41 @@ for (const row of BLS_SEARCH_ROWS) {
 const ingredientAliases = new Map();
 const reviewedNameAliases = new Map();
 const rowsByCode = new Map(BLS_SEARCH_ROWS.map(row => [row[0], row]));
+// Whole-term bridges for ordinary pasta and Parmesan. These are typical BLS
+// references, not a branded product or a licence to strip sauces/grain types.
+// Preparation and the separately detected name must agree before automatic use.
+const preferredStapleRows = new Map();
+const preferredStapleNames = new Map();
+for (const [family, preparation, code, aliases] of [
+  ['pasta', 'cooked', 'E401032', ['pasta cooked', 'pasta boiled', 'spaghetti cooked', 'spaghetti boiled', 'penne cooked', 'penne boiled', 'macaroni cooked', 'macaroni boiled', 'Nudeln gekocht', 'gekochte Nudeln', 'Spaghetti gekocht', 'gekochte Spaghetti', 'Penne gekocht', 'Teigwaren gekocht']],
+  ['pasta', 'raw', 'E401000', ['pasta raw', 'pasta dry', 'pasta dried', 'pasta uncooked', 'spaghetti raw', 'spaghetti dry', 'spaghetti uncooked', 'penne raw', 'penne dry', 'penne uncooked', 'Nudeln roh', 'rohe Nudeln', 'Nudeln trocken', 'trockene Nudeln', 'Spaghetti roh', 'Teigwaren roh']],
+  ['wholemeal-pasta', 'cooked', 'E500032', ['wholemeal pasta cooked', 'wholemeal pasta boiled', 'whole wheat pasta cooked', 'whole grain pasta cooked', 'whole wheat spaghetti cooked', 'Vollkornnudeln gekocht', 'gekochte Vollkornnudeln', 'Vollkornspaghetti gekocht']],
+  ['wholemeal-pasta', 'raw', 'E510000', ['wholemeal pasta raw', 'wholemeal pasta dry', 'whole wheat pasta raw', 'whole grain pasta raw', 'whole wheat pasta dry', 'Vollkornnudeln roh', 'Vollkornnudeln trocken']],
+  ['egg-pasta', 'cooked', 'E432032', ['egg pasta cooked', 'egg noodles cooked', 'egg noodles boiled', 'Eiernudeln gekocht', 'gekochte Eiernudeln', 'Eierteigwaren gekocht']],
+  ['egg-pasta', 'raw', 'E432000', ['egg noodles raw', 'egg noodles dry', 'egg pasta dry', 'Eiernudeln roh', 'Eiernudeln trocken']],
+  ['parmesan', null, 'M306400', ['parmesan', 'parmesan cheese', 'grated parmesan', 'grated parmesan cheese', 'Parmesan gerieben', 'geriebener Parmesan']],
+]) {
+  const row = rowsByCode.get(code);
+  if (!row) throw new Error(`Missing reviewed BLS staple ${code}`);
+  for (const alias of aliases) {
+    const key = exactFoodKey(alias);
+    ingredientAliases.set(key, row);
+    preferredStapleRows.set(key, { family, preparation, row });
+    preferredStapleNames.set(key, { family, preparation });
+  }
+}
+for (const [family, names] of [
+  ['pasta', ['pasta', 'spaghetti', 'penne', 'macaroni', 'makkaroni', 'nudeln', 'teigwaren']],
+  ['wholemeal-pasta', ['wholemeal pasta', 'whole wheat pasta', 'whole grain pasta', 'whole wheat spaghetti', 'Vollkornnudeln', 'Vollkornspaghetti', 'Vollkornteigwaren']],
+  ['egg-pasta', ['egg pasta', 'egg noodles', 'Eiernudeln', 'Eierteigwaren']],
+]) for (const name of names) preferredStapleNames.set(exactFoodKey(name), { family, preparation: null });
+
+/** Same narrowly reviewed vocabulary for the on-device description path. */
+export function resolveReviewedStapleFacts(term) {
+  const staple = preferredStapleRows.get(exactFoodKey(term));
+  return staple ? factsFromRow(staple.row, false) : null;
+}
+
 for (const [code, aliases] of [
   ['F840100', ['raisins', 'sultanas', 'golden raisins', 'golden raisins dried', 'dried golden raisins', 'grapes dried']],
   ['H210100', ['almonds', 'almonds raw', 'sweet almonds raw']],

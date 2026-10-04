@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { getDictionary } from '@/i18n/active';
+import { getDictionary, getLocale } from '@/i18n/active';
+import type { SubscriptionTrial } from '@/services/subscription';
 
 const KEY = '@kandro/reminders:v2';
 const LEGACY_KEY = '@kandro/evening-reminder:v1';
@@ -191,31 +192,52 @@ export function syncEveningReminder(_targets?: { calories: number; protein: numb
   });
 }
 const TRIAL_ID = 'kandro-trial-ending';
-/**
- * The paywall timeline promises a reminder before a StoreKit trial renews.
- * Scheduled only after a completed trial purchase; asking the OS here is the
- * user's own follow-up to that promise. Returns whether it was scheduled.
- */
-export async function scheduleTrialEndingReminder(trialDays: number, price: string) {
-  if (!remindersSupported || !Number.isInteger(trialDays) || trialDays < 3) return false;
-  try {
-    configureNotifications();
-    let permission = await getReminderPermission();
-    if (permission === 'notDetermined') permission = permissionState(await Notifications.requestPermissionsAsync({ ios: { allowAlert: true, allowSound: false, allowBadge: false } }));
-    if (permission !== 'authorized' && permission !== 'quiet') return false;
-    const t = getDictionary().paywall;
-    await Notifications.cancelScheduledNotificationAsync(TRIAL_ID);
-    await Notifications.scheduleNotificationAsync({ identifier: TRIAL_ID, content: { title: t.trialReminderTitle, body: t.trialReminderBody(price) }, trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(Date.now() + (trialDays - TRIAL_REMINDER_LEAD_DAYS) * 86_400_000), ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}) } });
-    return true;
-  } catch { return false; }
-}
+const TRIAL_KEY = '@kandro/trial-reminder:v1';
 export const TRIAL_REMINDER_LEAD_DAYS = 2;
+async function cancelTrial() {
+  await Notifications.cancelScheduledNotificationAsync(TRIAL_ID);
+  await Notifications.dismissNotificationAsync(TRIAL_ID);
+  await AsyncStorage.removeItem(TRIAL_KEY);
+}
+/** Reconcile the existing StoreKit trial without re-prompting for permission. */
+export function scheduleTrialEndingReminder(trial: SubscriptionTrial | null, isCurrent: () => boolean = () => true): Promise<boolean> {
+  return serialize(async epoch => {
+    if (!remindersSupported || !current(epoch) || !isCurrent()) return false;
+    try {
+      configureNotifications();
+      const expiresAt = trial ? Date.parse(trial.expiresAt) : NaN;
+      const reminderAt = expiresAt - TRIAL_REMINDER_LEAD_DAYS * 86_400_000;
+      const permission = await getReminderPermission();
+      if (!current(epoch) || !isCurrent()) return false;
+      // An accelerated sandbox trial, an already-delivered reminder, or a
+      // cancelled/expired trial must not be moved to a fictitious future date.
+      if (!trial || !trial.willRenew || !Number.isFinite(reminderAt) || reminderAt <= Date.now()
+        || (permission !== 'authorized' && permission !== 'quiet')) {
+        await cancelTrial();
+        return false;
+      }
+      const t = getDictionary().paywall;
+      const body = t.trialReminderBody(new Date(expiresAt).toLocaleDateString(getLocale()));
+      const signature = JSON.stringify({ productId: trial.productId, expiresAt, reminderAt, title: t.trialReminderTitle, body });
+      const saved = await AsyncStorage.getItem(TRIAL_KEY);
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      if (!current(epoch) || !isCurrent()) return false;
+      if (saved === signature && scheduled.some(item => item.identifier === TRIAL_ID)) return true;
+      await cancelTrial();
+      if (!current(epoch) || !isCurrent()) return false;
+      await Notifications.scheduleNotificationAsync({ identifier: TRIAL_ID, content: { title: t.trialReminderTitle, body }, trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: new Date(reminderAt), ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}) } });
+      if (!current(epoch) || !isCurrent()) { await cancelTrial(); return false; }
+      await AsyncStorage.setItem(TRIAL_KEY, signature);
+      return true;
+    } catch { return false; }
+  });
+}
 export function clearRemindersAfterAccountDeletion() {
   generation += 1;
   publishOnboardingPending(false);
   return serialize(async () => {
-    if (remindersSupported) { await cancelOwn(); await Notifications.cancelScheduledNotificationAsync(TRIAL_ID).catch(() => undefined); }
-    await AsyncStorage.multiRemove([KEY, LEGACY_KEY, OFFER_KEY, PENDING_KEY, DECISION_KEY]);
+    if (remindersSupported) { await cancelOwn(); await cancelTrial().catch(() => undefined); }
+    await AsyncStorage.multiRemove([KEY, LEGACY_KEY, OFFER_KEY, PENDING_KEY, DECISION_KEY, TRIAL_KEY]);
   });
 }
 export const clearRemindersForAccountSwitch = clearRemindersAfterAccountDeletion;

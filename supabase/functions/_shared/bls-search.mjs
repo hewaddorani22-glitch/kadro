@@ -1,6 +1,7 @@
 import { compatibleSearchIdentity } from './search-policy.mjs';
 import { BLS_SEARCH_ROWS } from './bls-search-data.mjs';
 import { blsEnglishName } from './bls-names.mjs';
+import { resolveReviewedStapleFacts } from './bls-reference.mjs';
 
 /**
  * Full-text search over the compact BLS 4.0 snapshot.
@@ -179,6 +180,11 @@ export function searchBlsCatalog(query, language = 'en', limit = 15) {
   // that happens to mention the same percentage. Only rank existing matches;
   // compatibleSearchIdentity retains the exact requested fat percentage.
   const plainMilkQuery = terms.includes('milk') && terms.every(term => /^(milk|whole|low|fat|skimmed|\d+)$/.test(term));
+  // The exact, preparation-aware staple vocabulary also applies to the list:
+  // "pasta cooked" must not favour a shorter egg-pasta source label, and
+  // "gekochte Nudeln" must find the existing Teigwaren row. This does not
+  // remove modifiers or introduce a match for an unreviewed query.
+  const reviewedStaple = resolveReviewedStapleFacts(query)?.referenceId;
   const preferred = language === 'de' ? 'de' : 'en';
 
   /**
@@ -210,12 +216,13 @@ export function searchBlsCatalog(query, language = 'en', limit = 15) {
         ? scoreName(entry.en, entry.enWords, needle, terms)
         : scoreName(entry.de, entry.deWords, needle, terms);
       const code = String(entry.row[0]);
+      const reviewedMatch = code === reviewedStaple;
       const matchedScore = Math.max(localScore + (localScore ? 8 : 0), otherScore);
       const everydayRank = Object.hasOwn(EVERYDAY_QUERY_CODES, needle) ? EVERYDAY_QUERY_CODES[needle].indexOf(code) : plainMilkQuery ? EVERYDAY_QUERY_CODES.milk.indexOf(code) : -1;
-      const score = matchedScore && everydayRank >= 0
+      const score = reviewedMatch ? 2000 : matchedScore && everydayRank >= 0
         ? 1800 - everydayRank * 10
         : matchedScore + (matchedScore && COMMON_REFERENCE_CODES.has(code) ? 75 : 0);
-      const strong = isStrong(entry[preferred], entry[`${preferred}Words`])
+      const strong = reviewedMatch || isStrong(entry[preferred], entry[`${preferred}Words`])
         || isStrong(entry[preferred === 'de' ? 'en' : 'de'], entry[`${preferred === 'de' ? 'en' : 'de'}Words`]);
       return score ? { entry, score, strong } : null;
     })

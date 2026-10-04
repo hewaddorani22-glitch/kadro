@@ -62,17 +62,24 @@ function render(profile=base, meals=[], weightEntries=[]) {
   const jsx = (type,props) => typeof type==='function' ? type(props) : {type,props};
   const rn = Object.fromEntries(['KeyboardAvoidingView','Modal','ScrollView','Text','TextInput','View'].map(k=>[k,k]));
   const colors=new Proxy({}, {get:()=> '#fff'});
-  const screen = load('src/app/(tabs)/progress.tsx', {
+  const mocks = {
     '@/context/ThemeContext':{ useTheme:()=>({colors}), useThemedStyles:fn=>fn(colors) },
     '@expo/vector-icons/Ionicons':{default:'Icon'},
     'react':{useMemo:fn=>fn(),useState:fn=>[typeof fn==='function'?fn():fn,()=>{}]},
     'react/jsx-runtime':{jsx,jsxs:jsx}, 'react-native':{...rn,Platform:{OS:'ios'},StyleSheet:{create:x=>x}},
     'react-native-safe-area-context':{useSafeAreaInsets:()=>({bottom:0})},
     '@/components/ui':Object.fromEntries(['Card','Eyebrow','IconCircle','PageTitle','PrimaryButton','Screen','SectionTitle'].map(k=>[k,k])),
-    '@/context/AppContext':{useApp:()=>({addWeightEntry:async()=>{},mealHistory:meals,profile,targets:personalization.calculateDailyTargets(profile),weightEntries})},
+    '@/context/AppContext':{useApp:()=>({addWeightEntry:async()=>{},mealHistory:meals,profile,targets:personalization.calculateDailyTargets(profile),weightEntries,hydrationReady:true})},
     '@/i18n/LanguageProvider':{useLanguage:()=>({locale,t:dictionary})}, '@/hooks/useLocalDay':{useLocalDay:()=> '2026-09-26'},
     '@/utils/format':{ formatDateParts: (s,opts)=>new Date(s+'T12:00:00').toLocaleDateString(locale,opts), formatNumber: (value, loc)=>Number(value).toLocaleString(loc) },
-  }).default();
+  };
+  // The screen now includes a TSX child with router/subscription boundaries.
+  // Execute that real child under this render's adapters, not the pure-TS cache.
+  mocks['@/components/WeeklyReviewCard'] = load('src/components/WeeklyReviewCard.tsx', {
+    ...mocks, 'expo-router': { useRouter: () => ({ push: () => {} }) },
+    '@/context/SubscriptionContext': { useSubscription: () => ({ status: 'ready' }) },
+  });
+  const screen = load('src/app/(tabs)/progress.tsx', mocks).default();
   const nodes=[];
   function walk(x) { if(!x||typeof x!=='object') return; if(Array.isArray(x)){x.forEach(walk);return;} nodes.push(x); walk(x.props?.children); }
   walk(screen);
@@ -80,7 +87,7 @@ function render(profile=base, meals=[], weightEntries=[]) {
   return { nodes, texts:nodes.filter(n=>['Text','PageTitle','Eyebrow'].includes(n.type)).map(text), byType:type=>nodes.filter(n=>n.type===type), text };
 }
 await test('Empty progress distinguishes a daily target from a measured average',()=>{
-  const r=render(); assert.ok(r.texts.includes(en.progress.proteinTarget),'Missing target label'); assert.ok(!r.texts.includes('0 g'),'No logs must not read as a measured 0 g'); assert.ok(r.texts.includes(en.progress.profileWeight),'No measurement must identify the profile fallback');
+  const r=render(); assert.ok(r.texts.includes(en.weeklyReview.title),'The real weekly-review child must render under the test providers'); assert.ok(r.texts.includes(en.progress.proteinTarget),'Missing target label'); assert.ok(!r.texts.includes('0 g'),'No logs must not read as a measured 0 g'); assert.ok(r.texts.includes(en.progress.profileWeight),'No measurement must identify the profile fallback');
 });
 await test('Thirty-day meal summary excludes tomorrow and old records',()=>{
   const r=render(base,[meal('past','2026-08-27'),meal('first','2026-08-28'),meal('now','2026-09-26'),meal('future','2026-09-27')]);

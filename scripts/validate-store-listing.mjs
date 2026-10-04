@@ -33,6 +33,15 @@ for (const [locale, info] of locales) {
   }
   if (!info.description.includes('Kandro Pro') || !/monthly|monatliches/.test(info.description)
     || !/annual|jährliches/.test(info.description)) problems.push(`${locale}: subscription disclosure missing`);
+  // Store offers do not prove a customer's eligibility. Keep the seven-day
+  // condition and full yearly charge together, not a monthly-equivalent price.
+  const trialCopy = info.description.split('\n\n').find(paragraph => /Apple Account/.test(paragraph)) ?? '';
+  const trialRules = locale === 'de-DE'
+    ? [/sieben Tage/i, /nur,? wenn Apple/, /gewählten Plan/, /Berechtigung bestätigt/, /vor dem Kauf angezeigte volle Jahrespreis/, /einmal pro Jahr/, /Ohne berechtigten Trial/]
+    : [/seven-day free trial/i, /only when Apple/, /selected plan/, /confirms your eligibility/, /full annual price shown before purchase/, /once per year/, /Without an eligible trial/];
+  if (trialRules.some(rule => !rule.test(trialCopy)) || /no annual trial is promised|Jahres-Trial wird nicht zugesagt/i.test(trialCopy)) {
+    problems.push(`${locale}: trial disclosure must require the actual Apple offer and eligibility, and explain the full annual renewal charge`);
+  }
 
   const words = (text) => new Set(text.toLowerCase().match(/[\p{L}]+/gu) ?? []);
   const named = new Set([...words(name), ...words(info.subtitle)]);

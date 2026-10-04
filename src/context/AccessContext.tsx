@@ -3,9 +3,11 @@ import { AppState } from 'react-native';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { AccessRecord, UNRESOLVED_ACCESS, clearAccessDestination, resolveAccess } from '@/services/accessPolicy';
-import { accessPaywallSeen, completeAccessEnrollment, excludeUnassignedAccess, hasAccessEnrollmentPending, invalidateAppAccess, markAccessPaywallSeen, refreshAppAccess, subscribeAppAccess } from '@/services/appAccess';
-import { supabase } from '@/services/supabaseClient';
+import { accessPaywallSeen, completeAccessEnrollment, excludeUnassignedAccess, hasAccessEnrollmentPending, invalidateAppAccess, isAppAccessMeasurementVerified, markAccessPaywallSeen, refreshAppAccess, subscribeAppAccess } from '@/services/appAccess';
+import { getCurrentSessionUserId, supabase } from '@/services/supabaseClient';
 import { setReminderAccessAllowed } from '@/services/reminders';
+import { RevenueCatExperimentAnalytics } from '@/components/RevenueCatExperimentAnalytics';
+import { invalidateRevenueCatExperimentMeasurement } from '@/services/revenueCatExperimentAnalytics';
 
 type AccessContextValue = {
   ready: boolean; record: AccessRecord; state: ReturnType<typeof resolveAccess>;
@@ -18,6 +20,8 @@ export function AccessProvider({ children }: PropsWithChildren) {
   const { status } = useSubscription();
   const [record, setRecord] = useState<AccessRecord>(UNRESOLVED_ACCESS);
   const [ready, setReady] = useState(false);
+  const [recordOwner, setRecordOwner] = useState<string | null>(null);
+  const [measurementVerified, setMeasurementVerified] = useState(false);
   const [enrollmentPending, setEnrollmentPending] = useState(false);
   const [seen, setSeen] = useState(true);
   const generation = useRef(0); const owner = useRef<string | null>(null);
@@ -26,17 +30,19 @@ export function AccessProvider({ children }: PropsWithChildren) {
     if (!hydrationReady || !wellnessConsentGranted || !profile.completedAt) return Promise.resolve();
     const epoch = generation.current;
     if (flight.current?.epoch === epoch) return flight.current.promise;
+    setMeasurementVerified(false);
     const promise = (async () => {
+      const requestOwner = await getCurrentSessionUserId();
       let next = await refreshAppAccess();
       const pending = await hasAccessEnrollmentPending();
       if (next.variant === 'unassigned' && (!pending || !next.enrollmentOpen)) {
         next = await excludeUnassignedAccess();
       }
       const wasSeen = await accessPaywallSeen();
-      if (epoch !== generation.current) return;
+      if (epoch !== generation.current || requestOwner !== await getCurrentSessionUserId()) return;
       const needsEnrollment = pending && next.variant === 'unassigned' && next.enrollmentOpen === true;
       setReminderAccessAllowed(!needsEnrollment && ['free', 'active'].includes(resolveAccess(next)));
-      setRecord(next); setEnrollmentPending(needsEnrollment); setSeen(wasSeen); setReady(true);
+      setRecord(next); setRecordOwner(requestOwner); setMeasurementVerified(isAppAccessMeasurementVerified(requestOwner)); setEnrollmentPending(needsEnrollment); setSeen(wasSeen); setReady(true);
     })().catch(() => {
       // Never erase a known B on a configuration or storage failure.
       if (epoch === generation.current) setReady(true);
@@ -51,8 +57,9 @@ export function AccessProvider({ children }: PropsWithChildren) {
     const auth = supabase?.auth.onAuthStateChange((_event, session) => {
       const next = session?.user.id ?? null;
       if (next === owner.current) return;
+      invalidateRevenueCatExperimentMeasurement();
       owner.current = next; generation.current++; invalidateAppAccess(); clearAccessDestination();
-      setReady(false); setRecord(UNRESOLVED_ACCESS); setSeen(true); setEnrollmentPending(false); setReminderAccessAllowed(false);
+      setReady(false); setRecordOwner(null); setMeasurementVerified(false); setRecord(UNRESOLVED_ACCESS); setSeen(true); setEnrollmentPending(false); setReminderAccessAllowed(false);
       // Keep Supabase callbacks synchronous; no nested auth operations here.
       setTimeout(() => { void refresh(); }, 0);
     }).data.subscription;
@@ -71,6 +78,9 @@ export function AccessProvider({ children }: PropsWithChildren) {
   }, [record.validUntil, refresh]);
   const enroll = async (firstUse: boolean) => { await completeAccessEnrollment(firstUse); await refresh(); };
   const markSeen = async () => { await markAccessPaywallSeen(); setSeen(true); };
-  return <AccessContext.Provider value={{ record, ready, state, canUse, enrollmentPending, entryPaywall: !seen && ['A', 'B'].includes(record.variant) && state !== 'active', refresh, enroll, markSeen }}>{children}</AccessContext.Provider>;
+  return <AccessContext.Provider value={{ record, ready, state, canUse, enrollmentPending, entryPaywall: !seen && ['A', 'B'].includes(record.variant) && state !== 'active', refresh, enroll, markSeen }}>
+    <RevenueCatExperimentAnalytics owner={recordOwner} ready={ready && hydrationReady && wellnessConsentGranted} serverVerified={measurementVerified} age={profile.completedAt ? profile.age : null} record={record} />
+    {children}
+  </AccessContext.Provider>;
 }
 export function useAccess() { const context = useContext(AccessContext); if (!context) throw Error('AccessProvider missing'); return context; }

@@ -8,7 +8,8 @@ import Purchases, {
   PurchasesPackage,
 } from 'react-native-purchases';
 
-import { ensureSupabaseUser } from '@/services/supabaseClient';
+import { ensureSupabaseUser, getCurrentSessionUserId } from '@/services/supabaseClient';
+import type { ExperimentAttributes } from '@/services/revenueCatExperimentPolicy';
 import { getDictionary } from '@/i18n/active';
 
 export type SubscriptionPlanId = 'yearly' | 'monthly';
@@ -28,9 +29,12 @@ export type SubscriptionPlan = {
   monthlyEquivalent: number | null;
 };
 
+export type SubscriptionTrial = { productId: string; expiresAt: string; startedAt: string | null; willRenew: boolean };
+
 export type SubscriptionSnapshot = {
   configured: boolean;
   entitlementActive: boolean;
+  currentTrial: SubscriptionTrial | null;
   mode: 'unconfigured' | 'test-store' | 'native-store' | 'web';
   plans: Record<SubscriptionPlanId, SubscriptionPlan | null>;
 };
@@ -38,6 +42,12 @@ export type SubscriptionSnapshot = {
 const ENTITLEMENT_ID = process.env.EXPO_PUBLIC_REVENUECAT_ENTITLEMENT_ID?.trim() || 'kandro_pro';
 const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 let configurationPromise: Promise<boolean> | null = null;
+let identityOperation: Promise<unknown> = Promise.resolve();
+function serializeRevenueCatIdentity<T>(fn: () => Promise<T>) {
+  const next = identityOperation.then(fn, fn);
+  identityOperation = next.catch(() => undefined);
+  return next;
+}
 
 function publicApiKey() {
   if (isExpoGo) return process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY?.trim();
@@ -57,14 +67,38 @@ function hasPro(customerInfo: CustomerInfo) {
   return Boolean(customerInfo.entitlements.active[ENTITLEMENT_ID]);
 }
 
+/** Billing facts from the entitlement, never purchase time + advertised duration. */
+export function currentTrialFrom(customerInfo: CustomerInfo): SubscriptionTrial | null {
+  const entitlement = customerInfo.entitlements.active[ENTITLEMENT_ID];
+  const expiresAt = entitlement?.expirationDate;
+  if (!entitlement?.isActive || entitlement.store !== 'APP_STORE'
+    || entitlement.periodType !== 'TRIAL'
+    || !expiresAt || !Number.isFinite(Date.parse(expiresAt)) || Date.parse(expiresAt) <= Date.now()) return null;
+  const start = entitlement.latestPurchaseDate;
+  const startedAt = start && Number.isFinite(Date.parse(start)) && Date.parse(start) <= Date.now()
+    && Date.parse(start) < Date.parse(expiresAt) ? start : null;
+  return { productId: entitlement.productIdentifier, expiresAt, startedAt, willRenew: entitlement.willRenew === true };
+}
+
+/** A reminder refresh does not need offerings, prices or intro eligibility. */
+export async function loadSubscriptionTrial(): Promise<SubscriptionTrial | null> {
+  if (subscriptionMode() !== 'native-store' || !(await ensureRevenueCatConfigured())) return null;
+  return currentTrialFrom(await Purchases.getCustomerInfo());
+}
+
 async function syncRevenueCatUser() {
   const user = await ensureSupabaseUser().catch(() => null);
   if (!user) return;
   const revenueCatUserId = await Purchases.getAppUserID();
+  if (user.id !== await getCurrentSessionUserId()) return;
   if (revenueCatUserId !== user.id) await Purchases.logIn(user.id);
 }
 
-async function ensureRevenueCatConfigured() {
+function ensureRevenueCatConfigured() {
+  return serializeRevenueCatIdentity(ensureRevenueCatConfiguredSerial);
+}
+
+async function ensureRevenueCatConfiguredSerial() {
   const apiKey = publicApiKey();
   if (!apiKey) return false;
 
@@ -90,13 +124,32 @@ async function ensureRevenueCatConfigured() {
   return configured;
 }
 
+/**
+ * Optional analytics never creates/logs in an account. Identity changes and
+ * attribute writes share one queue, so a delayed write cannot land on the next
+ * customer's RC identity. The guard is re-read after every asynchronous check.
+ */
+export function writeRevenueCatExperimentAttributes(owner: string, attributes: ExperimentAttributes, stillAllowed: () => boolean) {
+  return serializeRevenueCatIdentity(async () => {
+    if (!stillAllowed() || subscriptionMode() !== 'native-store' || !(await Purchases.isConfigured())) return false;
+    if (!stillAllowed() || await getCurrentSessionUserId() !== owner) return false;
+    if (!stillAllowed() || await Purchases.getAppUserID() !== owner) return false;
+    if (!stillAllowed() || await getCurrentSessionUserId() !== owner) return false;
+    if (!stillAllowed()) return false;
+    await Purchases.setAttributes(attributes);
+    // This confirms SDK acceptance only, not server delivery or chart inclusion.
+    return true;
+  });
+}
+
 /** Turns the store's intro period into German copy, or null when there is none. */
 function trialLabelFrom(product: PurchasesPackage['product']): string | null {
   const intro = product.introPrice;
   if (!intro || intro.price !== 0) return null;
 
-  const count = intro.periodNumberOfUnits ?? 0;
-  if (count < 1) return null;
+  const cycles = intro.cycles ?? 1;
+  const count = (intro.periodNumberOfUnits ?? 0) * cycles;
+  if (!Number.isInteger(count) || count < 1 || !Number.isInteger(cycles) || cycles < 1) return null;
 
   const units = { DAY: 'day', WEEK: 'week', MONTH: 'month', YEAR: 'year' } as const;
   const unit = units[String(intro.periodUnit ?? '').toUpperCase() as keyof typeof units];
@@ -111,6 +164,8 @@ function toPlan(id: SubscriptionPlanId, purchasePackage: PurchasesPackage | null
   const yearly = id === 'yearly';
   const trialLabel = trialEligible ? trialLabelFrom(product) : null;
   const hasFreeTrial = trialLabel !== null;
+  const introUnit = product.introPrice?.periodUnit?.toUpperCase();
+  const introCount = (product.introPrice?.periodNumberOfUnits ?? 0) * (product.introPrice?.cycles ?? 1);
   const monthlyEquivalent = yearly
     ? (typeof product.pricePerMonth === 'number' ? product.pricePerMonth : product.price / 12)
     : product.price;
@@ -126,7 +181,7 @@ function toPlan(id: SubscriptionPlanId, purchasePackage: PurchasesPackage | null
     billing: t.billing.billingLine(product.priceString, yearly),
     hasFreeTrial,
     trialLabel,
-    trialDays: hasFreeTrial ? (product.introPrice?.periodUnit === 'DAY' ? product.introPrice.periodNumberOfUnits : product.introPrice?.periodUnit === 'WEEK' ? product.introPrice.periodNumberOfUnits * 7 : null) : null,
+    trialDays: hasFreeTrial ? (introUnit === 'DAY' ? introCount : introUnit === 'WEEK' ? introCount * 7 : null) : null,
     priceAmount: product.price,
     monthlyEquivalent: Number.isFinite(monthlyEquivalent) ? monthlyEquivalent : null,
   };
@@ -138,6 +193,7 @@ export async function loadSubscriptionSnapshot(): Promise<SubscriptionSnapshot> 
     return {
       configured: false,
       entitlementActive: false,
+      currentTrial: null,
       mode: 'unconfigured',
       plans: { yearly: null, monthly: null },
     };
@@ -161,6 +217,7 @@ export async function loadSubscriptionSnapshot(): Promise<SubscriptionSnapshot> 
   return {
     configured: true,
     entitlementActive: hasPro(customerInfo),
+    currentTrial: subscriptionMode() === 'native-store' ? currentTrialFrom(customerInfo) : null,
     mode: subscriptionMode(),
     plans: {
       yearly: toPlan('yearly', offering?.annual ?? null, trialEligible(offering?.annual)),
@@ -193,10 +250,12 @@ export async function restoreSubscription() {
  * linked customer. The backend deletion is authoritative; this cleanup must
  * never make an already-completed account deletion look like it failed.
  */
-export async function clearSubscriptionIdentityAfterAccountDeletion() {
-  if (!publicApiKey() || !(await Purchases.isConfigured())) return;
-  if (!(await Purchases.isAnonymous())) await Purchases.logOut();
-  configurationPromise = null;
+export function clearSubscriptionIdentityAfterAccountDeletion() {
+  return serializeRevenueCatIdentity(async () => {
+    if (!publicApiKey() || !(await Purchases.isConfigured())) return;
+    if (!(await Purchases.isAnonymous())) await Purchases.logOut();
+    configurationPromise = null;
+  });
 }
 
 export function isSubscriptionPurchaseCancelled(error: unknown) {

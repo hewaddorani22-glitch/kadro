@@ -1,3 +1,4 @@
+import { WeeklyReviewCard } from '@/components/WeeklyReviewCard';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -214,6 +215,8 @@ export default function ProgressScreen() {
           <Text style={styles.statLabel}>{t.progress.meals}</Text>
         </Card>
       </View>
+
+      <WeeklyReviewCard />
 
       <View style={styles.section}>
         <SectionTitle>{t.progress.insight}</SectionTitle>

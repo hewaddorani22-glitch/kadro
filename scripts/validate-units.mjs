@@ -183,7 +183,7 @@ assert.ok(onboarding.includes('UnitToggle'), 'onboarding must let the user pick 
 // Every step that shows a unit must also let the user change it. The rate step
 // comes before height and weight and printed "0.25 kg per week" with no way to
 // correct it for three more screens.
-const unitSteps = ['rate', 'height', 'weight'];
+const unitSteps = ['target', 'body'];
 for (const step of unitSteps) {
   const start = onboarding.indexOf(`{step === '${step}' ?`);
   assert.ok(start > 0, `could not locate the ${step} step`);

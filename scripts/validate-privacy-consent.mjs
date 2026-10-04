@@ -75,12 +75,12 @@ assert.match(onboarding, /const \[ageConfirmed, setAgeConfirmed\] = useState\(\(
   'the convenient age picker position is still treated as a declared age');
 assert.match(onboarding, /onChange=\{\(nextAge\) => \{[\s\S]*setAge\(nextAge\);[\s\S]*setAgeConfirmed\(true\)/,
   'interacting with the age picker does not explicitly declare the selected age');
-assert.match(onboarding, /if \(step === 'age' && !ageConfirmed\) return;/,
+assert.match(onboarding, /if \(step !== 'goal' && !ageConfirmed\) return;/,
   'a non-UI caller can advance past an undeclared age');
-assert.match(onboarding, /disabled=\{\(step === 'age' && !ageConfirmed\) \|\| \(step === 'weight' && !weightInputValid\)\}/,
-  'the onboarding button allows the default age through without confirmation');
-assert.match(onboarding, /EDIT_STEPS = STEPS\.filter\(\(id\) => id !== 'building' && id !== 'age'\)/,
-  'an already-recorded minor must not become an adult in local state before the protected cloud update fails');
+assert.ok(onboarding.includes("disabled={(step === 'about' && !ageConfirmed)"),
+  'the combined about step allows the default age through');
+assert.ok(onboarding.includes("step === 'about' && !editing"),
+  'recorded age must not be editable in the plan editor');
 assert.match(ageMigration, /between 14 and 100/, 'database age policy must match 14+ onboarding');
 assert.match(ageMigration, /age >= 16[\s\S]*guardian_consent_at is not null[\s\S]*guardian_consent_version/, 'under-16 consent must depend on server-recorded guardian approval');
 assert.match(ageMigration, /alter table public\.guardian_consent_requests enable row level security/, 'guardian requests need RLS');

@@ -17,5 +17,5 @@ export default function ReminderSetup() {
     completedHere.current = true;
     void finishReminderOnboarding(choice).catch(() => undefined);
   };
-  return <Screen><ReminderPreferences onDone={done} /></Screen>;
+  return <Screen><ReminderPreferences initialSetup onDone={done} /></Screen>;
 }

@@ -10,7 +10,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { WeightEntry } from '@/components/WeightEntry';
 import { KandroMark } from '@/components/KandroMark';
-import { PlanBuilder, BUILDING_MS } from '@/components/PlanBuilder';
+import { PersonalGoalSummary } from '@/components/PersonalGoalSummary';
+import { normalizePersonalGoal, onboardingSteps, personalGoalError, parsePersonalGoalWeight, type OnboardingStep } from '@/services/personalGoal';
+import { localDateKey } from '@/utils/date';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { radii, spacing } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
@@ -39,13 +41,7 @@ import type { BiologicalSex } from '@/types/nutrition';
 type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap };
 
 
-const STEPS = ['goal', 'name', 'sex', 'age', 'rate', 'height', 'weight', 'activity', 'preferences', 'building', 'plan'] as const;
-// The same questions, minus the first-run theatre and age. Age is declared once
-// because crossing 16 changes guardian consent and crossing 18 changes the
-// analytics policy. A correction needs a trusted support path that updates
-// those states together; a local edit must never outrun the server trigger.
-const EDIT_STEPS = STEPS.filter((id) => id !== 'building' && id !== 'age');
-type StepId = (typeof STEPS)[number];
+type StepId = OnboardingStep;
 
 type Dict = ReturnType<typeof useLanguage>['t'];
 
@@ -91,21 +87,17 @@ function preferenceChoicesFor(t: Dict) {
 function copyFor(t: Dict): Record<StepId, { title: string; subtitle: string }> {
   return {
     goal: { title: t.onboarding.goalTitle, subtitle: t.onboarding.goalSubtitle },
-    rate: { title: t.onboarding.rateTitle, subtitle: t.onboarding.rateSubtitle },
-    name: { title: t.onboarding.nameTitle, subtitle: t.onboarding.nameSubtitle },
-    sex: { title: t.onboarding.sexTitle, subtitle: t.onboarding.sexSubtitle },
-    age: { title: t.onboarding.ageTitle, subtitle: t.onboarding.ageSubtitle },
-    height: { title: t.onboarding.heightTitle, subtitle: t.onboarding.heightSubtitle },
-    weight: { title: t.onboarding.weightTitle, subtitle: t.onboarding.weightSubtitle },
+    about: { title: t.onboarding.aboutTitle, subtitle: t.onboarding.aboutSubtitle },
+    body: { title: t.onboarding.bodyTitle, subtitle: t.onboarding.bodySubtitle },
+    target: { title: t.onboarding.targetTitle, subtitle: t.onboarding.targetSubtitle },
     activity: { title: t.onboarding.activityTitle, subtitle: t.onboarding.activitySubtitle },
     preferences: { title: t.onboarding.preferencesTitle, subtitle: t.onboarding.preferencesSubtitle },
-    building: { title: t.onboarding.buildingTitle, subtitle: t.onboarding.buildingSubtitle },
     plan: { title: t.onboarding.planTitle, subtitle: t.onboarding.planSubtitle },
   };
 }
 
 /** Steps the user may leave without answering. Age needs an explicit confirmation. */
-const skippableSteps = new Set<StepId>(['name', 'preferences']);
+const skippableSteps = new Set<StepId>(['preferences']);
 
 export default function OnboardingScreen() {
   const { colors } = useTheme();
@@ -123,7 +115,6 @@ export default function OnboardingScreen() {
   const preferenceChoices = preferenceChoicesFor(t);
   const params = useLocalSearchParams<{ edit?: string }>();
   const editing = params.edit === '1' && !!profile.completedAt;
-  const steps: readonly StepId[] = editing ? EDIT_STEPS : STEPS;
   const [stepIndex, setStepIndex] = useState(0);
   const [goal, setGoal] = useState<NutritionGoal>(() => (editing ? profile.goal : 'lose'));
   const [displayName, setDisplayName] = useState(() => (editing ? profile.displayName : ''));
@@ -140,6 +131,27 @@ export default function OnboardingScreen() {
   const [weightInputValid, setWeightInputValid] = useState(true);
   const [activity, setActivity] = useState<UserProfile['activityLevel']>(() => (editing ? profile.activityLevel : 'light'));
   const [weeklyRate, setWeeklyRate] = useState<WeeklyRateKg>(() => (editing ? profile.weeklyRateKg : 0.5));
+  const initialPersonalGoal = normalizePersonalGoal(profile);
+  const [targetWeightInput, setTargetWeightInput] = useState(() => editing && initialPersonalGoal.targetWeightKg !== null
+    ? String(usesMetricWeight(profile.unitSystem) ? initialPersonalGoal.targetWeightKg : Math.round(kgToPounds(initialPersonalGoal.targetWeightKg) * 10) / 10) : '');
+  const [targetDateInput, setTargetDateInput] = useState(() => editing ? initialPersonalGoal.targetDate ?? '' : '');
+  const previousUnit = useRef(unitSystem);
+  useEffect(() => {
+    if (previousUnit.current === unitSystem) return;
+    const oldUnit = previousUnit.current; previousUnit.current = unitSystem;
+    setTargetWeightInput(value => {
+      const parsed = parsePersonalGoalWeight(value);
+      if (parsed === null) return value;
+      const kg = usesMetricWeight(oldUnit) ? parsed : poundsToKg(parsed);
+      return String(Math.round((usesMetricWeight(unitSystem) ? kg : kgToPounds(kg)) * 10) / 10);
+    });
+  }, [unitSystem]);
+  const steps = useMemo(() => onboardingSteps(age, goal), [age, goal]);
+  const targetWeightNumber = targetWeightInput.trim() ? parsePersonalGoalWeight(targetWeightInput) : null;
+  const targetWeightKg = targetWeightNumber === null ? (targetWeightInput.trim() ? NaN : null)
+    : usesMetricWeight(unitSystem) ? targetWeightNumber : poundsToKg(targetWeightNumber);
+  const targetDate = targetDateInput.trim() || null;
+  const targetError = age >= 18 && goal !== 'maintain' ? personalGoalError(targetWeightKg, targetDate, localDateKey()) : null;
   const [preferences, setPreferences] = useState<string[]>(() => (editing ? profile.preferences : ['high-protein']));
   const [showConsent, setShowConsent] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
@@ -147,30 +159,13 @@ export default function OnboardingScreen() {
   const [guardianEmail, setGuardianEmail] = useState('');
   const [guardianRequestSent, setGuardianRequestSent] = useState(false);
   const [skippedAnything, setSkippedAnything] = useState(false);
-  const goalRef = useRef(goal);
-  goalRef.current = goal;
-  const ageRef = useRef(age);
-  ageRef.current = age;
-
   const step = steps[stepIndex];
   useEffect(() => { trackEvent('setup step viewed', { step, editing }); }, [step, editing]);
 
-  const goNext = useCallback(() => {
-    setStepIndex((current) => {
-      let next = Math.min(steps.length - 1, current + 1);
-      // Holding weight has no rate to choose.
-      if (steps[next] === 'rate' && (goalRef.current === 'maintain' || ageRef.current < 18)) next += 1;
-      return Math.min(steps.length - 1, next);
-    });
-  }, [steps]);
-
+  const goNext = useCallback(() => { setStepIndex(current => Math.min(steps.length - 1, current + 1)); }, [steps]);
   const goBack = () => {
     void selectionHaptic();
-    setStepIndex((current) => {
-      let previous = Math.max(0, current - 1);
-      if (steps[previous] === 'rate' && (goalRef.current === 'maintain' || ageRef.current < 18)) previous -= 1;
-      return Math.max(0, previous);
-    });
+    setStepIndex(current => Math.max(0, current - 1));
   };
 
   // A selection stays on screen until the user explicitly confirms it with
@@ -184,23 +179,11 @@ export default function OnboardingScreen() {
   const skipStep = () => {
     void selectionHaptic();
     setSkippedAnything(true);
-    if (step === 'name') setDisplayName('');
     if (step === 'preferences') setPreferences([]);
     goNext();
   };
 
-  // The "building" beat is a deliberate pause before the payoff, not a fake
-  // loading bar: it never blocks and always resolves.
-  useEffect(() => {
-    if (step !== 'building') return;
-    // A tail after the animation lands, so the final figure is readable
-    // before the plan replaces it.
-    const timer = setTimeout(() => setStepIndex((current) => Math.min(steps.length - 1, current + 1)), BUILDING_MS + 450);
-    return () => clearTimeout(timer);
-  }, [step, steps]);
-
-  // The payoff has its own feel: the ticks during the build are the work, this
-  // is the result arriving.
+  // A distinct confirmation when the completed plan arrives.
   useEffect(() => {
     if (step !== 'plan') return;
     void successHaptic();
@@ -217,8 +200,9 @@ export default function OnboardingScreen() {
     activityLevel: activity,
     weeklyRateKg: weeklyRate,
     preferences,
+    ...normalizePersonalGoal({ age, goal, targetWeightKg, targetDate }),
     completedAt: editing ? profile.completedAt : null,
-  }), [activity, editing, profile.completedAt, age, displayName, goal, height, preferences, sex, unitSystem, weeklyRate, weight]);
+  }), [activity, editing, profile.completedAt, age, displayName, goal, height, preferences, sex, unitSystem, weeklyRate, weight, targetWeightKg, targetDate]);
   const startingTargets = useMemo(() => calculateDailyTargets(draftProfile), [draftProfile]);
 
   const finishOnboarding = async () => {
@@ -276,8 +260,9 @@ export default function OnboardingScreen() {
     void selectionHaptic();
     // Keep the invariant here as well as on the disabled button: navigation
     // must not persist the convenient picker default through another caller.
-    if (step === 'age' && !ageConfirmed) return;
-    if (step === 'weight' && !weightInputValid) return;
+    if (step !== 'goal' && !ageConfirmed) return;
+    if (step === 'body' && !weightInputValid) return;
+    if ((step === 'target' || step === 'plan') && targetError) return;
     if (step === 'plan') {
       if (editing) {
         if (draftProfile.age < 16 && !await getGuardianConsentStatus().catch(() => false)) {
@@ -297,7 +282,7 @@ export default function OnboardingScreen() {
     goNext();
   };
 
-  const showFooterButton = step !== 'building';
+  const showFooterButton = true;
   const footerLabel = step === 'plan' ? (editing ? t.onboarding.saveChanges : t.onboarding.openApp) : t.common.next;
 
   return (
@@ -339,8 +324,7 @@ export default function OnboardingScreen() {
             ) : null}
             <Text accessibilityRole="header" style={[styles.title, compactHeight && styles.titleCompact]}>{copy[step].title}</Text>
             <Text style={[styles.subtitle, compactHeight && styles.subtitleCompact]}>
-              {/* The rate question means something different for each goal. */}
-              {step === 'rate' && goal === 'gain' ? t.onboarding.rateSubtitleGain : copy[step].subtitle}
+              {copy[step].subtitle}
             </Text>
           </View>
 
@@ -349,13 +333,10 @@ export default function OnboardingScreen() {
               <ChoiceList choices={goalChoices} compact={compactHeight} onSelect={(value) => selectChoice(() => setGoal(value))} selected={goal} values={['lose', 'maintain', 'gain'] as NutritionGoal[]} />
             ) : null}
 
-            {step === 'rate' ? (
+            {step === 'target' ? (
               <View style={styles.rateStep}>
                 {/*
-                  This is the first screen that shows a unit, so it is the first
-                  place the choice has to be available. Without it an American
-                  whose phone reports another region read "0.25 kg per week"
-                  here and could not correct it until step five.
+                  Keep units available beside the pace and optional goal values.
                 */}
                 <UnitToggle onChange={setUnitSystem} value={unitSystem} />
                 <View style={styles.choiceList}>
@@ -393,18 +374,23 @@ export default function OnboardingScreen() {
                   );
                 })}
                 </View>
+                <Text style={styles.subtitle}>{t.onboarding.personalGoalHint}</Text>
+                <Text style={styles.fieldLabel}>{t.onboarding.targetWeightLabel} · {usesMetricWeight(unitSystem) ? 'kg' : 'lb'}</Text>
+                <TextInput accessibilityLabel={t.onboarding.targetWeightLabel} inputMode="decimal" maxLength={8} onChangeText={setTargetWeightInput} value={targetWeightInput} style={styles.nameInput} placeholder="" placeholderTextColor={colors.muted} />
+                <Text style={styles.fieldLabel}>{t.onboarding.targetDateLabel}</Text>
+                <TextInput accessibilityLabel={t.onboarding.targetDateLabel} inputMode="text" autoCapitalize="none" autoCorrect={false} maxLength={10} onChangeText={setTargetDateInput} value={targetDateInput} style={styles.nameInput} placeholder={t.onboarding.targetDatePlaceholder} placeholderTextColor={colors.muted} />
+                {targetError ? <Text accessibilityLiveRegion="polite" style={styles.consentError}>{targetError === 'weight' ? t.onboarding.targetWeightInvalid : t.onboarding.targetDateInvalid}</Text> : null}
               </View>
             ) : null}
 
-            {step === 'name' ? (
+            {step === 'about' ? (
               <View style={styles.nameField}>
+                <Text style={styles.fieldLabel}>{t.onboarding.nameTitle}</Text>
                 <TextInput
                   accessibilityLabel={t.onboarding.nameTitle}
                   autoCapitalize="words"
-                  autoFocus
                   maxLength={40}
                   onChangeText={setDisplayName}
-                  onSubmitEditing={goNext}
                   placeholder={t.onboarding.namePlaceholder}
                   placeholderTextColor={colors.muted}
                   returnKeyType="done"
@@ -414,7 +400,7 @@ export default function OnboardingScreen() {
               </View>
             ) : null}
 
-            {step === 'sex' ? (
+            {step === 'about' ? (
               <ChoiceList
                 choices={sexChoices}
                 compact={compactHeight}
@@ -423,7 +409,7 @@ export default function OnboardingScreen() {
                 values={BIOLOGICAL_SEXES}
               />
             ) : null}
-            {step === 'age' ? (
+            {step === 'about' && !editing ? (
               <View style={styles.ageStep}>
                 <NumberStep
                   max={100}
@@ -454,8 +440,10 @@ export default function OnboardingScreen() {
                 </Pressable>
               </View>
             ) : null}
-            {step === 'height' ? (
+            {step === 'about' && editing ? <Text style={styles.subtitle}>{t.onboarding.ageLocked}</Text> : null}
+            {step === 'body' ? (
               <View style={styles.unitStep}>
+                <Text style={styles.fieldLabel}>{t.onboarding.heightTitle}</Text>
                 <UnitToggle onChange={setUnitSystem} value={unitSystem} />
                 <View style={styles.unitStepValue}>
                   {usesMetricHeight(unitSystem) ? (
@@ -475,9 +463,9 @@ export default function OnboardingScreen() {
                 </View>
               </View>
             ) : null}
-            {step === 'weight' ? (
+            {step === 'body' ? (
               <View style={styles.unitStep}>
-                <UnitToggle onChange={setUnitSystem} value={unitSystem} />
+                <Text style={styles.fieldLabel}>{t.onboarding.weightTitle}</Text>
                 <View style={styles.unitStepValue}>
                   {usesMetricWeight(unitSystem) ? (
                     <WeightEntry
@@ -535,22 +523,14 @@ export default function OnboardingScreen() {
               </View>
             ) : null}
 
-            {step === 'building' ? (
-              <View style={styles.buildingCard}>
-                <PlanBuilder profile={draftProfile} />
-                <Text style={styles.buildingText}>
-                  {t.onboarding.buildingBody(goalChoices[['lose', 'maintain', 'gain'].indexOf(goal)].label)}
-                </Text>
-              </View>
-            ) : null}
-            {step === 'plan' ? <StartingPlan limited={isRateLimited(draftProfile)} profile={draftProfile} targets={startingTargets} /> : null}
+            {step === 'plan' ? <><PersonalGoalSummary profile={draftProfile} /><StartingPlan limited={isRateLimited(draftProfile)} profile={draftProfile} targets={startingTargets} /></> : null}
           </View>
         </ScrollView>
 
         {showFooterButton ? (
           <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
             <PrimaryButton
-              disabled={(step === 'age' && !ageConfirmed) || (step === 'weight' && !weightInputValid)}
+              disabled={(step === 'about' && !ageConfirmed) || (step === 'body' && !weightInputValid) || ((step === 'target' || step === 'plan') && !!targetError)}
               icon="arrow-forward"
               label={footerLabel}
               onPress={() => void primaryAction()}
@@ -876,7 +856,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   titleCompact: { fontSize: 28, lineHeight: 33, letterSpacing: -0.8 },
   subtitle: { color: colors.muted, fontSize: 16, lineHeight: 23, maxWidth: 360 },
   subtitleCompact: { fontSize: 14, lineHeight: 19 },
-  body: { flexGrow: 1, justifyContent: 'center', paddingVertical: 22 },
+  body: { flexGrow: 1, justifyContent: 'flex-start', gap: 22, paddingVertical: 22 },
   bodyCompact: { justifyContent: 'flex-start', paddingVertical: 12 },
   footer: { gap: 12, paddingTop: 8, backgroundColor: colors.background },
   choiceList: { gap: 12 },
@@ -890,6 +870,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   choiceTextBlock: { flex: 1, minWidth: 0, gap: 3 },
   choiceTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   choiceDetail: { color: colors.muted, fontSize: 13 },
+  fieldLabel: { color: colors.text, fontSize: 15, fontWeight: '600' },
   nameField: { gap: 7 },
   nameInput: { minHeight: 64, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 22, fontWeight: '600', paddingHorizontal: 18 },
   ageStep: { width: '100%', alignItems: 'center', gap: 4 },
