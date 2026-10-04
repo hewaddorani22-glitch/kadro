@@ -36,9 +36,9 @@ assert.equal(classifyDetection(uncertainTextMeal, 'text'), null, 'identifiable t
 assert.equal(classifyDetection(uncertainTextMeal, 'photo'), null, 'a photo with recognised food never forces a retake');
 assert.equal(classifyDetection({ ...uncertainTextMeal, items: [] }, 'photo').status, 422, 'a photo without food still asks for a new photo');
 assert.equal(classifyDetection({ ...uncertainTextMeal, items: [] }, 'text').status, 422, 'no invented nutrition for unidentifiable text');
-for (const page of ['src/app/analyzing.tsx', 'src/app/confirm.tsx']) {
-  assert.match(await read(page), /description=\{scanMode === 'description' \? descriptionInput/, 'the original input must remain visible');
-}
+// The analysing screen keeps the typed input visible; the confirm screen now
+// shows the resolved ingredients directly instead of repeating the sentence.
+assert.match(await read('src/app/analyzing.tsx'), /description=\{scanMode === 'description' \? descriptionInput/, 'the original input must remain visible while analysing');
 assert.match(await read('src/app/analyzing.tsx'), /errDescriptionTitle/);
 
 // --- The prompt must name the output language ------------------------------

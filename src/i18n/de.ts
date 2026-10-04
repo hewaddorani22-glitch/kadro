@@ -501,7 +501,7 @@ export const de = {
     photoSearchAlt: 'Aus der Lebensmitteldatenbank ausgewählt, kein Foto',
     title: 'Mahlzeit bestätigen',
     heading: 'Passt das?',
-    subtitle: 'Bestätige die Zutaten und wähle mit einem Tap die passende Portionsgröße.',
+    subtitle: 'Tippe auf eine Zutat, um die Menge anzupassen.',
     portionQuestion: 'Wie groß war die Portion?',
     portionQuick: 'Schnelle Schätzung für die ganze Mahlzeit',
     portionCustom: 'Individuell angepasst',

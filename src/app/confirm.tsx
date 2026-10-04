@@ -25,7 +25,7 @@ export default function ConfirmScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { adjustItem, analysisMessage, descriptionInput, detectedItems, mealPortion, photoUri, removeDetectedItem, replaceDetectedItem, scanMode, scannedMeal, setItemAmount, setMealPortion, toggleItem } = useApp();
+  const { analysisMessage, detectedItems, mealPortion, photoUri, removeDetectedItem, replaceDetectedItem, scanMode, scannedMeal, setItemAmount, setMealPortion } = useApp();
   const [amountFor, setAmountFor] = useState<string | null>(null);
   const [preferGrams, setPreferGrams] = useState(false);
   const [removeFor, setRemoveFor] = useState<string | null>(null);
@@ -74,7 +74,7 @@ export default function ConfirmScreen() {
         <View style={styles.iconButtonSpacer} />
       </View>
 
-      <MealPhoto height={230} description={scanMode === 'description' ? descriptionInput : undefined} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
+      {photoUri ? <MealPhoto height={230} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} /> : null}
 
       <View style={styles.heading}>
         <View style={styles.headingRow}>
@@ -93,25 +93,6 @@ export default function ConfirmScreen() {
         </View>
       ) : null}
 
-      <View style={styles.chips}>
-        {detectedItems.map((item) => (
-          <Pressable
-            accessibilityLabel={`${item.name} ${needsIngredientCorrection(item) ? t.confirm.replaceFood : item.included ? t.confirm.remove : t.confirm.add}`}
-            accessibilityRole={needsIngredientCorrection(item) ? 'button' : 'checkbox'}
-            accessibilityState={needsIngredientCorrection(item) ? {} : { checked: item.included }}
-            key={item.id}
-            onPress={() => needsIngredientCorrection(item) ? replaceFood(item.id) : toggleItem(item.id)}
-            style={[styles.detectedChip, !item.included && !needsIngredientCorrection(item) && styles.detectedChipOff, (needsIngredientCorrection(item) || item.optional && item.included) && styles.detectedChipQuestion]}
-          >
-            <Ionicons
-              color={needsIngredientCorrection(item) ? colors.attention : !item.included ? colors.muted : item.optional ? colors.attention : colors.success}
-              name={needsIngredientCorrection(item) ? 'help-circle' : !item.included ? 'add-circle-outline' : item.optional ? 'help-circle' : 'checkmark-circle'}
-              size={17}
-            />
-            <Text style={[styles.detectedChipText, !item.included && !needsIngredientCorrection(item) && styles.detectedChipTextOff]}>{item.name}</Text>
-          </Pressable>
-        ))}
-      </View>
 
       {singleItem && !needsIngredientCorrection(singleItem) ? (
         <Card style={styles.portionCard}>
@@ -169,7 +150,6 @@ export default function ConfirmScreen() {
       </Card>
       ) : null}
 
-      <Text style={styles.subtitle}>{t.confirm.ingredientHint}</Text>
       {detectedItems.map((item) => {
         const unresolved = needsIngredientCorrection(item);
         const selection = initialSelection(item.amountG, item.portions, { chosen: true });

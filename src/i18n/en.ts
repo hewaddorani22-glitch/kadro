@@ -500,7 +500,7 @@ export const en: typeof de = {
     photoSearchAlt: 'Chosen from the food database, no photo',
     title: 'Confirm meal',
     heading: 'Does this look right?',
-    subtitle: 'Confirm the ingredients and pick the portion size with one tap.',
+    subtitle: 'Tap an ingredient to adjust its amount.',
     portionQuestion: 'How big was the portion?',
     portionQuick: 'Quick estimate for the whole meal',
     portionCustom: 'Adjusted individually',

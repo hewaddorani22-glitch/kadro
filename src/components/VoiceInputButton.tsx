@@ -8,6 +8,15 @@ import { selectionHaptic } from '@/services/haptics';
 
 type SpeechModule = typeof import('expo-speech-recognition');
 
+// Resolved once at load. Builds without the native module (web, older
+// binaries) simply show no microphone instead of failing.
+let speechModule: SpeechModule | null = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const loaded = require('expo-speech-recognition') as SpeechModule;
+  speechModule = loaded.isRecognitionAvailable() ? loaded : null;
+} catch { speechModule = null; }
+
 /**
  * Speak the meal instead of typing it. Apple's speech recognition turns it
  * into text live (on device when available); nothing is recorded or stored.
@@ -17,18 +26,10 @@ export function VoiceInputButton({ value, onChange }: { value: string; onChange:
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { language, t } = useLanguage();
-  const [speech, setSpeech] = useState<SpeechModule | null>(null);
+  const speech = speechModule;
   const [listening, setListening] = useState(false);
   const prefix = useRef('');
   const pulse = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    let active = true;
-    import('expo-speech-recognition')
-      .then(module => { if (active && module.isRecognitionAvailable()) setSpeech(module); })
-      .catch(() => undefined);
-    return () => { active = false; };
-  }, []);
 
   useEffect(() => {
     if (!speech) return;
