@@ -12,7 +12,7 @@ export const de = {
     verify: 'Dein Zugang wird geprüft. Versuche es erneut; deine gespeicherten Daten bleiben erreichbar.',
     offerChanged: 'Das Store-Angebot hat sich geändert. Lade es erneut und bestätige den angezeigten Preis.',
     identityTitle: 'Dein Zugang zu Kandro', identityBody: 'Ein bestehendes Konto behält seinen Zugang. Die Verknüpfung ist freiwillig; ohne eindeutig neues Konto bleibt der bisherige Gratiszugang.',
-    preparing: 'Wir berechnen deinen Tagesbedarf aus deinen Angaben.', buildingTitle: 'Dein Plan wird erstellt',
+    preparing: 'Wir berechnen deinen Tagesbedarf aus deinen Angaben.', settingUp: 'Dein Kandro wird eingerichtet …', buildingTitle: 'Dein Plan wird erstellt',
     firstUse: 'Ich nutze Kandro zum ersten Mal.', identityContinue: 'Zugang prüfen', identitySkip: 'Trotzdem fortfahren',
     pausedReminder: 'Deine Erinnerungszeit bleibt gespeichert. Erinnerungen sind pausiert, bis dein Zugang bestätigt ist.',
     emptyHistory: 'Hier erscheinen deine gespeicherten Mahlzeiten.',
@@ -227,7 +227,7 @@ export const de = {
     personalGoalTitle: "Dein Ziel",
     personalGoalDisclaimer: "Selbst gewählt, keine Zusage.",
     ageLocked: "Dein bestätigtes Alter bleibt unverändert. Korrekturen über Konto & Hilfe.",
-    openApp: 'Kandro öffnen',
+    openApp: 'Plan starten',
     directWeightHint: 'Gewicht direkt eintippen, auch mit einer Nachkommastelle.',
     doneWeight: 'Fertig',
 

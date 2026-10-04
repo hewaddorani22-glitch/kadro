@@ -42,7 +42,7 @@ function controller(profile=base,editing=false){
   useEffect(fn,deps){const index=cursor++;if(!same(slots[index]?.deps,deps)){slots[index]={deps};effects.push(fn)}}
  };react.useCallback=(fn,deps)=>react.useMemo(()=>fn,deps);
  const section=new Proxy({}, {get:(_,key)=>['step','confirmAge','paceGain','paceLose','dateMonths','dateChosen','paceWeeks','targetDiff','goalBy','decreaseUnit','increaseUnit'].includes(key)?(...args)=>`${key}:${args.join('/')}`:String(key)});
- const t={onboarding:section,common:section};
+ const t={onboarding:section,common:section,access:section};
  const jsx=(type,props)=>({type,props:props??{}});
  const source=process.env.KANDRO_ONBOARDING_BASELINE==='1'?execFileSync('git',['show','HEAD:src/app/onboarding.tsx'],{encoding:'utf8'}):read('src/app/onboarding.tsx');
  const screen=load('src/app/onboarding.tsx',{
@@ -51,7 +51,7 @@ function controller(profile=base,editing=false){
   'react-native-safe-area-context':{SafeAreaView:'SafeAreaView',useSafeAreaInsets:()=>({top:0,bottom:0})},
   'expo-router':{useLocalSearchParams:()=>editing?{edit:'1'}:{},useRouter:()=>({replace:p=>routes.push(p),push:p=>routes.push(p)})},
   '@expo/vector-icons/Ionicons':{default:'Icon'},'@/components/WeightEntry':{WeightEntry:'WeightEntry'},'@/components/KandroMark':{KandroMark:'Mark'},
-  '@/components/PersonalGoalSummary':{PersonalGoalSummary:'PersonalGoalSummary'},'@/components/PlanBuilder':{PlanBuilder:'PlanBuilder',BUILDING_MS:3000},
+  '@/components/PersonalGoalSummary':{PersonalGoalSummary:'PersonalGoalSummary'},'@/components/PlanBuilder':{PlanBuilder:'PlanBuilder',BUILDING_MS:-250},
   '@/components/ui':{PrimaryButton:'PrimaryButton',ProgressBar:'ProgressBar'},
   '@/constants/theme':{radii:{},spacing:{}},'@/context/ThemeContext':{useTheme:()=>({colors:{}}),useThemedStyles:()=>new Proxy({},{get:()=>({})})},
   '@/context/AppContext':{useApp:()=>({profile,completeOnboarding:async p=>saved.push(p),grantWellnessConsent:async age=>grants.push(age)})},
@@ -67,7 +67,7 @@ function controller(profile=base,editing=false){
  const nodes=(node=tree)=>{if(Array.isArray(node))return node.flatMap(n=>nodes(n));if(!node||typeof node!=='object')return[];if(node.type==='Modal'&&!node.props.visible)return[];return[node,...nodes(node.props.children??null)]};
  const find=(type,predicate=()=>true)=>{const node=nodes().find(n=>(typeof n.type==='function'?n.type.name:n.type)===type&&predicate(n.props));assert.ok(node,`${type} not on ${step()}`);return node.props};
  const step=()=>events.filter(e=>e.event==='setup step viewed').at(-1)?.step;
- const flush=async()=>{for(let i=0;i<6;i++)await Promise.resolve();render()};
+ const flush=async()=>{for(let i=0;i<6;i++)await Promise.resolve();await new Promise(r=>setTimeout(r,5));render();await new Promise(r=>setTimeout(r,5));render()};
  const next=async()=>{find('PrimaryButton',p=>p.icon==='arrow-forward').onPress();await flush()};
  render();return{render,find,nodes,step,next,flush,saved,routes,grants,enrolled,setGuardian:v=>{guardianApproved=v},back:async()=>{find('Pressable',p=>p.accessibilityLabel==='back').onPress();await flush()}};
 }
@@ -139,3 +139,16 @@ await test('real cloud repository stores/reads wishes for owner, keeps legacy co
  await cloud.saveCloudProfile({...base,age:17,targetWeightKg:70,targetDate:'2028-02-29'},targets);assert.equal(writes.at(-2).payload.target_weight_kg,null);assert.equal(writes.at(-2).payload.target_date,null);
 });
 console.log(`Personal-goal/onboarding: ${checks.length} controller/persistence groups passed. Native layout and hosted schema not claimed.`);
+// Order: the plan is built on screen before it is revealed (no number shown
+// first and "calculated" afterwards), and no button can skip past it.
+{
+  const src = read('src/app/onboarding.tsx');
+  const buildAt = src.indexOf("step === 'plan' && building ? <View style={styles.buildingStage}><PlanBuilder");
+  const revealAt = src.indexOf("step === 'plan' && !building ?");
+  assert.ok(buildAt > 0 && revealAt > buildAt, 'building precedes the reveal');
+  assert.match(src, /showFooterButton && !keyboardOpen && !\(step === 'plan' && building\)/, 'no Next while the plan is being built');
+  assert.match(src, /setTimeout\(\(\) => setRevealed\(true\), BUILDING_MS \+ 250\)/, 'reveal waits for the full count');
+  assert.match(src, /const building = step === 'plan' && !editing && !revealed;/, 'building from the first frame');
+  assert.doesNotMatch(read('src/app/access-setup.tsx'), /PlanBuilder|buildingTitle/, 'the plan is never built a second time after consent');
+  console.log('PASS build-then-reveal order; no second calculation after consent');
+}

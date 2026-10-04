@@ -11,6 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { WeightEntry } from '@/components/WeightEntry';
 import { KandroMark } from '@/components/KandroMark';
 import { PersonalGoalSummary } from '@/components/PersonalGoalSummary';
+import { BUILDING_MS, PlanBuilder } from '@/components/PlanBuilder';
 import { normalizePersonalGoal, onboardingSteps, personalGoalError, parsePersonalGoalWeight, type OnboardingStep } from '@/services/personalGoal';
 import { localDateKey } from '@/utils/date';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
@@ -241,11 +242,23 @@ export default function OnboardingScreen() {
     goNext();
   };
 
+  // New users watch the plan being worked out (the real intermediate values)
+  // before it is revealed; editing an existing profile skips straight to it.
+  // Derived, not set in an effect: the very first frame of the plan step is
+  // already the building view, so the number never flashes before it.
+  const [revealed, setRevealed] = useState(false);
+  const building = step === 'plan' && !editing && !revealed;
+  useEffect(() => {
+    if (step !== 'plan') { setRevealed(false); return; }
+    if (editing || revealed) return;
+    const timer = setTimeout(() => setRevealed(true), BUILDING_MS + 250);
+    return () => clearTimeout(timer);
+  }, [step, editing, revealed]);
   // A distinct confirmation when the completed plan arrives.
   useEffect(() => {
-    if (step !== 'plan') return;
+    if (step !== 'plan' || building) return;
     void successHaptic();
-  }, [step]);
+  }, [step, building]);
 
   const draftProfile = useMemo<UserProfile>(() => ({
     displayName: displayName.trim(),
@@ -391,9 +404,9 @@ export default function OnboardingScreen() {
             {step === 'goal' ? (
               <View style={[styles.brandMark, compactHeight && styles.brandMarkCompact]}><KandroMark size={compactHeight ? 34 : 42} /></View>
             ) : null}
-            <Text accessibilityRole="header" style={[styles.title, compactHeight && styles.titleCompact]}>{copy[step].title}</Text>
+            <Text accessibilityRole="header" style={[styles.title, compactHeight && styles.titleCompact]}>{step === 'plan' && building ? t.access.buildingTitle : copy[step].title}</Text>
             <Text style={[styles.subtitle, compactHeight && styles.subtitleCompact]}>
-              {copy[step].subtitle}
+              {step === 'plan' && building ? t.access.preparing : copy[step].subtitle}
             </Text>
           </View>
 
@@ -655,11 +668,12 @@ export default function OnboardingScreen() {
               </View>
             ) : null}
 
-            {step === 'plan' ? <><PersonalGoalSummary profile={draftProfile} /><StartingPlan limited={isRateLimited(draftProfile)} profile={draftProfile} targets={startingTargets} /></> : null}
+            {step === 'plan' && building ? <View style={styles.buildingStage}><PlanBuilder profile={draftProfile} /></View> : null}
+            {step === 'plan' && !building ? <><PersonalGoalSummary profile={draftProfile} /><StartingPlan limited={isRateLimited(draftProfile)} profile={draftProfile} targets={startingTargets} /></> : null}
           </View>
         </ScrollView>
 
-        {showFooterButton && !keyboardOpen ? (
+        {showFooterButton && !keyboardOpen && !(step === 'plan' && building) ? (
           <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
             <PrimaryButton
               disabled={(step === 'about' && !ageConfirmed) || (step === 'body' && !weightInputValid) || ((step === 'target' || step === 'plan') && !!targetError)}
@@ -1123,6 +1137,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   chipSelected: { backgroundColor: colors.accent, borderColor: colors.accent },
   chipText: { color: colors.text, fontSize: 15, fontWeight: '600' },
   buildingCard: { alignItems: 'center', gap: spacing.md },
+  buildingStage: { minHeight: 340, justifyContent: 'center' },
   orbit: { width: 100, height: 100, borderRadius: 50, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.neutralSoft },
   orbitInner: { width: 62, height: 62, borderRadius: 31, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   buildingSteps: { alignSelf: 'stretch', marginTop: 16, gap: 9 },

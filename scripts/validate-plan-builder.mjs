@@ -75,9 +75,13 @@ for (const chain of [
 
 assert.deepEqual(frameAt(0.5, []), { index: 0, value: 0, settled: 0 }, 'an empty chain must not crash the screen');
 
-// The shorter flow goes straight to its real plan; no timed waiting step.
+// The plan is worked out on screen first and revealed after; the later
+// access hand-over never builds (or reveals) a plan a second time.
 const onboarding = read('src/app/onboarding.tsx');
-assert.doesNotMatch(onboarding, /import.*PlanBuilder|setTimeout\(goNext/);
+assert.match(onboarding, /step === 'plan' && building \? <View style=\{styles\.buildingStage\}><PlanBuilder/);
+assert.match(onboarding, /step === 'plan' && !building \?/);
+assert.doesNotMatch(onboarding, /setTimeout\(goNext/);
+assert.doesNotMatch(read('src/app/access-setup.tsx'), /PlanBuilder/);
 assert.match(onboarding, /onboardingSteps\(age, goal\)/);
 assert.ok(BUILDING_MS > 0, 'retained animation helper stays valid');
 
@@ -87,7 +91,7 @@ assert.match(stepper, /stepHaptic\(repeating\)/,
   'a held stepper runs through twenty values in silence');
 assert.ok(stepper.indexOf('if (next === latest.current) return;') < stepper.indexOf('stepHaptic'),
   'holding at a bound must not keep buzzing when nothing changes');
-assert.match(onboarding, /step !== 'plan'\) return;\s*\n\s*void successHaptic\(\)/,
+assert.match(onboarding, /step !== 'plan' \|\| building\) return;\s*\n\s*void successHaptic\(\)/,
   'the plan arrives without any feedback that it did');
 assert.match(read('src/components/PlanBuilder.tsx'), /stepHaptic\(true\)/,
   'the figures land without a tick');

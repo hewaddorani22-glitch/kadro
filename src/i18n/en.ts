@@ -11,7 +11,7 @@ export const en: typeof de = {
     verify: 'Your access is being verified. Try again; your saved data stays available.',
     offerChanged: 'The store offer has changed. Reload it and confirm the displayed price.',
     identityTitle: 'Your access to Kandro', identityBody: 'An existing account keeps its access. Linking is optional; without a clearly new account, the existing free access remains.',
-    preparing: 'We are working out your daily needs from your answers.', buildingTitle: 'Building your plan',
+    preparing: 'We are working out your daily needs from your answers.', settingUp: 'Setting up your Kandro …', buildingTitle: 'Building your plan',
     firstUse: 'This is my first time using Kandro.', identityContinue: 'Check access', identitySkip: 'Continue anyway',
     pausedReminder: 'Your reminder time is saved. Reminders are paused until your access is confirmed.',
     emptyHistory: 'Your saved meals will appear here.',
@@ -226,7 +226,7 @@ export const en: typeof de = {
     personalGoalTitle: "Your goal",
     personalGoalDisclaimer: "Your own choice, not a promise.",
     ageLocked: "Your confirmed age stays unchanged. For corrections, use Account & help.",
-    openApp: 'Open Kandro',
+    openApp: 'Start my plan',
     directWeightHint: 'Type your weight directly, with up to one decimal place.',
     doneWeight: 'Done',
 
