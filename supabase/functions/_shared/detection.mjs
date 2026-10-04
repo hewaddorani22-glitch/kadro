@@ -20,6 +20,7 @@ export const detectionSchema = {
           'name', 'searchTermEn', 'referenceKey', 'estimatedGrams',
           'estimatedGramsLow', 'estimatedGramsHigh', 'preparation',
           'hiddenCaloriesRisk', 'confidence', 'optional', 'pieceCount', 'pieceLabel',
+          'estimatedPer100g',
         ],
         properties: {
           name: { type: 'string', minLength: 1, maxLength: 160 },
@@ -37,6 +38,19 @@ export const detectionSchema = {
           hiddenCaloriesRisk: { type: 'string', enum: ['low', 'medium', 'high'] },
           confidence: { type: 'string', enum: ['high', 'medium'] },
           optional: { type: 'boolean' },
+          // Fallback only: used when no BLS/USDA reference matches, so a
+          // recognised dish is never a dead end. Database values always win.
+          estimatedPer100g: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['calories', 'protein', 'carbs', 'fat'],
+            properties: {
+              calories: { type: 'number', minimum: 0, maximum: 900 },
+              protein: { type: 'number', minimum: 0, maximum: 100 },
+              carbs: { type: 'number', minimum: 0, maximum: 100 },
+              fat: { type: 'number', minimum: 0, maximum: 100 },
+            },
+          },
         },
       },
     },
@@ -62,7 +76,8 @@ function languageRule(language) {
 }
 
 const accuracyRules = `
-Work conservatively and never output nutrition values.
+Work conservatively. Nutrition comes from reference databases; estimatedPer100g is only a fallback.
+- estimatedPer100g: your best realistic estimate of kcal, protein, carbs and fat per 100 g of this item exactly as identified and prepared (for a composed item such as meatballs in tomato sauce, of the whole item). Energy must agree with the macronutrients (about 4/4/9 kcal per gram). For searchTermEn=unknown give your best guess anyway; it is not used.
 - Never substitute an unfamiliar food or plant with a similar-looking common food. Never silently omit an explicitly named ingredient because its identity is uncertain. Keep it as an item with referenceKey=other, searchTermEn=unknown and confidence=medium so the lookup can request clarification instead of pricing a partial meal.
 - referenceKey: pick a BLS key only when the whole detected item is exactly that composed dish. In that case do not break it down further. Otherwise referenceKey=other.
 - Never use fried_egg for boiled/poached/raw eggs. A nearby dish in the catalog is NOT a fallback. For boiled eggs use referenceKey=other and searchTermEn="chicken egg boiled". Keep stated fat percentages for dairy and distinguish plain, Greek, sweetened and plant-based yogurt.
@@ -93,7 +108,9 @@ export function validateDetection(value) {
     if (data === null) return types.includes('null');
     if (types.includes('object')) {
       if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
-      if (schema.required.some(key => !Object.hasOwn(data, key))) return false;
+      // estimatedPer100g is requested from new model calls, but replayed or
+      // older provider responses without it stay valid (database-only pricing).
+      if (schema.required.some(key => key !== 'estimatedPer100g' && !Object.hasOwn(data, key))) return false;
       return Object.keys(data).every(key => Object.hasOwn(schema.properties, key) && check(data[key], schema.properties[key]));
     }
     if (types.includes('array')) return Array.isArray(data) && data.length >= schema.minItems && data.length <= schema.maxItems && data.every(entry => check(entry, schema.items));

@@ -65,7 +65,7 @@ function loadFunction(path, name, dependencies) {
   const node = ast.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === name);
   assert.ok(node, name);
   const code = ts.transpileModule(node.getText(ast).replace(/^export /, ''), { compilerOptions: { target: ts.ScriptTarget.ES2022 } }).outputText;
-  const scope = { ...bls, ...dependencies };
+  const scope = { ...bls, aiEstimateFacts: () => null, ...dependencies };
   return new Function(...Object.keys(scope), `${code}\nreturn ${name};`)(...Object.values(scope));
 }
 // Execute both shipped resolvers; one missing lookup does not drop the others.
@@ -204,3 +204,21 @@ assert.match(search, /needsIngredientCorrection\(item\) \? milkCorrectionQuery\(
 assert.match(search, /void search\(suggestionQuery\)/);
 assert.match(search, /defaultGrams: item.amountG, amountIsChosen: true/);
 console.log('PASS: correction protocol, legacy rejection, replacement isolation, save/route guards, 1-12 ingredient sums, no silent missing values, free lookup repair.');
+
+// Owner report 04.10.: "Frikadellen mit Tomatensauce" had no database row and
+// became a dead end with an unrelated suggestion. The model's own per-100 g
+// estimate now prices a clearly identified food; unknown names stay unresolved.
+{
+  const { aiEstimateFacts } = await import('../server/core.mjs');
+  const frikadellen = { name: 'Frikadellen mit Tomatensauce', searchTermEn: 'meatballs in tomato sauce', estimatedGrams: 250, confidence: 'medium', optional: false,
+    estimatedPer100g: { calories: 190, protein: 12, carbs: 6, fat: 13 } };
+  const priced = buildMealItem(frikadellen, aiEstimateFacts(frikadellen), 0);
+  assert.equal(needsIngredientCorrection(priced), false, 'an identified dish without database row is still counted');
+  assert.equal(priced.included, true);
+  assert.equal(priced.calories, 475);
+  assert.equal(priced.source.provider, 'kandro-catalog');
+  assert.equal(aiEstimateFacts({ ...frikadellen, searchTermEn: 'unknown' }), null, 'an unknown name never gets an invented value');
+  assert.equal(aiEstimateFacts({ ...frikadellen, estimatedPer100g: { calories: 40, protein: 12, carbs: 6, fat: 13 } }), null, 'energy must agree with macros');
+  assert.equal(aiEstimateFacts({ ...frikadellen, estimatedPer100g: undefined }), null, 'older providers without estimate stay unchanged');
+  console.log('PASS: identified dishes without database rows are priced from the checked model estimate; unknown names stay unresolved.');
+}

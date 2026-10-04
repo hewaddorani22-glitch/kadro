@@ -7,6 +7,7 @@ import { createServer } from 'node:http';
 
 import {
   buildAccuracyWarnings,
+  aiEstimateFacts,
   buildMealItem,
   canonicalFoodQuery,
   incompleteNutritionError,
@@ -104,7 +105,7 @@ async function searchUsdaOnce(query) {
 async function resolveUsdaItem(item, index) {
   const term = canonicalFoodQuery(item.searchTermEn);
   // Same guard as the hosted gateway: a placeholder term must not price food.
-  if (!isUsableSearchTerm(term)) return buildMealItem(item, null, index);
+  if (!isUsableSearchTerm(term)) return buildMealItem(item, aiEstimateFacts(item), index);
   const cacheKey = usdaCacheKey(term);
   let facts = usdaCache.get(cacheKey);
   if (!usdaCache.has(cacheKey)) {
@@ -118,11 +119,11 @@ async function resolveUsdaItem(item, index) {
     facts = attempt.facts;
     if (attempt.cacheable || !facts) usdaCache.set(cacheKey, facts);
   }
-  return buildMealItem(item, facts ?? null, index);
+  return buildMealItem(item, facts ?? aiEstimateFacts(item), index);
 }
 
 async function resolveItem(item, index) {
-  if (requiresFoodIdentityCorrection(item)) return buildMealItem(item, null, index);
+  if (requiresFoodIdentityCorrection(item)) return buildMealItem(item, aiEstimateFacts(item), index);
   const blsFacts = resolveBlsFacts(item);
   return blsFacts ? buildMealItem(item, blsFacts, index) : resolveUsdaItem(item, index);
 }

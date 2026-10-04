@@ -201,7 +201,7 @@ export default function ResultScreen() {
         <View style={[styles.titleRow, largeText && styles.titleRowLarge]}>
           <View style={[styles.mealCopy, largeText && styles.mealCopyLarge]}>
             <Text style={styles.mealTitle}>{scannedMeal.title}</Text>
-            <ConfidenceBadge uncertain={scannedMeal.confidence === 'medium'} />
+            <ConfidenceBadge />
           </View>
           <View style={[styles.calorieBlock, { width: calorieSize, height: calorieSize }]}>
             <ImpactRing size={calorieSize} total={scannedMeal.calories} value={displayedCalories} />

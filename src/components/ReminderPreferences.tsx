@@ -116,7 +116,7 @@ export function ReminderPreferences({ onDone, initialSetup = false }: { onDone?:
             style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 56 }}
           >
             <Ionicons color={value.enabled ? colors.accentText : colors.muted} name={value.enabled ? 'checkmark-circle' : 'ellipse-outline'} size={24} />
-            <Text numberOfLines={1} style={{ flex: 1, color: colors.text, fontSize: 16, fontWeight: '600' }}>{labels[slot]}</Text>
+            <Text adjustsFontSizeToFit minimumFontScale={0.75} numberOfLines={1} style={{ flex: 1, color: colors.text, fontSize: 16, fontWeight: '600' }}>{labels[slot]}</Text>
             {!value.enabled ? <Text style={{ color: colors.muted, fontSize: 16, fontWeight: '600', fontVariant: ['tabular-nums'] }}>{time}</Text> : null}
           </Pressable>
           {value.enabled ? <>

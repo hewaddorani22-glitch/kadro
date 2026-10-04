@@ -253,18 +253,19 @@ assert.match(localRepository, /ACCOUNT_SWITCH_PENDING_KEY/,
 assert.match(localRepository, /replaceLocalAccountData[\s\S]*multiSet\([\s\S]*MEALS_KEY[\s\S]*PROFILE_KEY[\s\S]*COUNTED_SCAN_IDS_KEY[\s\S]*multiRemove\(\[QUEUE_KEY, WEIGHTS_KEY, DELETED_MEALS_KEY\]/,
   'account switching must replace local health data and clear the prior queue, weights and tombstones');
 const accountSwitch = context.slice(
-  context.indexOf('const loadExistingAccount = useCallback'),
+  context.indexOf('const switchAccount = useCallback'),
   context.indexOf('const refreshCloudState'),
 );
-assert.ok(accountSwitch.indexOf('beginLocalAccountSwitch(previousUserId)') < accountSwitch.indexOf('signInToExistingAccount(email, password)'),
+assert.ok(accountSwitch.indexOf('beginLocalAccountSwitch(previousUserId)') < accountSwitch.indexOf('await signIn()'),
   'the crash marker must be durable before Supabase changes identity');
-assert.ok(accountSwitch.indexOf('clearTelemetryForAccountSwitch()') < accountSwitch.indexOf('signInToExistingAccount(email, password)'),
+assert.ok(accountSwitch.indexOf('clearTelemetryForAccountSwitch()') < accountSwitch.indexOf('await signIn()'),
   'analytics must fail closed before Supabase changes identity');
+assert.match(accountSwitch, /loadAppleAccount = useCallback[\s\S]*switchAccount\(\(\) => signInWithApple/, 'Apple sign-in must use the same guarded account switch');
 assert.match(accountSwitch, /retryAccountRecovery\(\)/,
   'credential sign-in must use the cloud-authoritative hydration path');
 const accountRecovery = context.slice(
   context.indexOf('const retryAccountRecovery = useCallback'),
-  context.indexOf('const loadExistingAccount = useCallback'),
+  context.indexOf('const switchAccount = useCallback'),
 );
 assert.match(accountRecovery, /hydrateExistingCloudAccount\(\)/,
   'account recovery must use the cloud-authoritative hydration path');

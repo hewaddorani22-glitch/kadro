@@ -78,7 +78,7 @@ export default function ConfirmScreen() {
       <View style={styles.heading}>
         <View style={styles.headingRow}>
           <Text style={styles.title}>{t.confirm.heading}</Text>
-          {hasIncludedFood && !correctionRequired ? <ConfidenceBadge uncertain={scannedMeal.confidence === 'medium'} /> : null}
+          {hasIncludedFood && !correctionRequired ? <ConfidenceBadge /> : null}
         </View>
         <Text style={styles.subtitle}>{singleItem ? t.confirm.subtitleSingle : t.confirm.subtitle}</Text>
       </View>
@@ -233,9 +233,8 @@ export default function ConfirmScreen() {
                 <View style={styles.itemCopy}>
                   <View style={styles.itemNameRow}>
                     <Text style={styles.itemName}>{item.name}</Text>
-                    {item.optional ? <Text style={styles.uncertain}>{t.confirm.check}</Text> : null}
                   </View>
-                  <Text style={styles.itemCalories}>{needsIngredientCorrection(item) ? t.confirm.missingValues : `~${formatNumber(item.calories, locale)} kcal · ${item.source.label}`}</Text>
+                  <Text style={styles.itemCalories}>{needsIngredientCorrection(item) ? t.confirm.missingValues : `~${formatNumber(item.calories, locale)} kcal`}</Text>
                 </View>
                 {!needsIngredientCorrection(item) ? <View style={styles.stepper}>
                   <Pressable accessibilityLabel={`${item.name} ${t.confirm.decrease}`} accessibilityRole="button" onPress={() => adjustItem(item.id, -1)} style={styles.stepperButton}>
@@ -296,6 +295,12 @@ function possibleDuplicate(item: MealItem, items: MealItem[]) {
     && words.every((word) => foldWords(other.name).map(stripEnding).includes(word))) ?? null;
 }
 
+function sharesFoodWord(detected: string, candidate: string) {
+  const wanted = foldWords(detected).map(stripEnding);
+  const offered = foldWords(candidate).map(stripEnding);
+  return wanted.some(word => offered.some(other => other === word || (word.length >= 5 && (other.startsWith(word) || word.startsWith(other)))));
+}
+
 function UnresolvedSuggestion({ item, duplicateOf, onRemove, onUse }: { item: MealItem; duplicateOf: MealItem | null; onRemove: () => void; onUse: (result: FoodSearchResult) => void }) {
   const styles = useThemedStyles(makeStyles);
   const { colors } = useTheme();
@@ -307,7 +312,9 @@ function UnresolvedSuggestion({ item, duplicateOf, onRemove, onUse }: { item: Me
     setLoading(true);
     setSuggestion(null);
     searchIngredientReplacement(milkCorrectionQuery(item.name) ?? item.name)
-      .then((results) => { if (active) setSuggestion(results[0] ?? null); })
+      // Only a result that shares the food word is a suggestion; "High
+      // Protein Joghurt" for meatballs is noise that makes people feel wrong.
+      .then((results) => { if (active) setSuggestion(results.find(result => sharesFoodWord(item.name, result.name)) ?? null); })
       .catch(() => undefined)
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };

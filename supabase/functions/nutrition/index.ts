@@ -9,6 +9,7 @@ import { canonicalFoodQuery } from '../_shared/food-query.mjs';
 
 import {
   buildAccuracyWarnings,
+  aiEstimateFacts,
   buildMealItem,
   incompleteNutritionError,
   ingredientCorrectionDraft,
@@ -481,11 +482,13 @@ async function resolveDetection(
   const items = detection.items.map((item: any, index: number) => {
     // The same term may have been resolved for another, non-conflicting item.
     // Never let that shared/cache result bypass this ingredient's identity gate.
-    if (requiresFoodIdentityCorrection(item)) return buildMealItem(item, null, index);
+    // An identity conflict must not borrow a staple's database row; the
+    // model's own estimate for the named food is still a usable value.
+    if (requiresFoodIdentityCorrection(item)) return buildMealItem(item, aiEstimateFacts(item), index);
     const blsFacts = resolveBlsFacts(item);
     const term = canonicalFoodQuery(item.searchTermEn);
     const usdaFacts = isUsableSearchTerm(term) ? facts.get(term) ?? null : null;
-    return buildMealItem(item, blsFacts ?? usdaFacts, index);
+    return buildMealItem(item, blsFacts ?? usdaFacts ?? aiEstimateFacts(item), index);
   });
   const nutritionError = incompleteNutritionError(items);
   if (nutritionError) return ingredientCorrectionDraft(detection, items, correctionProtocol) ?? nutritionError;

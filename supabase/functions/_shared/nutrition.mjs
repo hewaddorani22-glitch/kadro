@@ -462,6 +462,28 @@ export function searchTermVariants(term) {
   return variants;
 }
 
+/**
+ * The model's own per-100 g estimate, used only when no BLS/USDA reference
+ * matched a clearly identified food. Rejected when energy and macronutrients
+ * disagree, or when the food itself is unknown: a dead end is better than a
+ * number for something nobody could name.
+ */
+export function aiEstimateFacts(item) {
+  const e = item?.estimatedPer100g;
+  if (!e || String(item?.searchTermEn ?? '').trim().toLowerCase() === 'unknown') return null;
+  const values = [e.calories, e.protein, e.carbs, e.fat];
+  if (!values.every(value => Number.isFinite(value) && value >= 0)) return null;
+  if (e.calories > 900 || e.protein + e.carbs + e.fat > 100.5) return null;
+  const fromMacros = e.protein * 4 + e.carbs * 4 + e.fat * 9;
+  if (Math.abs(fromMacros - e.calories) > Math.max(40, e.calories * 0.3)) return null;
+  const round = value => Math.round(value * 10) / 10;
+  return {
+    provider: 'kandro-catalog', referenceId: 'ai-estimate', label: 'Kandro-Schätzung',
+    calories: round(e.calories), protein: round(e.protein), carbs: round(e.carbs), fat: round(e.fat),
+    matchConfidence: 'medium', estimatedReference: true,
+  };
+}
+
 export function buildMealItem(item, facts, index) {
   // Defense against old cache records and malformed provider values.
   if (facts && (![facts.calories, facts.protein, facts.carbs, facts.fat].every(value => Number.isFinite(value) && value >= 0)

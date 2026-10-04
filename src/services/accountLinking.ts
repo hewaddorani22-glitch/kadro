@@ -21,6 +21,8 @@ export type AccountLinkState =
 function stateFromUser(user: User | null): AccountLinkState {
   if (!user) return { status: 'unavailable' };
   if (!user.is_anonymous && user.email) return { status: 'linked', userId: user.id, email: user.email };
+  // Apple can hide the address; a non-anonymous identity is still linked.
+  if (!user.is_anonymous && user.identities?.some(identity => identity.provider === 'apple')) return { status: 'linked', userId: user.id, email: 'Apple-ID' };
   if (user.new_email) return { status: 'pending', userId: user.id, email: user.new_email };
   return { status: 'anonymous', userId: user.id };
 }
@@ -135,6 +137,48 @@ export async function signInToExistingAccount(email: string, password: string): 
   const client = requireClient();
   if (password.length < 8) throw new Error(getDictionary().account.passwordInvalid);
   const { data, error } = await client.auth.signInWithPassword({ email: normalizeEmail(email), password });
+  if (error) throw error;
+  if (!data.user || data.user.is_anonymous) throw new Error(getDictionary().errors.permanentAccountNotLoaded);
+  rememberSupabaseUser(data.user);
+  return stateFromUser(data.user);
+}
+
+/** Native Sign in with Apple. The nonce is hashed for Apple, raw for Supabase. */
+export async function appleCredential() {
+  const [Apple, Crypto] = await Promise.all([import('expo-apple-authentication'), import('expo-crypto')]);
+  const rawNonce = Crypto.randomUUID();
+  const hashedNonce = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, rawNonce);
+  const credential = await Apple.signInAsync({
+    requestedScopes: [Apple.AppleAuthenticationScope.EMAIL],
+    nonce: hashedNonce,
+  });
+  if (!credential.identityToken) throw new Error(getDictionary().errors.linkingFailed);
+  return { token: credential.identityToken, nonce: rawNonce };
+}
+
+export function isAppleCancel(error: unknown) {
+  return !!error && typeof error === 'object' && (error as { code?: string }).code === 'ERR_REQUEST_CANCELED';
+}
+
+export function isAppleIdentityTaken(error: unknown) {
+  const message = error instanceof Error ? error.message.toLowerCase() : '';
+  return message.includes('identity') && (message.includes('already') || message.includes('exists'));
+}
+
+/** Keeps the current guest account and its data; adds Apple as its login. */
+export async function linkAppleAccount(credential: { token: string; nonce: string }): Promise<AccountLinkState> {
+  const client = requireClient();
+  const user = await currentUser();
+  if (!user) throw new Error(getDictionary().errors.sessionNotLoaded);
+  const { data, error } = await client.auth.linkIdentity({ provider: 'apple', token: credential.token, nonce: credential.nonce });
+  if (error) throw error;
+  return stateFromUser(assertSameUser(user.id, data.user));
+}
+
+/** Loads an existing Apple-linked account (new phone). Caller handles the switch. */
+export async function signInWithApple(credential: { token: string; nonce: string }): Promise<AccountLinkState> {
+  const client = requireClient();
+  const { data, error } = await client.auth.signInWithIdToken({ provider: 'apple', token: credential.token, nonce: credential.nonce });
   if (error) throw error;
   if (!data.user || data.user.is_anonymous) throw new Error(getDictionary().errors.permanentAccountNotLoaded);
   rememberSupabaseUser(data.user);

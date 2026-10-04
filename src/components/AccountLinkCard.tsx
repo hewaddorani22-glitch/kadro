@@ -2,6 +2,7 @@ import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useState } from 'react';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Card, PrimaryButton } from '@/components/ui';
@@ -11,7 +12,11 @@ import {
   AccountLinkState,
   accountLinkErrorMessage,
   enableNewCloudAccount,
+  appleCredential,
   getAccountLinkState,
+  isAppleCancel,
+  isAppleIdentityTaken,
+  linkAppleAccount,
   requestEmailLink,
   resendEmailLink,
   setAccountPassword,
@@ -24,7 +29,8 @@ type ViewMode = 'upgrade' | 'sign-in';
 export function AccountLinkCard() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
-  const { loadExistingAccount, refreshCloudState, userName } = useApp();
+  const { loadAppleAccount, loadExistingAccount, refreshCloudState, userName } = useApp();
+  const [appleAvailable, setAppleAvailable] = useState(false);
   const [account, setAccount] = useState<AccountLinkState | null>(null);
   const [mode, setMode] = useState<ViewMode>('upgrade');
   const [email, setEmail] = useState('');
@@ -35,6 +41,53 @@ export function AccountLinkCard() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { language, t } = useLanguage();
+
+  useEffect(() => {
+    let active = true;
+    void AppleAuthentication.isAvailableAsync().then(value => { if (active) setAppleAvailable(value); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+
+  // One tap: keep this guest account and add Apple as its login. If this
+  // Apple ID already owns a Kandro account (new phone), offer to load it.
+  const continueWithApple = async (existing: boolean) => {
+    if (busy) return;
+    setBusy(true); setError(null); setMessage(null);
+    try {
+      const credential = await appleCredential();
+      if (existing) {
+        const next = await loadAppleAccount(credential);
+        setAccount(next);
+        setMessage(t.account.loadedMessage);
+        return;
+      }
+      const next = await linkAppleAccount(credential);
+      setAccount(next);
+      await refreshCloudState();
+      setMessage(t.account.appleLinked);
+    } catch (failure) {
+      if (isAppleCancel(failure)) return;
+      if (!existing && isAppleIdentityTaken(failure)) {
+        Alert.alert(t.account.appleTakenTitle, t.account.appleTakenBody, [
+          { text: t.common.cancel, style: 'cancel' },
+          { text: t.account.loadAccount, onPress: () => { void continueWithApple(true); } },
+        ]);
+        return;
+      }
+      setError(accountLinkErrorMessage(failure));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const appleButton = (existing: boolean) => appleAvailable ? (
+    <AppleAuthentication.AppleAuthenticationButton
+      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+      buttonType={existing ? AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN : AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+      cornerRadius={999}
+      onPress={() => void continueWithApple(existing)}
+      style={styles.appleButton}
+    />
+  ) : null;
 
   useEffect(() => {
     let active = true;
@@ -176,6 +229,8 @@ export function AccountLinkCard() {
       <Card style={styles.card}>
         <AccountHeader icon="log-in-outline" title={t.account.signInTitle} />
         <Text style={styles.body}>{t.account.signInText}</Text>
+        {appleButton(true)}
+        {appleAvailable ? <Text style={styles.orText}>{t.account.orEmail}</Text> : null}
         <View style={styles.form}>
           <AccountInput autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder={t.account.email} value={email} />
           <AccountInput autoComplete="current-password" onChangeText={setPassword} placeholder={t.account.password} secureTextEntry value={password} />
@@ -219,7 +274,9 @@ export function AccountLinkCard() {
   return (
     <Card style={styles.card}>
       <AccountHeader icon="shield-outline" title={t.account.secureTitle} />
-      <Text style={styles.body}>{t.account.secureText}</Text>
+      <Text style={styles.body}>{appleAvailable ? t.account.secureTextApple : t.account.secureText}</Text>
+      {appleButton(false)}
+      {appleAvailable ? <Text style={styles.orText}>{t.account.orEmail}</Text> : null}
       <View style={styles.form}>
         <AccountInput autoComplete="email" keyboardType="email-address" onChangeText={setEmail} placeholder={t.account.email} value={email} />
         <PrimaryButton
@@ -298,6 +355,8 @@ function Feedback({ error, message }: { error: string | null; message: string | 
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
+  appleButton: { width: '100%', height: 54 },
+  orText: { color: colors.muted, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   card: { gap: 14 },
   linkedCard: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
   loadingText: { color: colors.muted, fontSize: 12, textAlign: 'center' },

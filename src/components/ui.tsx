@@ -203,20 +203,16 @@ export function MacroCard({
   );
 }
 
+/** A calm "estimate" label. Model confidence is not shown as doubt to people. */
 export function ConfidenceBadge({ uncertain = false }: { uncertain?: boolean }) {
+  void uncertain;
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
   return (
-    <View style={[styles.confidence, uncertain && styles.confidenceUncertain]}>
-      <Ionicons
-        color={uncertain ? colors.attention : colors.success}
-        name={uncertain ? 'help-circle' : 'checkmark-circle'}
-        size={14}
-      />
-      <Text style={[styles.confidenceText, uncertain && styles.confidenceTextUncertain]}>
-        {uncertain ? t.confirm.uncertainPortion : t.confirm.highConfidence}
-      </Text>
+    <View style={styles.confidence}>
+      <Ionicons color={colors.success} name="checkmark-circle" size={14} />
+      <Text style={styles.confidenceText}>{t.confirm.highConfidence}</Text>
     </View>
   );
 }

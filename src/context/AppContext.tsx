@@ -54,7 +54,7 @@ import { clearRemindersForAccountSwitch, setEveningReminderEnabled } from '@/ser
 import { formatClockTime } from '@/utils/format';
 import { newAnalysisRequestId } from '@/utils/requestId';
 import { canSaveMealDraft, needsIngredientCorrection, replaceMealIngredient } from '@/utils/ingredientCorrection';
-import { AccountLinkState, signInToExistingAccount } from '@/services/accountLinking';
+import { AccountLinkState, signInToExistingAccount, signInWithApple } from '@/services/accountLinking';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
 type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search';
@@ -105,6 +105,7 @@ type AppContextValue = {
   syncMode: SyncMode;
   refreshCloudState: () => Promise<void>;
   loadExistingAccount: (email: string, password: string) => Promise<AccountLinkState>;
+  loadAppleAccount: (credential: { token: string; nonce: string }) => Promise<AccountLinkState>;
   retryAccountRecovery: () => Promise<void>;
   grantWellnessConsent: (age?: number) => Promise<void>;
   withdrawWellnessConsent: () => Promise<void>;
@@ -340,7 +341,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     }
   }, [adoptExistingAccountState, restoreLocalStateAfterFailedLogin]);
 
-  const loadExistingAccount = useCallback(async (email: string, password: string) => {
+  const switchAccount = useCallback(async (signIn: () => Promise<AccountLinkState>) => {
     const previousUserId = await getCurrentSessionUserId();
     if (!previousUserId) throw new Error(getDictionary().errors.sessionNotLoaded);
     analysisGenerationRef.current += 1;
@@ -354,7 +355,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     try {
       await beginLocalAccountSwitch(previousUserId);
       await clearTelemetryForAccountSwitch();
-      const account = await signInToExistingAccount(email, password);
+      const account = await signIn();
       identityChanged = true;
       // Stop exposing the old identity synchronously before the first cloud
       // read under the new Supabase session.
@@ -397,6 +398,8 @@ export function AppProvider({ children }: PropsWithChildren) {
       throw error;
     }
   }, [restoreLocalStateAfterFailedLogin, retryAccountRecovery]);
+  const loadExistingAccount = useCallback((email: string, password: string) => switchAccount(() => signInToExistingAccount(email, password)), [switchAccount]);
+  const loadAppleAccount = useCallback((credential: { token: string; nonce: string }) => switchAccount(() => signInWithApple(credential)), [switchAccount]);
 
   useEffect(() => {
     if (!hydrationReady || !wellnessConsentGranted) return;
@@ -1262,6 +1265,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       syncMode,
       refreshCloudState,
       loadExistingAccount,
+      loadAppleAccount,
       retryAccountRecovery,
       grantWellnessConsent,
       withdrawWellnessConsent,
@@ -1289,7 +1293,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       adjustLoggedMealPortion,
       setLoggedMealType,
     }),
-    [descriptionInput, addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, localStorageError, isCurrentScanLogged, loadExistingAccount, logFoodDirect, setLoggedItemAmount, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, retryAccountRecovery, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
+    [descriptionInput, addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, localStorageError, isCurrentScanLogged, loadExistingAccount, loadAppleAccount, logFoodDirect, setLoggedItemAmount, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, retryAccountRecovery, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
