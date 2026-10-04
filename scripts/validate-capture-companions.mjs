@@ -241,6 +241,7 @@ function scanScreenHarness() {
     'react-native-safe-area-context': { SafeAreaView: 'SafeAreaView', useSafeAreaInsets: () => ({ bottom: 0 }) },
     '@/constants/product': { FREE_SCAN_ALLOWANCE: 3 }, '@/components/ui': { PrimaryButton: 'PrimaryButton' },
     '@/components/PortionSheet': { PortionSheet: 'PortionSheet' }, '@/context/AppContext': { useApp: () => app },
+    'expo-image-manipulator': { manipulateAsync: async uri => ({ uri }), SaveFormat: { JPEG: 'jpeg' } }, '@/utils/cameraCrop': { frameToPhotoCrop: () => null },
     '@/services/mealAnalysis': { MealAnalysisError: class extends Error {}, searchFoods: async () => [], deleteTemporaryPhoto() {} },
     '@/context/SubscriptionContext': { useSubscription: () => ({ status: 'active' }) },
     '@/i18n/LanguageProvider': { useLanguage: () => ({ locale: 'en-GB', t: { scan: copy, common: copy, errors: copy } }) },

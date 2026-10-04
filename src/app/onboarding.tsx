@@ -5,7 +5,7 @@ import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WeightEntry } from '@/components/WeightEntry';
@@ -333,6 +333,14 @@ export default function OnboardingScreen() {
   };
 
   const showFooterButton = true;
+  // While typing, the keyboard's own Done/Return is the action; the footer
+  // would otherwise sit on top of the keyboard and hide the field.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKeyboardOpen(true));
+    const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardOpen(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
   const footerLabel = step === 'plan' ? (editing ? t.onboarding.saveChanges : t.onboarding.openApp) : t.common.next;
 
   return (
@@ -359,8 +367,11 @@ export default function OnboardingScreen() {
 
       <ProgressBar value={(stepIndex + 1) / steps.length} />
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
+      {/* The native keyboard inset follows the system animation exactly; a
+          KeyboardAvoidingView re-laid out the whole page in slow motion. */}
+      <View style={styles.flex}>
         <ScrollView
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
           key={step}
           contentContainerStyle={[styles.content, compactHeight && styles.contentCompact]}
           keyboardDismissMode="on-drag"
@@ -551,6 +562,7 @@ export default function OnboardingScreen() {
                   placeholder={t.onboarding.namePlaceholder}
                   placeholderTextColor={colors.muted}
                   returnKeyType="done"
+                  submitBehavior="blurAndSubmit"
                   style={styles.smallInput}
                   value={displayName}
                 />
@@ -639,7 +651,7 @@ export default function OnboardingScreen() {
           </View>
         </ScrollView>
 
-        {showFooterButton ? (
+        {showFooterButton && !keyboardOpen ? (
           <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
             <PrimaryButton
               disabled={(step === 'about' && !ageConfirmed) || (step === 'body' && !weightInputValid) || ((step === 'target' || step === 'plan') && !!targetError)}
@@ -649,7 +661,7 @@ export default function OnboardingScreen() {
             />
           </View>
         ) : null}
-      </KeyboardAvoidingView>
+      </View>
 
       <Modal animationType="fade" onRequestClose={() => setShowConsent(false)} transparent visible={showConsent}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.modalScrim, { paddingTop: insets.top + 12 }]}>

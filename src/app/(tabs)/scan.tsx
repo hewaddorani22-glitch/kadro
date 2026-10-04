@@ -16,6 +16,8 @@ import { PrimaryButton } from '@/components/ui';
 import { PortionSheet } from '@/components/PortionSheet';
 import { ManualFoodForm } from '@/components/ManualFoodForm';
 import { radii } from '@/constants/theme';
+import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { frameToPhotoCrop, type Rect } from '@/utils/cameraCrop';
 import { useApp } from '@/context/AppContext';
 import { deleteTemporaryPhoto, FoodSearchResult, MealAnalysisError, searchFoods } from '@/services/mealAnalysis';
 import { foodUsage, mergeSuggestions, recentFoods, suggestFoods } from '@/services/foodSuggest';
@@ -83,6 +85,13 @@ export default function ScanScreen() {
   }, []);
   const [barcodeBusy, setBarcodeBusy] = useState(false);
   const cameraRef = useRef<CameraView>(null);
+  // Guide frame and camera view in window coordinates, for cropping.
+  const guideRef = useRef<View>(null);
+  const containerRef = useRef<View>(null);
+  const measure = (ref: { current: View | null }) => new Promise<Rect | null>(resolve => {
+    if (!ref.current) return resolve(null);
+    ref.current.measureInWindow((x, y, width, height) => resolve({ x, y, width, height }));
+  });
   const currentScan = useRef({ id: scannedMeal.id, descriptionInput, scanMode, isCurrentScanLogged });
   currentScan.current = { id: scannedMeal.id, descriptionInput, scanMode, isCurrentScanLogged };
   const inputOwner = useRef({ id: scannedMeal.id, logged: isCurrentScanLogged });
@@ -291,7 +300,24 @@ export default function ScanScreen() {
         return;
       }
       if (!result?.uri) throw new Error('missing camera uri');
-      setCapturedPhoto(result.uri);
+      // What is inside the frame is what gets analysed: crop to the guide.
+      let photoUri = result.uri;
+      try {
+        const [frame, view] = await Promise.all([measure(guideRef), measure(containerRef)]);
+        const crop = frame && view && result.width && result.height
+          ? frameToPhotoCrop({ ...frame, x: frame.x - view.x, y: frame.y - view.y }, view, { width: result.width, height: result.height })
+          : null;
+        if (crop) {
+          const cropped = await manipulateAsync(result.uri, [{ crop: { originX: crop.x, originY: crop.y, width: crop.width, height: crop.height } }], { compress: 0.92, format: SaveFormat.JPEG });
+          deleteTemporaryPhoto(result.uri);
+          photoUri = cropped.uri;
+        }
+      } catch { /* the full photo still works; never lose a capture over a crop */ }
+      if (!scanFocused.current || visit !== scanVisit.current || AppState.currentState !== 'active') {
+        deleteTemporaryPhoto(photoUri);
+        return;
+      }
+      setCapturedPhoto(photoUri);
       router.push('/analyzing');
     } catch {
       if (scanFocused.current && visit === scanVisit.current && AppState.currentState === 'active') {
@@ -489,7 +515,7 @@ export default function ScanScreen() {
   };
 
   return (
-    <View style={[styles.container, !cameraActive && styles.fallbackBackground]}>
+    <View ref={containerRef} style={[styles.container, !cameraActive && styles.fallbackBackground]}>
       {cameraActive ? (
         <>
           <CameraView
@@ -542,7 +568,7 @@ export default function ScanScreen() {
         </View>
 
         {cameraActive ? (
-          <View style={styles.guideArea}>
+          <View ref={guideRef} collapsable={false} style={styles.guideArea}>
             <View style={styles.cornerTopLeft} />
             <View style={styles.cornerTopRight} />
             <View style={styles.cornerBottomLeft} />

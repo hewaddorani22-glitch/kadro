@@ -1,8 +1,9 @@
+import { KandroMark } from '@/components/KandroMark';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import { usePathname, useRouter, useSegments } from 'expo-router';
 import { PropsWithChildren, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui';
 import { useAccess } from '@/context/AccessContext';
@@ -80,14 +81,20 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
         </View>
       );
     }
-    return <View style={styles.gate}><ActivityIndicator color={colors.accentText} /></View>;
+    return <BrandGate />;
   }
 
   // Block the result's save-on-arrival effect before it can mount. Redirecting
   // only in an effect would be too late: child effects may already have run.
-  if (accessRedirect || accessWaiting || (accessApplies && reminderPending)) return <View style={styles.gate}><ActivityIndicator color={colors.accentText} /></View>;
-  if (missingMealDraft || incompleteResult) return <View style={styles.gate}><ActivityIndicator color={colors.accentText} /></View>;
+  if (accessRedirect || accessWaiting || (accessApplies && reminderPending)) return <BrandGate />;
+  if (missingMealDraft || incompleteResult) return <BrandGate />;
   return children;
+}
+
+/** A short hand-over between screens: the brand, not a bare spinner. */
+function BrandGate() {
+  const styles = useThemedStyles(makeStyles);
+  return <View accessibilityLabel="Kandro" style={styles.gate}><KandroMark size={56} /></View>;
 }
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({

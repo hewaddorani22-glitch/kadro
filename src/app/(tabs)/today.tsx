@@ -179,7 +179,10 @@ export default function TodayScreen() {
               <Text style={styles.targetValue}>{proteinRange} g</Text>
             </View>
           </View>
-          <PrimaryButton icon="arrow-forward" label={t.today.showIdeas} onPress={() => router.push('/(tabs)/plan')} variant="secondary" />
+          {/* The aha moment is the first logged meal, not a list of ideas:
+              before it, the primary action opens capture directly. */}
+          {!hasLoggedScan ? <PrimaryButton icon="camera" label={t.today.logFirstMeal} onPress={() => router.push('/(tabs)/scan')} /> : null}
+          <PrimaryButton icon="arrow-forward" label={t.today.showIdeas} onPress={() => router.push('/(tabs)/plan')} variant={hasLoggedScan ? 'secondary' : 'ghost'} />
         </Card>
       )}
 

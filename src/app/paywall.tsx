@@ -20,6 +20,7 @@ import { useLanguage } from '@/i18n/LanguageProvider';
 import { successHaptic } from '@/services/haptics';
 import { TRIAL_REMINDER_LEAD_DAYS } from '@/services/reminders';
 import { formatNumber } from '@/utils/format';
+import { formatWeight } from '@/utils/units';
 import { toBillingMode, trackEvent } from '@/services/telemetry';
 
 type Plan = 'yearly' | 'monthly';
@@ -134,6 +135,9 @@ export default function PaywallScreen() {
   // happens today, when we remind, when billing starts. No pressure framing.
   const trialTimeline = Boolean(status !== 'active' && !testStore && selectedPlan?.hasFreeTrial
     && selectedPlan.trialDays && selectedPlan.trialDays > TRIAL_REMINDER_LEAD_DAYS);
+  // A user's own goal is the strongest reason to start: name it.
+  const goalWeight = profile && profile.age >= 18 && profile.goal !== 'maintain' && profile.targetWeightKg ? profile.targetWeightKg : null;
+  const goalHeadline = goalWeight ? t.paywall.goalHeadline(formatWeight(goalWeight, profile.unitSystem, locale)) : null;
   const plan = profile && targets.calories > 0
     ? t.paywall.planLine(formatNumber(targets.calories, locale), formatNumber(targets.protein, locale))
     : null;
@@ -229,7 +233,7 @@ export default function PaywallScreen() {
         </View> : <View style={styles.heroMark}><KandroMark size={32} /></View>}
         {testStore ? <View style={styles.testBadge}><Text style={styles.testBadgeText}>{t.paywall.testStoreBadge}</Text></View> : null}
         <Text style={styles.eyebrow}>{t.paywall.eyebrow}</Text>
-        <Text style={styles.title}>{blocked ? t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE) : hard ? t.paywall.hardTitle : t.access.title}</Text>
+        <Text style={styles.title}>{blocked ? t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE) : goalHeadline ?? (hard ? t.paywall.hardTitle : t.access.title)}</Text>
         <Text style={styles.subtitle}>{blocked ? t.paywall.blockedSub : hard ? t.paywall.hardSubtitle : t.access.subtitle}</Text>
 
         {!blocked ? <PersonalGoalSummary profile={profile} /> : null}

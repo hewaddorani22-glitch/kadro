@@ -133,7 +133,7 @@ function paywallFixture({ days = 7, eligible = true, mode = 'native-store', hard
     '@/services/presentation': { usePresentationBlock() {} }, '@/context/ThemeContext': { useTheme: () => ({ colors: {} }), useThemedStyles: () => ({}) },
     '@/context/AccessContext': { useAccess: () => ({ record: { hard, variant: hard ? 'B' : 'A', source: 'qa' }, refresh: async () => {}, markSeen() {}, ready: true, state: 'allowed' }) },
     '@/context/AppContext': { useApp: () => ({ freeScansLeft: 3, profile: null, targets: { calories: 0 } }) }, '@/services/accessPolicy': { takeAccessDestination: () => '/' }, '@/context/SubscriptionContext': { useSubscription: () => state },
-    '@/i18n/LanguageProvider': { useLanguage: () => ({ t: dict, locale: 'en-GB' }) }, '@/services/haptics': { successHaptic() {} }, '@/services/reminders': { TRIAL_REMINDER_LEAD_DAYS: 2 }, '@/utils/format': { formatNumber: n => String(n) }, '@/services/telemetry': { toBillingMode: x => x, trackEvent() {} },
+    '@/i18n/LanguageProvider': { useLanguage: () => ({ t: dict, locale: 'en-GB' }) }, '@/services/haptics': { successHaptic() {} }, '@/services/reminders': { TRIAL_REMINDER_LEAD_DAYS: 2 }, '@/utils/format': { formatNumber: n => String(n) }, '@/utils/units': { formatWeight: kg => kg + ' kg' }, '@/services/telemetry': { toBillingMode: x => x, trackEvent() {} },
   }).default;
   const render = () => h.render(screen);
   const cards = tree => nodes(tree).filter(n => n.type?.name === 'PlanCard');

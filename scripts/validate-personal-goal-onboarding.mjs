@@ -47,7 +47,7 @@ function controller(profile=base,editing=false){
  const source=process.env.KANDRO_ONBOARDING_BASELINE==='1'?execFileSync('git',['show','HEAD:src/app/onboarding.tsx'],{encoding:'utf8'}):read('src/app/onboarding.tsx');
  const screen=load('src/app/onboarding.tsx',{
   react,'react/jsx-runtime':{jsx,jsxs:jsx,Fragment:'Fragment'},
-  'react-native':{...Object.fromEntries(['KeyboardAvoidingView','Modal','Pressable','ScrollView','Text','TextInput','View'].map(k=>[k,k])),Platform:{OS:'ios'},StyleSheet:{create:v=>v,hairlineWidth:1},useWindowDimensions:()=>({height:844,fontScale:1})},
+  'react-native':{...Object.fromEntries(['KeyboardAvoidingView','Modal','Pressable','ScrollView','Text','TextInput','View'].map(k=>[k,k])),Platform:{OS:'ios'},Keyboard:{addListener:()=>({remove(){}})},StyleSheet:{create:v=>v,hairlineWidth:1},useWindowDimensions:()=>({height:844,fontScale:1})},
   'react-native-safe-area-context':{SafeAreaView:'SafeAreaView',useSafeAreaInsets:()=>({top:0,bottom:0})},
   'expo-router':{useLocalSearchParams:()=>editing?{edit:'1'}:{},useRouter:()=>({replace:p=>routes.push(p),push:p=>routes.push(p)})},
   '@expo/vector-icons/Ionicons':{default:'Icon'},'@/components/WeightEntry':{WeightEntry:'WeightEntry'},'@/components/KandroMark':{KandroMark:'Mark'},
