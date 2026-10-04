@@ -1,52 +1,57 @@
-# App Review notes — Kandro 1.0
+# App Review notes — Kandro 1.0.3 (build 35)
 
-Paste the relevant section into App Store Connect after replacing the bracketed build-specific values.
+Paste the "Review notes" section into App Store Connect → version 1.0.3 → App Review Information → Notes.
 
 ## Review notes (English)
 
-Kandro is a general wellness nutrition-planning app for users aged 14 and over. It does not diagnose or treat a medical condition and is not submitted in the Kids category.
+Kandro is a general wellness calorie and nutrition tracker for users aged 14 and over. It does not diagnose or treat a medical condition and is not submitted in the Kids category.
 
-No login is required. On first launch, the reviewer completes onboarding and gives explicit consent before any nutrition, body, photo or text data is transferred. Consent can be withdrawn under **You → Analysis & data use**. The app then blocks all analysis and cloud processing while preserving existing data. **You → Delete account and data** permanently deletes the Supabase account, linked Kandro cloud data, linked RevenueCat customer and local Kandro data without contacting support. An Apple subscription remains separately manageable through the Apple subscription settings, which are linked on the same screen.
+**No login is required.** On first launch the reviewer completes a short onboarding (goal, age, body data, activity, optional target weight) and gives explicit consent before any nutrition, body, photo, voice-transcript or text data is transferred. Kandro then builds the personal plan on screen and shows it.
 
-The central Scan button offers four paths:
+**Subscription and free trial.** New adult installs are randomly assigned to one of two access variants of the same subscription offer:
+- Variant A: the app can be used first; the paywall appears after the free AI analyses are used.
+- Variant B: after onboarding the paywall offers the 7-day free trial before AI logging starts.
+Both variants show price, period, auto-renewal, cancellation, Privacy Policy, Terms and **Restore Purchases** before purchase, and both offer the same App Store products. Please use the App Store sandbox purchase sheet. Search, previously logged meals, settings, consent withdrawal and account deletion never require a subscription. Pro is shown as active only after Kandro's server verifies the Apple transaction; Restore Purchases repeats the same verification.
 
-1. Photo: camera permission is requested only after the reviewer chooses Photo. Photograph one meal, then tap the shutter.
-2. Describe: enter a meal in words.
-3. Barcode: scan a packaged-food barcode.
-4. Search: select a food without an AI call.
-
-Every photo or text estimate goes to a confirmation screen before it is saved. The reviewer can change gram amounts and remove ingredients. The meal result then updates the daily targets and reveals exactly three next-meal options.
-
-The first three successful AI results are free and count when the result is returned, even if the confirmation screen is later abandoned. Afterwards the paywall offers the live App Store monthly and annual subscriptions, with up to 60 photo or text analyses per UTC day. Prices, period, auto-renewal, cancellation, Privacy Policy, Terms and Restore Purchases are visible before purchase. Search, previously logged meals and account deletion do not require a subscription. After purchase or restore, Kandro displays Pro as active only after its authenticated server verifies a currently access-giving Apple App Store subscription against the submitted app, product and entitlement IDs. The app performs a bounded retry if RevenueCat has not yet observed the Apple transaction; Restore Purchases repeats the same server verification and never grants access from the device alone.
-
-**Age and calorie safety are enforced in both the client and database.** Ages below 14 cannot be entered. Ages 14–15 remain locked until a parent or legal guardian affirmatively confirms a single-use emailed link; the protected analysis gateway independently verifies that record before any provider receives data. Ages 16–17 can consent themselves. Optional PostHog analytics remain disabled for every user under 18.
-
-For ages 14–17, Kandro uses the 2023 Dietary Reference Intake adolescent Estimated Energy Requirement equation, which includes normal growth. Their goal may change meal ranking, but Kandro applies neither a calorie deficit nor a surplus and shows no weight-change pace. Adults use Mifflin-St Jeor times an activity factor. Adult targets never fall below 1,300 kcal or 70% of maintenance, whichever is higher. There is no fasting mode or punishment mechanic. Progress displays consecutive days with a logged meal; this is a logging streak, not a reward for eating less or meeting a calorie deficit.
-
-Test account: none required; Kandro creates an anonymous Supabase session only after consent.
-
-Subscription products submitted with this version:
-
-- `com.hewaddorani.kandro.pro.monthly`
+Subscription products:
+- `com.hewaddorani.kandro.pro.monthly` (7-day free trial for eligible new subscribers)
 - `com.hewaddorani.kandro.pro.annual`
 - Entitlement: `kandro_pro`
 
-For review, use the App Store sandbox purchase sheet. Apple sandbox subscriptions are accepted for TestFlight/App Review; RevenueCat Test Store purchases used by Expo Go are explicitly rejected by the production gateway. If analysis is temporarily unavailable, the deterministic **Example meal** remains available, but the production endpoint is expected to be live during review.
+**Logging.** The central button offers:
+1. Photo — camera permission is requested only when Photo is chosen. A torch button is available for dark rooms.
+2. Describe — type a meal in your own words, or tap the microphone and speak it. Speech is converted to text by Apple's speech recognition (on device where supported); no audio is recorded or stored.
+3. Barcode — scan a packaged food.
+4. Search — pick a food from the German Federal Food Code (BLS) or product database without any AI call.
 
-**Age policy.** The Terms, onboarding and database consistently require age 14 or over. Apple’s questionnaire should disclose Health or Wellness Topics and a 13+ developer age tier; the app itself blocks age 13 and below. This is not a Kids-category app. Guardian confirmation for ages 14–15 is described in the privacy notice and can be withdrawn through support.
+Every AI estimate goes to a confirmation screen where amounts can be changed and ingredients removed before saving.
 
-Adolescent EER methodology: `https://www.canada.ca/en/health-canada/services/food-nutrition/healthy-eating/dietary-reference-intakes/tables/equations-estimate-energy-requirement.html`
+**Privacy controls.** Consent can be withdrawn under **You → Analysis & data use**; analysis and cloud processing then stop while existing data is kept. **You → Delete account and data** permanently deletes the account, cloud data, the linked RevenueCat customer and local data in the app, without contacting support. An Apple subscription remains manageable in the Apple subscription settings, linked on the same screen.
 
-Support: `https://getkandro.com/en/support`
-Privacy: `https://getkandro.com/en/privacy`
-Terms: `https://getkandro.com/en/terms`
+**Age and calorie safety (client and database).** Ages below 14 cannot be entered. Ages 14–15 remain locked until a parent or guardian confirms a single-use emailed link. For ages 14–17 Kandro uses the adolescent Estimated Energy Requirement (DRI 2023) including growth, applies no deficit or surplus and shows no weight pace; teens are excluded from the paywall experiment and from analytics. Adults use Mifflin-St Jeor × activity factor; targets never fall below 1,300 kcal or 70 % of maintenance. There is no fasting mode or punishment mechanic.
 
-## Final build evidence to attach internally
+Sign in with Apple is not part of this build.
 
-- Production build number and EAS build URL.
-- RevenueCat Offering screenshot showing monthly and annual packages.
-- Sandbox purchase and restore result on a physical iPhone.
-- Video or screenshots of consent grant, consent withdrawal, and in-app account deletion.
-- Live scan, description, barcode-not-found fallback, offline retry, and oversized-photo error.
-- Five final App Store screenshots per locale from the submitted binary.
-- 30-meal weighed iPhone accuracy report from `npm run accuracy`.
+Support: https://getkandro.com/en/support
+Privacy: https://getkandro.com/en/privacy
+Terms: https://getkandro.com/en/terms
+
+## What's New (DE)
+
+Schneller erfassen und ehrlichere Ergebnisse:
+- Mahlzeit einsprechen per Mikrofon
+- Taschenlampe beim Foto-Scan
+- Zuverlässigere Fotoerkennung und Beschreibung, auch bei langen Sätzen
+- Bessere Suche für Alltagslebensmittel (Wein, Salat, Paprika, Eiweiß …)
+- Dein Plan wird jetzt Schritt für Schritt vor deinen Augen erstellt
+- Viele Design- und Stabilitätsverbesserungen
+
+## What's New (EN)
+
+Faster logging and more reliable results:
+- Speak your meal with the microphone
+- Torch for photo scans
+- More reliable photo recognition and descriptions, even long ones
+- Better search for everyday foods
+- Your plan is now built step by step in front of you
+- Many design and stability improvements
