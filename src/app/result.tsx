@@ -24,7 +24,7 @@ export default function ResultScreen() {
   const { fontScale, width } = useWindowDimensions();
   const largeText = fontScale > 1.3;
   const calorieSize = largeText ? Math.min(width - 40, Math.ceil(122 * fontScale)) : 122;
-  const { descriptionInput, lifetimeScanCount, logScannedMeal, meals, photoUri, profile, scanMode, scannedMeal, targets } = useApp();
+  const { lifetimeScanCount, logScannedMeal, meals, photoUri, profile, scanMode, scannedMeal, targets } = useApp();
   const preview = projectMealForDay(targets, meals, scannedMeal);
   const projected = preview.remaining;
   const startingRemaining = preview.before.calories;
@@ -196,12 +196,13 @@ export default function ResultScreen() {
       {demo ? <Text accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{t.result.demoNotSaved}</Text>
         : saveStatus === 'saving' ? <Text accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{t.common.saving}</Text> : null}
 
-      <MealPhoto height={270} description={scanMode === 'description' ? descriptionInput : undefined} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
+      {/* A photo is worth showing; a typed sentence is already the title below. */}
+      {photoUri ? <MealPhoto height={270} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} /> : null}
 
       <View style={styles.resultHeading}>
         <View style={[styles.titleRow, largeText && styles.titleRowLarge]}>
           <View style={[styles.mealCopy, largeText && styles.mealCopyLarge]}>
-            <Text style={styles.mealTitle}>{scannedMeal.title}</Text>
+            <Text style={[styles.mealTitle, scannedMeal.title.length > 28 && styles.mealTitleLong]}>{scannedMeal.title}</Text>
             <ConfidenceBadge />
           </View>
           <View style={[styles.calorieBlock, { width: calorieSize, height: calorieSize }]}>
@@ -232,7 +233,7 @@ export default function ResultScreen() {
                 <Text style={styles.ingredientName}>{item.name}</Text>
                 <View style={styles.ingredientMeta}>
                   <Text style={styles.ingredientAmount}>{formatNumber(item.amountG, locale)} g</Text>
-                  <Text style={styles.ingredientSource}>{friendlySource(item.source.label) ?? ''}</Text>
+                  <Text numberOfLines={1} style={styles.ingredientSource}>{friendlySource(item.source.label)?.replace(/^(Quelle|Source): /, '') ?? ''}</Text>
                 </View>
               </View>
               {index < list.length - 1 ? <View style={styles.divider} /> : null}
@@ -360,6 +361,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   mealCopy: { flex: 1, gap: 10 },
   mealCopyLarge: { flex: 0, width: '100%' },
   mealTitle: { color: colors.text, fontSize: 29, lineHeight: 34, fontWeight: '700', letterSpacing: -0.8 },
+  mealTitleLong: { fontSize: 22, lineHeight: 27, letterSpacing: -0.4 },
   calorieBlock: { alignSelf: 'center', alignItems: 'center', justifyContent: 'center' },
   impactRing: { position: 'absolute', top: 0, left: 0 },
   calorieCenter: { maxWidth: '100%', alignItems: 'center' },
@@ -378,7 +380,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   ingredientName: { flex: 1, color: colors.text, fontSize: 13, fontWeight: '600' },
   ingredientMeta: { alignItems: 'flex-end', gap: 2 },
   ingredientAmount: { color: colors.muted, fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  ingredientSource: { color: colors.muted, fontSize: 8 },
+  ingredientSource: { color: colors.muted, fontSize: 11 },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 46 },
   dayCard: { backgroundColor: colors.camera, borderColor: colors.camera, gap: 19 },
   dayHeader: { flexDirection: 'row', alignItems: 'center', gap: 11 },

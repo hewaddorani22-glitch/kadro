@@ -153,8 +153,11 @@ export default function ConfirmScreen() {
       {detectedItems.map((item) => {
         const unresolved = needsIngredientCorrection(item);
         const selection = initialSelection(item.amountG, item.portions, { chosen: true });
-        const amount = selection.unitIndex >= 0
-          ? `${formatNumber(Number(selection.amount), locale)} × ${item.portions![selection.unitIndex].label} · ${formatNumber(item.amountG, locale)} g`
+        // "2 Eier · 116 g" reads naturally; a generic "1 Portion" adds nothing.
+        const unit = selection.unitIndex >= 0 ? item.portions![selection.unitIndex].label : null;
+        const count = Number(selection.amount);
+        const amount = unit && unit !== t.scan.portionServing
+          ? `${count === 1 ? unit : `${formatNumber(count, locale)} × ${unit}`} · ${formatNumber(item.amountG, locale)} g`
           : `${formatNumber(item.amountG, locale)} g`;
         return (
           <Card key={`ingredient-${item.id}`} style={styles.ingredientCard}>

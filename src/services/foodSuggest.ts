@@ -22,7 +22,9 @@ const { searchBlsCatalog } = require('../../supabase/functions/_shared/bls-searc
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { resolveReviewedStapleFacts } = require('../../supabase/functions/_shared/bls-reference.mjs') as { resolveReviewedStapleFacts: (query: string) => { referenceId: string } | null };
 
-export const fold = (value: string) => value.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^a-z0-9%]+/g, ' ').trim();
+// "Haehnchen" and "Hähnchen" are the same word: umlaut spellings fold to the
+// same key on both sides (index and query), so ae/oe/ue typing still matches.
+export const fold = (value: string) => value.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/ae/g, 'a').replace(/oe/g, 'o').replace(/ue/g, 'u').replace(/[^a-z0-9%]+/g, ' ').trim();
 
 /**
  * Everyday foods people actually log, in rough order of how often. They lead
@@ -47,7 +49,7 @@ const EVERYDAY_RANK = new Map(EVERYDAY.map((code, index) => [code, index]));
  * ("Ei" → Hühnerei, "Nudeln" → Teigwaren, "Brot" → Vollkornbrot). Typing any
  * prefix of such a word ranks these rows first. Keys are folded (no umlauts).
  */
-const ALIASES: Record<string, readonly string[]> = {
+const RAW_ALIASES: Record<string, readonly string[]> = {
   ei: ['E111132', 'Y710142', 'E111100'], eier: ['E111132', 'Y710142', 'E111100'], egg: ['E111132', 'Y710142', 'E111100'], eggs: ['E111132', 'Y710142', 'E111100'], spiegelei: ['Y710142'], ruhrei: ['Y720143'],
   nudeln: ['E401032'], pasta: ['E401032'], spaghetti: ['E401032'], penne: ['E401032'], noodles: ['E401032'],
   brot: ['B101000', 'B271000', 'B314000'], bread: ['B101000', 'B271000', 'B314000'], toast: ['B314000', 'B314072', 'B111200'], toastbrot: ['B314000'],
@@ -82,6 +84,9 @@ function aliasCodes(query: string) {
 
 /** Typical household portions, always labelled as estimates and editable. */
 type PortionKind = 'piece' | 'slice' | 'glass' | 'cup' | 'pot' | 'can' | 'bottle' | 'tbsp' | 'tsp' | 'portion' | 'fillet' | 'ball' | 'egg' | 'half';
+// Keys fold exactly like typed queries (ä/ae, ö/oe, ü/ue, ß/ss).
+const ALIASES: Record<string, readonly string[]> = Object.fromEntries(Object.entries(RAW_ALIASES).map(([key, codes]) => [fold(key).replace(/ /g, ''), codes]));
+
 const PORTIONS: Record<string, readonly (readonly [PortionKind, number])[]> = {
   F503100: [['piece', 120]], F110100: [['piece', 150]], F603100: [['piece', 150]], F130100: [['piece', 160]], F514100: [['piece', 75]],
   F502100: [['half', 70]], G561100: [['piece', 80]], G620100: [['piece', 60]], E111100: [['egg', 58]], E111132: [['egg', 58]], Y710142: [['egg', 62]],

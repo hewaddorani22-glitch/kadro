@@ -133,10 +133,10 @@ export default function AnalyzingScreen() {
         <View style={styles.photoWrap}>
           <MealPhoto height={photoHeight} description={scanMode === 'description' ? descriptionInput : undefined} placeholder={mealPhotoPlaceholder(scanMode)} uri={photoUri} />
           {!failed && scanMode !== 'description' ? <View style={styles.scanLine} /> : null}
-          <View style={styles.analyzingPill}>
-            <View style={[styles.liveDot, failed && styles.warningDot]} />
-            <Text style={styles.analyzingPillText}>{failed ? t.analyzing.badgeCheck : t.analyzing.badgeAnalysing}</Text>
-          </View>
+          {!failed ? <View style={styles.analyzingPill}>
+            <View style={styles.liveDot} />
+            <Text style={styles.analyzingPillText}>{t.analyzing.badgeAnalysing}</Text>
+          </View> : null}
         </View>
 
         <View style={styles.content}>
