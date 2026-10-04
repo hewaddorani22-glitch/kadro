@@ -417,3 +417,11 @@ and release plan. No second general audit or extra feature package was started.
 - [ ] Eigentümerentscheidung F02 (Paywall-Testumfang) vor jedem Deploy.
 - [ ] Release 1.0.4 „Erfassung“: Migrationen + Gateway (Freigabe), ein Build, Gerätetest.
 - [ ] Onboarding mit Zielgewicht/-datum, Verlauf als Fortschritt, Pro-Wochenrückblick (Masteraudit D.2–D.5).
+
+### 04.10.2026 (Abend) – Eigentümerentscheidung: offene Testgruppe, Designdurchgang, Build 27
+
+- **Entscheidung (Eigentümer, ausdrücklich bestätigt):** `paywall_access_v1` ist für alle neuen erwachsenen Installationen offen, auch anonym. Ausgeschlossen bleiben bestehende Konten, Minderjährige, Vorabnutzung, aktive Abos und fehlende Trial-Berechtigung. Migration `20261004160156_reopen_paywall_new_installs` ersetzt die konservative Wiederherstellung `20261004145423`. Nicht erneut auf „nur verknüpfte Konten“ zurückdrehen ohne neue Eigentümeranweisung.
+- Experiment aktiv seit 04.10.2026 16:39 UTC (`public_enabled = true`). End-to-End im Simulator geprüft: anonyme Neuinstallation → `eligible` → Variante B → harte Paywall.
+- Rechtstexte 2.1 live (getkandro.com) passend zur offenen Regel.
+- Design: Onboarding ohne Tippfelder für Wunschziel (Stepper, Datums-Chips), kompakte Messzeilen, Plan mit Makros; Erinnerungsseite; Heute mit „gegessen · übrig · Ziel“ und Makrofarben; Verlauf (Kalorien → Gewicht → Protein); kompakte Suche; Profil-Reihenfolge; Paywall ohne Einwilligungsblock (bleibt unter Du).
+- Store-Build 1.0.3 (27) mit automatischem TestFlight-Upload, 0 € Zusatzkosten. Keine App-Review-Einreichung ohne Eigentümerfreigabe.
