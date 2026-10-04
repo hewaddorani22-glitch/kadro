@@ -20,8 +20,8 @@ if (crashReportingEnabled) {
     tracesSampleRate: 0,
     maxBreadcrumbs: 30,
     beforeBreadcrumb(breadcrumb) {
-      // Console, navigation params and network bodies can carry user input.
-      if (breadcrumb.category === 'console' || breadcrumb.category === 'xhr' || breadcrumb.category === 'fetch') return null;
+      // Console, route params, typed text and network bodies can carry user input.
+      if (['console', 'xhr', 'fetch', 'navigation', 'ui.input'].includes(breadcrumb.category ?? '')) return null;
       return breadcrumb;
     },
     beforeSend(event) {

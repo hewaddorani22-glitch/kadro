@@ -14,7 +14,8 @@
         "EXPO_PUBLIC_LEGAL_PRIVACY_URL": "https://getkandro.com/privacy",
         "EXPO_PUBLIC_LEGAL_TERMS_URL": "https://getkandro.com/terms",
         "EXPO_PUBLIC_LEGAL_SUPPORT_URL": "https://getkandro.com/support",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://0d6cae0eb2a45eab4b2c82d8ff6c2476@o4512199804715008.ingest.de.sentry.io/4512199829553232"
       }
     },
     "production": {
@@ -28,7 +29,8 @@
         "EXPO_PUBLIC_LEGAL_PRIVACY_URL": "https://getkandro.com/privacy",
         "EXPO_PUBLIC_LEGAL_TERMS_URL": "https://getkandro.com/terms",
         "EXPO_PUBLIC_LEGAL_SUPPORT_URL": "https://getkandro.com/support",
-        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://0d6cae0eb2a45eab4b2c82d8ff6c2476@o4512199804715008.ingest.de.sentry.io/4512199829553232"
       }
     }
   },
