@@ -26,12 +26,14 @@
       },
       "infoPlist": {
         "NSCameraUsageDescription": "Kandro uses the camera to photograph your meal and estimate nutrition. The original photo is discarded after analysis and is not stored.",
+        "NSPhotoLibraryUsageDescription": "Kandro uses the meal photo you choose to estimate its nutrition.",
+        "NSMicrophoneUsageDescription": "Kandro uses the microphone only while you dictate a meal. Audio is not stored.",
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": false
         },
         "ITSAppUsesNonExemptEncryption": false
       },
-      "usesAppleSignIn": false
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.hewaddorani.kandro",
@@ -52,7 +54,7 @@
         "expo-camera",
         {
           "cameraPermission": "Allow Kandro to photograph meals for analysis.",
-          "microphonePermission": false,
+          "microphonePermission": "Kandro uses the microphone only while you dictate a meal. Audio is not stored.",
           "recordAudioAndroid": false
         }
       ],
@@ -68,13 +70,14 @@
       [
         "expo-speech-recognition",
         {
-          "microphonePermission": "Kandro nutzt das Mikrofon nur, während du deine Mahlzeit einsprichst.",
+          "microphonePermission": "Kandro uses the microphone only while you dictate a meal. Audio is not stored.",
           "speechRecognitionPermission": "Kandro wandelt deine gesprochene Mahlzeit mit Apples Spracherkennung in Text um. Es wird keine Aufnahme gespeichert.",
           "androidSpeechServicePackages": [
             "com.google.android.googlequicksearchbox"
           ]
         }
       ],
+      "expo-apple-authentication",
       "./plugins/withAppleSignInGate",
       "@sentry/react-native"
     ],

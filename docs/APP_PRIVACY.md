@@ -50,3 +50,10 @@ USDA receives normalized food search terms. Open Food Facts receives a barcode. 
 - Account deletion: **You → Delete account and data**
 - Analytics opt-out: **You → Privacy settings → Anonymous usage analytics**
 - Account deletion does not cancel an Apple subscription; the app says this before deletion.
+
+
+## Native Apple account candidate
+
+Voluntary Sign in with Apple uses the existing linked User ID and optional email disclosures above. Apple sends its account identifier and identity/authorization credentials to the native app; the fresh authorization code is forwarded only to the authenticated Kandro backend. The backend validates the Apple response and keeps an encrypted refresh token solely for account authentication lifecycle and revocation. The encryption key is stored separately as an Edge secret. Client roles cannot read or modify the token table, and account erasure cascades the row. Raw codes and token payloads are not persisted in client storage or returned in function errors.
+
+A local recovery marker contains only the Kandro and Apple identity references, to prevent revoked access from silently creating a replacement guest account or mixing diaries. Successful account deletion removes the markers. If no usable Apple token exists, deletion still proceeds and the app explains manual removal under the user's Apple account settings. This does not cancel an Apple subscription. Verify real native sign-in and revocation on the submitted binary before claiming release readiness.

@@ -2,6 +2,8 @@ import { User } from '@supabase/supabase-js';
 import type { Language } from '@/i18n';
 
 import { getDictionary } from '@/i18n/active';
+import { clearAppleTokenPending, loadAppleReauthentication, loadAppleTokenPending, markAppleTokenPending, runAccountOperation } from '@/services/appleReauthentication';
+import type { AppleAccountReference } from '@/services/appleReauthentication';
 import {
   ensureSupabaseUser,
   enableCloudSyncAfterDeletion,
@@ -16,13 +18,23 @@ export type AccountLinkState =
   | { status: 'disabled' }
   | { status: 'anonymous'; userId: string }
   | { status: 'pending'; userId: string; email: string }
-  | { status: 'linked'; userId: string; email: string };
+  | { status: 'linked'; userId: string; email: string | null; appleLinked: boolean; appleTokenPending?: boolean };
+
+export type AppleAccountCredential = { token: string; nonce: string; authorizationCode: string; appleUserId: string };
+
+export function appleReferenceFromUser(user: User | null): AppleAccountReference | null {
+  const identity = user?.identities?.find(candidate => candidate.provider === 'apple');
+  const appleUserId = identity?.identity_data?.sub ?? identity?.id;
+  return user && typeof appleUserId === 'string' && appleUserId ? { userId: user.id, appleUserId } : null;
+}
 
 function stateFromUser(user: User | null): AccountLinkState {
   if (!user) return { status: 'unavailable' };
-  if (!user.is_anonymous && user.email) return { status: 'linked', userId: user.id, email: user.email };
-  // Apple can hide the address; a non-anonymous identity is still linked.
-  if (!user.is_anonymous && user.identities?.some(identity => identity.provider === 'apple')) return { status: 'linked', userId: user.id, email: 'Apple-ID' };
+  const appleLinked = user.identities?.some(identity => identity.provider === 'apple') === true;
+  // The verified identity is authoritative; Apple may omit the email on later logins.
+  if (!user.is_anonymous && (user.email || appleLinked)) {
+    return { status: 'linked', userId: user.id, email: user.email ?? null, appleLinked };
+  }
   if (user.new_email) return { status: 'pending', userId: user.id, email: user.new_email };
   return { status: 'anonymous', userId: user.id };
 }
@@ -61,17 +73,29 @@ async function currentUser() {
 export async function getAccountLinkState(): Promise<AccountLinkState> {
   if (!supabase || !isSupabaseConfigured) return { status: 'unavailable' };
   if (await isCloudSyncDisabledAfterDeletion()) return { status: 'disabled' };
-  return stateFromUser(await currentUser());
+  const state = stateFromUser(await currentUser());
+  if (state.status === 'linked' && state.appleLinked) {
+    return { ...state, appleTokenPending: (await loadAppleTokenPending())?.userId === state.userId };
+  }
+  return state;
 }
 
-export async function enableNewCloudAccount(): Promise<AccountLinkState> {
+export function enableNewCloudAccount(): Promise<AccountLinkState> {
+  return runAccountOperation(() => enableNewCloudAccountUnlocked());
+}
+
+async function enableNewCloudAccountUnlocked(): Promise<AccountLinkState> {
   if (!supabase || !isSupabaseConfigured) return { status: 'unavailable' };
   await enableCloudSyncAfterDeletion();
   const user = await ensureSupabaseUser();
   return stateFromUser(user);
 }
 
-export async function requestEmailLink(email: string, displayName: string, language: Language): Promise<AccountLinkState> {
+export function requestEmailLink(email: string, displayName: string, language: Language): Promise<AccountLinkState> {
+  return runAccountOperation(() => requestEmailLinkUnlocked(email, displayName, language));
+}
+
+async function requestEmailLinkUnlocked(email: string, displayName: string, language: Language): Promise<AccountLinkState> {
   const client = requireClient();
   const user = await currentUser();
   if (!user) throw new Error(getDictionary().errors.sessionNotLoaded);
@@ -98,7 +122,11 @@ export async function resendEmailLink(email: string) {
   if (error) throw error;
 }
 
-export async function verifyEmailLink(email: string, token: string): Promise<AccountLinkState> {
+export function verifyEmailLink(email: string, token: string): Promise<AccountLinkState> {
+  return runAccountOperation(() => verifyEmailLinkUnlocked(email, token));
+}
+
+async function verifyEmailLinkUnlocked(email: string, token: string): Promise<AccountLinkState> {
   const client = requireClient();
   const user = await currentUser();
   if (!user) throw new Error(getDictionary().errors.sessionNotLoaded);
@@ -114,7 +142,11 @@ export async function verifyEmailLink(email: string, token: string): Promise<Acc
   return stateFromUser(assertSameUser(user.id, data.user));
 }
 
-export async function refreshEmailLink(): Promise<AccountLinkState> {
+export function refreshEmailLink(): Promise<AccountLinkState> {
+  return runAccountOperation(() => refreshEmailLinkUnlocked());
+}
+
+async function refreshEmailLinkUnlocked(): Promise<AccountLinkState> {
   const client = requireClient();
   const user = await currentUser();
   if (!user) throw new Error(getDictionary().errors.sessionNotLoaded);
@@ -123,7 +155,11 @@ export async function refreshEmailLink(): Promise<AccountLinkState> {
   return stateFromUser(assertSameUser(user.id, data.user));
 }
 
-export async function setAccountPassword(password: string): Promise<AccountLinkState> {
+export function setAccountPassword(password: string): Promise<AccountLinkState> {
+  return runAccountOperation(() => setAccountPasswordUnlocked(password));
+}
+
+async function setAccountPasswordUnlocked(password: string): Promise<AccountLinkState> {
   const client = requireClient();
   const user = await currentUser();
   if (!user || user.is_anonymous || !user.email) throw new Error(getDictionary().errors.confirmEmailFirst);
@@ -133,7 +169,11 @@ export async function setAccountPassword(password: string): Promise<AccountLinkS
   return stateFromUser(assertSameUser(user.id, data.user));
 }
 
-export async function signInToExistingAccount(email: string, password: string): Promise<AccountLinkState> {
+export function signInToExistingAccount(email: string, password: string): Promise<AccountLinkState> {
+  return runAccountOperation(() => signInToExistingAccountUnlocked(email, password));
+}
+
+async function signInToExistingAccountUnlocked(email: string, password: string): Promise<AccountLinkState> {
   const client = requireClient();
   if (password.length < 8) throw new Error(getDictionary().account.passwordInvalid);
   const { data, error } = await client.auth.signInWithPassword({ email: normalizeEmail(email), password });
@@ -152,8 +192,10 @@ export async function appleCredential() {
     requestedScopes: [Apple.AppleAuthenticationScope.EMAIL],
     nonce: hashedNonce,
   });
-  if (!credential.identityToken) throw new Error(getDictionary().errors.linkingFailed);
-  return { token: credential.identityToken, nonce: rawNonce };
+  if (!credential.identityToken || !credential.authorizationCode || !credential.user) throw new Error(getDictionary().errors.linkingFailed);
+  // This fresh, single-use code is sent directly to our authenticated backend.
+  // It is never written to storage, telemetry or the account state.
+  return { token: credential.identityToken, nonce: rawNonce, authorizationCode: credential.authorizationCode, appleUserId: credential.user };
 }
 
 export function isAppleCancel(error: unknown) {
@@ -161,31 +203,102 @@ export function isAppleCancel(error: unknown) {
 }
 
 export function isAppleIdentityTaken(error: unknown) {
+  if (error && typeof error === 'object' && (error as { code?: string }).code === 'identity_already_exists') return true;
   const message = error instanceof Error ? error.message.toLowerCase() : '';
   return message.includes('identity') && (message.includes('already') || message.includes('exists'));
 }
 
-/** Keeps the current guest account and its data; adds Apple as its login. */
-export async function linkAppleAccount(credential: { token: string; nonce: string }): Promise<AccountLinkState> {
+async function storeAppleAccountToken(user: User, credential: AppleAccountCredential) {
+  const reference = appleReferenceFromUser(user);
+  if (!reference || reference.appleUserId !== credential.appleUserId) throw new Error(getDictionary().account.appleRecoveryWrong);
+  try {
+    await markAppleTokenPending(reference);
+    const { data, error } = await requireClient().functions.invoke('apple-account-token', {
+      body: { authorizationCode: credential.authorizationCode, nonce: credential.nonce },
+    });
+    if (error || data?.stored !== true) throw new Error('Apple token storage incomplete');
+    await clearAppleTokenPending(user.id);
+  } catch {
+    // Transport errors can contain request details. Display only fixed copy.
+    throw new Error(getDictionary().account.appleTokenRetry);
+  }
+}
+
+/** Adds Apple to the current guest or email account without changing its ID. */
+export function linkAppleAccount(credential: AppleAccountCredential): Promise<AccountLinkState> {
+  return runAccountOperation(() => linkAppleAccountUnlocked(credential));
+}
+
+async function linkAppleAccountUnlocked(credential: AppleAccountCredential): Promise<AccountLinkState> {
   const client = requireClient();
   const user = await currentUser();
   if (!user) throw new Error(getDictionary().errors.sessionNotLoaded);
+  const current = stateFromUser(user);
+  if (current.status === 'linked' && current.appleLinked) {
+    await storeAppleAccountToken(user, credential);
+    return current;
+  }
   const { data, error } = await client.auth.linkIdentity({ provider: 'apple', token: credential.token, nonce: credential.nonce });
-  if (error) throw error;
-  return stateFromUser(assertSameUser(user.id, data.user));
+  if (error) {
+    // Another completed attempt may already have linked this same account.
+    // Do not offer a destructive account switch for an identity we now own.
+    if (isAppleIdentityTaken(error)) {
+      const refreshed = await client.auth.getUser();
+      if (!refreshed.error && refreshed.data.user?.id === user.id) {
+        const latest = stateFromUser(assertSameUser(user.id, refreshed.data.user));
+        if (latest.status === 'linked' && latest.appleLinked) {
+          await storeAppleAccountToken(refreshed.data.user, credential);
+          return latest;
+        }
+      }
+    }
+    throw error;
+  }
+  const linkedUser = assertSameUser(user.id, data.user);
+  const linked = stateFromUser(linkedUser);
+  if (linked.status !== 'linked' || !linked.appleLinked) throw new Error(getDictionary().errors.linkingFailed);
+  await storeAppleAccountToken(linkedUser, credential);
+  return linked;
 }
 
 /** Loads an existing Apple-linked account (new phone). Caller handles the switch. */
-export async function signInWithApple(credential: { token: string; nonce: string }): Promise<AccountLinkState> {
+export function signInWithApple(credential: AppleAccountCredential): Promise<AccountLinkState> {
+  return runAccountOperation(() => signInWithAppleUnlocked(credential));
+}
+
+async function signInWithAppleUnlocked(credential: AppleAccountCredential): Promise<AccountLinkState> {
   const client = requireClient();
   const { data, error } = await client.auth.signInWithIdToken({ provider: 'apple', token: credential.token, nonce: credential.nonce });
   if (error) throw error;
   if (!data.user || data.user.is_anonymous) throw new Error(getDictionary().errors.permanentAccountNotLoaded);
   rememberSupabaseUser(data.user);
+  await storeAppleAccountToken(data.user, credential);
+  return stateFromUser(data.user);
+}
+
+/** Re-authenticate only the identity whose local data is held behind recovery. */
+export function recoverAppleSession(credential: AppleAccountCredential): Promise<AccountLinkState> {
+  return runAccountOperation(() => recoverAppleSessionUnlocked(credential));
+}
+
+async function recoverAppleSessionUnlocked(credential: AppleAccountCredential): Promise<AccountLinkState> {
+  const expected = await loadAppleReauthentication() ?? await loadAppleTokenPending();
+  if (!expected || credential.appleUserId !== expected.appleUserId) throw new Error(getDictionary().account.appleRecoveryWrong);
+  const client = requireClient();
+  const { data, error } = await client.auth.signInWithIdToken({ provider: 'apple', token: credential.token, nonce: credential.nonce });
+  if (error) throw new Error(getDictionary().account.appleRecoveryError);
+  if (!data.user || data.user.id !== expected.userId || data.user.is_anonymous || appleReferenceFromUser(data.user)?.appleUserId !== expected.appleUserId) {
+    rememberSupabaseUser(null);
+    await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
+    throw new Error(getDictionary().account.appleRecoveryWrong);
+  }
+  await storeAppleAccountToken(data.user, credential);
+  rememberSupabaseUser(data.user);
   return stateFromUser(data.user);
 }
 
 export function accountLinkErrorMessage(error: unknown) {
+  if (error && typeof error === 'object' && (error as { code?: string }).code === 'account_operation_stale') return getDictionary().errors.linkingFailed;
   const message = error instanceof Error ? error.message : '';
   const normalized = message.toLocaleLowerCase('en-US');
   if (normalized.includes('manual linking')) return getDictionary().errors.linkingNotEnabled;

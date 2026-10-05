@@ -2,7 +2,9 @@ import { KandroMark } from '@/components/KandroMark';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import { usePathname, useRouter, useSegments } from 'expo-router';
-import { PropsWithChildren, useEffect, useState } from 'react';
+import { PropsWithChildren, useEffect, useRef, useState } from 'react';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import { appleCredential, isAppleCancel } from '@/services/accountLinking';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui';
@@ -24,14 +26,36 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
   const path = usePathname();
   const access = useAccess();
   const reminderPending = useReminderOnboarding();
-  const { analysisStatus, detectedItems, hydrationReady, localStorageError, profile, retryAccountRecovery, syncMode, wellnessConsentGranted } = useApp();
+  const { appleReauthenticationRequired, analysisStatus, detectedItems, hydrationReady, localStorageError, profile, retryAccountRecovery, syncMode, wellnessConsentGranted } = useApp();
   const missingMealDraft = requiresMealDraftRedirect(segments[0] ?? 'index', analysisStatus);
   const incompleteResult = segments[0] === 'result' && analysisStatus === 'ready' && !canSaveMealDraft(detectedItems);
   const { t } = useLanguage();
   const [retryBusy, setRetryBusy] = useState(false);
   const [retryError, setRetryError] = useState(false);
+  const retryLock = useRef(false);
+  const [appleAvailable, setAppleAvailable] = useState(false);
+  useEffect(() => {
+    let active = true;
+    void AppleAuthentication.isAvailableAsync().then(available => { if (active) setAppleAvailable(available); }).catch(() => undefined);
+    return () => { active = false; };
+  }, []);
+  const recoverAccount = async () => {
+    if (retryLock.current) return;
+    retryLock.current = true;
+    setRetryBusy(true);
+    setRetryError(false);
+    try {
+      const credential = appleReauthenticationRequired ? await appleCredential() : undefined;
+      await retryAccountRecovery(credential);
+    } catch (error) {
+      if (!isAppleCancel(error)) setRetryError(true);
+    } finally {
+      retryLock.current = false;
+      setRetryBusy(false);
+    }
+  };
 
-  const accessApplies = hydrationReady && wellnessConsentGranted && !!profile.completedAt && routeRequiresAccess(path);
+  const accessApplies = !appleReauthenticationRequired && hydrationReady && wellnessConsentGranted && !!profile.completedAt && routeRequiresAccess(path);
   const accessRedirect = accessApplies && reminderPending === false && access.ready
     ? access.enrollmentPending ? '/access-setup' : (!access.canUse || access.entryPaywall) ? '/paywall' : null : null;
   const accessWaiting = accessApplies && (!access.ready || reminderPending === null);
@@ -43,7 +67,7 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
   }, [accessRedirect, accessApplies, reminderPending, path, router]);
 
   useEffect(() => {
-    if (!hydrationReady || accessRedirect || accessWaiting) return;
+    if (appleReauthenticationRequired || !hydrationReady || accessRedirect || accessWaiting) return;
     const rootSegment = segments[0] ?? 'index';
     if (!wellnessConsentGranted && !publicBeforeConsent.has(rootSegment)) {
       router.replace((profile.completedAt ? '/data-consent' : '/onboarding') as never);
@@ -55,29 +79,31 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
     }
     if (missingMealDraft) router.replace('/(tabs)/scan');
     else if (incompleteResult) router.replace('/confirm');
-  }, [accessRedirect, accessWaiting, hydrationReady, incompleteResult, missingMealDraft, profile.completedAt, router, segments, wellnessConsentGranted]);
+  }, [accessRedirect, accessWaiting, appleReauthenticationRequired, hydrationReady, incompleteResult, missingMealDraft, profile.completedAt, router, segments, wellnessConsentGranted]);
 
   // Do not merely pause redirects while identity hydration is incomplete. The
   // protected tree contains profile setters that write to Supabase and must not
   // remain operable under a newly authenticated account with stale state.
-  if (!hydrationReady) {
-    if (syncMode === 'error') {
+  if (appleReauthenticationRequired || !hydrationReady) {
+    if (appleReauthenticationRequired || syncMode === 'error') {
       return (
         <View style={styles.gate}>
-          <Text accessibilityRole="header" style={styles.title}>{localStorageError ? t.account.localRecoveryTitle : t.account.recoveryTitle}</Text>
-          <Text style={styles.copy}>{localStorageError ? t.account.localRecoveryText : retryError ? t.account.recoveryError : t.account.recoveryText}</Text>
-          <PrimaryButton
+          <Text accessibilityRole="header" style={styles.title}>{appleReauthenticationRequired ? t.account.appleRecoveryTitle : localStorageError ? t.account.localRecoveryTitle : t.account.recoveryTitle}</Text>
+          <Text style={styles.copy}>{appleReauthenticationRequired ? retryError ? t.account.appleRecoveryError : appleAvailable ? t.account.appleRecoveryText : t.account.appleRecoveryUnavailable : localStorageError ? t.account.localRecoveryText : retryError ? t.account.recoveryError : t.account.recoveryText}</Text>
+          {appleReauthenticationRequired && appleAvailable ? <AppleAuthentication.AppleAuthenticationButton
+            buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+            buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+            cornerRadius={12}
+            accessibilityState={{ disabled: retryBusy, busy: retryBusy }}
+            pointerEvents={retryBusy ? 'none' : 'auto'}
+            style={{ width: 260, height: 50 }}
+            onPress={() => void recoverAccount()}
+          /> : <PrimaryButton
             disabled={retryBusy}
             icon="refresh"
             label={retryBusy ? t.account.recoveryBusy : t.account.recoveryAction}
-            onPress={() => {
-              setRetryBusy(true);
-              setRetryError(false);
-              void retryAccountRecovery()
-                .catch(() => setRetryError(true))
-                .finally(() => setRetryBusy(false));
-            }}
-          />
+            onPress={() => void recoverAccount()}
+          />}
         </View>
       );
     }

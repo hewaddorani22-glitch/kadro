@@ -240,6 +240,10 @@ content_path = "./supabase/templates/email_change.html"
 [functions.delete-account]
 verify_jwt = true
 
+# Authenticated native Apple code exchange; all tokens remain server-only.
+[functions.apple-account-token]
+verify_jwt = true
+
 # The analysis gateway holds the paid provider keys, so the platform must reject
 # every unauthenticated call before our code ever runs.
 [functions.nutrition]

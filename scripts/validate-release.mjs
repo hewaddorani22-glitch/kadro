@@ -116,8 +116,13 @@ if (/demo|test|beispiel/i.test(plist.NSCameraUsageDescription ?? '')) {
 if (!ios.bundleIdentifier?.includes('kandro')) warnings.push('bundle identifier does not mention kandro');
 if (!appJson.expo?.locales?.en || !appJson.expo?.locales?.de) blockers.push('English and German iOS permission localizations are required');
 const cameraPlugin = appJson.expo?.plugins?.find((entry) => Array.isArray(entry) && entry[0] === 'expo-camera');
-if (cameraPlugin?.[1]?.microphonePermission !== false || cameraPlugin?.[1]?.recordAudioAndroid !== false) {
-  blockers.push('camera-only Kandro must disable microphone permissions on iOS and Android');
+if (cameraPlugin?.[1]?.microphonePermission !== plist.NSMicrophoneUsageDescription || cameraPlugin?.[1]?.recordAudioAndroid !== false) {
+  blockers.push('the camera plugin must retain the dictation purpose and keep Android camera-audio recording disabled');
+}
+for (const key of ['NSPhotoLibraryUsageDescription', 'NSMicrophoneUsageDescription']) {
+  if (typeof plist[key] !== 'string' || plist[key].trim().length < 15) {
+    blockers.push(`${key} is missing or empty (ITMS-90683)`);
+  }
 }
 
 // --- Analysis gateway -------------------------------------------------------

@@ -10,9 +10,23 @@ import { clearRemindersAfterAccountDeletion } from '@/services/reminders';
 import { clearTelemetryAfterAccountDeletion } from '@/services/telemetry';
 import { clearSubscriptionIdentityAfterAccountDeletion } from '@/services/subscription';
 import { clearRevenueCatExperimentMeasurementForAccountDeletion } from '@/services/revenueCatExperimentAnalytics';
+import { beginAppleAccountDeletion, clearAppleAuthenticationState, runAccountOperation } from '@/services/appleReauthentication';
 import { getDictionary } from '@/i18n/active';
 
 export async function deleteKandroAccount() {
+  // Capture which account the deletion request refers to before waiting for a
+  // concurrent login. Waiting must not turn 'delete A' into 'delete B'.
+  const snapshot = supabase && isSupabaseConfigured ? await supabase.auth.getSession() : null;
+  if (snapshot?.error) throw snapshot.error;
+  const expectedUserId = snapshot?.data.session?.user.id ?? null;
+  return runAccountOperation(async () => {
+    const finishAppleDeletion = beginAppleAccountDeletion();
+    try { return await deleteAccountAndLocalData(expectedUserId); }
+    finally { finishAppleDeletion(); }
+  }, true);
+}
+
+async function deleteAccountAndLocalData(expectedUserId: string | null) {
   // Erase analytics before the irreversible server mutation. If current
   // AsyncStorage or the SDK cannot be drained, deletion stays retryable and no
   // stale adult opt-in/queue can survive into the replacement account.
@@ -20,16 +34,17 @@ export async function deleteKandroAccount() {
   await clearTelemetryAfterAccountDeletion();
   await clearRevenueCatExperimentMeasurementForAccountDeletion();
   if (!supabase || !isSupabaseConfigured) {
-    await Promise.all([clearLocalKandroData(), clearLocalWellnessConsent(), clearRemindersAfterAccountDeletion()]);
-    return;
+    await Promise.all([clearLocalKandroData(), clearLocalWellnessConsent(), clearRemindersAfterAccountDeletion(), clearAppleAuthenticationState()]);
+    return { appleRevocation: 'not_applicable' as const };
   }
 
   const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
   if (sessionError) throw sessionError;
-  if (!sessionData.session) throw new Error(getDictionary().errors.deletionSessionGone);
+  if (!sessionData.session || !expectedUserId || sessionData.session.user.id !== expectedUserId) throw new Error(getDictionary().errors.deletionSessionGone);
 
-  const { error } = await supabase.functions.invoke('delete-account', { method: 'DELETE' });
+  const { data, error } = await supabase.functions.invoke('delete-account', { method: 'DELETE' });
   if (error) throw error;
+  if (data?.deleted !== true) throw new Error(getDictionary().errors.deletionFailed);
 
   await clearSubscriptionIdentityAfterAccountDeletion().catch(() => undefined);
   await disableCloudSyncAfterDeletion();
@@ -39,7 +54,9 @@ export async function deleteKandroAccount() {
     clearLocalKandroData(),
     clearLocalWellnessConsent(),
     clearRemindersAfterAccountDeletion(),
+    clearAppleAuthenticationState(),
   ]);
+  return { appleRevocation: data.appleRevocation === 'manual_required' ? 'manual_required' as const : data.appleRevocation === 'revoked' ? 'revoked' as const : 'not_applicable' as const };
 }
 
 export function accountDeletionErrorMessage(error: unknown) {

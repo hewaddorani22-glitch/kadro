@@ -1,4 +1,6 @@
 {
   "CFBundleDisplayName": "Kandro",
-  "NSCameraUsageDescription": "Kandro uses the camera to photograph your meal and estimate nutrition. The original photo is discarded after analysis and is not stored."
+  "NSCameraUsageDescription": "Kandro uses the camera to photograph your meal and estimate nutrition. The original photo is discarded after analysis and is not stored.",
+  "NSPhotoLibraryUsageDescription": "Kandro uses the meal photo you choose to estimate its nutrition.",
+  "NSMicrophoneUsageDescription": "Kandro uses the microphone only while you dictate a meal. Audio is not stored."
 }

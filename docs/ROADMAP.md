@@ -1,5 +1,38 @@
 # Roadmap
 
+## Verbindlicher Nachtrag 05.10.2026: Claude-A/B-Stand wiederhergestellt
+
+- [x] Ausdrückliche Eigentümerkorrektur umgesetzt: geeignete neue Erwachsene auch
+  anonym, freiwillige Kontoverknüpfung; dauerhafte 50/50-Zuteilung A/B mit bisheriger
+  Hard Paywall. Öffentliche Aufnahme wieder aktiv, bisheriger Start unverändert.
+- [x] Zwei historische SQL-Funktionen und Konfiguration live exakt zurückgelesen;
+  zusätzliche drei Gratis-Ausnahmen entfernt, ursprüngliche Zuteilungen,
+  Kaufrechte, Daten und QA-Overrides unverändert. Neue vorwärtsgerichtete Migration,
+  alte Migrationshistorie erhalten.
+- [x] Sechs lokale PostgreSQL-Prüfgruppen einschließlich zehn Migrationen in
+  Reihenfolge: A/B, anonyme Neunutzer, Ausschlüsse, stabile Verknüpfung,
+  Kaufvorrang, QA und Clientrechte. Kein echter StoreKit-/Gerätetest behauptet.
+- [x] Build38 bleibt dasselbe bereits signierte und geprüfte IPA; kein neuer Build
+  für diese serverseitige Wiederherstellung erforderlich.
+- [ ] Apple-Schlüsseldatei/Backend, TestFlight38 und tatsächliche Geräte-/Store-
+  Prüfungen sowie aktuelle Screenshots bleiben im bestehenden Releaseplan offen.
+
+Die konservativen Kohorten- und Aktivierungsangaben in älteren Abschnitten sind
+historisch; maßgeblich ist die obige Eigentümerentscheidung.
+
+## Build 36 purpose-string repair, 04.10.2026
+
+- [x] Actual 1.0.3 (36) IPA inspected: host and widget versions agree, but host
+  `NSPhotoLibraryUsageDescription` and `NSMicrophoneUsageDescription` are absent;
+  Apple rejected the upload with both ITMS-90683 errors.
+- [x] Base DE/EN photo/dictation purpose descriptions and camera/speech plugin
+  conflict repaired locally. Existing privacy regression executes native plist
+  generation rather than trusting config alone; old Build 36 proof preserved.
+- [ ] A specifically authorized replacement binary must pass actual IPA and
+  Apple processing checks before TestFlight availability can be claimed.
+- [ ] Real-device testing and the owner's exact review approval remain separate
+  from successful generation or upload. No App Review or customer release here.
+
 ## Maßgeblicher Folgestand, 04.10.2026
 
 Die älteren Build-, Budget- und A/B-Angaben darunter sind historische
@@ -425,3 +458,11 @@ and release plan. No second general audit or extra feature package was started.
 - Rechtstexte 2.1 live (getkandro.com) passend zur offenen Regel.
 - Design: Onboarding ohne Tippfelder für Wunschziel (Stepper, Datums-Chips), kompakte Messzeilen, Plan mit Makros; Erinnerungsseite; Heute mit „gegessen · übrig · Ziel“ und Makrofarben; Verlauf (Kalorien → Gewicht → Protein); kompakte Suche; Profil-Reihenfolge; Paywall ohne Einwilligungsblock (bleibt unter Du).
 - Store-Build 1.0.3 (27) mit automatischem TestFlight-Upload, 0 € Zusatzkosten. Keine App-Review-Einreichung ohne Eigentümerfreigabe.
+
+
+## Apple sign-in candidate — 5 October 2026
+
+- Existing voluntary account linking gains native Apple access for both guest and email accounts without replacing their user ID. Existing-account replacement remains explicit.
+- Added authenticated authorization-code storage, encrypted server-only refresh-token retention and deletion-time revocation; no web OAuth flow or mandatory registration.
+- Targeted local checks cover cancellation, account preservation/recovery, token validation/encryption and real local Auth/JWT/PostgREST access restrictions. Native CNG includes the entitlement and preserves build 37 permission strings and widgets.
+- Release gates: provision the dedicated Apple key after required creation confirmation, deploy only the tested additive backend package, complete the final candidate gate, authorize one further zero-cost build/upload, and test actual Apple sign-in on an iPhone. App Review still requires the user's exact build-specific approval.

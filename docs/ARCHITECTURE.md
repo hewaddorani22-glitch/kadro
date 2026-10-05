@@ -1,5 +1,43 @@
 # Architecture
 
+## Verbindliche Eigentümerentscheidung vom 05.10.2026: ursprünglicher Claude-Paywall-Test
+
+Der Eigentümer hat ausdrücklich bestätigt, dass die offene anonyme Zielgruppe und
+Hard Paywall beabsichtigt waren. `20261005004721_restore_owner_anonymous_paywall`
+stellt die zwei gesicherten Funktionsdefinitionen vor der konservativen
+Rückänderung exakt wieder her. Öffentliche Aufnahme und Enforcement sind wieder
+aktiv; ursprünglicher Beginn und Monatsprodukt bleiben gleich. Geeignete neue
+Erwachsene dürfen anonym oder verknüpft teilnehmen; Kontoverknüpfung ist freiwillig.
+Serverzuordnung einmalig 50/50: A mit Gratisrückweg, B ohne X vor neuen regulären
+Einträgen. Identische sieben Trial-Tage und Folgepreise, echte Store-Berechtigung
+und aktive Kaufrechte bleiben maßgeblich. Bestandskonten, Vorabnutzung,
+Minderjährige und fehlende Trial-Berechtigung bleiben ausgeschlossen.
+
+Die vorübergehende zusätzliche Gratis-Ausnahme für drei vorhandene B-Zuordnungen
+ist zurückgenommen; Zuordnung, Zeitpunkt, Nenner, QA-Ausnahmen und Kaufrechte
+sind unverändert. Die historische Spalte `preserve_free_access` bleibt ohne
+Wirkung in der wiederhergestellten Resolverfunktion erhalten. Ausgeschlossene
+Nutzer werden nicht nachträglich neu ausgelost. Analytics-Einwilligung und
+QA-Ausschluss bleiben unverändert. Anonyme Neuinstallationen sind ohne erhaltene
+Identität nicht vollständig wiedererkennbar; es wird kein Fingerprinting ergänzt.
+
+Die folgenden konservativen Zwischenstände sind dadurch überholt. Mobile/native
+Laufzeitdateien und das bereits geprüfte IPA 1.0.3 (38) ändern sich nicht.
+
+## Native permission generation, 04.10.2026 (after Build 36)
+
+The actual 1.0.3 (36) IPA lacked the photo-library and microphone purpose strings
+and Apple rejected it with ITMS-90683. The speech plugin writes its microphone
+purpose into config early; the camera plugin's later InfoPlist mod removed it
+because `microphonePermission` was still `false`. Both plugins now share the
+explicit dictation purpose, and the base plist declares the selected-meal-photo
+purpose. DE/EN localizations contain both strings. This changes permission
+descriptions, not when the app asks for access; Android camera audio remains off.
+The privacy regression executes Expo's native InfoPlist mods, so a later plugin
+deletion cannot pass merely because app.json contains the text. Actual isolated
+CNG output is checked separately before another Store build. Build 36 itself
+remains unchanged and is not a testable or reviewed replacement.
+
 ## Aktueller Folgestand, 04.10.2026
 
 Die datierten Abschnitte darunter sind historische Zwischenstände. Insbesondere
@@ -510,3 +548,14 @@ Description amounts permit a narrowly source-backed estimate for plain dairy mil
 - `services/localDescription.ts`: einfache Beschreibungen mit eindeutigen Lebensmitteln und Mengen werden lokal aufgelöst (kein KI-Aufruf, kein Kontingent). Negationen, Bereiche, unquantifizierte „mit“-Zugaben und unbekannte Wörter gehen unverändert an die KI.
 - Lokale Web-Exporte müssen Backend-Variablen leeren (siehe Masteraudit F01); `.env.local` wird sonst trotz `EXPO_NO_DOTENV` eingebunden.
 - Tests: `scripts/validate-instant-logging.mjs` im Verify-Gate. Audit: `docs/qa/MASTERAUDIT-2026-10-04.md`.
+
+
+## Apple account activation — 5 October 2026
+
+The candidate explicitly enables the SDK 54 Apple authentication plugin and host entitlement. The existing account card links Apple to the current guest or email account while retaining the Supabase user ID. Loading a different account continues through the guarded account-switch path; a rejected sign-in now rechecks the persisted identity before restoring old local data.
+
+The authenticated `apple-account-token` function exchanges the fresh native authorization code with Apple, validates its signed ID token including issuer, audience, subject and hashed nonce, and stores only an AES-256-GCM encrypted refresh token in a server-only RLS table. The encryption key and Apple private key are Edge secrets, never public Expo configuration. An atomic service-only RPC limits exchange attempts. Token registration can be retried with a fresh Apple authorization; it is not reported as complete after a storage failure.
+
+Account deletion revokes the stored Apple token before the existing RevenueCat and Supabase deletion. Missing or unusable tokens preserve the data-deletion path and return a manual-revocation notice, following Apple TN3194. Native revocation/foreground checks close the existing recovery gate; they retain the diary and require the same account to authenticate again. Simulator or network errors are not treated as revocation.
+
+Deployment order is additive migration and server secrets, followed by `apple-account-token` and the compatible `delete-account` function. The existing native TestFlight build 37 cannot gain the entitlement through a server change. Current external activation, source checks and remaining release gates are tracked in the private `apple-login-20261005` evidence directory and workspace current-status document; implementation here is not proof of a real Apple login or a new uploaded binary.

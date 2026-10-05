@@ -23,13 +23,15 @@ export default function AccountDeletionScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleted, setDeleted] = useState(false);
+  const [appleRevokeManually, setAppleRevokeManually] = useState(false);
   const { t } = useLanguage();
 
   const removeAccount = async () => {
     setBusy(true);
     setError(null);
     try {
-      await deleteKandroAccount();
+      const result = await deleteKandroAccount();
+      setAppleRevokeManually(result.appleRevocation === 'manual_required');
       resetAfterAccountDeletion();
       setDeleted(true);
     } catch (failure) {
@@ -59,6 +61,7 @@ export default function AccountDeletionScreen() {
           <View style={styles.successIcon}><Ionicons color={colors.onAccent} name="checkmark" size={28} /></View>
           <Text accessibilityRole="header" style={styles.title}>{t.deletion.doneTitle}</Text>
           <Text style={styles.copy}>{t.deletion.doneText}</Text>
+          {appleRevokeManually ? <Text style={styles.copy}>{t.deletion.appleRevokeManually}</Text> : null}
         </View>
         {error ? <Text accessibilityLiveRegion="assertive" style={styles.error}>{error}</Text> : null}
         <PrimaryButton

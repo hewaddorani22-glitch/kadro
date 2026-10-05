@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 import { safeGatewayFailureCode } from '../server/core.mjs';
 
@@ -275,8 +276,10 @@ assert.match(context, /loadLocalAccountSwitch\(\)[\s\S]*if \(pendingAccountSwitc
   'launch must recover an interrupted account switch without merging old local data');
 assert.match(context, /analysisIdentityGenerationRef\.current === invocationIdentityGeneration[\s\S]*countLifetimeScanOnce/,
   'an analysis completed under the old identity must not increment the new account local allowance');
-assert.match(routes, /if \(!hydrationReady\)[\s\S]*syncMode === 'error'[\s\S]*retryAccountRecovery\(\)[\s\S]*return children/,
+assert.match(routes, /if \(appleReauthenticationRequired \|\| !hydrationReady\)[\s\S]*syncMode === 'error'[\s\S]*return <BrandGate \/>;[\s\S]*return children/,
   'the protected app tree must stay unmounted while an account identity is being recovered');
+assert.match(routes, /const recoverAccount = async[\s\S]*appleReauthenticationRequired \? await appleCredential\(\) : undefined[\s\S]*await retryAccountRecovery\(credential\)/,
+  'the guarded recovery action must collect Apple credentials only when required and use AppContext recovery');
 assert.match(accountLinkCard, /Alert\.alert\([\s\S]*loadExistingAccount\(email, password\)/,
   'destructive local replacement must be explained and confirmed before loading an existing account');
 assert.doesNotMatch(accountLinkCard, /signInToExistingAccount/,
@@ -294,10 +297,32 @@ assert.match(profileScreen, /disabled=\{!analyticsEligible \|\| !isTelemetryConf
 assert.match(personalization, /const requestedOffset = teen \? 0 :/, 'teen goals must never turn into an adult calorie deficit or surplus');
 
 const cameraPlugin = appJson.expo.plugins.find((entry) => Array.isArray(entry) && entry[0] === 'expo-camera');
-assert.equal(cameraPlugin?.[1]?.microphonePermission, false, 'a still-photo app must not request microphone access');
-assert.equal(cameraPlugin?.[1]?.recordAudioAndroid, false, 'Android audio permission must stay disabled');
+assert.equal(cameraPlugin?.[1]?.recordAudioAndroid, false, 'the camera must not enable Android video-audio recording');
 assert.ok(appJson.expo.locales?.en && appJson.expo.locales?.de, 'permission copy must be localized in English and German');
 assert.equal(appJson.expo.ios?.infoPlist?.NSAppTransportSecurity?.NSAllowsArbitraryLoads, false, 'iOS must reject arbitrary unencrypted network loads');
+
+// Build 36 had a speech microphone string in app.json, but the camera's late
+// InfoPlist mod deleted it. Execute the actual installed Expo plugins: inspecting
+// static app.json alone cannot detect that ordering failure.
+const require = createRequire(import.meta.url);
+const { getPrebuildConfigAsync } = require('@expo/prebuild-config');
+const { compileModsAsync } = require('@expo/config-plugins');
+const nativeConfig = await getPrebuildConfigAsync(root, { platforms: ['ios'] });
+await compileModsAsync(nativeConfig.exp, {
+  projectRoot: root, platforms: ['ios'], introspect: true, assertMissingModProviders: false,
+});
+const generatedPlist = nativeConfig.exp._internal?.modResults?.ios?.infoPlist;
+assert.ok(generatedPlist, 'Expo must execute the iOS InfoPlist mods');
+for (const key of ['NSPhotoLibraryUsageDescription', 'NSMicrophoneUsageDescription']) {
+  assert.ok(typeof generatedPlist[key] === 'string' && generatedPlist[key].trim().length > 15,
+    `${key} must survive the generated native plugin chain (Build 36 / ITMS-90683)`);
+  assert.equal(generatedPlist[key], appJson.expo.ios.infoPlist[key], `${key}: native and declared purposes must agree`);
+  for (const language of ['de', 'en']) {
+    const localized = JSON.parse(await read(appJson.expo.locales[language]));
+    assert.ok(typeof localized[key] === 'string' && localized[key].trim().length > 15,
+      `${language}: ${key} must have an explicit localized purpose`);
+  }
+}
 
 console.log('Validated explicit AI consent, withdrawal, 14+ guardian enforcement and minimal native permissions.');
 

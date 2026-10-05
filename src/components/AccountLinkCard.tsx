@@ -1,7 +1,7 @@
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import Constants from 'expo-constants';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -26,6 +26,9 @@ import {
 import { useLanguage } from '@/i18n/LanguageProvider';
 
 type ViewMode = 'upgrade' | 'sign-in';
+// Profile and paywall account-help may both remain mounted in the native stack.
+// Only one card may mutate authentication at a time, including the Apple sheet.
+let accountActionInFlight = false;
 
 export function AccountLinkCard() {
   const { colors } = useTheme();
@@ -39,9 +42,32 @@ export function AccountLinkCard() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
+  const mounted = useRef(true);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { language, t } = useLanguage();
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+  const beginAction = () => {
+    if (busyRef.current || !mounted.current) return false;
+    if (accountActionInFlight) {
+      setMessage(t.account.actionInProgress);
+      return false;
+    }
+    accountActionInFlight = true;
+    busyRef.current = true;
+    setBusy(true); setError(null); setMessage(null);
+    return true;
+  };
+  const endAction = () => {
+    accountActionInFlight = false;
+    busyRef.current = false;
+    if (mounted.current) setBusy(false);
+  };
 
   useEffect(() => {
     let active = true;
@@ -51,43 +77,60 @@ export function AccountLinkCard() {
     return () => { active = false; };
   }, []);
 
-  // One tap: keep this guest account and add Apple as its login. If this
+  // Keep this account and add Apple as its login. If this
   // Apple ID already owns a Kandro account (new phone), offer to load it.
   const continueWithApple = async (existing: boolean) => {
-    if (busy) return;
-    setBusy(true); setError(null); setMessage(null);
+    if (!beginAction()) return;
     try {
       const credential = await appleCredential();
+      if (!mounted.current) return;
       if (existing) {
         const next = await loadAppleAccount(credential);
+        if (!mounted.current) return;
         setAccount(next);
         setMessage(t.account.loadedMessage);
         return;
       }
       const next = await linkAppleAccount(credential);
+      if (!mounted.current) return;
       setAccount(next);
       await refreshCloudState();
-      setMessage(t.account.appleLinked);
+      if (mounted.current) setMessage(t.account.appleLinked);
     } catch (failure) {
-      if (isAppleCancel(failure)) return;
+      if (!mounted.current || isAppleCancel(failure)) return;
       if (!existing && isAppleIdentityTaken(failure)) {
         Alert.alert(t.account.appleTakenTitle, t.account.appleTakenBody, [
           { text: t.common.cancel, style: 'cancel' },
-          { text: t.account.loadAccount, onPress: () => { void continueWithApple(true); } },
+          { text: t.account.replaceAction, onPress: () => { void continueWithApple(true); } },
         ]);
         return;
       }
-      setError(accountLinkErrorMessage(failure));
+      // Linking may already have succeeded while server token storage failed.
+      // Keep a fresh native retry visible without linking a second identity.
+      if (!existing) {
+        const current = await getAccountLinkState().catch(() => null);
+        if (mounted.current && current) setAccount(current);
+      }
+      if (mounted.current) setError(accountLinkErrorMessage(failure));
     } finally {
-      setBusy(false);
+      endAction();
     }
+  };
+  const confirmAppleAccountLoad = () => {
+    if (busyRef.current) return;
+    Alert.alert(t.account.replaceTitle, t.account.replaceText, [
+      { text: t.common.cancel, style: 'cancel' },
+      { text: t.account.replaceAction, onPress: () => { void continueWithApple(true); } },
+    ]);
   };
   const appleButton = (existing: boolean) => appleAvailable ? (
     <AppleAuthentication.AppleAuthenticationButton
       buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
       buttonType={existing ? AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN : AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
       cornerRadius={999}
-      onPress={() => void continueWithApple(existing)}
+      accessibilityState={{ disabled: busy, busy }}
+      pointerEvents={busy ? 'none' : 'auto'}
+      onPress={() => existing ? confirmAppleAccountLoad() : void continueWithApple(false)}
       style={styles.appleButton}
     />
   ) : null;
@@ -98,7 +141,7 @@ export function AccountLinkCard() {
       .then((next) => {
         if (!active) return;
         setAccount(next);
-        if (next.status === 'pending' || next.status === 'linked') setEmail(next.email);
+        if ((next.status === 'pending' || next.status === 'linked') && next.email) setEmail(next.email);
       })
       .catch((failure) => {
         if (active) setError(accountLinkErrorMessage(failure));
@@ -109,38 +152,36 @@ export function AccountLinkCard() {
   }, []);
 
   const run = async (action: () => Promise<AccountLinkState>, success: string, refresh = false) => {
-    setBusy(true);
-    setError(null);
-    setMessage(null);
+    if (!beginAction()) return;
     try {
       const next = await action();
+      if (!mounted.current) return;
       setAccount(next);
-      if (next.status === 'pending' || next.status === 'linked') setEmail(next.email);
+      if ((next.status === 'pending' || next.status === 'linked') && next.email) setEmail(next.email);
       if (next.status === 'linked') setShowPassword(true);
       if (refresh) await refreshCloudState();
-      setMessage(success);
+      if (mounted.current) setMessage(success);
     } catch (failure) {
-      setError(accountLinkErrorMessage(failure));
+      if (mounted.current) setError(accountLinkErrorMessage(failure));
     } finally {
-      setBusy(false);
+      endAction();
     }
   };
 
   const resend = async () => {
-    setBusy(true);
-    setError(null);
-    setMessage(null);
+    if (!beginAction()) return;
     try {
       await resendEmailLink(email);
-      setMessage(t.account.resent);
+      if (mounted.current) setMessage(t.account.resent);
     } catch (failure) {
-      setError(accountLinkErrorMessage(failure));
+      if (mounted.current) setError(accountLinkErrorMessage(failure));
     } finally {
-      setBusy(false);
+      endAction();
     }
   };
 
   const confirmExistingAccountLoad = () => {
+    if (busyRef.current) return;
     Alert.alert(
       t.account.replaceTitle,
       t.account.replaceText,
@@ -198,14 +239,18 @@ export function AccountLinkCard() {
         <AccountHeader icon="shield-checkmark" title={t.account.linkedTitle} />
         <Text style={styles.body}>{t.account.linkedText}</Text>
         <View style={styles.emailPill}>
-          <Ionicons color={colors.accentText} name="mail-outline" size={16} />
-          <Text style={styles.emailText}>{account.email}</Text>
+          <Ionicons color={colors.accentText} name={account.email ? 'mail-outline' : 'logo-apple'} size={16} />
+          <Text style={styles.emailText}>{account.email ?? t.account.appleId}</Text>
         </View>
-        <Pressable accessibilityRole="button" accessibilityState={{ expanded: showPassword }} onPress={() => setShowPassword((current) => !current)} style={styles.textButton}>
+        {account.appleLinked && !account.appleTokenPending ? <Text style={styles.body}>{t.account.appleConnected}</Text> : appleAvailable ? <>
+          <Text style={styles.body}>{account.appleTokenPending ? t.account.appleTokenRetry : t.account.addAppleText}</Text>
+          {appleButton(false)}
+        </> : null}
+        {account.email ? <Pressable accessibilityRole="button" accessibilityState={{ expanded: showPassword }} onPress={() => setShowPassword((current) => !current)} style={styles.textButton}>
           <Text style={styles.textButtonLabel}>{showPassword ? t.account.closePassword : t.account.setPassword}</Text>
           <Ionicons color={colors.accentText} name={showPassword ? 'chevron-up' : 'chevron-down'} size={17} />
-        </Pressable>
-        {showPassword ? (
+        </Pressable> : null}
+        {showPassword && account.email ? (
           <View style={styles.form}>
             <AccountInput
               autoComplete="new-password"

@@ -1,4 +1,5 @@
 import { withSupabase } from 'npm:@supabase/server@1.5.1';
+import { revokeAppleForDeletion } from '../_shared/apple-token-service.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
@@ -71,7 +72,9 @@ const deleteAccount = withSupabase({ auth: 'user' }, async (_request, context) =
     return Response.json({ code: 'unauthorized' }, { status: 401, headers: corsHeaders });
   }
 
+  let appleRevocation: 'revoked' | 'manual_required' | 'not_applicable';
   try {
+    appleRevocation = await revokeAppleForDeletion(context.supabaseAdmin, data.user);
     await eraseRevenueCatCustomer(data.user.id);
   } catch {
     return Response.json(
@@ -85,7 +88,7 @@ const deleteAccount = withSupabase({ auth: 'user' }, async (_request, context) =
     return Response.json({ code: 'account_deletion_failed' }, { status: 500, headers: corsHeaders });
   }
 
-  return Response.json({ deleted: true }, { status: 200, headers: corsHeaders });
+  return Response.json({ deleted: true, appleRevocation }, { status: 200, headers: corsHeaders });
 });
 
 export default {

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, User } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 import 'react-native-url-polyfill/auto';
+import { loadAppleReauthentication, loadAppleTokenPending } from '@/services/appleReauthentication';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 const supabasePublishableKey = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
@@ -32,6 +33,7 @@ export async function getAccessSession(): Promise<SupabaseAccessSession | null> 
   if (!await ensureSupabaseUser().catch(() => null)) return null;
   const { data } = await supabase.auth.getSession();
   const session = data.session;
+  if (await loadAppleReauthentication()) return null;
   return session ? { accessToken: session.access_token, userId: session.user.id } : null;
 }
 
@@ -93,16 +95,22 @@ export function startSupabaseAuthLifecycle() {
   };
 }
 
-export function ensureSupabaseUser(): Promise<User | null> {
-  if (!supabase) return Promise.resolve(null);
-  if (sessionPromise) return sessionPromise;
+export async function ensureSupabaseUser(): Promise<User | null> {
+  if (!supabase) return null;
+  // A revoked Apple session must never fall through to an unrelated guest.
+  if (await isCloudSyncDisabledAfterDeletion() || await loadAppleReauthentication()) return null;
+  if (sessionPromise) {
+    const user = await sessionPromise;
+    return await loadAppleReauthentication() ? null : user;
+  }
 
   sessionPromise = (async () => {
-    if (await isCloudSyncDisabledAfterDeletion()) return null;
+    if (await isCloudSyncDisabledAfterDeletion() || await loadAppleReauthentication()) return null;
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) throw sessionError;
     if (sessionData.session?.user) return sessionData.session.user;
 
+    if (await loadAppleReauthentication() || await loadAppleTokenPending()) return null;
     const { data, error } = await supabase.auth.signInAnonymously();
     if (error) throw error;
     return data.user;
@@ -111,5 +119,6 @@ export function ensureSupabaseUser(): Promise<User | null> {
     throw error;
   });
 
-  return sessionPromise;
+  const user = await sessionPromise;
+  return await loadAppleReauthentication() ? null : user;
 }

@@ -1,5 +1,7 @@
 import { invalidatePrivateData } from '@/services/localRepository';
 import { createContext, PropsWithChildren, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, Platform } from 'react-native';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { useLocalDay } from '@/hooks/useLocalDay';
 
 import { AnalysisErrorKind, MealAnalysisInput } from '@/services/contracts';
@@ -41,7 +43,7 @@ import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { calculateDailyTargets, DEFAULT_PROFILE } from '@/services/personalization';
 import { availableRepeats, RepeatCandidate } from '@/services/repeatMeals';
 import { deleteSyncedMeal, hydrateCloudState, hydrateExistingCloudAccount, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
-import { getCurrentSessionUserId, isSupabaseConfigured, startSupabaseAuthLifecycle } from '@/services/supabaseClient';
+import { getCurrentSessionUserId, isSupabaseConfigured, rememberSupabaseUser, startSupabaseAuthLifecycle, supabase } from '@/services/supabaseClient';
 import { applyAnalyticsAgePolicy, captureOperationalError, clearTelemetryForAccountSwitch, countBucket, durationBucket, trackEvent } from '@/services/telemetry';
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
@@ -54,7 +56,10 @@ import { clearRemindersForAccountSwitch, setEveningReminderEnabled } from '@/ser
 import { formatClockTime } from '@/utils/format';
 import { newAnalysisRequestId } from '@/utils/requestId';
 import { canSaveMealDraft, needsIngredientCorrection, replaceMealIngredient } from '@/utils/ingredientCorrection';
-import { AccountLinkState, signInToExistingAccount, signInWithApple } from '@/services/accountLinking';
+import { AccountLinkState, AppleAccountCredential, appleReferenceFromUser, recoverAppleSession, signInToExistingAccount, signInWithApple } from '@/services/accountLinking';
+
+import { clearAppleReauthentication, clearAppleTokenPending, createAppleCredentialMonitor, loadAppleReauthentication, loadAppleTokenPending, requireAppleReauthentication, selectAppleRecoveryReference } from '@/services/appleReauthentication';
+import type { AppleAccountReference } from '@/services/appleReauthentication';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
 type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search';
@@ -80,6 +85,7 @@ type AppContextValue = {
   profile: UserProfile;
   hydrationReady: boolean;
   localStorageError: boolean;
+  appleReauthenticationRequired: boolean;
   wellnessConsentGranted: boolean;
   targets: DailyTargets;
   meals: Meal[];
@@ -105,8 +111,8 @@ type AppContextValue = {
   syncMode: SyncMode;
   refreshCloudState: () => Promise<void>;
   loadExistingAccount: (email: string, password: string) => Promise<AccountLinkState>;
-  loadAppleAccount: (credential: { token: string; nonce: string }) => Promise<AccountLinkState>;
-  retryAccountRecovery: () => Promise<void>;
+  loadAppleAccount: (credential: AppleAccountCredential) => Promise<AccountLinkState>;
+  retryAccountRecovery: (credential?: AppleAccountCredential) => Promise<void>;
   grantWellnessConsent: (age?: number) => Promise<void>;
   withdrawWellnessConsent: () => Promise<void>;
   completeOnboarding: (profile: UserProfile) => Promise<void>;
@@ -181,6 +187,9 @@ export function AppProvider({ children }: PropsWithChildren) {
     setProfileState(next);
   }, []);
   const [hydrationReady, setHydrationReady] = useState(false);
+  const [appleReauthenticationRequired, setAppleReauthenticationRequired] = useState(false);
+  const hydrationReadyRef = useRef(false);
+  hydrationReadyRef.current = hydrationReady;
   const [localStorageError, setLocalStorageError] = useState(false);
   const [wellnessConsentGranted, setWellnessConsentGranted] = useState(false);
   const [targets, setTargets] = useState(DEFAULT_TARGETS);
@@ -279,7 +288,59 @@ export function AppProvider({ children }: PropsWithChildren) {
     setSyncMode('local');
   }, []);
 
-  const retryAccountRecovery = useCallback(async () => {
+  const pauseRevokedAppleSession = useCallback(async (reference: AppleAccountReference) => {
+    analysisGenerationRef.current += 1;
+    analysisIdentityGenerationRef.current += 1;
+    hydrationReadyRef.current = false;
+    setAppleReauthenticationRequired(true);
+    setHydrationReady(false);
+    setWellnessConsentGranted(false);
+    setSyncMode('error');
+    // Persist the original identity before signing out. Keep the diary, queued
+    // meals and consent on disk; only that same account may reopen them.
+    await requireAppleReauthentication(reference);
+    rememberSupabaseUser(null);
+    if (await getCurrentSessionUserId() === reference.userId) {
+      await supabase?.auth.signOut({ scope: 'local' });
+    }
+  }, []);
+
+  const appleCredentialMonitor = useMemo(() => createAppleCredentialMonitor({
+    generation: () => analysisIdentityGenerationRef.current,
+    readIdentity: async () => {
+      if (Platform.OS !== 'ios' || !supabase) return null;
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      return appleReferenceFromUser(data.session?.user ?? null);
+    },
+    readCredentialState: async (appleUserId) => {
+      const state = await AppleAuthentication.getCredentialStateAsync(appleUserId);
+      const states = AppleAuthentication.AppleAuthenticationCredentialState;
+      if (state === states.REVOKED) return 'revoked';
+      if (state === states.NOT_FOUND) return 'not-found';
+      if (state === states.TRANSFERRED) return 'transferred';
+      return state === states.AUTHORIZED ? 'authorized' : 'unavailable';
+    },
+    onRevoked: pauseRevokedAppleSession,
+  }), [pauseRevokedAppleSession]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    appleCredentialMonitor.start();
+    const check = () => {
+      if (!hydrationReadyRef.current) return;
+      void appleCredentialMonitor.check().catch(() => {
+        setLocalStorageError(true);
+        setHydrationReady(false);
+        setSyncMode('error');
+      });
+    };
+    const foreground = AppState.addEventListener('change', state => { if (state === 'active') check(); });
+    const revoked = AppleAuthentication.addRevokeListener(check);
+    return () => { foreground.remove(); revoked.remove(); appleCredentialMonitor.stop(); };
+  }, [appleCredentialMonitor]);
+
+  const retryAccountRecovery = useCallback(async (credential?: AppleAccountCredential) => {
     analysisGenerationRef.current += 1;
     analysisIdentityGenerationRef.current += 1;
     setHydrationReady(false);
@@ -287,10 +348,39 @@ export function AppProvider({ children }: PropsWithChildren) {
     setSyncMode('syncing');
     let destinationConfirmed = false;
     try {
-      const [pendingSwitch, currentUserId] = await Promise.all([
+      const [pendingSwitch, sessionUserId, appleRecovery, tokenPending] = await Promise.all([
         loadLocalAccountSwitch(),
         getCurrentSessionUserId(),
+        loadAppleReauthentication(),
+        loadAppleTokenPending(),
       ]);
+      let currentUserId = sessionUserId;
+      const needsApple = selectAppleRecoveryReference({ reauthentication: appleRecovery, tokenPending, previousUserId: pendingSwitch?.previousUserId ?? null, currentUserId });
+      if (needsApple) {
+        setAppleReauthenticationRequired(true);
+        if (!credential) throw new Error(getDictionary().account.appleRecoveryText);
+        const recovered = await recoverAppleSession(credential);
+        if (recovered.status !== 'linked' || recovered.userId !== needsApple.userId) throw new Error(getDictionary().account.appleRecoveryWrong);
+        currentUserId = recovered.userId;
+      }
+      // For a revoked current account restore its existing local state, including
+      // unsynced meals. A confirmed earlier account switch still hydrates its
+      // destination through the established guarded replacement path below.
+      if (needsApple && (!pendingSwitch || currentUserId === pendingSwitch.previousUserId)) {
+        await restoreLocalStateAfterFailedLogin();
+        await completeLocalAccountSwitch();
+        await clearAppleReauthentication();
+        appleCredentialMonitor.reset();
+        setAppleReauthenticationRequired(false);
+        setLocalStorageError(false);
+        setHydrationReady(true);
+        return;
+      }
+      if (needsApple) {
+        await clearAppleReauthentication();
+        appleCredentialMonitor.reset();
+        setAppleReauthenticationRequired(false);
+      }
       if (!pendingSwitch) {
         // Retry a failed local read without resetting or replacing the diary.
         await restoreLocalStateAfterFailedLogin();
@@ -313,7 +403,9 @@ export function AppProvider({ children }: PropsWithChildren) {
       await Promise.all([clearLocalWellnessConsent(), clearRemindersForAccountSwitch()]);
       const cloudState = await hydrateExistingCloudAccount();
       if (!cloudState) throw new Error(getDictionary().errors.permanentAccountNotLoaded);
+      if (tokenPending && tokenPending.userId !== currentUserId) await clearAppleTokenPending(tokenPending.userId);
       await adoptExistingAccountState(cloudState);
+      setAppleReauthenticationRequired(false);
       setHydrationReady(true);
     } catch (error) {
       // Keep the durable switch marker. A transient fetch failure after auth
@@ -339,7 +431,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       setHydrationReady(false);
       throw error;
     }
-  }, [adoptExistingAccountState, restoreLocalStateAfterFailedLogin]);
+  }, [adoptExistingAccountState, restoreLocalStateAfterFailedLogin, appleCredentialMonitor]);
 
   const switchAccount = useCallback(async (signIn: () => Promise<AccountLinkState>) => {
     const previousUserId = await getCurrentSessionUserId();
@@ -386,9 +478,20 @@ export function AppProvider({ children }: PropsWithChildren) {
       setHydrationReady(true);
       return account;
     } catch (error) {
+      // Auth can persist the destination session before a subscriber rejects.
+      // A rejected sign-in therefore does not prove that identity stayed put.
+      if (!identityChanged) {
+        const currentUserId = await getCurrentSessionUserId().catch(() => null);
+        identityChanged = currentUserId !== previousUserId;
+      }
       if (identityChanged) {
-        // retryAccountRecovery already cleared the old local state and kept
-        // the crash marker. Leave hydration closed until retry succeeds.
+        rememberSupabaseUser(null);
+        const pendingApple = await loadAppleTokenPending().catch(() => null);
+        const currentUserId = await getCurrentSessionUserId().catch(() => null);
+        if (selectAppleRecoveryReference({ reauthentication: null, tokenPending: pendingApple, previousUserId, currentUserId })) setAppleReauthenticationRequired(true);
+        // Keep the durable marker and old data hidden until recovery verifies
+        // the destination. An unreadable session must fail closed as well.
+        setSyncMode('error');
         setHydrationReady(false);
       } else {
         await completeLocalAccountSwitch().catch(() => undefined);
@@ -399,7 +502,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     }
   }, [restoreLocalStateAfterFailedLogin, retryAccountRecovery]);
   const loadExistingAccount = useCallback((email: string, password: string) => switchAccount(() => signInToExistingAccount(email, password)), [switchAccount]);
-  const loadAppleAccount = useCallback((credential: { token: string; nonce: string }) => switchAccount(() => signInWithApple(credential)), [switchAccount]);
+  const loadAppleAccount = useCallback((credential: AppleAccountCredential) => switchAccount(() => signInWithApple(credential)), [switchAccount]);
 
   useEffect(() => {
     if (!hydrationReady || !wellnessConsentGranted) return;
@@ -450,7 +553,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     let active = true;
     let stopAuthLifecycle: () => void = () => undefined;
     void (async () => {
-      const [storedMeals, storedHistory, queue, storedProfile, storedWeights, storedScanCount, hasConsent, pendingAccountSwitch] = await Promise.all([
+      await appleCredentialMonitor.check();
+      const [storedMeals, storedHistory, queue, storedProfile, storedWeights, storedScanCount, hasConsent, pendingAccountSwitch, appleRecovery, tokenPending] = await Promise.all([
         loadMeals(),
         loadAllStoredScans(),
         loadAnalysisQueue(),
@@ -459,8 +563,17 @@ export function AppProvider({ children }: PropsWithChildren) {
         loadLifetimeScanCount(),
         hasCurrentWellnessConsent(),
         loadLocalAccountSwitch(),
+        loadAppleReauthentication(),
+        loadAppleTokenPending(),
       ]);
       if (!active) return;
+      const startupAppleRecovery = selectAppleRecoveryReference({ reauthentication: appleRecovery, tokenPending, previousUserId: pendingAccountSwitch?.previousUserId ?? null, currentUserId: tokenPending ? await getCurrentSessionUserId().catch(() => null) : null });
+      if (startupAppleRecovery) {
+        setAppleReauthenticationRequired(true);
+        setSyncMode('error');
+        setHydrationReady(false);
+        return;
+      }
       if (pendingAccountSwitch) {
         let currentUserId: string | null;
         try {
@@ -538,7 +651,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       active = false;
       stopAuthLifecycle();
     };
-  }, [adoptProfile, adoptScanCount, retryAccountRecovery]);
+  }, [adoptProfile, adoptScanCount, retryAccountRecovery, appleCredentialMonitor]);
 
   const grantWellnessConsent = useCallback(async (consentingAge = profile.age) => {
     await recordWellnessConsent(consentingAge);
@@ -1002,6 +1115,10 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, [photoUri]);
 
   const resetAfterAccountDeletion = useCallback(() => {
+    setAppleReauthenticationRequired(false);
+    setLocalStorageError(false);
+    setHydrationReady(true);
+    appleCredentialMonitor.reset();
     analysisGenerationRef.current += 1;
     analysisIdentityGenerationRef.current += 1;
     deleteTemporaryPhoto(photoUriRef.current);
@@ -1028,7 +1145,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setPendingAnalysisCount(0);
     setSyncMode('local');
     setWellnessConsentGranted(false);
-  }, []);
+  }, [appleCredentialMonitor]);
 
   const setPlannedMealType = useCallback((type: Meal['type'] | null) => {
     plannedMealTypeRef.current = type;
@@ -1237,6 +1354,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       profile,
       hydrationReady,
       localStorageError,
+      appleReauthenticationRequired,
       wellnessConsentGranted,
       targets,
       meals,
@@ -1293,7 +1411,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       adjustLoggedMealPortion,
       setLoggedMealType,
     }),
-    [descriptionInput, addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, localStorageError, isCurrentScanLogged, loadExistingAccount, loadAppleAccount, logFoodDirect, setLoggedItemAmount, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, retryAccountRecovery, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
+    [descriptionInput, addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, localStorageError, appleReauthenticationRequired, isCurrentScanLogged, loadExistingAccount, loadAppleAccount, logFoodDirect, setLoggedItemAmount, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, retryAccountRecovery, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
