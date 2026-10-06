@@ -94,7 +94,14 @@ export function AccountLinkCard() {
       const next = await linkAppleAccount(credential);
       if (!mounted.current) return;
       setAccount(next);
-      await refreshCloudState();
+      try {
+        await refreshCloudState();
+      } catch {
+        // Linking and secure token storage already succeeded. A later sync
+        // failure must not invite another link or conceal the saved identity.
+        if (mounted.current) setError(t.account.appleSyncRetry);
+        return;
+      }
       if (mounted.current) setMessage(t.account.appleLinked);
     } catch (failure) {
       if (!mounted.current || isAppleCancel(failure)) return;
@@ -242,7 +249,12 @@ export function AccountLinkCard() {
           <Ionicons color={colors.accentText} name={account.email ? 'mail-outline' : 'logo-apple'} size={16} />
           <Text style={styles.emailText}>{account.email ?? t.account.appleId}</Text>
         </View>
-        {account.appleLinked && !account.appleTokenPending ? <Text style={styles.body}>{t.account.appleConnected}</Text> : appleAvailable ? <>
+        {account.appleLinked && !account.appleTokenPending ? <>
+          <Text style={styles.body}>{t.account.appleConnected}</Text>
+          {appleAvailable ? <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy }} disabled={busy} onPress={() => void continueWithApple(false)} style={styles.textButton}>
+            <Text style={styles.textButtonLabel}>{t.account.appleRecoveryTitle}</Text>
+          </Pressable> : null}
+        </> : appleAvailable ? <>
           <Text style={styles.body}>{account.appleTokenPending ? t.account.appleTokenRetry : t.account.addAppleText}</Text>
           {appleButton(false)}
         </> : null}

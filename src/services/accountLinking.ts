@@ -254,7 +254,19 @@ async function linkAppleAccountUnlocked(credential: AppleAccountCredential): Pro
     }
     throw error;
   }
-  const linkedUser = assertSameUser(user.id, data.user);
+  assertSameUser(user.id, data.user);
+  // Native ID-token linking can return the pre-link identities list even
+  // after the identity was committed. Read it back from Auth before deciding
+  // whether linking failed or exchanging Apple's single-use authorization code.
+  // Keep recovery available if this read is interrupted after the successful link.
+  try {
+    await markAppleTokenPending({ userId: user.id, appleUserId: credential.appleUserId });
+  } catch {
+    throw new Error(getDictionary().account.appleTokenRetry);
+  }
+  const verified = await client.auth.getUser();
+  if (verified.error || !verified.data.user) throw new Error(getDictionary().account.appleTokenRetry);
+  const linkedUser = assertSameUser(user.id, verified.data.user);
   const linked = stateFromUser(linkedUser);
   if (linked.status !== 'linked' || !linked.appleLinked) throw new Error(getDictionary().errors.linkingFailed);
   await storeAppleAccountToken(linkedUser, credential);

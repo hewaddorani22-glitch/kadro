@@ -17,7 +17,7 @@ Rules:
 1. Do not revert, rewrite or drop these commits. Build on top of them (rebase/merge your work onto `release/1.0.4`, never reset it).
 2. `npm run verify` and `npm run validate:release` run `scripts/validate-release-gate.mjs`, which fails if a commit or fix is missing. A failing gate means: do not build, do not submit.
 3. In App Store Connect, replace the old screenshots with the six per locale from `app-store/screenshots/de-DE` and `app-store/screenshots/en-US`, in filename order. Regenerate them with `python3 app-store/compose/render.py` (see `app-store/README.md`).
-4. Uncommitted Sign in with Apple work (`AccountLinkCard`, `accountLinking`, `appleSyncRetry` strings, `validate-apple-account`) was deliberately left untouched by Claude: commit it on top, do not discard it. The Apple token storage still fails in production (`apple_account_tokens` has no rows) and must be fixed and tested on a device before review.
+4. Uncommitted Sign in with Apple work (`AccountLinkCard`, `accountLinking`, `appleSyncRetry` strings, `validate-apple-account`) was deliberately left untouched by Claude: commit it on top, do not discard it. Production recheck on 6 October found one stored Apple token (latest write: 5 October 2026 at 21:42:48 UTC); the earlier empty-table claim is stale. Build 39 includes the client repair, but the combined next candidate still needs a device test before review.
 5. App Review submission needs the owner's explicit approval for the exact build number.
 
 ## Start here

@@ -983,6 +983,7 @@ export const de = {
     appleRecoveryError: 'Die Anmeldung konnte noch nicht sicher erneuert werden. Prüfe deine Verbindung und verwende dasselbe Apple-Konto. Deine Daten bleiben erhalten.',
     appleRecoveryUnavailable: 'Die Apple-Anmeldung ist hier gerade nicht verfügbar. Versuche es auf deinem iPhone mit derselben Apple-ID erneut. Deine Daten bleiben erhalten.',
     appleConnected: 'Mit Apple verknüpft.',
+    appleSyncRetry: 'Mit Apple verknüpft. Der Cloud-Abgleich ist gerade nicht möglich. Deine Daten bleiben auf diesem Gerät erhalten.',
     actionInProgress: 'Ein Kontovorgang läuft bereits. Schließe ihn zuerst ab.',
     addAppleText: 'Apple als weitere Anmeldung hinzufügen. Dein Konto und deine gespeicherten Daten bleiben erhalten.',
     appleTakenTitle: 'Diese Apple-ID hat schon ein Kandro-Konto',

@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 import { fileURLToPath } from 'node:url';
+import { createClient } from '@supabase/supabase-js';
 const root = process.env.KANDRO_APPLE_SOURCE_ROOT || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = name => fs.readFileSync(path.join(root, name), 'utf8');
 function compile(name, mocks) {
@@ -30,8 +31,8 @@ function serviceFixture(initial = user()) {
   const store = recoveryStore();
   const f = { store, user: initial, sessionUser: initial, reads: 0, tokens: [], signOuts: [], links: [], signIns: [], remembered: [], sheet: [], nonceCalls: [], nativeResult: { identityToken: credential.token, authorizationCode: credential.authorizationCode, user: credential.appleUserId } };
   const api = { auth: {
-    async getUser() { f.reads++; return { data: { user: f.user }, error: null }; },
-    async linkIdentity(input) { f.links.push(input); if (f.linkPending) await f.linkPending.promise; if (f.linkError) { if (f.racedUser) f.user = f.racedUser; return { data: { user: null }, error: f.linkError }; } f.user = f.linkResult ?? { ...f.user, is_anonymous: false, identities: [...(f.user.identities ?? []), appleIdentity] }; f.sessionUser = f.user; return { data: { user: f.user }, error: null }; },
+    async getUser() { f.reads++; if (f.links.length && f.postLinkReadError) return { data: { user: null }, error: f.postLinkReadError }; return { data: { user: f.user }, error: null }; },
+    async linkIdentity(input) { f.links.push(input); if (f.linkPending) await f.linkPending.promise; if (f.linkError) { if (f.racedUser) f.user = f.racedUser; return { data: { user: null }, error: f.linkError }; } f.user = f.linkResult ?? { ...f.user, is_anonymous: false, identities: [...(f.user.identities ?? []), appleIdentity] }; f.sessionUser = f.user; return { data: { user: f.linkResponse ?? f.user }, error: null }; },
     async signInWithIdToken(input) { f.signIns.push(input); return { data: { user: f.signInResult ?? f.user }, error: f.signInError ?? null }; },
     async signOut(input) { f.signOuts.push(input); f.sessionUser = null; return { error: null }; },
     async getSession() { return { data: { session: f.sessionUser ? { user: f.sessionUser } : null }, error: null }; },
@@ -77,6 +78,62 @@ await test('An existing Apple identity cannot be linked again, including a raced
   assert.equal((await f.service.linkAppleAccount(credential)).appleLinked, true); assert.equal(f.links.length, 0);
   const race = serviceFixture(); race.linkError = { code: 'identity_already_exists' }; race.racedUser = existing;
   assert.equal((await race.service.linkAppleAccount(credential)).appleLinked, true); assert.equal(race.signIns.length, 0);
+});
+await test('A successful native link with a stale identities list is verified again before token exchange', async () => {
+  for (const anonymous of [true, false]) {
+    const f = serviceFixture(user({ is_anonymous: anonymous }));
+    f.linkResponse = user({ is_anonymous: anonymous, identities: [] });
+    const state = await f.service.linkAppleAccount(credential);
+    assert.equal(state.userId, 'same-account'); assert.equal(state.appleLinked, true);
+    assert.equal(f.links.length, 1); assert.equal(f.reads, 2); assert.equal(f.tokens.length, 1);
+    assert.equal(await f.store.service.loadAppleTokenPending(), null);
+  }
+});
+await test('Failed post-link verification retains a retry marker and never exchanges or accepts another account', async () => {
+  const f = serviceFixture(); f.linkResponse = user({ identities: [] }); f.postLinkReadError = new Error('offline');
+  await assert.rejects(f.service.linkAppleAccount(credential), e => e.message === dict.account.appleTokenRetry);
+  assert.equal(f.tokens.length, 0); assert.equal((await f.store.service.loadAppleTokenPending()).userId, 'same-account');
+  f.postLinkReadError = null;
+  await f.service.linkAppleAccount(credential);
+  assert.equal(f.links.length, 1); assert.equal(f.tokens.length, 1); assert.equal(await f.store.service.loadAppleTokenPending(), null);
+  const switched = serviceFixture(); switched.linkResponse = user({ identities: [] }); switched.linkResult = user({ id: 'other', identities: [appleIdentity] });
+  await assert.rejects(switched.service.linkAppleAccount(credential));
+  assert.equal(switched.tokens.length, 0); assert.ok(!switched.remembered.includes('other'));
+});
+await test('Installed Supabase SDK completes stale native-link response, verified readback and authenticated function call', async () => {
+  const guest = user({ is_anonymous: true, email: null, identities: [] });
+  const linked = user({ identities: [appleIdentity] });
+  const f = serviceFixture(guest); const requests = []; let didLink = false;
+  const b64 = value => Buffer.from(JSON.stringify(value)).toString('base64url');
+  const jwt = b64({ alg: 'HS256', typ: 'JWT' }) + '.' + b64({ sub: guest.id, role: 'authenticated', exp: Math.floor(Date.now() / 1000) + 3600 }) + '.c3ludGhldGlj';
+  const session = account => ({ access_token: jwt, refresh_token: 'synthetic-refresh', token_type: 'bearer', expires_in: 3600, user: account });
+  const client = createClient('https://kandro-sdk-test.invalid', 'synthetic-public-key', {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: async (url, options = {}) => {
+      const address = new URL(String(url)); assert.equal(address.hostname, 'kandro-sdk-test.invalid');
+      requests.push(address.pathname);
+      let body;
+      if (address.pathname === '/auth/v1/signup') body = session(guest);
+      else if (address.pathname === '/auth/v1/user') body = didLink ? linked : guest;
+      else if (address.pathname === '/auth/v1/token') {
+        assert.equal(JSON.parse(options.body).link_identity, true); didLink = true;
+        body = session({ ...linked, identities: [] });
+      } else if (address.pathname === '/functions/v1/apple-account-token') {
+        assert.equal(new Headers(options.headers).get('Authorization'), 'Bearer ' + jwt);
+        assert.deepEqual(JSON.parse(options.body), { authorizationCode: credential.authorizationCode, nonce: credential.nonce });
+        body = { stored: true };
+      } else throw Error('Unexpected SDK request');
+      return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    } },
+  });
+  await client.auth.signInAnonymously();
+  f.api.auth = client.auth; f.api.functions = client.functions;
+  const result = await f.service.linkAppleAccount(credential);
+  assert.equal(result.userId, guest.id); assert.equal(result.appleLinked, true);
+  assert.equal(requests.filter(p => p === '/auth/v1/token').length, 1);
+  assert.equal(requests.filter(p => p === '/auth/v1/user').length, 2);
+  assert.equal(requests.filter(p => p === '/functions/v1/apple-account-token').length, 1);
+  assert.equal(await f.store.service.loadAppleTokenPending(), null);
 });
 await test('A wrong account ID, unverified linked result or identity owned elsewhere is rejected', async () => {
   const wrong = serviceFixture(); wrong.linkResult = user({ id: 'different', identities: [appleIdentity] });
@@ -127,7 +184,7 @@ function cardModule() {
       async credential() { f.calls.push('credential'); if (f.credentialError) throw f.credentialError; if (f.pending) return f.pending.promise; return credential; },
       async link() { f.calls.push('link'); if (f.linkError) throw f.linkError; return { status: 'linked', userId: 'same-account', email: 'tester@example.invalid', appleLinked: true }; },
       async loadApple() { f.calls.push('load'); return { status: 'linked', userId: 'other', email: null, appleLinked: true }; },
-      async refresh() { f.calls.push('refresh'); }, async emailLink() { f.calls.push('email'); return f.account; }, async password() { f.calls.push('password'); return f.account; },
+      async refresh() { f.calls.push('refresh'); if (f.refreshError) throw f.refreshError; }, async emailLink() { f.calls.push('email'); return f.account; }, async password() { f.calls.push('password'); return f.account; },
     };
     f.render = () => { active = f; return f.h.render(Component); };
     f.activate = () => { active = f; };
@@ -153,6 +210,25 @@ await test('Duplicate taps and another mounted card cannot start concurrent Appl
   assert.equal(apple(a.render()).props.accessibilityState.disabled, true);
   a.activate(); a.pending.resolve(credential); await ticks();
   assert.deepEqual(a.calls, ['credential', 'link', 'refresh']); assert.equal(apple(a.render()), undefined);
+});
+await test('An already linked account can repair a missing token marker without switching accounts', async () => {
+  const f = cardModule()({ status: 'linked', userId: 'same-account', email: null, appleLinked: true });
+  const renew = nodes(await f.ready()).find(n => n.type === 'Pressable' && nodes(n).some(c => c.props?.children === dict.account.appleRecoveryTitle));
+  assert.ok(renew); renew.props.onPress(); renew.props.onPress(); await ticks();
+  assert.deepEqual(f.calls, ['credential', 'link', 'refresh']);
+  const feedback = nodes(f.render()).find(n => n.type?.name === 'Feedback');
+  assert.equal(feedback.props.error, null); assert.equal(feedback.props.message, dict.account.appleLinked);
+});
+await test('A post-link cloud-sync error is distinguished from linking failure and clears on a successful retry', async () => {
+  const f = cardModule()(); f.refreshError = { message: 'private database error' };
+  apple(await f.ready()).props.onPress(); await ticks();
+  let tree = f.render(); let feedback = nodes(tree).find(n => n.type?.name === 'Feedback');
+  assert.equal(feedback.props.error, dict.account.appleSyncRetry); assert.notEqual(feedback.props.error, dict.errors.linkingFailed);
+  assert.ok(nodes(tree).some(n => n.props?.children === dict.account.appleConnected));
+  f.refreshError = null;
+  nodes(tree).find(n => n.type === 'Pressable' && nodes(n).some(c => c.props?.children === dict.account.appleRecoveryTitle)).props.onPress(); await ticks();
+  feedback = nodes(f.render()).find(n => n.type?.name === 'Feedback');
+  assert.equal(feedback.props.error, null); assert.equal(feedback.props.message, dict.account.appleLinked);
 });
 await test('Apple cancellation and link errors retain the current card and never load another account', async () => {
   for (const cancel of [true, false]) {

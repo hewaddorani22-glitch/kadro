@@ -974,6 +974,7 @@ export const en: typeof de = {
     appleRecoveryError: 'Sign-in could not yet be securely renewed. Check your connection and use the same Apple account. Your data is kept.',
     appleRecoveryUnavailable: 'Apple sign-in is currently unavailable here. Try again on your iPhone using the same Apple Account. Your data is kept.',
     appleConnected: 'Linked with Apple.',
+    appleSyncRetry: 'Linked with Apple. Cloud sync is currently unavailable. Your data stays on this device.',
     actionInProgress: 'An account action is already in progress. Finish it first.',
     addAppleText: 'Add Apple as another way to sign in. Your account and saved data stay the same.',
     appleTakenTitle: 'This Apple ID already has a Kandro account',

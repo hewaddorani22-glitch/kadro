@@ -1,5 +1,20 @@
 # Architecture
 
+## Apple link response repair — 5 October 2026, after Build 38
+
+Native ID-token linking may commit the Apple identity while returning the earlier
+identities array. The app now reads the same user back from Auth after a successful
+link, then verifies the Apple subject before exchanging the single-use code. A
+local pending marker survives a failed read or storage step and never stores the
+code or token. Existing linked accounts can explicitly renew Apple sign-in to
+finish a handshake interrupted by Build 38 without switching accounts or deleting
+their data. A later cloud-sync failure has separate DE/EN feedback and cannot be
+reported as a failed Apple link. The client correction shipped internally in Build 39; the deployed Apple key and
+functions are unchanged. A read-only production check on 6 October found one stored
+Apple token, last written 5 October at 21:42:48 UTC. This verifies a storage event,
+not the absence of UI warnings or a device test of the next combined candidate.
+Synthetic regression success alone does not certify device login.
+
 ## Verbindliche Eigentümerentscheidung vom 05.10.2026: ursprünglicher Claude-Paywall-Test
 
 Der Eigentümer hat ausdrücklich bestätigt, dass die offene anonyme Zielgruppe und

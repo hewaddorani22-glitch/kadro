@@ -1,5 +1,21 @@
 # Roadmap
 
+## Apple-Warnung nach Verknüpfung — 05.10.2026, nach Build 38
+
+- [x] Gemeldete Kombination „Mit Apple verknüpft“ plus generische Warnung im
+  stale-response-Pfad reproduziert. Erfolgreiche Verknüpfung frisch vom Server
+  lesen, bevor das Apple-Token gespeichert wird; gleiche ID und Subject prüfen.
+- [x] Erneute bewusste Apple-Bestätigung für bereits betroffene Konten und
+  eigener Hinweis für einen nachgelagerten Cloud-Abgleichfehler ergänzt.
+- [x] Gezielte Service-/Komponentenregressionen einschließlich tatsächlicher
+  installierter Supabase-SDK-Kette mit synthetischen HTTP-Antworten bestanden.
+- [x] Ersatzbinary 1.0.3 (39) intern in TestFlight verfügbar. Produktionsprüfung
+  am 06.10.: ein Apple-Token gespeichert, letzter Schreibzeitpunkt 05.10.2026
+  21:42:48 UTC. Die vorherige Aussage „Tabelle leer“ ist damit überholt.
+- [ ] Sichtbarer Apple-Anmelde-Nachtest und Gerätepflichtfälle des gemeinsamen
+  Kandidaten mit den nach Build 39 hinzugekommenen Claude-Korrekturen.
+  Speicherung allein bestätigt weder die Warnungsfreiheit noch den neuen Build.
+
 ## Verbindlicher Nachtrag 05.10.2026: Claude-A/B-Stand wiederhergestellt
 
 - [x] Ausdrückliche Eigentümerkorrektur umgesetzt: geeignete neue Erwachsene auch
