@@ -1,4 +1,4 @@
-# App Review notes — Kandro 1.0.3 (build 35)
+# App Review notes — Kandro 1.0.3 (next build after 38, see Release gate in AGENTS.md)
 
 Paste the "Review notes" section into App Store Connect → version 1.0.3 → App Review Information → Notes.
 
@@ -30,7 +30,7 @@ Every AI estimate goes to a confirmation screen where amounts can be changed and
 
 **Age and calorie safety (client and database).** Ages below 14 cannot be entered. Ages 14–15 remain locked until a parent or guardian confirms a single-use emailed link. For ages 14–17 Kandro uses the adolescent Estimated Energy Requirement (DRI 2023) including growth, applies no deficit or surplus and shows no weight pace; teens are excluded from the paywall experiment and from analytics. Adults use Mifflin-St Jeor × activity factor; targets never fall below 1,300 kcal or 70 % of maintenance. There is no fasting mode or punishment mechanic.
 
-Sign in with Apple is not part of this build.
+Sign in with Apple is optional: under **You → Account** an anonymous account can be linked to an Apple ID. Deleting the account also revokes the Apple token. No login is required to use the app.
 
 Support: https://getkandro.com/en/support
 Privacy: https://getkandro.com/en/privacy
