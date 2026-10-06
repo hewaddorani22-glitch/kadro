@@ -3,7 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 
 const root = process.cwd();
-const expected = ['01-next.png', '02-scan.png', '03-adapt.png', '04-log.png', '05-recipe.png'];
+// Composed from real release-app captures by app-store/compose/render.py.
+const expected = ['01-photo.png', '02-voice.png', '03-today.png', '04-adapt.png', '05-portions.png', '06-plan.png'];
 const errors = [];
 
 for (const locale of ['en-US', 'de-DE']) {
@@ -38,4 +39,4 @@ if (errors.length) {
   process.exit(1);
 }
 
-console.log('Validated 10 localized App Store screenshots at 1320×2868 with no alpha channel.');
+console.log(`Validated ${expected.length * 2} localized App Store screenshots at 1320×2868 with no alpha channel.`);

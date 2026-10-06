@@ -9,7 +9,7 @@ import { Meal } from '@/types/nutrition';
 
 /** Local acknowledgement and cloud acknowledgement deliberately have different copy. */
 export function MealSyncStatus() {
-  const { hydrationReady, wellnessConsentGranted, refreshCloudState } = useApp();
+  const { hydrationReady, wellnessConsentGranted, refreshCloudState, syncMode } = useApp();
   const { colors } = useTheme();
   const { t } = useLanguage();
   const latestRead = useRef(0);
@@ -42,7 +42,9 @@ export function MealSyncStatus() {
     catch { setError(true); }
     finally { setBusy(false); }
   };
-  if (!hydrationReady || !wellnessConsentGranted || (!pending.length && !deleted.length && !error)) return null;
+  // Local-only mode (no cloud configured, or cloud disabled after account
+  // deletion) has nothing that could ever be confirmed: no pending notice.
+  if (!hydrationReady || !wellnessConsentGranted || syncMode === 'local' || (!pending.length && !deleted.length && !error)) return null;
   const conflict = pending.find((meal) => meal.sync?.status === 'conflict');
   const deletion = deleted.find((meal) => meal.sync.status === 'conflict');
   const resolve = () => {

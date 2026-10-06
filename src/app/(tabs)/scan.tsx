@@ -697,7 +697,7 @@ export default function ScanScreen() {
           onDraftChange={setPortionDraft}
           onCancel={cancelPortion}
           onConfirm={confirmPortion}
-          target={{ name: pendingFood.name, per100g: pendingFood.per100g, defaultGrams: pendingFood.lastGrams ?? pendingFood.defaultGrams, amountIsChosen: Boolean(pendingFood.lastGrams), portions: pendingFood.portions, sourceLabel: pendingFood.source.label }}
+          target={{ name: pendingFood.name, per100g: pendingFood.per100g, defaultGrams: pendingFood.lastGrams ?? pendingFood.defaultGrams, amountIsChosen: Boolean(pendingFood.lastGrams), adding: true, portions: pendingFood.portions, sourceLabel: pendingFood.source.label }}
           visible
         /> : (
         <Animated.View style={[styles.modalScrim, { paddingBottom: keyboardInset }]}>

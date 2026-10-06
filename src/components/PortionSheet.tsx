@@ -23,6 +23,8 @@ export type PortionTarget = {
   portions?: FoodPortion[];
   /** True when defaultGrams is an amount the user set, not a database default. */
   amountIsChosen?: boolean;
+  /** A new entry (search): always "Add", even with a remembered amount. */
+  adding?: boolean;
   preferGrams?: boolean;
   sourceLabel?: string;
 };
@@ -190,7 +192,7 @@ export function PortionSheet({
           </View>
 
           </ScrollView>
-          <PrimaryButton disabled={!valid} icon="checkmark" label={target?.amountIsChosen ? t.portion.save : t.portion.add} onPress={() => { if (grams !== null) { Keyboard.dismiss(); onConfirm(grams); } }} />
+          <PrimaryButton disabled={!valid} icon="checkmark" label={target?.amountIsChosen && !target.adding ? t.portion.save : t.portion.add} onPress={() => { if (grams !== null) { Keyboard.dismiss(); onConfirm(grams); } }} />
           <Pressable accessibilityRole="button" onPress={cancel} style={styles.cancel}>
             <Text style={styles.cancelText}>{t.common.cancel}</Text>
           </Pressable>

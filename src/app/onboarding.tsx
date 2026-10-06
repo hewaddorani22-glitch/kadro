@@ -150,6 +150,9 @@ export default function OnboardingScreen() {
   const [targetWeightInput, setTargetWeightInput] = useState(() => editing && initialPersonalGoal.targetWeightKg !== null
     ? String(usesMetricWeight(profile.unitSystem) ? initialPersonalGoal.targetWeightKg : Math.round(kgToPounds(initialPersonalGoal.targetWeightKg) * 10) / 10) : '');
   const [targetDateInput, setTargetDateInput] = useState(() => editing ? initialPersonalGoal.targetDate ?? '' : '');
+  // While the pace option is chosen the date follows every target change;
+  // any other choice is a fixed date the user picked on purpose.
+  const [dateFollowsPace, setDateFollowsPace] = useState(!editing);
   const previousUnit = useRef(unitSystem);
   useEffect(() => {
     if (previousUnit.current === unitSystem) return;
@@ -195,6 +198,10 @@ export default function OnboardingScreen() {
   if (targetDate && !dateOptions.some(option => option.value === targetDate)) {
     dateOptions.unshift({ key: 'saved', label: formatGoalDate(targetDate), value: targetDate });
   }
+  const paceDate = paceWeeks ? addDaysIso(today, paceWeeks * 7) : null;
+  useEffect(() => {
+    if (dateFollowsPace && paceDate && targetDateInput !== paceDate) setTargetDateInput(paceDate);
+  }, [dateFollowsPace, paceDate, targetDateInput]);
   // The suggested target arrives with the matching date already chosen.
   const suggestedKg = usesMetricWeight(unitSystem) ? Number(suggestedTargetWeight) : poundsToKg(Number(suggestedTargetWeight));
   const suggestedWeeks = Math.min(104, Math.max(1, Math.ceil(Math.abs(suggestedKg - weight) / weeklyRate)));
@@ -427,7 +434,7 @@ export default function OnboardingScreen() {
                   {targetWeightInput.trim() === '' ? (
                     <Pressable
                       accessibilityRole="button"
-                      onPress={() => { void selectionHaptic(); setTargetWeightInput(String(suggestedTargetWeight)); setTargetDateInput(suggestedTargetDate ?? ''); }}
+                      onPress={() => { void selectionHaptic(); setDateFollowsPace(true); setTargetWeightInput(String(suggestedTargetWeight)); setTargetDateInput(suggestedTargetDate ?? ''); }}
                       style={({ pressed }) => [styles.addGoal, pressed && styles.choicePressed]}
                     >
                       <Ionicons color={colors.accentText} name="flag-outline" size={20} />
@@ -512,7 +519,7 @@ export default function OnboardingScreen() {
                             accessibilityRole="radio"
                             accessibilityState={{ checked: active }}
                             key={option.key}
-                            onPress={() => { void selectionHaptic(); setTargetDateInput(option.value ?? ''); }}
+                            onPress={() => { void selectionHaptic(); setDateFollowsPace(option.key === 'pace'); setTargetDateInput(option.value ?? ''); }}
                             style={[styles.dateChip, active && styles.dateChipActive]}
                           >
                             <Text style={[styles.dateChipText, active && styles.dateChipTextActive]}>{option.label}</Text>

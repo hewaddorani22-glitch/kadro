@@ -1,0 +1,179 @@
+[
+  {
+    "id": "01-photo",
+    "theme": "moss",
+    "capture": "photo.png",
+    "de-DE": {
+      "eyebrow": "Kalorien per Foto",
+      "headline": [
+        "Foto machen.",
+        "Fertig."
+      ],
+      "sub": "Kandro erkennt deine Mahlzeit und rechnet Kalorien, Protein und Makros für dich aus.",
+      "cardLabel": "Dein Foto"
+    },
+    "en-US": {
+      "eyebrow": "Calories from a photo",
+      "headline": [
+        "Snap it.",
+        "Done."
+      ],
+      "sub": "Kandro recognizes your meal and works out calories, protein and macros for you.",
+      "cardLabel": "Your photo"
+    },
+    "covers": [
+      {
+        "rect": [
+          30,
+          400,
+          1260,
+          90
+        ]
+      }
+    ],
+    "card": {
+      "src": "assets/meal-bowl.jpg",
+      "x": 880,
+      "y": 720,
+      "w": 370,
+      "h": 250,
+      "rotate": 7
+    }
+  },
+  {
+    "id": "02-voice",
+    "theme": "cream",
+    "capture": "voice.png",
+    "de-DE": {
+      "eyebrow": "Sprechen statt suchen",
+      "headline": [
+        "Sag einfach,",
+        "was du isst."
+      ],
+      "sub": "„Zwei Eier, ein Vollkornbrot und ein Cappuccino“ – Kandro versteht ganze Sätze.",
+      "bubbles": [
+        "„Müsli mit Milch und Banane“",
+        "„Ein Döner und eine Cola“",
+        "„Zwei Stück Pizza Margherita“"
+      ]
+    },
+    "en-US": {
+      "eyebrow": "Talk, don’t type",
+      "headline": [
+        "Just say",
+        "what you ate."
+      ],
+      "sub": "“Two eggs, a slice of wholegrain toast and a cappuccino” – Kandro gets whole sentences.",
+      "bubbles": [
+        "“Oatmeal with milk and a banana”",
+        "“A chicken wrap and a Coke”",
+        "“Two slices of margherita pizza”"
+      ]
+    },
+    "sheet": [
+      0,
+      1400,
+      1320,
+      1280
+    ],
+    "sheetTop": 880
+  },
+  {
+    "id": "03-today",
+    "theme": "pistachio",
+    "capture": "today.png",
+    "de-DE": {
+      "eyebrow": "Dein Tag auf einen Blick",
+      "headline": [
+        "Immer wissen,",
+        "was noch geht."
+      ],
+      "sub": "Kalorien und Protein live – nach jeder Mahlzeit neu berechnet."
+    },
+    "en-US": {
+      "eyebrow": "Your day at a glance",
+      "headline": [
+        "Always know",
+        "what’s left."
+      ],
+      "sub": "Calories and protein, live – recalculated after every meal."
+    }
+  },
+  {
+    "id": "04-adapt",
+    "theme": "moss",
+    "capture": "adapt.png",
+    "de-DE": {
+      "eyebrow": "Kandro plant neu. Du nicht.",
+      "headline": [
+        "Großes Mittagessen?",
+        "Kein Problem."
+      ],
+      "sub": "Drei Mahlzeiten, die genau in deinen restlichen Tag passen.",
+      "size": 112
+    },
+    "en-US": {
+      "eyebrow": "It re-plans. You don’t.",
+      "headline": [
+        "Big lunch?",
+        "No problem."
+      ],
+      "sub": "Three meals that fit exactly what’s left of your day."
+    }
+  },
+  {
+    "id": "05-portions",
+    "theme": "cream",
+    "capture": "portions.png",
+    "de-DE": {
+      "eyebrow": "Portionen statt Gramm",
+      "headline": [
+        "Zwei Bananen.",
+        "Nicht 240 Gramm."
+      ],
+      "sub": "Suche, Barcode oder Foto – mit Nährwerten aus dem Bundeslebensmittelschlüssel.",
+      "size": 116
+    },
+    "en-US": {
+      "eyebrow": "Portions, not grams",
+      "headline": [
+        "Two bananas.",
+        "Not 240 grams."
+      ],
+      "sub": "Search, barcode or photo – backed by official nutrition databases.",
+      "sheet": [
+        0,
+        912,
+        1320,
+        1840
+      ]
+    },
+    "sheet": [
+      0,
+      872,
+      1320,
+      1880
+    ]
+  },
+  {
+    "id": "06-plan",
+    "theme": "pistachio",
+    "capture": "plan.png",
+    "de-DE": {
+      "eyebrow": "Dein persönlicher Plan",
+      "headline": [
+        "Dein Ziel.",
+        "Dein Tempo."
+      ],
+      "sub": "In einer Minute berechnet: Kalorien, Protein und ein realistisches Zieldatum."
+    },
+    "en-US": {
+      "eyebrow": "Your personal plan",
+      "headline": [
+        "Your goal.",
+        "Your pace."
+      ],
+      "sub": "Built in a minute: calories, protein and a realistic target date."
+    }
+  }
+]

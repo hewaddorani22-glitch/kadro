@@ -108,6 +108,11 @@ await test('real screen: a new adult gets a suggested target and matching date; 
  assert.equal(c.find('TextInput',p=>p.accessibilityLabel==='targetWeightLabel').value,'73','suggested target is prefilled');
  const checked=c.find('Pressable',p=>p.accessibilityRole==='radio'&&p.accessibilityState?.checked&&typeof p.accessibilityLabel==='string');
  assert.match(checked.accessibilityLabel,/^datePace/,'the pace date is preselected');
+ // Changing the wish keeps the pace choice: the date moves with it.
+ const input=c.find('TextInput',p=>p.accessibilityLabel==='targetWeightLabel');input.onChangeText('70');c.render();c.render();
+ const moved=c.find('Pressable',p=>p.accessibilityRole==='radio'&&p.accessibilityState?.checked&&typeof p.accessibilityLabel==='string');
+ assert.match(moved.accessibilityLabel,/^datePace/,'pace stays selected after a new target');
+ assert.notEqual(moved.accessibilityLabel,checked.accessibilityLabel,'the pace date follows the new target');
  c.find('Pressable',p=>p.accessibilityRole==='button'&&String(p.onPress).includes("setTargetWeightInput('')")).onPress();c.render();
  assert.ok(!c.nodes().some(n=>n.type==='TextInput'&&n.props.accessibilityLabel==='targetWeightLabel'));
  await through(c,['target','preferences']);await c.next();c.find('PrimaryButton',p=>p.label==='consentAccept').onPress();await c.flush();assert.equal(c.saved[0].targetWeightKg,null);assert.equal(c.saved[0].targetDate,null);
