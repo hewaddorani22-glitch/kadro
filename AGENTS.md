@@ -4,12 +4,13 @@ This repository contains the Kandro mobile MVP: photograph a meal, confirm the e
 
 ## ⛔ Release gate — read before any build or App Review submission (owner decision, 06.10.2026)
 
-Claude finished release fixes after build 38. **Build 38 and every older build must not be submitted for App Review.** The next submitted build must be built from a commit that contains **both** of these commits on `release/1.0.4`:
+Claude finished release fixes after build 38. **Build 38 and every older build must not be submitted for App Review.** The next submitted build must be built from a commit that contains **all** of these commits on `release/1.0.4`:
 
 | Commit | Contains |
 | --- | --- |
 | `557c09f` | New App Store screenshots from real release-app captures (`app-store/screenshots/`, 6 per locale); onboarding target date follows the pace; no "cloud not confirmed" notice in local-only mode; "Add" instead of "Save amount" for new search entries |
 | `b31aea5` | Everyday dishes in search with real servings (bolognese, lasagne, pizza, döner, currywurst, chili, schnitzel, burger) while descriptions still go to the analysis; weight labels without a trailing `,0` (159 lb, 78 kg); US spelling in the English UI; Kandro mark instead of a bare spinner on launch |
+| `b5de12a` | Microphone button reliably present after a fresh install; target weight input uses the language's decimal mark; final store screenshots re-captured from this build |
 
 Rules:
 

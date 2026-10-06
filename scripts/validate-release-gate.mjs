@@ -7,6 +7,7 @@ import fs from 'node:fs';
 const requiredCommits = {
   '557c09f': 'real App Store screenshots, target date follows pace, no cloud notice in local-only mode, Add label',
   b31aea5: 'dish search with servings, weight labels without ,0, US English, brand mark on launch',
+  b5de12a: 'microphone after a fresh install, localized decimal mark, final store screenshots',
 };
 const markers = [
   ['src/services/foodSuggest.ts', 'RAW_DISH_ALIASES', 'everyday dishes in search'],
@@ -17,6 +18,8 @@ const markers = [
   ['src/app/index.tsx', 'KandroMark', 'brand mark instead of a spinner on launch'],
   ['src/utils/units.ts', 'trim = false', 'weight labels without a trailing ,0'],
   ['src/i18n/en.ts', "describeSubmit: 'Analyze'", 'US spelling'],
+  ['src/components/VoiceInputButton.tsx', 'function recognitionAvailable', 'microphone shows after a fresh install'],
+  ['src/app/onboarding.tsx', 't.portion.decimalMark', 'localized decimal mark in the target weight'],
   ['app-store/screenshots/de-DE/01-photo.png', null, 'new German store screenshots'],
   ['app-store/screenshots/en-US/01-photo.png', null, 'new English store screenshots'],
 ];
