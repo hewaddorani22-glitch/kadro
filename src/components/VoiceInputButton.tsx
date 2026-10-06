@@ -8,14 +8,20 @@ import { selectionHaptic } from '@/services/haptics';
 
 type SpeechModule = typeof import('expo-speech-recognition');
 
-// Resolved once at load. Builds without the native module (web, older
-// binaries) simply show no microphone instead of failing.
+// Loaded once. Builds without the native module (web, older binaries)
+// simply show no microphone instead of failing.
 let speechModule: SpeechModule | null = null;
 try {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const loaded = require('expo-speech-recognition') as SpeechModule;
-  speechModule = loaded.isRecognitionAvailable() ? loaded : null;
+  speechModule = require('expo-speech-recognition') as SpeechModule;
 } catch { speechModule = null; }
+
+// Availability is asked when the sheet opens, not at app start: right after
+// install iOS can report "unavailable" for a moment, which used to hide the
+// microphone until the next launch.
+function recognitionAvailable() {
+  try { return speechModule?.isRecognitionAvailable() === true; } catch { return false; }
+}
 
 /**
  * Speak the meal instead of typing it. Apple's speech recognition turns it
@@ -26,7 +32,14 @@ export function VoiceInputButton({ value, onChange }: { value: string; onChange:
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { language, t } = useLanguage();
-  const speech = speechModule;
+  const [available, setAvailable] = useState(recognitionAvailable);
+  useEffect(() => {
+    if (available) return;
+    // A late "ready" from iOS still brings the microphone in.
+    const timer = setTimeout(() => setAvailable(recognitionAvailable()), 600);
+    return () => clearTimeout(timer);
+  }, [available]);
+  const speech = available ? speechModule : null;
   const [listening, setListening] = useState(false);
   const prefix = useRef('');
   const pulse = useRef(new Animated.Value(0)).current;

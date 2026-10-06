@@ -42,7 +42,7 @@ function controller(profile=base,editing=false){
   useEffect(fn,deps){const index=cursor++;if(!same(slots[index]?.deps,deps)){slots[index]={deps};effects.push(fn)}}
  };react.useCallback=(fn,deps)=>react.useMemo(()=>fn,deps);
  const section=new Proxy({}, {get:(_,key)=>['step','confirmAge','paceGain','paceLose','dateMonths','dateChosen','paceWeeks','targetDiff','goalBy','decreaseUnit','increaseUnit'].includes(key)?(...args)=>`${key}:${args.join('/')}`:String(key)});
- const t={onboarding:section,common:section,access:section};
+ const t={onboarding:section,common:section,access:section,portion:{decimalMark:'.'}};
  const jsx=(type,props)=>({type,props:props??{}});
  const source=process.env.KANDRO_ONBOARDING_BASELINE==='1'?execFileSync('git',['show','HEAD:src/app/onboarding.tsx'],{encoding:'utf8'}):read('src/app/onboarding.tsx');
  const screen=load('src/app/onboarding.tsx',{

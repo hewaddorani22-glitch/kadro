@@ -455,7 +455,8 @@ export default function OnboardingScreen() {
                               onChangeText={setTargetWeightInput}
                               selectTextOnFocus
                               style={[styles.measureValue, { minWidth: 70, textAlign: 'right', paddingVertical: 4 }]}
-                              value={targetWeightInput}
+                              // Show the language's decimal mark (71,5 in German); parsing accepts both.
+                              value={targetWeightInput.replace('.', t.portion.decimalMark)}
                             />
                             <Text style={styles.measureUnit}>{weightUnit}</Text>
                           </View>
