@@ -68,7 +68,9 @@ for (const broken of [NaN, Infinity, -Infinity]) {
 assert.equal(format.formatNumber(NaN, 'en-GB'), '0', 'NaN must not reach the interface as "NaN"');
 
 // --- Weight -----------------------------------------------------------------
-assert.equal(units.formatWeight(84, 'metric', 'en-GB'), '84.0 kg');
+assert.equal(units.formatWeight(84, 'metric', 'en-GB'), '84 kg');
+assert.equal(units.formatWeight(84.5, 'metric', 'de-DE'), '84,5 kg');
+assert.equal(units.formatWeight(72.12, 'us', 'en-US'), '159 lb');
 for (const broken of [NaN, Infinity]) {
   for (const system of ['metric', 'us', 'uk']) {
     assert.doesNotThrow(() => units.formatWeight(broken, system, 'en-GB'), `${system} weight of ${broken} threw`);

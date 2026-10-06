@@ -67,22 +67,26 @@ export function poundsToKg(pounds: number) {
   return pounds * KG_PER_POUND;
 }
 
-/** Decimal separator follows the language, so 84.2 is not shown as 84,2 in English. */
-function decimal(value: number, digits: number, locale: string) {
+/**
+ * Decimal separator follows the language, so 84.2 is not shown as 84,2 in
+ * English. Labels drop a trailing ",0" (78 kg, 159 lb, but 71,5 kg); input
+ * fields keep the fixed digits.
+ */
+function decimal(value: number, digits: number, locale: string, trim = false) {
   if (!Number.isFinite(value)) return '0';
   try {
-    return value.toLocaleString(locale, { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    return value.toLocaleString(locale, { minimumFractionDigits: trim ? 0 : digits, maximumFractionDigits: digits });
   } catch {
     // Hermes hands Intl to the platform; a locale it rejects must not take a
     // screen down over a weight label.
-    return value.toFixed(digits);
+    return trim ? String(Number(value.toFixed(digits))) : value.toFixed(digits);
   }
 }
 
 export function formatWeight(kg: number, system: UnitSystem, locale = getLocale(), digits = 1) {
-  if (usesMetricWeight(system)) return `${decimal(kg, digits, locale)} kg`;
+  if (usesMetricWeight(system)) return `${decimal(kg, digits, locale, true)} kg`;
   const pounds = kgToPounds(kg);
-  if (system === 'us') return `${decimal(pounds, digits, locale)} lb`;
+  if (system === 'us') return `${decimal(pounds, digits, locale, true)} lb`;
   const stone = Math.floor(pounds / POUNDS_PER_STONE);
   const rest = pounds - stone * POUNDS_PER_STONE;
   // Rounding the remainder to 14 would print "11 st 14 lb" instead of "12 st".
@@ -100,8 +104,8 @@ export function formatWeight(kg: number, system: UnitSystem, locale = getLocale(
  * always kilograms or pounds.
  */
 export function formatWeightDelta(kg: number, system: UnitSystem, locale = getLocale()) {
-  if (usesMetricWeight(system)) return `${decimal(kg, 1, locale)} kg`;
-  return `${decimal(kgToPounds(kg), 1, locale)} lb`;
+  if (usesMetricWeight(system)) return `${decimal(kg, 1, locale, true)} kg`;
+  return `${decimal(kgToPounds(kg), 1, locale, true)} lb`;
 }
 
 /** Just the number, for an input field that shows its unit separately. */

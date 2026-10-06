@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { isReminderOnboardingPending } from '@/services/reminders';
-import { useTheme, useThemedStyles } from '@/context/ThemeContext';
+import { useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import { Redirect } from 'expo-router';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+
+import { KandroMark } from '@/components/KandroMark';
 
 import { useApp } from '@/context/AppContext';
 
 export default function Index() {
-  const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { hydrationReady, profile, wellnessConsentGranted } = useApp();
 
@@ -17,8 +18,9 @@ export default function Index() {
 
   if (!hydrationReady || pendingReminder === null) {
     return (
-      <View accessibilityLabel="Kandro wird geladen" style={styles.loading}>
-        <ActivityIndicator color={colors.accentText} />
+      // The same calm brand hand-over as the route guard, never a bare spinner.
+      <View accessibilityLabel="Kandro" style={styles.loading}>
+        <KandroMark size={56} />
       </View>
     );
   }

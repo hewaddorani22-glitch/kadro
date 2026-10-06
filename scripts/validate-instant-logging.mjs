@@ -29,6 +29,12 @@ await test('typing a prefix suggests the everyday food first, offline and fast',
   // Generic words mean the plain food, not a dish or a lookalike (Wein ≠ Weintraube).
   const plain = { wein: 'P2A3000', weisswein: 'P210000', salat: 'X201160', paprika: 'G543100', 'eiweiß': 'E113100', 'ei weiß': 'E113100', putenbr: 'V486182', gurke: 'G520100' };
   for (const [query, code] of Object.entries(plain)) assert.equal(top(query), code, query);
+  // Everyday dishes resolve to the dish with a realistic serving, not to a component.
+  // BLS has no combined dish: pasta and the meat sauce are the top two.
+  assert.deepEqual(suggest.suggestFoods('spaghetti bolognese').slice(0, 2).map(r => r.source.referenceId).sort(), ['E401032', 'Y038213']);
+  const dishes = { lasagne: 'X730033', pizza: 'X912033', 'döner': 'Y921162', currywurst: 'Y943032', 'chili con': 'X469753' };
+  for (const [query, code] of Object.entries(dishes)) assert.equal(top(query), code, query);
+  assert.equal(suggest.suggestFoods('lasagne')[0].portions?.[0]?.grams, 350, 'lasagne has a serving');
   const started = performance.now();
   for (let i = 0; i < 50; i++) suggest.suggestFoods('kart');
   assert.ok((performance.now() - started) / 50 < 40, 'suggestions stay interactive');

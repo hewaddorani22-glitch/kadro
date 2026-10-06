@@ -43,7 +43,11 @@ for (let kg = 40; kg <= 200; kg += 0.5) {
 assert.equal(units.formatHeight(180, 'metric'), '180 cm');
 assert.equal(units.formatHeight(180, 'us'), '5′ 11″');
 assert.equal(units.formatHeight(180, 'uk'), '5′ 11″');
-assert.equal(units.formatWeight(84, 'metric', 'en-GB'), '84.0 kg');
+assert.equal(units.formatWeight(84, 'metric', 'en-GB'), '84 kg');
+assert.equal(units.formatWeight(84.5, 'metric', 'de-DE'), '84,5 kg');
+assert.equal(units.formatWeight(80, 'metric', 'de-DE'), '80 kg');
+assert.equal(units.formatWeight(100, 'metric', 'en-US'), '100 kg');
+assert.equal(units.formatWeight(72.12, 'us', 'en-US'), '159 lb');
 assert.equal(units.formatWeight(84, 'us', 'en-GB'), '185.2 lb');
 assert.equal(units.formatWeight(84, 'uk', 'en-GB'), '13 st 3 lb');
 

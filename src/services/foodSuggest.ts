@@ -74,13 +74,25 @@ const RAW_ALIASES: Record<string, readonly string[]> = {
   erdnussbutter: ['H880200'], peanutbutter: ['H880200'], banane: ['F503100'], banana: ['F503100'],
   musli: ['C512300'], muesli: ['C512300'], porridge: ['C133000'], oats: ['C133000'], oatmeal: ['C133000'], hafer: ['C133000', 'C660000'], haferflocken: ['C133000'],
 };
+// Everyday dishes rank first in search, with a realistic serving. They are
+// deliberately not used to resolve free-text descriptions: "Pizza" there
+// still goes to the analysis, because one pizza is not like another.
+const RAW_DISH_ALIASES: Record<string, readonly string[]> = {
+  bolognese: ['Y038213', 'E401032'], spaghettibolognese: ['Y038213', 'E401032'], lasagne: ['X730033'], lasagna: ['X730033'],
+  pizza: ['X912033'], margherita: ['X912033'], doner: ['Y921162', 'Y921062'], döner: ['Y921162', 'Y921062'], kebab: ['Y921162', 'Y921062'],
+  currywurst: ['Y943032', 'Y944062'], chili: ['X469753'], chiliconcarne: ['X469753'], schnitzel: ['Y231322'], wienerschnitzel: ['Y231322'],
+  burger: ['Y911060', 'Y911160'], hamburger: ['Y911060'], cheeseburger: ['Y911160'],
+};
+const DISH_ALIASES: Record<string, readonly string[]> = Object.fromEntries(Object.entries(RAW_DISH_ALIASES).map(([key, codes]) => [fold(key).replace(/ /g, ''), codes]));
+// Plain foods that a dish alias also lists (pasta for bolognese) stay matchable.
+const DISH_CODES = new Set(Object.values(RAW_DISH_ALIASES).flat().filter(code => !Object.values(RAW_ALIASES).some(codes => codes.includes(code))));
 function aliasCodes(query: string) {
   const codes = new Map<string, number>();
   // "ei weiß" and "hafer milch" mean the compound word.
   const joined = query.replace(/ /g, '');
   if (joined.length < 2 || query.split(' ').length > 2) return codes;
   query = joined;
-  for (const [word, list] of Object.entries(ALIASES)) {
+  for (const [word, list] of [...Object.entries(ALIASES), ...Object.entries(DISH_ALIASES)]) {
     // Two letters only match a whole word ("ei" is egg, not Eisbergsalat).
     if (!word.startsWith(query) || (query.length < 3 && word !== query)) continue;
     list.forEach((code, position) => {
@@ -106,6 +118,7 @@ const PORTIONS: Record<string, readonly (readonly [PortionKind, number])[]> = {
   N410100: [['cup', 200]], N630000: [['cup', 250]], N610100: [['cup', 250]], N110000: [['glass', 250]],
   F603600: [['glass', 200]], F110600: [['glass', 200]], N330000: [['can', 330], ['glass', 250]], N331000: [['can', 330], ['glass', 250]], P163000: [['bottle', 330]],
   P2A3000: [['glass', 200]], P210000: [['glass', 200]], P253000: [['glass', 200]], P220000: [['glass', 200]], G543100: [['piece', 160]], G541100: [['piece', 160]], G542100: [['piece', 160]], G520100: [['piece', 400]], X201160: [['portion', 150]], E113100: [['egg', 33]], V486182: [['fillet', 150]],
+  Y038213: [['portion', 150]], X730033: [['portion', 350]], X912033: [['piece', 350], ['slice', 90]], Y921162: [['piece', 400]], Y921062: [['piece', 400]], Y943032: [['portion', 250]], Y944062: [['portion', 450]], X469753: [['portion', 350]], Y231322: [['piece', 150]], Y911060: [['piece', 110]], Y911160: [['piece', 120]],
   Q611000: [['tsp', 5]], H880200: [['tbsp', 15]], S120000: [['tsp', 8]], Q120000: [['tbsp', 10]],
   M402500: [['slice', 25]], M304600: [['slice', 20]], W424000: [['slice', 20]], W140000: [['slice', 10]], M032100: [['ball', 125]],
   C352032: [['portion', 150]], C351032: [['portion', 150]], E401032: [['portion', 180]], X6A1010: [['portion', 200], ['piece', 80]], K110100: [['portion', 200], ['piece', 80]],
@@ -337,7 +350,7 @@ export function matchFood(query: string, usage: Map<string, FoodUsage> = new Map
   let best: { result: FoodSearchResult; extra: number; order: number } | null = null;
   candidates.forEach((candidate, order) => {
     const entry = rows.get(candidate.source.referenceId ?? '');
-    if (!entry) return;
+    if (!entry || DISH_CODES.has(entry[0])) return;
     const words = fold(language === 'de' ? entry[1] : entry[2]).split(' ');
     if (!tokens.every(token => words.some(word => sameWord(token, word)))) return;
     const extra = words.filter(word => !tokens.some(token => sameWord(token, word)) && !plainTags.has(word)).length
