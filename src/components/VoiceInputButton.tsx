@@ -42,7 +42,9 @@ export function VoiceInputButton({ value, onChange }: { value: string; onChange:
   const speech = available ? speechModule : null;
   const [listening, setListening] = useState(false);
   const prefix = useRef('');
+  const stopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pulse = useRef(new Animated.Value(0)).current;
+  const clearStopTimer = () => { if (stopTimer.current) { clearTimeout(stopTimer.current); stopTimer.current = null; } };
 
   useEffect(() => {
     if (!speech) return;
@@ -51,10 +53,10 @@ export function VoiceInputButton({ value, onChange }: { value: string; onChange:
         const transcript = event.results[0]?.transcript ?? '';
         onChange(`${prefix.current}${transcript}`.slice(0, 500));
       }),
-      speech.addSpeechRecognitionListener('end', () => setListening(false)),
-      speech.addSpeechRecognitionListener('error', () => setListening(false)),
+      speech.addSpeechRecognitionListener('end', () => { setListening(false); clearStopTimer(); }),
+      speech.addSpeechRecognitionListener('error', () => { setListening(false); clearStopTimer(); }),
     ];
-    return () => { subscriptions.forEach(subscription => subscription.remove()); speech.ExpoSpeechRecognitionModule.abort(); };
+    return () => { subscriptions.forEach(subscription => subscription.remove()); clearStopTimer(); speech.ExpoSpeechRecognitionModule.abort(); };
   }, [speech, onChange]);
 
   useEffect(() => {
@@ -68,7 +70,17 @@ export function VoiceInputButton({ value, onChange }: { value: string; onChange:
 
   const toggle = async () => {
     void selectionHaptic();
-    if (listening) { speech.ExpoSpeechRecognitionModule.stop(); return; }
+    if (listening) {
+      // Stop must feel instant. iOS can take seconds to report "end" for
+      // continuous on-device recognition (or never), which used to leave the
+      // button pulsing as if it could not be stopped. The last words still
+      // arrive as a final result; if iOS does not finish, abort.
+      setListening(false);
+      speech.ExpoSpeechRecognitionModule.stop();
+      clearStopTimer();
+      stopTimer.current = setTimeout(() => { stopTimer.current = null; speech.ExpoSpeechRecognitionModule.abort(); }, 1500);
+      return;
+    }
     const permission = await speech.ExpoSpeechRecognitionModule.requestPermissionsAsync();
     if (!permission.granted) {
       Alert.alert(t.scan.voiceDeniedTitle, t.scan.voiceDeniedBody, [
@@ -77,6 +89,8 @@ export function VoiceInputButton({ value, onChange }: { value: string; onChange:
       ]);
       return;
     }
+    // A pending abort from the previous stop must not cut off this new session.
+    clearStopTimer();
     prefix.current = value.trim() ? `${value.trim()} ` : '';
     speech.ExpoSpeechRecognitionModule.start({
       lang: language === 'de' ? 'de-DE' : 'en-US',

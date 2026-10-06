@@ -19,6 +19,7 @@ const markers = [
   ['src/utils/units.ts', 'trim = false', 'weight labels without a trailing ,0'],
   ['src/i18n/en.ts', "describeSubmit: 'Analyze'", 'US spelling'],
   ['src/components/VoiceInputButton.tsx', 'function recognitionAvailable', 'microphone shows after a fresh install'],
+  ['src/components/VoiceInputButton.tsx', 'stopTimer.current = setTimeout', 'microphone stops instantly'],
   ['src/app/onboarding.tsx', 't.portion.decimalMark', 'localized decimal mark in the target weight'],
   ['app-store/screenshots/de-DE/01-photo.png', null, 'new German store screenshots'],
   ['app-store/screenshots/en-US/01-photo.png', null, 'new English store screenshots'],
