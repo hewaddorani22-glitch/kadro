@@ -11,6 +11,7 @@ Claude finished release fixes after build 38. **Build 38 and every older build m
 | `557c09f` | New App Store screenshots from real release-app captures (`app-store/screenshots/`, 6 per locale); onboarding target date follows the pace; no "cloud not confirmed" notice in local-only mode; "Add" instead of "Save amount" for new search entries |
 | `b31aea5` | Everyday dishes in search with real servings (bolognese, lasagne, pizza, döner, currywurst, chili, schnitzel, burger) while descriptions still go to the analysis; weight labels without a trailing `,0` (159 lb, 78 kg); US spelling in the English UI; Kandro mark instead of a bare spinner on launch |
 | `b5de12a` | Microphone button reliably present after a fresh install; target weight input uses the language's decimal mark; final store screenshots re-captured from this build |
+| `d5d0fc8` | Microphone stops instantly on tap (abort fallback when iOS does not report the end) |
 
 Rules:
 

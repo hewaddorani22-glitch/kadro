@@ -8,6 +8,7 @@ const requiredCommits = {
   '557c09f': 'real App Store screenshots, target date follows pace, no cloud notice in local-only mode, Add label',
   b31aea5: 'dish search with servings, weight labels without ,0, US English, brand mark on launch',
   b5de12a: 'microphone after a fresh install, localized decimal mark, final store screenshots',
+  d5d0fc8: 'microphone stops instantly',
 };
 const markers = [
   ['src/services/foodSuggest.ts', 'RAW_DISH_ALIASES', 'everyday dishes in search'],
