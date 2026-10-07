@@ -367,6 +367,7 @@ export const de = {
     voiceStop: 'Aufnahme beenden',
     voiceHint: 'Antippen und einfach sagen, was du gegessen hast.',
     voiceListening: 'Ich höre zu … tippe zum Beenden.',
+    voiceFailed: 'Das hat nicht geklappt. Tippe erneut oder schreib es kurz.',
     voiceDeniedTitle: 'Mikrofon ist aus',
     voiceDeniedBody: 'Erlaube Mikrofon und Spracherkennung in den Einstellungen, um deine Mahlzeit einzusprechen.',
     voiceOpenSettings: 'Einstellungen öffnen',

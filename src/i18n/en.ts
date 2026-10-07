@@ -366,6 +366,7 @@ export const en: typeof de = {
     voiceStop: 'Stop recording',
     voiceHint: 'Tap and just say what you ate.',
     voiceListening: 'Listening … tap to finish.',
+    voiceFailed: 'Didn’t catch that. Tap to try again or type it.',
     voiceDeniedTitle: 'Microphone is off',
     voiceDeniedBody: 'Allow microphone and speech recognition in Settings to speak your meal.',
     voiceOpenSettings: 'Open Settings',
