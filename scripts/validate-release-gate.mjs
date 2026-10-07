@@ -22,6 +22,8 @@ const markers = [
   ['src/components/VoiceInputButton.tsx', 'function recognitionAvailable', 'microphone shows after a fresh install'],
   ['src/components/VoiceInputButton.tsx', 'stopTimer.current = setTimeout', 'microphone stops instantly'],
   ['src/app/onboarding.tsx', 't.portion.decimalMark', 'localized decimal mark in the target weight'],
+  ['src/app/paywall.tsx', '<Stack.Screen options={screenOptions} />', 'Kandro Pro opens without a setOptions render loop'],
+  ['src/components/VoiceInputButton.tsx', 'committed.current = `${text} `', 'dictation keeps earlier words after a pause (iOS 18+ segments)'],
   ['app-store/screenshots/de-DE/01-photo.png', null, 'new German store screenshots'],
   ['app-store/screenshots/en-US/01-photo.png', null, 'new English store screenshots'],
 ];
@@ -40,6 +42,17 @@ for (const [commit, what] of Object.entries(requiredCommits)) {
 for (const [file, marker, what] of markers) {
   if (!fs.existsSync(file)) { errors.push(`${file} missing (${what})`); continue; }
   if (marker && !fs.readFileSync(file, 'utf8').includes(marker)) errors.push(`${file} no longer contains ${marker} (${what})`);
+}
+
+// An inline options literal in a route's <Stack.Screen> is a new object on
+// every render; expo-router then calls setOptions on every render and can
+// loop until React aborts (Sentry: ui:react_render via setOptions, 1.0.3+40).
+for (const entry of fs.readdirSync('src/app', { recursive: true })) {
+  const file = `src/app/${entry}`;
+  if (!/\.tsx$/.test(file) || /_layout\.tsx$/.test(file)) continue;
+  if (/<(Stack|Tabs)\.Screen[^>]*options=\{\{/.test(fs.readFileSync(file, 'utf8'))) {
+    errors.push(`${file} passes an inline options object to Stack.Screen (memoize it)`);
+  }
 }
 
 if (errors.length) {

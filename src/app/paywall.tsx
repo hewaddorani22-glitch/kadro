@@ -4,7 +4,7 @@ import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, BackHandler, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -38,6 +38,11 @@ export default function PaywallScreen() {
   const access = useAccess();
   const { freeScansLeft, profile, targets } = useApp();
   const hard = access.record.hard;
+  // Stack.Screen calls navigation.setOptions whenever this object changes
+  // identity. A fresh literal on every render made each render trigger
+  // another one until React aborted with its maximum update depth, so
+  // "Kandro Pro" showed the crash screen instead of opening.
+  const screenOptions = useMemo(() => ({ gestureEnabled: !hard, presentation: hard ? 'card' as const : 'modal' as const }), [hard]);
   // Interrupted mid-scan after the free analyses: say why the paywall appears.
   const { reason } = useLocalSearchParams<{ reason?: string }>();
   const blocked = reason === 'blocked' && !hard;
@@ -208,7 +213,7 @@ export default function PaywallScreen() {
 
   return (
     <SafeAreaView key={fontScale} edges={['top', 'left', 'right']} style={styles.safe}>
-      <Stack.Screen options={{ gestureEnabled: !hard, presentation: hard ? 'card' : 'modal' }} />
+      <Stack.Screen options={screenOptions} />
       <View style={styles.topBar}>
         {!hard ? <Pressable accessibilityLabel={t.paywall.close} accessibilityRole="button" hitSlop={8} onPress={() => { void resume(); }} style={styles.closeButton}>
           <Ionicons color={colors.text} name="close" size={22} />

@@ -41,7 +41,11 @@ export function VoiceInputButton({ value, onChange }: { value: string; onChange:
   }, [available]);
   const speech = available ? speechModule : null;
   const [listening, setListening] = useState(false);
-  const prefix = useRef('');
+  const [failed, setFailed] = useState(false);
+  // Text that is already settled: what was typed before, plus every finished
+  // speech segment. iOS 18+ starts a fresh transcript after each pause in
+  // continuous mode, so only the running segment may be replaced.
+  const committed = useRef('');
   const stopTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pulse = useRef(new Animated.Value(0)).current;
   const clearStopTimer = () => { if (stopTimer.current) { clearTimeout(stopTimer.current); stopTimer.current = null; } };
@@ -50,11 +54,18 @@ export function VoiceInputButton({ value, onChange }: { value: string; onChange:
     if (!speech) return;
     const subscriptions = [
       speech.addSpeechRecognitionListener('result', event => {
-        const transcript = event.results[0]?.transcript ?? '';
-        onChange(`${prefix.current}${transcript}`.slice(0, 500));
+        const transcript = (event.results[0]?.transcript ?? '').trim();
+        const text = `${committed.current}${transcript}`.slice(0, 500);
+        onChange(text);
+        if (event.isFinal && transcript) committed.current = `${text} `;
       }),
       speech.addSpeechRecognitionListener('end', () => { setListening(false); clearStopTimer(); }),
-      speech.addSpeechRecognitionListener('error', () => { setListening(false); clearStopTimer(); }),
+      speech.addSpeechRecognitionListener('error', event => {
+        setListening(false);
+        clearStopTimer();
+        // Stopping, or silence, is not a failure worth a message.
+        if (event.error !== 'aborted' && event.error !== 'no-speech') setFailed(true);
+      }),
     ];
     return () => { subscriptions.forEach(subscription => subscription.remove()); clearStopTimer(); speech.ExpoSpeechRecognitionModule.abort(); };
   }, [speech, onChange]);
@@ -91,7 +102,8 @@ export function VoiceInputButton({ value, onChange }: { value: string; onChange:
     }
     // A pending abort from the previous stop must not cut off this new session.
     clearStopTimer();
-    prefix.current = value.trim() ? `${value.trim()} ` : '';
+    setFailed(false);
+    committed.current = value.trim() ? `${value.trim()} ` : '';
     speech.ExpoSpeechRecognitionModule.start({
       lang: language === 'de' ? 'de-DE' : 'en-US',
       interimResults: true,
@@ -116,7 +128,7 @@ export function VoiceInputButton({ value, onChange }: { value: string; onChange:
         {listening ? <Animated.View pointerEvents="none" style={[styles.ring, ring]} /> : null}
         <Ionicons color={listening ? colors.onAccent : colors.text} name={listening ? 'stop' : 'mic'} size={22} />
       </Pressable>
-      <Text style={styles.hint}>{listening ? t.scan.voiceListening : t.scan.voiceHint}</Text>
+      <Text style={styles.hint}>{listening ? t.scan.voiceListening : failed ? t.scan.voiceFailed : t.scan.voiceHint}</Text>
     </View>
   );
 }
