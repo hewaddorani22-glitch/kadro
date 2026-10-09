@@ -29,7 +29,8 @@ onState('active'); assert.equal(renderedDay, currentDate);
 cleanup(); assert.ok(removed && cleared);
 const progress = read('src/app/(tabs)/progress.tsx');
 assert.match(progress, /\[currentDay, locale, mealHistory, targets\.protein\]/);
-assert.match(progress, /currentLoggingStreak\(mealHistory\), \[currentDay, mealHistory\]/);
+assert.match(progress, /weeklyLoggingGoal\(mealHistory\), \[currentDay, mealHistory\]/);
+assert.doesNotMatch(progress, /flame-outline|daysTracked/, 'the streak flame is replaced by the weekly goal');
 assert.match(read('src/context/AppContext.tsx'), /setMeals\(mealHistory\.filter\(\(meal\) => meal\.date === currentDay\)\)/);
 
 // Reaching the target must remain visible without locking meal ideas away.

@@ -7,13 +7,15 @@ import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AccountLinkCard } from '@/components/AccountLinkCard';
 import { Card, Eyebrow, PageTitle, Screen, SectionTitle } from '@/components/ui';
 import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { lastMealSavedAt } from '@/services/consistency';
+import { isReengagementEnabled, remindersSupported, setReengagementEnabled } from '@/services/reminders';
 import {
   getAnalyticsCollectionEnabled,
   isTelemetryConfigured,
@@ -29,6 +31,12 @@ import { UNIT_SYSTEMS, UnitSystem, formatHeight, formatWeight } from '@/utils/un
  * Endonyms, not translations: someone who opened the app in the wrong language
  * has to recognise their own language in the list without reading the rest.
  */
+/** Professional, confidential help by language; Kandro itself gives no such guidance. */
+const EATING_DISORDER_HELP: Record<Language, string> = {
+  de: 'https://www.bzga-essstoerungen.de',
+  en: 'https://www.nationaleatingdisorders.org',
+};
+
 const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
   { value: 'en', label: 'English' },
   { value: 'de', label: 'Deutsch' },
@@ -38,10 +46,12 @@ export default function ProfileScreen() {
   const { colors, mode: themeMode, setMode: setThemeMode } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { hydrationReady, profile, setUnitSystem, targets, userName } = useApp();
+  const { hydrationReady, mealHistory, profile, setUnitSystem, targets, userName } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const { language, locale, setLanguage, t } = useLanguage();
   const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
+  const [reengageEnabled, setReengageEnabled] = useState(true);
+  const [reengageError, setReengageError] = useState(false);
   const analyticsEligible = hydrationReady && Boolean(profile.completedAt) && profile.age >= 18;
   const isMinor = !analyticsEligible;
 
@@ -61,6 +71,21 @@ export default function ProfileScreen() {
     if (!hydrationReady || analyticsEligible) return;
     void setAnalyticsCollectionEnabled(false).then(() => setAnalyticsEnabled(false));
   }, [analyticsEligible, hydrationReady]);
+
+  useEffect(() => {
+    let active = true;
+    void isReengagementEnabled().then((enabled) => { if (active) setReengageEnabled(enabled); });
+    return () => { active = false; };
+  }, []);
+
+  const updateReengagement = (enabled: boolean) => {
+    setReengageEnabled(enabled);
+    setReengageError(false);
+    void setReengagementEnabled(enabled, lastMealSavedAt(mealHistory)).catch(() => {
+      setReengageEnabled(!enabled);
+      setReengageError(true);
+    });
+  };
 
   const updateAnalytics = async (enabled: boolean) => {
     setAnalyticsEnabled(await setAnalyticsCollectionEnabled(enabled));
@@ -119,7 +144,19 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <SectionTitle>{t.profile.reminders}</SectionTitle>
         <ReminderPreferences />
-      <WidgetPreferences />
+        {remindersSupported ? (
+          <Card style={styles.listCard}>
+            <ToggleRow
+              detail={t.captureExtras.reengageDetail}
+              icon="notifications-outline"
+              label={t.captureExtras.reengageLabel}
+              onValueChange={updateReengagement}
+              value={reengageEnabled}
+            />
+            {reengageError ? <Text accessibilityRole="alert" style={styles.inlineError}>{t.captureExtras.reengageError}</Text> : null}
+          </Card>
+        ) : null}
+        <WidgetPreferences />
         <MenuRow icon="sparkles-outline" label={t.profile.openEvening} onPress={() => router.push('/evening')} />
       </View>
 
@@ -241,6 +278,13 @@ export default function ProfileScreen() {
           <View style={styles.divider} />
           <MenuRow icon="library-outline" label={t.profile.sources} onPress={() => router.push('/sources')} />
           <View style={styles.divider} />
+          <MenuRow
+            detail={t.profile.eatingHelpDetail}
+            icon="heart-outline"
+            label={t.profile.eatingHelp}
+            onPress={() => void Linking.openURL(EATING_DISORDER_HELP[language]).catch(() => undefined)}
+          />
+          <View style={styles.divider} />
           <MenuRow icon="trash-outline" label={t.profile.deleteAccount} onPress={() => router.push('/account-deletion')} />
         </Card>
       </View>
@@ -356,7 +400,8 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   rowIcon: { width: 40, height: 40, borderRadius: 15, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   rowCopy: { flex: 1, gap: 3 },
   rowLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
-  rowDetail: { color: colors.muted, fontSize: 10, lineHeight: 14 },
+  rowDetail: { color: colors.muted, fontSize: 12, lineHeight: 16 },
+  inlineError: { color: colors.attention, fontSize: 12, paddingHorizontal: 9, paddingBottom: 9 },
   menuLabel: { color: colors.text, fontSize: 14, fontWeight: '600' },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 60 },
   wellnessNote: { flexDirection: 'row', gap: 9, paddingHorizontal: 8 },

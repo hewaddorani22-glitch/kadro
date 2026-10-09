@@ -85,21 +85,42 @@ function dateFromKey(key: string) {
   return new Date(year, month - 1, day, 12);
 }
 
-/**
- * A current logging streak remains alive until the end of today. If the user
- * has not logged yet today, yesterday is therefore the starting point. Meal
- * dates, not UTC timestamps, decide the day so travel and DST do not split it.
- */
-export function currentLoggingStreak(meals: Meal[], today = new Date()): number {
-  const loggedDates = new Set(meals.map((meal) => meal.date).filter((date): date is string => Boolean(date)));
-  const todayKey = localDateKey(today);
-  const cursor = dateFromKey(todayKey);
-  if (!loggedDates.has(todayKey)) cursor.setDate(cursor.getDate() - 1);
+export const WEEKLY_LOG_GOAL = 4;
 
-  let streak = 0;
-  while (loggedDates.has(localDateKey(cursor))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
+export type WeeklyLoggingGoal = {
+  days: { key: string; logged: boolean; today: boolean }[];
+  logged: number;
+  goal: number;
+  reached: boolean;
+};
+
+/**
+ * A forgiving weekly goal instead of a streak: how many of the last seven
+ * local days (today included) have at least one entry, against a goal of four.
+ * A missed day never resets anything, so there is nothing to "lose" and the
+ * promise "keine Serien, kein Druck" stays true. Meal dates, not UTC
+ * timestamps, decide the day so travel and DST do not split it.
+ */
+export function weeklyLoggingGoal(meals: Meal[], today = new Date()): WeeklyLoggingGoal {
+  const loggedDates = new Set(meals.filter((meal) => meal.origin !== 'seed').map((meal) => meal.date).filter((date): date is string => Boolean(date)));
+  const anchor = dateFromKey(localDateKey(today));
+  const days = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(anchor);
+    date.setDate(anchor.getDate() - (6 - index));
+    const key = localDateKey(date);
+    return { key, logged: loggedDates.has(key), today: index === 6 };
+  });
+  const logged = days.filter((day) => day.logged).length;
+  return { days, logged, goal: WEEKLY_LOG_GOAL, reached: logged >= WEEKLY_LOG_GOAL };
+}
+
+/** Newest real save; older rows without a timestamp count from midday of their day. */
+export function lastMealSavedAt(meals: Meal[]): number | null {
+  let latest: number | null = null;
+  for (const meal of meals) {
+    if (meal.origin === 'seed') continue;
+    const saved = meal.savedAt ? Date.parse(meal.savedAt) : meal.date ? Date.parse(`${meal.date}T12:00:00`) : NaN;
+    if (Number.isFinite(saved) && (latest === null || saved > latest)) latest = saved;
   }
-  return streak;
+  return latest;
 }

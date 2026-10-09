@@ -58,7 +58,7 @@ function callback(name,env) {
   const scope={ useCallback:fn=>fn,...env };
   return new Function(...Object.keys(scope),code)(...Object.values(scope));
 }
-function render(profile=base, meals=[], weightEntries=[]) {
+function render(profile=base, meals=[], weightEntries=[], review={ status:'active', freeWeek:null }) {
   const jsx = (type,props) => typeof type==='function' ? type(props) : {type,props};
   const rn = Object.fromEntries(['KeyboardAvoidingView','Modal','ScrollView','Text','TextInput','View'].map(k=>[k,k]));
   const colors=new Proxy({}, {get:()=> '#fff'});
@@ -75,9 +75,12 @@ function render(profile=base, meals=[], weightEntries=[]) {
   };
   // The screen now includes a TSX child with router/subscription boundaries.
   // Execute that real child under this render's adapters, not the pure-TS cache.
+  // The free-first-review marker is read from storage; tests preset it directly.
   mocks['@/components/WeeklyReviewCard'] = load('src/components/WeeklyReviewCard.tsx', {
     ...mocks, 'expo-router': { useRouter: () => ({ push: () => {} }) },
-    '@/context/SubscriptionContext': { useSubscription: () => ({ status: 'ready' }) },
+    'react': { ...mocks.react, useEffect: () => {}, useState: () => [review.freeWeek, () => {}] },
+    '@react-native-async-storage/async-storage': { default: { getItem: async () => review.freeWeek, setItem: async () => {} } },
+    '@/context/SubscriptionContext': { useSubscription: () => ({ status: review.status }) },
   });
   const screen = load('src/app/(tabs)/progress.tsx', mocks).default();
   const nodes=[];
@@ -109,6 +112,28 @@ await test('Goal-specific adult copy and neutral teen copy in both languages',()
     const teen=render({...base,age:15,goal:'lose'}); assert.ok(teen.texts.includes(dict.progress.teenContext)); assert.ok(!teen.texts.includes(dict.progress.goalContext.lose));
   }
   dictionary=en;locale='en-GB';
+});
+await test('First weekly review is free for adults; later weeks show the Pro teaser',()=>{
+  const card = load('src/components/WeeklyReviewCard.tsx', { 'react':{useEffect:()=>{},useState:x=>[x,()=>{}]}, 'react/jsx-runtime':{jsx:()=>null,jsxs:()=>null}, 'react-native':{Text:'Text',View:'View'}, 'expo-router':{useRouter:()=>({})}, '@react-native-async-storage/async-storage':{default:{}}, '@/components/ui':{}, '@/context/AppContext':{}, '@/context/SubscriptionContext':{}, '@/context/ThemeContext':{}, '@/i18n/LanguageProvider':{}, '@/hooks/useLocalDay':{}, '@/services/weeklyReview':{}, '@/utils/format':{} });
+  assert.deepEqual(card.freeReviewAccess(null,'2026-09-19',3),{full:true,claim:true},'first week with entries is claimed and shown');
+  assert.deepEqual(card.freeReviewAccess(null,'2026-09-19',0),{full:true,claim:false},'an empty week never uses up the free review');
+  assert.deepEqual(card.freeReviewAccess('2026-09-19','2026-09-19',3),{full:true,claim:false},'the free week stays open all week');
+  assert.deepEqual(card.freeReviewAccess('2026-09-12','2026-09-19',3),{full:false,claim:false},'week two shows the teaser');
+  const week=[meal('w1','2026-09-20'),meal('w2','2026-09-22')];
+  const free=render(base,week,[],{status:'ready',freeWeek:null});
+  assert.ok(free.texts.includes(en.weeklyReview.loggedDays(2)),'non-Pro adult sees the full first review'); assert.ok(free.texts.includes(en.weeklyReview.freeNote)); assert.ok(!free.texts.includes(en.weeklyReview.teaser));
+  const later=render(base,week,[],{status:'ready',freeWeek:'2026-09-12'});
+  assert.ok(later.texts.includes(en.weeklyReview.teaser),'week two shows the Pro teaser'); assert.ok(!later.texts.includes(en.weeklyReview.loggedDays(2)));
+  const pro=render(base,week,[],{status:'active',freeWeek:'2026-09-12'}); assert.ok(pro.texts.includes(en.weeklyReview.loggedDays(2))); assert.ok(!pro.texts.includes(en.weeklyReview.freeNote));
+  const teen=render({...base,age:16},week,[],{status:'ready',freeWeek:null}); assert.ok(!teen.texts.includes(en.weeklyReview.title),'no weekly review under 18');
+  assert.equal(de.weeklyReview.teaser,'Deine nächsten Wochenrückblicke mit Kandro Pro');
+});
+await test('Weekly goal replaces the streak flame: forgiving, no reset, no pressure',()=>{
+  const r=render(base,[meal('a','2026-09-20'),meal('b','2026-09-22'),meal('c','2026-09-26')]);
+  assert.ok(r.texts.includes(en.progress.weekGoal(3,4)),'3 of 7 days logged · Goal: 4'); assert.ok(r.texts.includes(en.progress.weekGoalOpen));
+  assert.equal(de.progress.weekGoal(3,4),'3 von 7 Tagen erfasst · Ziel: 4');
+  const done=render(base,['20','21','23','26'].map(d=>meal('d'+d,'2026-09-'+d))); assert.ok(done.texts.includes(en.progress.weekGoalReached));
+  assert.ok(!r.nodes.some(n=>n.props?.name==='flame-outline'));
 });
 await test('Irregular and empty meal days keep their meaning, not zero-calorie consumption',()=>{
  const m=[meal('a','2026-09-20',40),meal('b','2026-09-26',20),meal('future','2026-09-27',200)];

@@ -9,6 +9,7 @@ import type { ThemeColors } from '@/constants/theme';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { successHaptic } from '@/services/haptics';
+import { weeklyLoggingGoal } from '@/services/consistency';
 import { claimFirstMealCelebration, markFirstMealCelebrated, markThreeDayMilestone, scheduleThreeDayMilestone } from '@/services/reminders';
 import type { Meal } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
@@ -29,7 +30,8 @@ export function loggedDays(meals: Meal[]) {
 /**
  * Two moments that make progress felt:
  * - the very first logged meal gets a short celebration with today's balance;
- * - the third distinct logging day schedules a true summary for next morning.
+ * - the third distinct logging day schedules a true summary for next morning,
+ *   framed as the weekly goal (days logged of the last seven), not a streak.
  * Long-time users are marked as done silently and never see either late.
  */
 export function Milestones() {
@@ -72,7 +74,8 @@ export function Milestones() {
     baseline.current = Math.max(baseline.current, meals);
     if (count === 3 && days.has(localDateKey())) {
       const average = Math.round([...days.values()].reduce((sum, value) => sum + value, 0) / count);
-      void scheduleThreeDayMilestone(average, Math.round(targets.calories));
+      const week = weeklyLoggingGoal(mealHistory);
+      void scheduleThreeDayMilestone(average, Math.round(targets.calories), week.logged, week.goal);
     } else if (count > 3) void markThreeDayMilestone();
   }, [hydrationReady, mealHistory, profile.completedAt, targets.calories]);
 

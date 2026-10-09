@@ -15,6 +15,17 @@ import { formatNumber } from '@/utils/format';
 const HORIZONTAL_CHROME = 80;
 const MAX_SIZE = 220;
 const MIN_SIZE = 168;
+/** Up to this share over the target reads as "slightly over". */
+const SLIGHT_OVER_SHARE = 0.1;
+
+/**
+ * Graded and calm: a few bites over the target are "Leicht drüber", a clearly
+ * bigger day is "Über deinem Ziel". Never red, never an alarm.
+ */
+export function overBudgetLevel(consumed: number, total: number): 'none' | 'slight' | 'over' {
+  if (!(total > 0) || consumed <= total) return 'none';
+  return consumed - total <= total * SLIGHT_OVER_SHARE ? 'slight' : 'over';
+}
 
 export function CalorieRing({
   consumed,
@@ -42,6 +53,8 @@ export function CalorieRing({
   const remaining = Math.max(0, total - consumed);
   const over = Math.max(0, consumed - total);
   const consumedRatio = Math.min(1, Math.max(0, consumed / safeTotal));
+  const level = overBudgetLevel(consumed, total);
+  // Warm amber at most; the ring never turns into a red warning.
   const ringColor = over > 0 ? colors.attention : colors.accentText;
   const statusColor = over > 0 ? colors.attention : colors.success;
   const celebrating = proteinReached && over === 0;
@@ -106,7 +119,7 @@ export function CalorieRing({
               ? <Ionicons color={statusColor} name="checkmark-circle" size={13} />
               : <View style={[styles.statusDot, { backgroundColor: statusColor }]} />}
             <Text style={[styles.status, { color: statusColor }]}>
-              {over > 0 ? t.ring.slightlyOver : celebrating ? t.ring.proteinDone : t.ring.inPlan}
+              {over > 0 ? (level === 'over' ? t.ring.aboveTarget : t.ring.slightlyOver) : celebrating ? t.ring.proteinDone : t.ring.inPlan}
             </Text>
           </View>
         </View>

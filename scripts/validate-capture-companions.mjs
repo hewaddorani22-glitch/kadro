@@ -17,7 +17,7 @@ const storage = { getItem: async key => { if (blockRead) await blockRead; return
 const ios = { NOT_DETERMINED: 0, DENIED: 1, AUTHORIZED: 2, PROVISIONAL: 3, EPHEMERAL: 4 };
 let permission = 0, requests = 0, answer = 2;
 const scheduled = new Map(), dismissed = [], events = [];
-const notifications = { IosAuthorizationStatus: ios, SchedulableTriggerInputTypes: { DAILY: 'daily' }, setNotificationHandler() {}, getPermissionsAsync: async () => { if (failPermission) throw Error('unavailable'); return { ios: { status: permission }, granted: permission === 2, canAskAgain: permission === 0 }; }, requestPermissionsAsync: async () => { requests++; permission = answer; return notifications.getPermissionsAsync(); }, cancelScheduledNotificationAsync: async id => { scheduled.delete(id); events.push('cancel:' + id); }, dismissNotificationAsync: async id => dismissed.push(id), scheduleNotificationAsync: async record => { scheduled.set(record.identifier, record); events.push('schedule:' + record.identifier); return record.identifier; } };
+const notifications = { IosAuthorizationStatus: ios, SchedulableTriggerInputTypes: { DAILY: 'daily', DATE: 'date' }, setNotificationHandler() {}, getPermissionsAsync: async () => { if (failPermission) throw Error('unavailable'); return { ios: { status: permission }, granted: permission === 2, canAskAgain: permission === 0 }; }, requestPermissionsAsync: async () => { requests++; permission = answer; return notifications.getPermissionsAsync(); }, cancelScheduledNotificationAsync: async id => { scheduled.delete(id); events.push('cancel:' + id); }, dismissNotificationAsync: async id => dismissed.push(id), scheduleNotificationAsync: async record => { scheduled.set(record.identifier, record); events.push('schedule:' + record.identifier); return record.identifier; } };
 let language = 'de';
 const copy = { de: { notificationTitle: 'Ein Moment für dich', notificationBody: 'Ein kurzer Moment für dein Ernährungstagebuch.' }, en: { notificationTitle: 'A moment for you', notificationBody: 'A quick moment for your food journal.' } };
 const reminderDeps = { '@react-native-async-storage/async-storage': storage, 'expo-notifications': notifications, 'react-native': { Platform: { OS: 'ios' } }, '@/i18n/active': { getDictionary: () => ({ captureExtras: copy[language] }) } };
@@ -166,6 +166,13 @@ await test('notification routing accepts only own known reminder IDs/default tap
   const response = { actionIdentifier: 'expo.modules.notifications.actions.DEFAULT', notification: { date: 123, request: { identifier: 'kandro-meal-reminder', content: { data: { route: '/capture', mode: 'search' } } } } };
   assert.deepEqual(intents.reminderIntent(response), { key: 'kandro-meal-reminder:123', mode: 'search' });
   const changed = structuredClone(response); changed.notification.request.content.data.route = '/paywall'; assert.equal(intents.reminderIntent(changed), null); changed.notification.request.identifier = 'someone-else'; assert.equal(intents.reminderIntent(changed), null);
+  // Personalised meal reminders (and their later-day occurrences) lead to Plan; nothing else may.
+  const plan = structuredClone(response); plan.notification.request.identifier = 'kandro-reminder-lunch-3'; plan.notification.request.content.data = { route: '/plan' };
+  assert.deepEqual(intents.reminderIntent(plan), { key: 'kandro-reminder-lunch-3:123', plan: true });
+  plan.notification.request.identifier = 'kandro-meal-reminder'; assert.equal(intents.reminderIntent(plan), null);
+  plan.notification.request.identifier = 'kandro-reminder-lunch-7'; assert.equal(intents.reminderIntent(plan), null);
+  const reengage = structuredClone(response); reengage.notification.request.identifier = 'kandro-reengage'; reengage.notification.request.content.data = { route: '/capture', mode: 'photo' };
+  assert.deepEqual(intents.reminderIntent(reengage), { key: 'kandro-reengage:123', mode: 'photo' });
 });
 // Exercise the actual mounted screen, including state/effect ordering and focus
 // transitions. Native views/navigation are boundaries; this is not an OS tap test.
@@ -381,6 +388,8 @@ function reminderPreferencesHarness({ onboarding = true } = {}) {
   render();
   return { settle, checked, press, choices, text: () => nodes().filter(x => x.type === 'Text').map(x => x.props.children), foreground: async () => { listeners.forEach(fn => fn('active')); await settle(); }, unmount: () => state.forEach(x => x.cleanup?.()) };
 }
+// Meal slots are one-off dates for a week; group the occurrence IDs by slot.
+const slotIds = () => [...new Set([...scheduled.keys()].map(id => id.replace(/-\d$/, '')))];
 async function resetReminderFixture(saved = null) {
   await reminders.clearRemindersForAccountSwitch(); memory.clear(); scheduled.clear();
   permission = 0; requests = 0; answer = 2; language = 'de';
@@ -395,8 +404,9 @@ await test('first reminder setup allows one chosen time and activates exactly on
   await h.press('slotLunch: later'); assert.deepEqual(h.checked(), ['slotLunch, 12:45']);
   await h.press('slotDinner, 18:30'); assert.deepEqual(h.checked(), ['slotDinner, 18:30']);
   await h.press('slotLunch, 12:45'); await h.press('activate');
-  assert.equal(requests, 1); assert.deepEqual([...scheduled.keys()], ['kandro-reminder-lunch']);
-  assert.deepEqual([...scheduled.values()][0].trigger, { type: 'daily', hour: 12, minute: 45 });
+  assert.equal(requests, 1); assert.deepEqual(slotIds(), ['kandro-reminder-lunch']); assert.equal(scheduled.size, reminders.SLOT_OCCURRENCES);
+  const first = scheduled.get('kandro-reminder-lunch').trigger; assert.equal(first.type, 'date'); assert.equal(first.date.getHours(), 12); assert.equal(first.date.getMinutes(), 45);
+  assert.ok(first.date.getTime() > Date.now() && first.date.getTime() <= Date.now() + 86_400_000, 'the first occurrence is the next 12:45');
   assert.equal(Object.values((await reminders.getReminderSettings()).slots).filter(x => x.enabled).length, 1);
   assert.deepEqual(h.choices, ['enabled']); h.unmount();
 });
@@ -419,13 +429,13 @@ await test('stored multiple preferences and later explicit trial/profile routine
   const existing = reminderPreferencesHarness(); await existing.settle();
   assert.deepEqual(existing.checked(), ['slotLunch, 12:45', 'slotDinner, 19:30']);
   assert.ok(existing.text().includes('reminderText')); assert.ok(!existing.text().includes('reminderSingleText'));
-  await existing.press('save'); assert.equal(requests, 0); assert.equal(scheduled.size, 2);
+  await existing.press('save'); assert.equal(requests, 0); assert.equal(slotIds().length, 2); assert.equal(scheduled.size, 2 * reminders.SLOT_OCCURRENCES);
   assert.deepEqual(await reminders.getReminderSettings(), saved); existing.unmount();
   await resetReminderFixture(); const later = reminderPreferencesHarness({ onboarding: false }); await later.settle();
   assert.deepEqual(later.checked(), ['slotLunch, 12:30', 'slotDinner, 18:30']);
   assert.ok(later.text().includes('reminderText')); assert.ok(!later.text().includes('reminderSingleText'));
   assert.equal(requests, 0); assert.equal(scheduled.size, 0);
-  await later.press('activate'); assert.equal(requests, 1); assert.equal(scheduled.size, 2); later.unmount();
+  await later.press('activate'); assert.equal(requests, 1); assert.equal(slotIds().length, 2); assert.equal(scheduled.size, 2 * reminders.SLOT_OCCURRENCES); later.unmount();
 });
 
 console.log(JSON.stringify({ passed, scope: 'Actual reminder/review/widget/intent services; mocked native boundaries, no OS-dialog/display/tap claims; zero external HTTP' }));

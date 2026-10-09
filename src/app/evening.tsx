@@ -9,11 +9,9 @@ import { Card, Eyebrow, PrimaryButton, Screen } from '@/components/ui';
 import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import {
+  enableEveningCheckIn,
   isEveningReminderEnabled,
-  REMINDER_HOUR,
-  REMINDER_MINUTE,
   remindersSupported,
-  setEveningReminderEnabled,
 } from '@/services/reminders';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatDateParts, formatNumber, mealTypeLabel } from '@/utils/format';
@@ -140,6 +138,8 @@ export default function EveningScreen() {
         </Text>
       </Card>
 
+      {/* The offer promises one calm evening message, so accepting turns on
+          exactly the end-of-day reminder and nothing else. */}
       {remindersSupported && !reminderEnabled && !reminderDismissed ? (
         <Card style={styles.offerCard}>
           <Text style={styles.offerTitle}>{t.result.reminderEyebrow}</Text>
@@ -149,7 +149,7 @@ export default function EveningScreen() {
           <PrimaryButton
             icon="notifications-outline"
             label={t.result.reminderAccept}
-            onPress={() => void setEveningReminderEnabled(true, { calories: targets.calories, protein: targets.protein }).then(setReminderEnabled)}
+            onPress={() => void enableEveningCheckIn().then(setReminderEnabled).catch(() => setReminderEnabled(false))}
           />
           <PrimaryButton label={t.common.notNow} onPress={() => setReminderDismissed(true)} variant="ghost" />
         </Card>

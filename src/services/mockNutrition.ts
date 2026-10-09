@@ -1,5 +1,6 @@
 import { getDictionary } from '@/i18n/active';
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor } from '@/types/nutrition';
+import { mealTypeForHour } from '@/utils/daypart';
 import { formatClockTime } from '@/utils/format';
 
 export const DEFAULT_TARGETS: DailyTargets = {
@@ -95,11 +96,10 @@ export function nutritionFromItems(items: MealItem[]): Nutrition {
 
 export function createScannedMeal(items: MealItem[], title = getDictionary().errors.demoMealTitle, id = 'scan-chicken-bowl'): Meal {
   const now = new Date();
-  const hour = now.getHours();
   return {
     id,
     title,
-    type: hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack',
+    type: mealTypeForHour(now.getHours()),
     time: formatClockTime(now),
     confidence: items.some((item) => item.included && item.confidence === 'medium') ? 'medium' : 'high',
     items,
@@ -117,7 +117,6 @@ export function createScannedMeal(items: MealItem[], title = getDictionary().err
  */
 export function createPlannedMeal(suggestion: MealSuggestion, portion: PortionFactor, id: string): Meal {
   const now = new Date();
-  const hour = now.getHours();
   const reference = suggestion.referenceNutrition ?? suggestion;
   const servingFactor = (suggestion.portionScale ?? 1) * portion;
   const scale = (value: number) => Math.round(value * servingFactor);
@@ -146,7 +145,7 @@ export function createPlannedMeal(suggestion: MealSuggestion, portion: PortionFa
   return {
     id,
     title: suggestion.title,
-    type: hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack',
+    type: mealTypeForHour(now.getHours()),
     time: formatClockTime(now),
     confidence: 'medium',
     items: [item],

@@ -9,7 +9,7 @@ import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { MealSyncStatus } from '@/components/MealSyncStatus';
-import { CalorieRing } from '@/components/CalorieRing';
+import { CalorieRing, overBudgetLevel } from '@/components/CalorieRing';
 import { MealDetailSheet } from '@/components/MealDetailSheet';
 import { Card, Eyebrow, IconCircle, MacroCard, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
 import { radii } from '@/constants/theme';
@@ -18,6 +18,7 @@ import { recommendationPreview } from '@/services/recommendations';
 import { Meal } from '@/types/nutrition';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatDateParts, formatNumber, mealTypeIcon, mealTypeLabel } from '@/utils/format';
+import { greetingForHour } from '@/utils/daypart';
 import { yesterdayBreakfast } from '@/services/repeatMeals';
 import { useLocalDay } from '@/hooks/useLocalDay';
 
@@ -38,13 +39,16 @@ export default function TodayScreen() {
   const dateLabel = formatDateParts(new Date(), { weekday: 'short', day: 'numeric', month: 'long' }, locale);
   // The greeting was hard-coded to "Guten Morgen", so the app said good morning
   // at 22:00.
+  // Same clock as the default meal slot (utils/daypart), so a "Guten Abend"
+  // never sits next to a meal filed as lunch.
   const hour = new Date().getHours();
-  const daypart = hour < 11 ? t.today.goodMorning : hour < 18 ? t.today.goodDay : t.today.goodEvening;
+  const daypart = { morning: t.today.goodMorning, day: t.today.goodDay, evening: t.today.goodEvening }[greetingForHour(hour)];
   const eveningReady = hour >= 18;
   const greeting = userName.trim() ? `${daypart}, ${userName}` : daypart;
   // Keep the target status visible while still offering optional small meals.
   const dayIsDone = remaining.calories < 200;
   const overBudget = consumed.calories > targets.calories;
+  const overLevel = overBudgetLevel(consumed.calories, targets.calories);
   const nextMeal = useMemo(() => recommendationPreview(remaining, profile.preferences), [language, remaining, profile.preferences]);
   const [calorieLow, calorieHigh] = nextMeal.calories;
   const calorieRange = calorieLow === calorieHigh ? `${calorieLow}` : `${calorieLow}–${calorieHigh}`;
@@ -123,13 +127,16 @@ export default function TodayScreen() {
           <View>
             <Eyebrow>{t.today.status}</Eyebrow>
             <Text style={styles.onTrack}>
-              {consumed.calories > targets.calories
-                ? t.today.overToday
-                : hasLoggedScan ? t.today.onTrack : t.today.firstMove}
+              {overLevel === 'over'
+                ? t.today.dayOver
+                : overLevel === 'slight'
+                  ? t.today.overToday
+                  : hasLoggedScan ? t.today.onTrack : t.today.firstMove}
             </Text>
           </View>
         </View>
         <CalorieRing consumed={consumed.calories} proteinReached={targets.protein > 0 && consumed.protein >= targets.protein * 0.9} total={targets.calories} />
+        {overLevel !== 'none' ? <Text style={styles.consumed}>{t.ring.tomorrowNew}</Text> : null}
         {width < 360 ? <Text style={styles.consumed}>{formatNumber(consumed.calories, locale)} {t.today.eaten} · {formatNumber(targets.calories, locale)} {t.today.goal}</Text> : null}
       </Card>
 

@@ -11,7 +11,7 @@ import { getLocalDataGeneration, subscribePrivateDataInvalidation } from '@/serv
 import { clearReviewUsage, recordSuccessfulMeal, requestReviewAfterReturn } from '@/services/reviewRequest';
 import { clearWidgetSharing, publishWidgetSnapshot, subscribeWidgetSharing } from '@/services/widgetSnapshot';
 import { usePresentationIdle } from '@/services/presentation';
-import { clearCaptureIntent, getScanInputDraft, invalidateScanInputState, pendingCaptureIntent, queueCaptureIntent, reminderIntent, subscribeCaptureIntent } from '@/services/captureIntents';
+import { clearCaptureIntent, getScanInputDraft, invalidateScanInputState, pendingCaptureIntent, pendingPlanIntent, queueCaptureIntent, queuePlanIntent, reminderIntent, subscribeCaptureIntent, takePlanIntent } from '@/services/captureIntents';
 import { configureNotifications, isReminderOnboardingPending, remindersSupported } from '@/services/reminders';
 const RESPONSE_KEY = '@kandro/last-reminder-response:v1';
 export function CaptureCompanion() {
@@ -58,7 +58,7 @@ export function CaptureCompanion() {
         if (!parsed || !active || (await AsyncStorage.getItem(RESPONSE_KEY)) === parsed.key) return;
         await AsyncStorage.setItem(RESPONSE_KEY, parsed.key);
         if (!active) return;
-        queueCaptureIntent(parsed.mode);
+        if ('plan' in parsed) queuePlanIntent(); else queueCaptureIntent(parsed.mode);
         await Notifications.clearLastNotificationResponseAsync();
       }).catch(() => undefined);
     };
@@ -70,6 +70,12 @@ export function CaptureCompanion() {
     if (!allowed || !foreground || !pendingCaptureIntent() || ['/capture', '/paywall', '/account-help', '/access-setup', '/onboarding', '/reminder-setup', '/data-consent'].includes(path)) return;
     let active = true;
     void isReminderOnboardingPending().then(pending => { if (active && !pending && pendingCaptureIntent()) { Keyboard.dismiss(); router.push('/capture'); } }).catch(() => undefined);
+    return () => { active = false; };
+  }, [allowed, foreground, path, revision, router]);
+  useEffect(() => {
+    if (!allowed || !foreground || !pendingPlanIntent() || ['/capture', '/paywall', '/account-help', '/access-setup', '/onboarding', '/reminder-setup', '/data-consent'].includes(path)) return;
+    let active = true;
+    void isReminderOnboardingPending().then(pending => { if (active && !pending && takePlanIntent()) { Keyboard.dismiss(); router.navigate('/(tabs)/plan'); } }).catch(() => undefined);
     return () => { active = false; };
   }, [allowed, foreground, path, revision, router]);
   useEffect(() => {

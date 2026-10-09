@@ -30,7 +30,12 @@ export function receiveCaptureLink(path: string, now = Date.now()) {
   lastLink = { path, at: now }; queueCaptureIntent(mode); return true;
 }
 export const pendingCaptureIntent = () => intent;
-export function clearCaptureIntent() { intent = null; listeners.forEach(fn => fn()); }
+// A personalised meal reminder leads to the three ideas on Plan, not the camera.
+let planIntent = false;
+export function queuePlanIntent() { planIntent = true; listeners.forEach(fn => fn()); }
+export const pendingPlanIntent = () => planIntent;
+export function takePlanIntent() { const pending = planIntent; planIntent = false; return pending; }
+export function clearCaptureIntent() { intent = null; planIntent = false; listeners.forEach(fn => fn()); }
 export function subscribeCaptureIntent(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }
 export function setScanInputDraft(mode: CaptureMode | null) { scanDraft = mode; if (!mode) scanInputState = null; }
 export const getScanInputDraft = () => scanDraft;
@@ -42,11 +47,18 @@ export function saveScanInputState(value: ScanInputState, revision = scanInputRe
   if (!value.description.trim() && !value.searchQuery.trim() && !value.barcodeEntry.trim() && !value.pendingFood) { setScanInputDraft(null); return; }
   scanDraft = value.mode; scanInputState = value;
 }
-// Keep in sync with REMINDER_IDS in services/reminders.ts (no native import here).
-const OWN_REMINDER_IDS = ['kandro-meal-reminder', 'kandro-evening-summary', 'kandro-morning-plan', 'kandro-reminder-breakfast', 'kandro-reminder-lunch', 'kandro-reminder-dinner', 'kandro-reminder-evening'];
-export function reminderIntent(response: { actionIdentifier: string; notification: { date: number; request: { identifier: string; content: { data?: Record<string, unknown> } } } }) {
+// Keep in sync with REMINDER_IDS, SLOT_OCCURRENCES and the re-engagement ID in
+// services/reminders.ts (no native import here).
+const OWN_REMINDER_IDS = ['kandro-meal-reminder', 'kandro-evening-summary', 'kandro-morning-plan', 'kandro-reengage'];
+const SLOT_REMINDER_ID = /^kandro-reminder-(breakfast|lunch|dinner|evening)(-[1-6])?$/;
+export const isOwnReminderId = (identifier: string) => OWN_REMINDER_IDS.includes(identifier) || SLOT_REMINDER_ID.test(identifier);
+export type ReminderIntent = { key: string; mode: CaptureMode } | { key: string; plan: true };
+export function reminderIntent(response: { actionIdentifier: string; notification: { date: number; request: { identifier: string; content: { data?: Record<string, unknown> } } } }): ReminderIntent | null {
   const request = response.notification.request;
-  if (response.actionIdentifier !== 'expo.modules.notifications.actions.DEFAULT' || !OWN_REMINDER_IDS.includes(request.identifier)) return null;
+  if (response.actionIdentifier !== 'expo.modules.notifications.actions.DEFAULT' || !isOwnReminderId(request.identifier)) return null;
+  if (request.content.data?.route === '/plan' && SLOT_REMINDER_ID.test(request.identifier) && Number.isFinite(response.notification.date)) {
+    return { key: `${request.identifier}:${response.notification.date}`, plan: true };
+  }
   const mode = captureMode(request.content.data?.mode);
   if (request.content.data?.route !== '/capture' || !mode || mode === 'barcode' || !Number.isFinite(response.notification.date)) return null;
   return { key: `${request.identifier}:${response.notification.date}`, mode };
