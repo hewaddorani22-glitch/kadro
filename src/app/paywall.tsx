@@ -272,8 +272,8 @@ export default function PaywallScreen() {
         <Text style={styles.subtitle}>{blocked ? t.paywall.blockedSub : hard ? t.paywall.hardSubtitle : t.paywall.subtitle}</Text>
 
         <View style={styles.benefits}>
-          <Benefit icon="restaurant-outline" title={t.paywall.benefitMeals} />
           <Benefit icon="camera-outline" title={t.paywall.benefitAnalyze} />
+          <Benefit icon="restaurant-outline" title={t.paywall.benefitMeals} />
           <Benefit icon="calendar-outline" title={t.paywall.benefitReview} />
         </View>
 
