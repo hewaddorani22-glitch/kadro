@@ -1,5 +1,30 @@
 # Roadmap
 
+## 2026-10-09 – Growth/Funnel release (`growth/1.0.4-funnel`)
+
+Zusammenführung aller Arbeitsstränge seit `20f93d3`. Ziel: mehr erste gespeicherte Mahlzeiten, weniger erstattete KI-Analysen, Messung ohne Client-Analytics.
+
+- [x] **Erster Start:** Ziel → Plan → Einwilligung → `/first-scan` (Foto / Sprechen / Tippen, ehrlicher Hinweis auf die Gratis-Analysen) → weiche Paywall genau einmal → optionale Erinnerung. Kürzere Onboarding-Schritte, Geburtsjahr-Liste ohne Vorauswahl.
+- [x] **16+:** Altersgrenze 16 auf dem Client (Sperrbildschirm unter 16, kein Erziehungsberechtigten-Flow mehr erreichbar); 16–17 behalten die Jugendformel. Nie ein Defizit unter BMI 18,5, Zielgewicht nicht unter BMI 18,5. Datenschutz/AGB 2.5, Einwilligung `2026-10-09-ai-v3`, Website und Store-Texte auf 16+.
+- [x] **Flexibles Erfassen:** unklare Mengen landen als geschätzte Portion auf „Bestätigen“ statt als 422 (Gateway und Client), drei Vertrauensstufen (Sicher / Geschätzt / Bitte prüfen), Nachtragen bis 30 Tage über den Tageswechsler auf „Heute“, Suche speichert alles Gewählte als eine Mahlzeit, Favoriten.
+- [x] **Gewohnheiten:** personalisierte Mahlzeit-Erinnerungen für die kommende Woche, eine einzige Wiederkehr-Notiz, Wochenziel (4 von 7 Tagen) statt Streak, abgestufte Überschreitungs-Texte, gemeinsame Tageszeit-Logik (`src/utils/daypart.ts`) für Begrüßung und Mahlzeit-Slot.
+- [x] **Paywall:** Test `paywall_access_v1` pausiert (weiche Paywall für alle); Vorteile versprechen nur, was Pro wirklich ergänzt – Mahlzeitideen bleiben gratis. Grenz-Paywall erst nach den 3 freien KI-Analysen.
+- [x] **Serverseitige Messung:** `failure_code` für jede erstattete Analyse, Funnel-Views `private.growth_funnel_daily` / `private.ai_failure_daily`, Paywall-Sichtungen per RPC `mark_paywall_shown`; globaler KI-Breaker standardmäßig 5000/Tag.
+- [x] **Beobachtbarkeit:** Sentry-Traces zu 10 % mit Span-/Transaction-Scrubbing; ruhende Gemini-Einwilligungstexte entfernt, KI-Suchhilfe bleibt aus.
+- [x] **Store:** Listing führt mit „was als Nächstes passt“, Screenshots mit „782 kcal übrig. Was jetzt?“ und Schätzung statt Exaktheit; klare Free/Pro-Abgrenzung.
+- [x] **CI/Doku:** CI läuft auf `release/**`, Impressum-Identität aus Repository-Variablen; Doku zu 16+, Sentry-Privacy-Labels, Funnel und aktueller Version.
+- [x] **Design & Barrierefreiheit:** Schrift nirgends unter 12 pt (Validator), Scan-Modi 13 pt; neuer Token `attentionText` für Bernstein-Text (≥ 4,5:1), Makrofarben nur auf Balken; Darstellung folgt standardmäßig dem System (Wahl System/Hell/Dunkel in „Du“, gespeicherte Wahl bleibt), Scan-Schatten folgt dem aktiven Theme; VoiceOver-Beschriftungen für Heute, First-Scan, Paywall-Pläne und Geburtsjahr.
+- [x] Wiederholen-Pfad nutzt die gemeinsame Tageszeit-Uhr; Validatoren prüfen jeweils das neue, beabsichtigte Verhalten.
+
+Offene Produktionsschritte (Eigentümer, nicht durch Claude ausgeführt):
+
+- [ ] Migrationen `20261009100000`–`20261009100300` in Produktion anwenden, **danach** `nutrition` deployen.
+- [ ] App-Store-Altersfreigabe in App Store Connect auf 16+ setzen.
+- [ ] Store-Screenshots neu rendern (`python3 app-store/compose/render.py`) und hochladen.
+- [ ] Repository-Variablen `IMPRESSUM_NAME`, `IMPRESSUM_ADDRESS`, `IMPRESSUM_EMAIL` anlegen.
+- [ ] OpenRouter: Data-Privacy-Framework-Zertifizierung bzw. Standardvertragsklauseln (DPF/SCC) prüfen und ablegen.
+- [ ] Gerätetest des kombinierten Kandidaten (erster Start, Erinnerungen, Dunkelmodus nach System, VoiceOver, Paywall) vor jeder Einreichung; Release-Gate in `AGENTS.md` gilt weiter.
+
 ## 09.10.2026 – Paywall-Test pausiert, Backend-Messung ohne Client-Analytics
 
 - **Paywall-A/B-Test `paywall_access_v1` pausiert.** Grund: nur ~10 eingeschriebene Nutzer, Ergebnis nicht interpretierbar; die harte Wall kostete Aktivierung. Migration `20261009100300_pause_paywall_access_test.sql` setzt `public_enabled = false` **und** `enforcement_enabled = false`: weiche Paywall für alle, auch bisher zugeordnete B-Nutzer (nur `public_enabled = false` hätte B hart gelassen). Zuordnungen bleiben für die Auswertung erhalten. Neustart nur per Eigentümerentscheidung (`supabase/queries/enable_paywall_experiment.sql`).
