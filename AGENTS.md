@@ -1,6 +1,6 @@
 # Agent guide
 
-This repository contains the Kandro mobile MVP: photograph a meal, confirm the estimate, see the remaining daily nutrition budget, and get three practical next-meal suggestions. The product line is “Die Aufstellung deines Tages.”
+This repository contains the Kandro mobile MVP: photograph a meal, confirm the estimate, see the remaining daily nutrition budget, and get three practical next-meal suggestions. The product line is “Kandro sagt dir, was als Nächstes passt.” (EN: “Know what fits next.”)
 
 ## ⛔ Release gate — read before any build or App Review submission (owner decision, 06.10.2026)
 
@@ -85,7 +85,7 @@ For camera or navigation changes, also run the app in Expo Go and manually verif
 2. Demo capture through analyzing and confirmation.
 3. `weniger / passt / mehr` and gram-level detail correction both update the estimate.
 4. Confirming the result saves it once and updates Today by exactly the corrected meal totals.
-5. Choosing a recommendation opens the mock paywall.
+5. The soft paywall appears once, after the first saved meal; the limit paywall appears only after the 3 free AI analyses are used.
 6. The result sequence counts the meal up, the remaining day down, then reveals the recommendation; Reduce Motion skips the sequence.
 
 ## Change discipline
