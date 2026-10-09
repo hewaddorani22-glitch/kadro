@@ -43,6 +43,28 @@ assert.match(
   'clearing the record must also flip the state the route guard reads',
 );
 
+// --- A new notice version re-asks cleanly -----------------------------------
+// Bumping PRIVACY_VERSION must make every older local record read as "no
+// consent", send a finished profile back to /data-consent (not into a dead
+// end or the onboarding), and the gateway must accept what the app writes.
+const gateway = await read('supabase/functions/nutrition/index.ts');
+const index = await read('src/app/index.tsx');
+const version = consent.match(/export const PRIVACY_VERSION = '([^']+)'/)?.[1];
+assert.ok(version, 'the consent version must be a literal the gateway can match');
+assert.match(consent, /return consent\.version === PRIVACY_VERSION && typeof consent\.acceptedAt === 'string';/,
+  'a stored consent with another version must not count as current');
+assert.match(context, /hasCurrentWellnessConsent\(\),[\s\S]{0,1500}setWellnessConsentGranted\(hasConsent\)/,
+  'hydration must derive the consent state from the version check');
+assert.match(index, /if \(!wellnessConsentGranted\) \{\s*return <Redirect href=\{\(profile\.completedAt \? '\/data-consent' : '\/onboarding'\)/,
+  'a returning user with an outdated consent must land on the consent screen');
+assert.ok(gateway.includes(`const REQUIRED_PRIVACY_VERSION = '${version}';`), 'the gateway must accept the version the app writes');
+const accepted = gateway.match(/const ACCEPTED_PRIVACY_VERSIONS = new Set\(\[([^\]]+)\]\)/)?.[1] ?? '';
+assert.match(accepted, /REQUIRED_PRIVACY_VERSION/, 'the current version must be accepted');
+assert.match(gateway, /!ACCEPTED_PRIVACY_VERSIONS\.has\(consent\?\.privacy_version \?\? ''\)/, 'the gateway must check the accepted set');
+// Released builds can only write their own version; refusing it would loop
+// them between "consent required" and a re-consent that writes it again.
+assert.match(accepted, /'2026-09-04-ai-v2'/, 'builds up to 1.0.3 must not be locked out until they are retired');
+
 // --- Search must not present a refusal as an empty result ------------------
 // "Nothing found" told the user the food does not exist when the truth was
 // that we never asked.
@@ -59,4 +81,4 @@ assert.match(
 assert.match(scan, /searchError \? \(/, 'the sheet must render the error');
 assert.match(scan, /!searchError && !searchNotice && searchQuery/, 'the empty state must not show alongside an error');
 
-console.log('Validated consent recovery: the server decides, a stale local record is dropped, and a refusal is never shown as "nothing found".');
+console.log('Validated consent recovery: the server decides, a stale local record is dropped, a new notice version re-asks, and a refusal is never shown as "nothing found".');
