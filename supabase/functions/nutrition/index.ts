@@ -14,6 +14,7 @@ import {
   buildMealItem,
   incompleteNutritionError,
   ingredientCorrectionDraft,
+  analysisResultBody,
   openFoodFactsNutrition,
   chooseFoodMatch,
   classifyDetection,
@@ -494,7 +495,8 @@ async function resolveDetection(
   const nutritionError = incompleteNutritionError(items);
   if (nutritionError) return ingredientCorrectionDraft(detection, items, correctionProtocol) ?? nutritionError;
   const warnings = buildAccuracyWarnings(detection, items);
-  return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };
+  // Amount ambiguity answers with estimated portions, not a 422 (see analysisResultBody).
+  return { status: 200, body: analysisResultBody(detection, items, warnings, correctionProtocol) };
 }
 
 // deno-lint-ignore no-explicit-any

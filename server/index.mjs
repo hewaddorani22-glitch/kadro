@@ -13,6 +13,7 @@ import {
   canonicalFoodQuery,
   incompleteNutritionError,
   ingredientCorrectionDraft,
+  analysisResultBody,
   openFoodFactsNutrition,
   chooseFoodMatch,
   classifyDetection,
@@ -146,7 +147,7 @@ async function resolveDetection(detection, source = 'photo', correctionProtocol)
   const nutritionError = incompleteNutritionError(items);
   if (nutritionError) return ingredientCorrectionDraft(detection, items, correctionProtocol) ?? nutritionError;
   const warnings = buildAccuracyWarnings(detection, items);
-  return { status: 200, body: { title: detection.title, confidence: detection.confidence, items, warnings } };
+  return { status: 200, body: analysisResultBody(detection, items, warnings, correctionProtocol) };
 }
 
 async function analyzeDescription(input) {

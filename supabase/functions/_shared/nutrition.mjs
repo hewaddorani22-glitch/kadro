@@ -601,6 +601,25 @@ export function ingredientCorrectionDraft(detection, items, protocol) {
 }
 
 /**
+ * The success body for a resolved detection. When the description states an
+ * amount Kandro cannot bind safely (detection.amountFallback, formerly a 422
+ * mass_required/amount_ambiguous/amount_out_of_range), the recognised foods
+ * come back at the model's typical grams, flagged estimatedPortion, so the app
+ * opens Confirm with "Portion geschätzt" instead of an error. For
+ * correction-capable clients correctionRequired keeps the result in the
+ * refunded (free) bucket, exactly like the 422 it replaces.
+ */
+export function analysisResultBody(detection, items, warnings, correctionProtocol) {
+  if (detection.amountFallback) {
+    return {
+      title: detection.title, confidence: 'medium', items, warnings, estimatedPortion: true,
+      ...(correctionProtocol === 1 ? { correctionRequired: true } : {}),
+    };
+  }
+  return { title: detection.title, confidence: detection.confidence, items, warnings };
+}
+
+/**
  * Named portions for one USDA row, so the app can offer "1 banana" instead of
  * making someone guess that a banana weighs 126 g.
  *
