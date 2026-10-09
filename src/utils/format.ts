@@ -83,6 +83,17 @@ export function formatDateParts(
 }
 
 /**
+ * "Heute", "Gestern" or a short date: how a diary day is named in the day
+ * switcher and on the confirm screen. Both keys are local calendar days.
+ */
+export function formatDayLabel(day: string, today: string, labels: { dayToday: string; dayYesterday: string }, locale = getLocale()) {
+  const ago = Math.round((new Date(`${today}T12:00:00`).getTime() - new Date(`${day}T12:00:00`).getTime()) / 86_400_000);
+  if (ago === 0) return labels.dayToday;
+  if (ago === 1) return labels.dayYesterday;
+  return formatDateParts(day, { weekday: 'short', day: 'numeric', month: 'short' }, locale);
+}
+
+/**
  * Which frame the confirm and result screens show when there is no photo.
  *
  * This used to be inlined at three call sites with a chain that ended in

@@ -6,7 +6,7 @@ import { useLocalDay } from '@/hooks/useLocalDay';
 
 import { AnalysisErrorKind, MealAnalysisInput } from '@/services/contracts';
 import { foodUsage } from '@/services/foodSuggest';
-import { parseLocalDescription } from '@/services/localDescription';
+import { estimateDescriptionPortions, parseLocalDescription, resolveUnmatchedItems } from '@/services/localDescription';
 import { analyzeBarcode, analyzeDescription, analyzePreparedPhoto, deleteTemporaryPhoto, FoodSearchResult, MealAnalysisError, mealFromSearch, prepareMealPhoto } from '@/services/mealAnalysis';
 import {
   beginLocalAccountSwitch,
@@ -28,6 +28,8 @@ import {
   loadLocalAccountSwitch,
   replaceLocalAccountData,
   subscribeLocalMeals, getLocalDataGeneration,
+  loadFavoriteMeals,
+  saveFavoriteMeals,
 } from '@/services/localRepository';
 import {
   createPlannedMeal,
@@ -41,12 +43,13 @@ import {
 } from '@/services/mockNutrition';
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { calculateDailyTargets, DEFAULT_PROFILE } from '@/services/personalization';
-import { availableRepeats, RepeatCandidate } from '@/services/repeatMeals';
+import { availableRepeats, FavoriteMeal, favoriteKey, favoriteSnapshot, RepeatCandidate } from '@/services/repeatMeals';
 import { deleteSyncedMeal, hydrateCloudState, hydrateExistingCloudAccount, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
 import { getCurrentSessionUserId, isSupabaseConfigured, rememberSupabaseUser, startSupabaseAuthLifecycle, supabase } from '@/services/supabaseClient';
 import { applyAnalyticsAgePolicy, captureOperationalError, clearTelemetryForAccountSwitch, countBucket, durationBucket, trackEvent } from '@/services/telemetry';
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
+import { clampLogDate, mealMoment, mealTypeForTime } from '@/utils/mealDay';
 import { itemNutritionPer100g } from '@/utils/portions';
 import { getDictionary } from '@/i18n/active';
 import type { UnitSystem } from '@/utils/units';
@@ -62,6 +65,10 @@ import { clearAppleReauthentication, clearAppleTokenPending, createAppleCredenti
 import type { AppleAccountReference } from '@/services/appleReauthentication';
 
 export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error';
+/** What the client is actually doing right now; the gateway reports no finer steps. */
+export type AnalysisPhase = 'preparing' | 'analysing';
+/** Amount errors an older gateway still answers with 422 instead of an estimate. */
+const AMOUNT_ERROR_CODES = new Set(['mass_required', 'amount_ambiguous', 'amount_out_of_range']);
 type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search';
 
 /**
@@ -105,6 +112,11 @@ type AppContextValue = {
   isCurrentScanLogged: boolean;
   mealPortion: PortionFactor | null;
   analysisStatus: AnalysisStatus;
+  analysisPhase: AnalysisPhase | null;
+  /** The amounts are a typical portion, not something Kandro could read off the input. */
+  portionEstimated: boolean;
+  /** Ingredients the gateway could not price that Kandro matched itself; the user should glance at them. */
+  autoMatchedItemIds: string[];
   analysisError: AnalysisErrorKind | null;
   analysisMessage: string | null;
   pendingAnalysisCount: number;
@@ -123,13 +135,15 @@ type AppContextValue = {
   startDescriptionScan: (description: string) => void;
   startBarcodeScan: (barcode: string) => void;
   applySearchResult: (result: FoodSearchResult, grams: number) => void;
-  /** Logs one searched food immediately (free, no confirmation screen). */
-  logFoodDirect: (result: FoodSearchResult, grams: number) => Promise<Meal>;
+  /** Logs the foods picked in one search session as one meal (free, no confirmation screen). */
+  logFoodsDirect: (entries: { result: FoodSearchResult; grams: number }[]) => Promise<Meal>;
   replaceDetectedItem: (id: string, result: FoodSearchResult, grams: number) => void;
   removeDetectedItem: (id: string) => void;
   /** freshRequest: retry a failed analysis under a new request id (the server refunded the failed one). */
   analyzeCurrentPhoto: (forceDemo?: boolean, freshRequest?: boolean) => Promise<void>;
   resumeLatestAnalysis: () => Promise<boolean>;
+  /** Stops waiting for the running analysis; a late answer is ignored. The input is kept. */
+  cancelAnalysis: () => void;
   adjustItem: (id: string, direction: -1 | 1) => void;
   setItemAmount: (id: string, grams: number) => void;
   setMealPortion: (factor: PortionFactor) => void;
@@ -148,6 +162,13 @@ type AppContextValue = {
   /** Slot chosen before scanning, so a late breakfast is not filed as lunch. */
   plannedMealType: Meal['type'] | null;
   setPlannedMealType: (type: Meal['type'] | null) => void;
+  /** Day chosen for the next meal (Today's day switcher or Confirm); null means today. */
+  plannedMealDate: string | null;
+  setPlannedMealDate: (date: string | null) => void;
+  /** Where the current draft will be filed: the chosen slot and day, else the clock and today. */
+  scanTarget: { type: Meal['type']; date: string };
+  favoriteMeals: FavoriteMeal[];
+  toggleFavoriteMeal: (meal: Meal) => Promise<void>;
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -209,11 +230,17 @@ export function AppProvider({ children }: PropsWithChildren) {
   const scanModeRef = useRef<ScanMode>('demo');
   const [plannedMealType, setPlannedMealTypeState] = useState<Meal['type'] | null>(null);
   const plannedMealTypeRef = useRef<Meal['type'] | null>(null);
+  const [plannedMealDate, setPlannedMealDateState] = useState<string | null>(null);
+  const plannedMealDateRef = useRef<string | null>(null);
+  const [favoriteMeals, setFavoriteMeals] = useState<FavoriteMeal[]>([]);
   const [queuedInput, setQueuedInput] = useState<MealAnalysisInput | null>(null);
   const [descriptionInput, setDescriptionInput] = useState('');
   const [barcodeInput, setBarcodeInput] = useState('');
   const [mealPortion, setMealPortionState] = useState<PortionFactor | null>(1);
   const [analysisStatus, setAnalysisStatus] = useState<AnalysisStatus>('idle');
+  const [analysisPhase, setAnalysisPhase] = useState<AnalysisPhase | null>(null);
+  const [portionEstimated, setPortionEstimated] = useState(false);
+  const [autoMatchedItemIds, setAutoMatchedItemIds] = useState<string[]>([]);
   const [analysisError, setAnalysisError] = useState<AnalysisErrorKind | null>(null);
   const [analysisMessage, setAnalysisMessage] = useState<string | null>(null);
   const [pendingAnalysisCount, setPendingAnalysisCount] = useState(0);
@@ -423,6 +450,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       setTargets(DEFAULT_TARGETS);
       setMeals([]);
       setMealHistory([]);
+      setFavoriteMeals([]);
       setLifetimeScanCount(0);
       setWeightEntries([]);
       setPendingAnalysisCount(0);
@@ -458,6 +486,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       setTargets(DEFAULT_TARGETS);
       setMeals([]);
       setMealHistory([]);
+      setFavoriteMeals([]);
       setLifetimeScanCount(0);
       setWeightEntries([]);
       setPhotoUri(null);
@@ -519,6 +548,18 @@ export function AppProvider({ children }: PropsWithChildren) {
     });
     return () => { active = false; unsubscribe(); };
   }, [hydrationReady, wellnessConsentGranted]);
+
+  // Favorites are a local convenience and are not synced. Reload them whenever
+  // the diary is hydrated again, which includes every account switch.
+  useEffect(() => {
+    if (!hydrationReady) return;
+    let active = true;
+    const generation = getLocalDataGeneration();
+    void loadFavoriteMeals().then((stored) => {
+      if (active && generation === getLocalDataGeneration()) setFavoriteMeals(stored);
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [hydrationReady]);
 
   const refreshCloudState = useCallback(async () => {
     if (!wellnessConsentGranted) {
@@ -857,6 +898,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     setDetectedItems(meal.items);
     setMealTitle(meal.title);
     setMealPortionState(1);
+    setPortionEstimated(false);
+    setAutoMatchedItemIds([]);
     setAnalysisMessage(null);
     setAnalysisError(null);
     setAnalysisStatus('ready');
@@ -884,6 +927,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     const replacement = mealFromSearch(result, grams).items[0];
     const corrected = replaceMealIngredient(detectedItems, id, replacement);
     setDetectedItems(corrected);
+    // A food the user picked is no longer Kandro's guess.
+    setAutoMatchedItemIds((current) => current.filter((entry) => entry !== id));
     setMealTitle(corrected.filter(item => item.included).map(item => item.name).join(', '));
     setMealPortionState(null);
     setAnalysisMessage(null);
@@ -892,6 +937,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const removeDetectedItem = useCallback((id: string) => {
     const corrected = detectedItems.filter(item => item.id !== id);
     setDetectedItems(corrected);
+    setAutoMatchedItemIds((current) => current.filter((entry) => entry !== id));
     setMealTitle(corrected.filter(item => item.included).map(item => item.name).join(', '));
     setMealPortionState(null);
     setAnalysisMessage(null);
@@ -916,6 +962,9 @@ export function AppProvider({ children }: PropsWithChildren) {
     const analysisStartedAt = Date.now();
     try {
       setAnalysisStatus('analyzing');
+      setAnalysisPhase('analysing');
+      setPortionEstimated(false);
+      setAutoMatchedItemIds([]);
       setAnalysisError(null);
       setAnalysisMessage(null);
 
@@ -940,6 +989,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         if ((activeScanMode === 'live' || activeScanMode === 'queued') && !input) {
           const originalUri = photoUriRef.current ?? photoUri;
           if (!originalUri) throw new MealAnalysisError('unclear-image', getDictionary().errors.retakeWholePlate);
+          setAnalysisPhase('preparing');
           const prepared = await prepareMealPhoto(originalUri);
           if (!isCurrentInvocation()) {
             if (prepared.previewUri !== originalUri) deleteTemporaryPhoto(prepared.previewUri);
@@ -949,6 +999,7 @@ export function AppProvider({ children }: PropsWithChildren) {
           photoUriRef.current = prepared.previewUri;
           setPhotoUri(prepared.previewUri);
           if (prepared.previewUri !== originalUri) deleteTemporaryPhoto(originalUri);
+          setAnalysisPhase('analysing');
         }
 
         // Simple descriptions resolve on the device: instant, offline, free.
@@ -975,7 +1026,14 @@ export function AppProvider({ children }: PropsWithChildren) {
         if (nextPendingCount !== null) setPendingAnalysisCount(nextPendingCount);
         // A local result costs nothing and is logged in the free bucket.
         correctionDraftRef.current = result.correctionRequired === true || Boolean(localDescription);
-        setDetectedItems(result.items);
+        // An ingredient the gateway could not price is matched against the
+        // on-device catalogue at its detected amount, so the draft is savable
+        // at once; the row is flagged for a quick check instead of blocking.
+        const resolved = resolveUnmatchedItems(result.items, foodUsage(mealHistory));
+        setDetectedItems(resolved.items);
+        setAutoMatchedItemIds(resolved.matchedIds);
+        setPortionEstimated(result.estimatedPortion === true
+          || (Boolean(localDescription) && result.warnings.includes(getDictionary().errors.warnAmountEstimated)));
         setMealTitle(result.title);
         setMealPortionState(1);
         setAnalysisMessage([...new Set(result.warnings)].join('\n\n') || null);
@@ -1000,6 +1058,30 @@ export function AppProvider({ children }: PropsWithChildren) {
         const failure = error instanceof MealAnalysisError
           ? error
           : new MealAnalysisError('provider-error', getDictionary().errors.analysisFailed);
+        // "Amount unclear" is not a dead end. An older gateway answers it with
+        // 422 (refunded, so free); the recognisable foods still land on the
+        // confirm screen at a typical portion for the user to adjust.
+        const estimate = activeScanMode === 'description' && AMOUNT_ERROR_CODES.has(failure.code ?? '')
+          ? estimateDescriptionPortions(descriptionInput, foodUsage(mealHistory))
+          : null;
+        if (estimate) {
+          correctionDraftRef.current = true;
+          setDetectedItems(estimate.items);
+          setAutoMatchedItemIds([]);
+          setPortionEstimated(true);
+          setMealTitle(estimate.title);
+          setMealPortionState(1);
+          setAnalysisMessage(estimate.warnings.join('\n\n') || null);
+          setAnalysisStatus('ready');
+          trackEvent('meal analysis completed', {
+            duration: durationBucket(analysisStartedAt),
+            confidence: 'medium',
+            detected_item_count: countBucket(estimate.items.length),
+            scan_source: telemetryScanSource(activeScanMode),
+            warning_present: true,
+          });
+          return;
+        }
         if (failure.kind === 'request-expired' && activeScanMode === 'queued') {
           const count = await removeQueuedAnalysis(invocationScanId);
           if (!isCurrentInvocation()) return;
@@ -1036,8 +1118,15 @@ export function AppProvider({ children }: PropsWithChildren) {
       }
     } finally {
       inFlightAnalysisIdsRef.current.delete(invocationScanId);
+      if (isCurrentInvocation()) setAnalysisPhase(null);
     }
   }, [barcodeInput, descriptionInput, mealHistory, photoUri, queuedInput, scanId]);
+
+  const cancelAnalysis = useCallback(() => {
+    analysisGenerationRef.current += 1;
+    setAnalysisPhase(null);
+    setAnalysisStatus('idle');
+  }, []);
 
   const resumeLatestAnalysis = useCallback(async () => {
     const queue = await loadAnalysisQueue();
@@ -1059,6 +1148,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const adjustItem = (id: string, direction: -1 | 1) => {
     setMealPortionState(null);
+    setPortionEstimated(false);
     setDetectedItems((current) =>
       current.map((item) => {
         if (item.id !== id) return item;
@@ -1077,11 +1167,13 @@ export function AppProvider({ children }: PropsWithChildren) {
     const amount = Math.round(grams * 10) / 10;
     if (!Number.isFinite(amount) || amount < 1 || amount > 5000) return;
     setMealPortionState(null);
+    setPortionEstimated(false);
     setDetectedItems((current) => current.map((item) => (item.id === id ? scaleItem(item, amount) : item)));
   };
 
   const setMealPortion = (factor: PortionFactor) => {
     setMealPortionState(factor);
+    setPortionEstimated(false);
     setDetectedItems((current) =>
       current.map((item) => scaleItem(item, Math.min(5000, Math.max(1, Math.round(item.baseAmountG * factor * 10) / 10)))),
     );
@@ -1100,6 +1192,10 @@ export function AppProvider({ children }: PropsWithChildren) {
     scanModeRef.current = 'demo';
     plannedMealTypeRef.current = null;
     setPlannedMealTypeState(null);
+    plannedMealDateRef.current = null;
+    setPlannedMealDateState(null);
+    setPortionEstimated(false);
+    setAutoMatchedItemIds([]);
     setDetectedItems(getDemoItems());
     setMealTitle(getDictionary().errors.demoMealTitle);
     setPhotoUri(null);
@@ -1128,6 +1224,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setTargets(DEFAULT_TARGETS);
     setMeals([]);
     setMealHistory([]);
+    setFavoriteMeals([]);
     setLifetimeScanCount(0);
     setWeightEntries([]);
     setDetectedItems(getDemoItems());
@@ -1152,6 +1249,13 @@ export function AppProvider({ children }: PropsWithChildren) {
     setPlannedMealTypeState(type);
   }, []);
 
+  /** An explicit day (also today) wins over the day a corrected meal was filed under. */
+  const setPlannedMealDate = useCallback((date: string | null) => {
+    const next = date ? clampLogDate(date) : null;
+    plannedMealDateRef.current = next;
+    setPlannedMealDateState(next);
+  }, []);
+
   /**
    * The slot belongs to the meal it was chosen for and to no other.
    *
@@ -1164,6 +1268,14 @@ export function AppProvider({ children }: PropsWithChildren) {
     plannedMealTypeRef.current = null;
     setPlannedMealTypeState(null);
     return type;
+  }, []);
+
+  /** Same lifetime as the slot: the chosen day belongs to one meal only. */
+  const consumePlannedMealDate = useCallback(() => {
+    const date = plannedMealDateRef.current;
+    plannedMealDateRef.current = null;
+    setPlannedMealDateState(null);
+    return date;
   }, []);
 
   const logScannedMeal = useCallback(async () => {
@@ -1183,17 +1295,23 @@ export function AppProvider({ children }: PropsWithChildren) {
     // meal that was filed under breakfast kept its own slot rather than
     // snapping back to whatever the clock says now.
     const slot = consumePlannedMealType() ?? existing?.type;
+    // A back-dated meal is filed on its own day at the slot's usual time; a
+    // correction keeps the day it was first filed under.
+    const moment = mealMoment(consumePlannedMealDate() ?? existing?.date, slot ?? scannedMeal.type, now);
+    const today = localDateKey(now);
     const persistedMeal: Meal = {
       ...scannedMeal,
       ...(slot ? { type: slot } : {}),
       ...nutritionFromItems(detectedItems),
       origin: costsAnalysis ? 'scan' : 'plan',
-      date: localDateKey(now),
-      savedAt: now.toISOString(),
+      date: moment.date,
+      ...(moment.date !== today ? { time: formatClockTime(moment.at) } : {}),
+      savedAt: moment.at.toISOString(),
     };
     await saveSyncedMeal(persistedMeal, telemetryScanSource(scanModeRef.current));
     if (generation !== getLocalDataGeneration()) throw new Error('cloud_identity_changed');
-    setMeals((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
+    // Only today's meals belong in `meals`; a past day lives in the history.
+    setMeals((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), ...(persistedMeal.date === today ? [persistedMeal] : [])]);
     setMealHistory((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), persistedMeal]);
   }, [analysisStatus, detectedItems, mealHistory, scannedMeal]);
 
@@ -1207,6 +1325,9 @@ export function AppProvider({ children }: PropsWithChildren) {
     const now = new Date();
     const planned = createPlannedMeal(suggestion, portion, `plan-${suggestion.id}-${now.getTime()}`);
     const slot = consumePlannedMealType();
+    // Suggestions are computed from today's remaining budget, so they are
+    // always filed today. The day choice is released, not carried over.
+    consumePlannedMealDate();
     const persisted: Meal = {
       ...planned,
       ...(slot ? { type: slot } : {}),
@@ -1222,6 +1343,14 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const repeatMeals = useMemo(() => availableRepeats(mealHistory, meals), [mealHistory, meals]);
 
+  const scanTarget = useMemo(() => {
+    const existing = mealHistory.find((meal) => meal.id === scanId);
+    return {
+      type: plannedMealType ?? existing?.type ?? scannedMeal.type,
+      date: clampLogDate(plannedMealDate ?? existing?.date, currentDay),
+    };
+  }, [currentDay, mealHistory, plannedMealDate, plannedMealType, scanId, scannedMeal.type]);
+
   /**
    * Logs a meal the user has eaten before. Costs no analysis call, so like a
    * planned meal it never spends part of the free allowance.
@@ -1233,20 +1362,21 @@ export function AppProvider({ children }: PropsWithChildren) {
     if (inFlight) return inFlight;
     const operation = (async () => {
       const now = new Date();
-      const hour = now.getHours();
+      const type = consumePlannedMealType() ?? mealTypeForTime(now);
+      const moment = mealMoment(consumePlannedMealDate(), type, now);
       const repeated: Meal = {
         ...candidate.source,
         id: `repeat-${candidate.key.replace(/[^a-z0-9]+/gi, '-')}-${now.getTime()}`,
         origin: 'plan',
         sync: undefined,
-        type: consumePlannedMealType() ?? (hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack'),
-        time: formatClockTime(now),
-        date: localDateKey(now),
-        savedAt: now.toISOString(),
+        type,
+        time: formatClockTime(moment.at),
+        date: moment.date,
+        savedAt: moment.at.toISOString(),
       };
       await saveSyncedMeal(repeated, 'repeat');
       if (generation !== getLocalDataGeneration()) throw new Error('cloud_identity_changed');
-      setMeals((current) => [...current.filter((meal) => meal.id !== repeated.id), repeated]);
+      setMeals((current) => [...current.filter((meal) => meal.id !== repeated.id), ...(repeated.date === localDateKey(now) ? [repeated] : [])]);
       setMealHistory((current) => [...current.filter((meal) => meal.id !== repeated.id), repeated]);
       return repeated;
     })();
@@ -1257,28 +1387,57 @@ export function AppProvider({ children }: PropsWithChildren) {
   }, []);
 
   /**
-   * Search-and-add, as in every diary app: pick a food and an amount and it is
-   * logged, while the search stays open for the next food. Each food is its
-   * own entry in the chosen meal slot; the slot is kept for the whole session
-   * and released when the search closes (setPlannedMealType(null)).
+   * Search-and-add, as in every diary app: pick foods and amounts, then save
+   * them together. Everything picked in one open search sheet is ONE meal with
+   * several ingredients, the way people think of "my breakfast", not five
+   * separate entries. The slot and day stay chosen for the whole session and
+   * are released when the search closes (setPlannedMealType(null)).
    */
-  const logFoodDirect = useCallback(async (result: FoodSearchResult, grams: number) => {
+  const logFoodsDirect = useCallback(async (entries: { result: FoodSearchResult; grams: number }[]) => {
+    if (!entries.length) throw new Error('Cannot save an empty meal');
     const generation = getLocalDataGeneration();
     const now = new Date();
-    const draft = mealFromSearch(result, grams);
-    const base = createScannedMeal(draft.items, draft.title, makeScanId());
+    const items = entries.map((entry, index) => {
+      const [item] = mealFromSearch(entry.result, entry.grams).items;
+      // The same food picked twice is two rows, never one id.
+      return entries.length > 1 ? { ...item, id: `${item.id}-${index + 1}` } : item;
+    });
+    if (!canSaveMealDraft(items)) throw new Error('Cannot save an incomplete meal');
+    const title = items.map((item) => item.name).join(', ').slice(0, 160);
+    const base = createScannedMeal(items, title, makeScanId());
+    const type = plannedMealTypeRef.current ?? base.type;
+    const moment = mealMoment(plannedMealDateRef.current, type, now);
+    const today = localDateKey(now);
     const meal: Meal = {
       ...base,
-      ...(plannedMealTypeRef.current ? { type: plannedMealTypeRef.current } : {}),
+      type,
       origin: 'plan',
-      date: localDateKey(now),
-      savedAt: now.toISOString(),
+      date: moment.date,
+      time: formatClockTime(moment.at),
+      savedAt: moment.at.toISOString(),
     };
     await saveSyncedMeal(meal, 'search');
     if (generation !== getLocalDataGeneration()) throw new Error('cloud_identity_changed');
-    setMeals((current) => [...current.filter((entry) => entry.id !== meal.id), meal]);
+    setMeals((current) => [...current.filter((entry) => entry.id !== meal.id), ...(meal.date === today ? [meal] : [])]);
     setMealHistory((current) => [...current.filter((entry) => entry.id !== meal.id), meal]);
     return meal;
+  }, []);
+
+  /**
+   * Favourites live on this device only. The star is keyed by the meal's
+   * title, so "Skyr mit Beeren" stays a favourite across days and portions.
+   */
+  const toggleFavoriteMeal = useCallback(async (meal: Meal) => {
+    const generation = getLocalDataGeneration();
+    const key = favoriteKey(meal);
+    if (!key) return;
+    const current = await loadFavoriteMeals();
+    const next = current.some((entry) => entry.key === key)
+      ? current.filter((entry) => entry.key !== key)
+      : [{ key, meal: favoriteSnapshot(meal), starredAt: new Date().toISOString() }, ...current];
+    await saveFavoriteMeals(next);
+    if (generation !== getLocalDataGeneration()) throw new Error('cloud_identity_changed');
+    setFavoriteMeals(next);
   }, []);
 
   /**
@@ -1350,6 +1509,14 @@ export function AppProvider({ children }: PropsWithChildren) {
       setUnitSystem,
       plannedMealType,
       setPlannedMealType,
+      plannedMealDate,
+      setPlannedMealDate,
+      scanTarget,
+      favoriteMeals,
+      toggleFavoriteMeal,
+      analysisPhase,
+      portionEstimated,
+      autoMatchedItemIds,
       userName,
       profile,
       hydrationReady,
@@ -1395,6 +1562,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       startBarcodeScan,
       analyzeCurrentPhoto,
       resumeLatestAnalysis,
+      cancelAnalysis,
       adjustItem,
       setItemAmount,
       setMealPortion,
@@ -1405,13 +1573,13 @@ export function AppProvider({ children }: PropsWithChildren) {
       logPlannedMeal,
       repeatMeals,
       logRepeatMeal,
-      logFoodDirect,
+      logFoodsDirect,
       setLoggedItemAmount,
       deleteLoggedMeal,
       adjustLoggedMealPortion,
       setLoggedMealType,
     }),
-    [descriptionInput, addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, localStorageError, appleReauthenticationRequired, isCurrentScanLogged, loadExistingAccount, loadAppleAccount, logFoodDirect, setLoggedItemAmount, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, retryAccountRecovery, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
+    [descriptionInput, addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, localStorageError, appleReauthenticationRequired, isCurrentScanLogged, loadExistingAccount, loadAppleAccount, logFoodsDirect, setLoggedItemAmount, plannedMealDate, setPlannedMealDate, scanTarget, favoriteMeals, toggleFavoriteMeal, analysisPhase, portionEstimated, autoMatchedItemIds, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, cancelAnalysis, retryAccountRecovery, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

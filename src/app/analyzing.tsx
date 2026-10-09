@@ -8,14 +8,15 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { mealPhotoPlaceholder } from '@/utils/format';
 import { MealPhoto, PrimaryButton } from '@/components/ui';
-import { radii } from '@/constants/theme';
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { useApp } from '@/context/AppContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { AnalysisErrorKind } from '@/services/contracts';
+import { setScanInputDraft } from '@/services/captureIntents';
 
-
+/** Most analyses answer well within this; after it the user gets a way out. */
+const SLOW_AFTER_MS = 15_000;
 
 export default function AnalyzingScreen() {
   const { colors } = useTheme();
@@ -24,19 +25,32 @@ export default function AnalyzingScreen() {
   const {
     analysisError,
     analysisMessage,
+    analysisPhase,
     analysisStatus,
     analyzeCurrentPhoto,
+    cancelAnalysis,
     photoUri,
     resetScan,
     scanMode,
     descriptionInput,
     startDemoScan,
   } = useApp();
-  const [visible, setVisible] = useState(0);
+  const [slow, setSlow] = useState(false);
   const started = useRef(false);
   const reduceMotion = useReducedMotion();
   const { t } = useLanguage();
-  const stages = [t.analyzing.stage1, t.analyzing.stage2, t.analyzing.stage3, t.analyzing.stage4];
+  // The gateway answers once, at the end. Rather than tick off steps it never
+  // reported, say what is actually happening: preparing the photo on the
+  // device, then waiting for the analysis.
+  const statusLine = analysisPhase === 'preparing'
+    ? t.analyzing.phasePreparing
+    : scanMode === 'demo'
+      ? t.analyzing.phaseDemo
+      : scanMode === 'description'
+        ? t.analyzing.phaseDescription
+        : scanMode === 'barcode'
+          ? t.analyzing.phaseBarcode
+          : t.analyzing.phasePhoto;
   const errorCopy: Record<AnalysisErrorKind, { title: string; detail: string }> = {
     'not-configured': { title: t.analyzing.errNotConfiguredTitle, detail: t.analyzing.errNotConfiguredBody },
     'consent-required': { title: t.analyzing.errConsentTitle, detail: t.analyzing.errConsentBody },
@@ -69,16 +83,16 @@ export default function AnalyzingScreen() {
     void analyzeCurrentPhoto();
   }, [analyzeCurrentPhoto]);
 
+  // The 90 s request deadline stays; after 15 s the user may stop waiting.
   useEffect(() => {
+    setSlow(false);
     if (analysisStatus !== 'analyzing') return;
-    // The gateway reports only the final result. Pending labels describe the
-    // remaining work; elapsed time cannot certify recognition or lookup.
-    setVisible(0);
-  }, [analysisStatus, reduceMotion]);
+    const timer = setTimeout(() => setSlow(true), SLOW_AFTER_MS);
+    return () => clearTimeout(timer);
+  }, [analysisStatus]);
 
   useEffect(() => {
     if (analysisStatus !== 'ready') return;
-    setVisible(stages.length);
     // Confidence describes the model, not certainty about a real portion.
     // Every estimate is reviewed before result.tsx stores it.
     const timer = setTimeout(() => router.replace('/confirm'), reduceMotion ? 0 : 260);
@@ -105,6 +119,21 @@ export default function AnalyzingScreen() {
       resetScan();
       router.dismissTo(path);
     }
+  };
+
+  /**
+   * Stops waiting and opens the text input instead. A photo is dropped and the
+   * text field starts empty; a description goes back with its own text.
+   */
+  const cancelAndDescribe = () => {
+    if (scanMode === 'description') {
+      cancelAnalysis();
+      router.dismissTo('/(tabs)/scan?mode=description');
+      return;
+    }
+    resetScan();
+    setScanInputDraft(null);
+    router.dismissTo('/(tabs)/scan?mode=description');
   };
 
   const error = analysisError ? errorCopy[analysisError] : null;
@@ -143,9 +172,9 @@ export default function AnalyzingScreen() {
           <View style={[styles.sparkleCircle, failed && styles.warningCircle]}>
             <Ionicons color={colors.onAccent} name={failed ? 'alert-outline' : 'sparkles'} size={25} />
           </View>
-          <Text accessibilityLiveRegion="polite" style={styles.title}>{failed ? error?.title : t.analyzing.working}</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.title}>{failed ? error?.title : slow ? t.analyzing.slowTitle : statusLine}</Text>
           <Text style={styles.subtitle}>
-            {failed ? failureDetail : t.analyzing.workingText}
+            {failed ? failureDetail : slow ? t.analyzing.slowText : t.analyzing.phaseHint}
           </Text>
 
           {failed ? (
@@ -165,6 +194,13 @@ export default function AnalyzingScreen() {
                   <PrimaryButton icon="refresh" label={t.analyzing.retry} onPress={retry} />
                   <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
                 </>
+              ) : analysisError === 'unclear-image' && scanMode !== 'description' ? (
+                <>
+                  {/* Unclear is still an error, but never a dead end: one tap to
+                      try again with the camera or to say it in words. */}
+                  <PrimaryButton icon="camera-outline" label={t.analyzing.retakePhoto} onPress={() => changeInput()} />
+                  <PrimaryButton icon="create-outline" label={t.analyzing.describeInstead} onPress={() => { setScanInputDraft(null); changeInput('/(tabs)/scan?mode=description'); }} variant="secondary" />
+                </>
               ) : analysisError === 'product-not-found' || analysisError === 'invalid-input' ? (
                 <>
                   {analysisError === 'product-not-found' ? <PrimaryButton
@@ -182,16 +218,11 @@ export default function AnalyzingScreen() {
                 </>
               )}
             </View>
-          ) : (
-            <View style={styles.chips}>
-              {stages.map((stage, index) => (
-                <View key={stage} style={[styles.chip, index >= visible && styles.chipWaiting]}>
-                  <Ionicons color={index < visible ? colors.success : colors.muted} name={index < visible ? 'checkmark-circle' : 'ellipse-outline'} size={17} />
-                  <Text style={[styles.chipText, index >= visible && styles.chipTextWaiting]}>{stage}</Text>
-                </View>
-              ))}
+          ) : slow && scanMode !== 'demo' ? (
+            <View style={styles.actions}>
+              <PrimaryButton icon="create-outline" label={t.analyzing.cancelDescribe} onPress={cancelAndDescribe} variant="secondary" />
             </View>
-          )}
+          ) : null}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -217,10 +248,5 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   warningCircle: { backgroundColor: colors.attentionSoft },
   title: { color: colors.text, fontSize: 24, fontWeight: '700', letterSpacing: -0.5, marginTop: 14, textAlign: 'center' },
   subtitle: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 7, maxWidth: 340 },
-  chips: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginTop: 22 },
-  chip: { minHeight: 38, borderRadius: radii.pill, backgroundColor: colors.successSoft, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  chipWaiting: { backgroundColor: colors.surface, borderColor: colors.border },
-  chipText: { color: colors.text, fontSize: 12, fontWeight: '600' },
-  chipTextWaiting: { color: colors.muted },
   actions: { alignSelf: 'stretch', gap: 8, marginTop: 22 },
 });

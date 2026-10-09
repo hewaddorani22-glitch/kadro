@@ -12,6 +12,15 @@ export type RepeatCandidate = {
   count: number;
   lastEatenAt: string;
   source: Meal;
+  /** Starred by the user; shown first and kept even when already eaten today. */
+  favorite?: boolean;
+};
+
+/** A starred meal, stored on this device only (not synced). */
+export type FavoriteMeal = {
+  key: string;
+  meal: Meal;
+  starredAt: string;
 };
 
 function bucket(calories: number) {
@@ -120,4 +129,49 @@ export function yesterdayBreakfast(history: Meal[], today: Meal[], day: string):
     sync: undefined,
   };
   return { key: keyOf(source), title: source.title, ...totals, count: 1, lastEatenAt: source.savedAt ?? '', source };
+}
+
+/** A favourite is the meal people name, not one exact portion of it. */
+export function favoriteKey(meal: Pick<Meal, 'title'>) {
+  return meal.title?.trim().toLowerCase() ?? '';
+}
+
+/** What a favourite keeps: the meal itself, never its sync identity or day. */
+export function favoriteSnapshot(meal: Meal): Meal {
+  const { sync: _sync, ...rest } = meal;
+  return { ...rest, origin: 'plan' };
+}
+
+/**
+ * Favourites first, then the usual repeats. A favourite takes the numbers of
+ * its most recent logged version, so a corrected portion is what repeats.
+ */
+export function withFavorites(candidates: RepeatCandidate[], favorites: FavoriteMeal[], history: Meal[], limit = 8): RepeatCandidate[] {
+  if (!favorites.length) return candidates.slice(0, limit);
+  const starred = new Set(favorites.map((entry) => entry.key));
+  const latest = new Map<string, Meal>();
+  for (const meal of history) {
+    const key = favoriteKey(meal);
+    if (!starred.has(key) || (meal.origin !== 'scan' && meal.origin !== 'plan')) continue;
+    const known = latest.get(key);
+    if (!known || (meal.savedAt ?? '') > (known.savedAt ?? '')) latest.set(key, meal);
+  }
+  const first = favorites.map((entry): RepeatCandidate => {
+    const source = latest.get(entry.key) ?? entry.meal;
+    const count = history.filter((meal) => favoriteKey(meal) === entry.key).length;
+    return {
+      key: `favorite|${entry.key}`,
+      title: source.title.trim(),
+      calories: source.calories,
+      protein: source.protein,
+      carbs: source.carbs,
+      fat: source.fat,
+      fiber: source.fiber ?? 0,
+      count: Math.max(1, count),
+      lastEatenAt: source.savedAt ?? entry.starredAt,
+      source,
+      favorite: true,
+    };
+  });
+  return [...first, ...candidates.filter((candidate) => !starred.has(favoriteKey(candidate)))].slice(0, Math.max(limit, first.length));
 }

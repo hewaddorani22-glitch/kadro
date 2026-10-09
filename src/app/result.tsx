@@ -15,7 +15,9 @@ import { recommendationPreview } from '@/services/recommendations';
 import { projectMealForDay } from '@/services/mockNutrition';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { trackEvent } from '@/services/telemetry';
-import { formatNumber } from '@/utils/format';
+import { formatDayLabel, formatNumber } from '@/utils/format';
+import { draftConfidence } from '@/utils/confidence';
+import { useLocalDay } from '@/hooks/useLocalDay';
 
 export default function ResultScreen() {
   const { colors } = useTheme();
@@ -24,8 +26,12 @@ export default function ResultScreen() {
   const { fontScale, width } = useWindowDimensions();
   const largeText = fontScale > 1.3;
   const calorieSize = largeText ? Math.min(width - 40, Math.ceil(122 * fontScale)) : 122;
-  const { lifetimeScanCount, logScannedMeal, meals, photoUri, profile, scanMode, scannedMeal, targets } = useApp();
-  const preview = projectMealForDay(targets, meals, scannedMeal);
+  const { autoMatchedItemIds, logScannedMeal, mealHistory, meals, photoUri, portionEstimated, profile, scanMode, scannedMeal, scanTarget, targets } = useApp();
+  const today = useLocalDay();
+  // A meal logged for an earlier day changes that day's numbers, not today's.
+  const pastDay = scanMode !== 'demo' && scanTarget.date !== today ? scanTarget.date : null;
+  const dayMeals = useMemo(() => pastDay ? mealHistory.filter((meal) => meal.date === pastDay) : meals, [mealHistory, meals, pastDay]);
+  const preview = projectMealForDay(targets, dayMeals, scannedMeal);
   const projected = preview.remaining;
   const startingRemaining = preview.before.calories;
   const dayIsDone = projected.calories < 200;
@@ -203,7 +209,7 @@ export default function ResultScreen() {
         <View style={[styles.titleRow, largeText && styles.titleRowLarge]}>
           <View style={[styles.mealCopy, largeText && styles.mealCopyLarge]}>
             <Text style={[styles.mealTitle, scannedMeal.title.length > 28 && styles.mealTitleLong]}>{scannedMeal.title}</Text>
-            <ConfidenceBadge />
+            <ConfidenceBadge level={draftConfidence(scannedMeal.items, { autoMatchedIds: autoMatchedItemIds, portionEstimated })} />
           </View>
           <View style={[styles.calorieBlock, { width: calorieSize, height: calorieSize }]}>
             <ImpactRing size={calorieSize} total={scannedMeal.calories} value={displayedCalories} />
@@ -246,8 +252,8 @@ export default function ResultScreen() {
         <View style={styles.dayHeader}>
           <View style={styles.dayIcon}><Ionicons color={colors.onAccent} name="sunny-outline" size={23} /></View>
           <View style={styles.dayHeading}>
-            <Eyebrow>{t.result.dayAfter}</Eyebrow>
-            <Text style={styles.onTrack}>{overBudget ? t.result.overToday : t.result.stillOnTrack}</Text>
+            <Eyebrow>{pastDay ? formatDayLabel(pastDay, today, t.today, locale) : t.result.dayAfter}</Eyebrow>
+            <Text style={styles.onTrack}>{pastDay ? (overBudget ? t.today.pastDayOver : t.today.pastDayLogged) : overBudget ? t.result.overToday : t.result.stillOnTrack}</Text>
           </View>
           <Ionicons
             color={overBudget ? colors.attention : colors.success}
@@ -274,7 +280,8 @@ export default function ResultScreen() {
           transform: [{ translateY: recommendationReveal.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
         }}
       >
-      {dayIsDone ? (
+      {/* The next-meal plan is about today; a back-dated meal skips it. */}
+      {pastDay ? null : dayIsDone ? (
         <Card style={styles.nextCard}>
           <Text style={styles.nextTitle}>{overBudget ? t.today.dayOver : t.today.dayComplete}</Text>
           <Text style={styles.remainingLabel}>{overBudget ? t.today.dayOverText : t.today.dayCompleteText}</Text>

@@ -1,7 +1,9 @@
 import { getDictionary } from '@/i18n/active';
 import type { MealAnalysisResult } from '@/services/contracts';
 import { matchFood, type FoodUsage } from '@/services/foodSuggest';
-import { mealFromSearch } from '@/services/mealAnalysis';
+import { mealFromSearch, type FoodSearchResult } from '@/services/mealAnalysis';
+import type { MealItem } from '@/types/nutrition';
+import { needsIngredientCorrection } from '@/utils/ingredientCorrection';
 
 /**
  * Simple descriptions ("2 Toast und 300 ml Milch", "eine Banane", "150 g Reis
@@ -50,11 +52,7 @@ function parsePart(raw: string): Part | null {
   return { quantity, unit, name };
 }
 
-export function parseLocalDescription(text: string, usage?: Map<string, FoodUsage>): MealAnalysisResult | null {
-  const clean = text.trim();
-  if (clean.length < 2 || clean.length > 200) return null;
-  // "ohne", "halb so viel", percentages of a dish and similar nuance → AI.
-  if (/\b(ohne|without|keine?n?|no|statt|instead|bis|to|oder|or)\b|%|\?/i.test(fold(clean))) return null;
+function splitParts(clean: string) {
   // A comma between digits is a decimal ("100,5 g"), never a list separator.
   // Separators are kept so additions after "mit/with" can be told apart.
   const tokens = clean.split(/\s*((?<!\d),|,(?!\d)|;|\+|&|\n|\bund\b|\band\b|\bmit\b|\bwith\b|\bdazu\b)\s*/i);
@@ -65,6 +63,15 @@ export function parseLocalDescription(text: string, usage?: Map<string, FoodUsag
     parts.push(tokens[index]);
     addition.push(index > 0 && /^(mit|with|dazu)$/i.test(tokens[index - 1] ?? ''));
   }
+  return { parts, addition };
+}
+
+export function parseLocalDescription(text: string, usage?: Map<string, FoodUsage>): MealAnalysisResult | null {
+  const clean = text.trim();
+  if (clean.length < 2 || clean.length > 200) return null;
+  // "ohne", "halb so viel", percentages of a dish and similar nuance → AI.
+  if (/\b(ohne|without|keine?n?|no|statt|instead|bis|to|oder|or)\b|%|\?/i.test(fold(clean))) return null;
+  const { parts, addition } = splitParts(clean);
   if (!parts.length || parts.length > 8) return null;
   const items: MealAnalysisResult['items'] = [];
   let estimated = false;
@@ -109,4 +116,80 @@ export function parseLocalDescription(text: string, usage?: Map<string, FoodUsag
     items,
     warnings: [estimated ? t.warnAmountEstimated : t.warnGenericReference],
   };
+}
+
+const COUNTABLE = ['piece', 'egg', 'slice', 'fillet', 'ball', 'half', 'glass', 'cup', 'can', 'bottle', 'pot'];
+
+/** One usual serving, or n pieces when the user counted them ("2 Eier"). */
+function typicalGrams(food: FoodSearchResult, part: Part | null) {
+  const piece = part?.quantity && !part.unit ? food.portions?.find(entry => COUNTABLE.includes(entry.kind ?? '')) : undefined;
+  const grams = piece ? part!.quantity! * piece.grams : food.portions?.[0]?.grams ?? food.defaultGrams;
+  return Math.round(Math.min(5000, Math.max(1, grams)) * 10) / 10;
+}
+
+/** An ingredient Kandro could not name a food for: the user picks it on Confirm. */
+function unmatchedRow(name: string, index: number): MealItem {
+  return {
+    id: `estimate-unmatched-${index}`, name: name.slice(0, 160), amountG: 100, baseAmountG: 100, portionFactor: 1,
+    calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, confidence: 'medium', included: true,
+    source: { code: 'unmatched', provider: 'kandro-catalog', label: getDictionary().errors.sourceUnmatched },
+  };
+}
+
+/**
+ * "Amount unclear" must not end the flow. When the gateway cannot bind the
+ * stated amounts (an older gateway answers 422 mass_required /
+ * amount_ambiguous / amount_out_of_range), every food the catalogue knows is
+ * prefilled at a typical portion and the rest is left for the user to pick.
+ * Returns null when not a single food is recognisable.
+ */
+export function estimateDescriptionPortions(text: string, usage?: Map<string, FoodUsage>): MealAnalysisResult | null {
+  const clean = text.trim();
+  if (clean.length < 2 || clean.length > 500) return null;
+  const { parts } = splitParts(clean);
+  if (!parts.length || parts.length > 8) return null;
+  const items: MealItem[] = [];
+  let matched = 0;
+  for (const raw of parts) {
+    const part = parsePart(raw);
+    const name = part?.name ?? fold(raw).replace(/[^a-z ]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const food = name ? matchFood(name, usage) : null;
+    if (food) {
+      const [item] = mealFromSearch(food, typicalGrams(food, part)).items;
+      items.push({ ...item, id: `${item.id}-${items.length}`, confidence: 'medium' });
+      matched += 1;
+    } else if (name) {
+      items.push(unmatchedRow(raw.trim(), items.length));
+    }
+  }
+  if (!matched) return null;
+  const t = getDictionary().errors;
+  return {
+    title: (clean.charAt(0).toUpperCase() + clean.slice(1)).slice(0, 160),
+    confidence: 'medium',
+    correctionRequired: true,
+    estimatedPortion: true,
+    items,
+    warnings: [t.warnAmountEstimated, ...(matched < items.length ? [t.warnUnmatched] : [])],
+  };
+}
+
+/**
+ * An ingredient the gateway returned without values is looked up in the
+ * on-device catalogue at its detected amount. Only an unambiguous match
+ * (exact word or reviewed alias) is used; the ids are returned so Confirm can
+ * mark those rows "Bitte prüfen".
+ */
+export function resolveUnmatchedItems(items: MealItem[], usage?: Map<string, FoodUsage>): { items: MealItem[]; matchedIds: string[] } {
+  const matchedIds: string[] = [];
+  const next = items.map((item) => {
+    if (item.source?.code !== 'unmatched' || !needsIngredientCorrection(item)) return item;
+    const food = matchFood(item.name, usage);
+    if (!food) return item;
+    const grams = Number.isFinite(item.amountG) && item.amountG >= 1 && item.amountG <= 5000 ? item.amountG : typicalGrams(food, null);
+    const [replacement] = mealFromSearch(food, grams).items;
+    matchedIds.push(item.id);
+    return { ...replacement, id: item.id, included: true, confidence: 'medium' as const };
+  });
+  return { items: next, matchedIds };
 }

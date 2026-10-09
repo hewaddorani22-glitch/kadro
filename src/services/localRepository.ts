@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PendingAnalysis } from '@/services/contracts';
 import { DEFAULT_PROFILE, isBiologicalSex } from '@/services/personalization';
 import { Meal, MealItem, MealSync, UserProfile, WeightEntry } from '@/types/nutrition';
+import type { FavoriteMeal } from '@/services/repeatMeals';
 import { localDateKey } from '@/utils/date';
 import { defaultUnitSystem, isUnitSystem } from '@/utils/units';
 import { isAnalysisRequestId, newAnalysisRequestId } from '@/utils/requestId';
@@ -16,6 +17,7 @@ const LIFETIME_SCANS_KEY = '@kandro/lifetime-scans:v1';
 const COUNTED_SCAN_IDS_KEY = '@kandro/counted-analysis-ids:v1';
 const DELETED_MEALS_KEY = '@kandro/deleted-meals:v1';
 const ACCOUNT_SWITCH_PENDING_KEY = '@kandro/account-switch-pending:v1';
+const FAVORITES_KEY = '@kandro/favorite-meals:v1';
 let scanCountMutation: Promise<number> = Promise.resolve(0);
 let localGeneration = 0;
 export const getLocalDataGeneration = () => localGeneration;
@@ -498,6 +500,25 @@ export async function saveWeightEntry(entry: WeightEntry): Promise<WeightEntry[]
   });
 }
 
+/**
+ * Starred meals, on this device only. They are wellness data like the diary,
+ * so every reset and account switch below removes them too.
+ */
+export async function loadFavoriteMeals(): Promise<FavoriteMeal[]> {
+  const stored = await readJson<unknown>(FAVORITES_KEY, []);
+  if (!Array.isArray(stored)) return [];
+  return stored.filter((entry): entry is FavoriteMeal => Boolean(entry)
+    && typeof entry.key === 'string' && entry.key.length > 0
+    && typeof entry.starredAt === 'string'
+    && Boolean(entry.meal) && typeof entry.meal.title === 'string' && Array.isArray(entry.meal.items)
+    && [entry.meal.calories, entry.meal.protein, entry.meal.carbs, entry.meal.fat].every((value: unknown) => typeof value === 'number' && Number.isFinite(value) && value >= 0))
+    .slice(0, 50);
+}
+
+export function saveFavoriteMeals(favorites: FavoriteMeal[]) {
+  return mutateAuxiliary(() => AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites.slice(0, 50))));
+}
+
 export async function clearLocalKandroData() {
   localGeneration += 1;
   await invalidatePrivateData();
@@ -506,6 +527,7 @@ export async function clearLocalKandroData() {
   await auxiliaryMutation;
   await scanCountMutation.catch(() => undefined);
   await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY, LIFETIME_SCANS_KEY, COUNTED_SCAN_IDS_KEY, DELETED_MEALS_KEY]);
+  await AsyncStorage.removeItem(FAVORITES_KEY);
 }
 
 export type PendingLocalAccountSwitch = {
@@ -568,6 +590,7 @@ export function replaceLocalAccountData(
       [COUNTED_SCAN_IDS_KEY, JSON.stringify({ version: 1, count, ids: [] })],
     ]);
     await AsyncStorage.multiRemove([QUEUE_KEY, WEIGHTS_KEY, DELETED_MEALS_KEY]);
+    await AsyncStorage.removeItem(FAVORITES_KEY);
     return count;
   });
 

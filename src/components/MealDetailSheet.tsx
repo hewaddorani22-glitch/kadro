@@ -17,6 +17,7 @@ import { useLanguage } from '@/i18n/LanguageProvider';
 import { selectionHaptic, warningHaptic } from '@/services/haptics';
 import { formatNumber } from '@/utils/format';
 import { MEAL_TYPES, mealTypeIcon, mealTypeLabel } from '@/utils/format';
+import { favoriteKey } from '@/services/repeatMeals';
 
 /**
  * Everything a user can do to a meal after it is saved.
@@ -28,7 +29,7 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
-  const { adjustLoggedMealPortion, deleteLoggedMeal, setLoggedItemAmount, setLoggedMealType } = useApp();
+  const { adjustLoggedMealPortion, deleteLoggedMeal, favoriteMeals, setLoggedItemAmount, setLoggedMealType, toggleFavoriteMeal } = useApp();
   const { locale, t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -82,6 +83,18 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
     }
   };
 
+  const favorite = favoriteMeals.some((entry) => entry.key === favoriteKey(meal));
+  const toggleFavorite = async () => {
+    if (busy) return;
+    setBusy(true);
+    void selectionHaptic();
+    try {
+      await toggleFavoriteMeal(meal);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const included = meal.items.filter((item) => item.included);
   const editing = included.find((item) => item.id === editingItem) ?? null;
 
@@ -121,6 +134,18 @@ export function MealDetailSheet({ meal, onClose }: { meal: Meal | null; onClose:
             <Text style={styles.type}>{mealTypeLabel(meal.type, t.common)} · {meal.time}</Text>
             <Text style={styles.title}>{meal.title}</Text>
           </View>
+          <Pressable
+            accessibilityHint={t.mealSheet.favoriteHint}
+            accessibilityLabel={favorite ? t.mealSheet.favoriteRemove : t.mealSheet.favoriteAdd}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: favorite, disabled: busy }}
+            disabled={busy}
+            hitSlop={8}
+            onPress={() => void toggleFavorite()}
+            style={[styles.closeButton, favorite && styles.favoriteActive]}
+          >
+            <Ionicons color={favorite ? colors.onAccent : colors.text} name={favorite ? 'star' : 'star-outline'} size={19} />
+          </Pressable>
           <Pressable accessibilityLabel={t.common.close} accessibilityRole="button" hitSlop={8} onPress={close} style={styles.closeButton}>
             <Ionicons color={colors.text} name="close" size={20} />
           </Pressable>
@@ -265,6 +290,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   type: { color: colors.muted, fontSize: 11, fontWeight: '700' },
   title: { color: colors.text, fontSize: 22, lineHeight: 27, fontWeight: '700', letterSpacing: -0.5 },
   closeButton: { width: 34, height: 34, borderRadius: 17, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  favoriteActive: { backgroundColor: colors.accent },
   macroRow: { flexDirection: 'row', backgroundColor: colors.background, borderRadius: radii.card, paddingVertical: 13 },
   macro: { flex: 1, minWidth: 0, alignItems: 'center', gap: 3 },
   macroValue: { color: colors.text, fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
