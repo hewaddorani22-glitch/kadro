@@ -394,12 +394,25 @@ assert.match(nutrition, /ENTITLEMENT_REFRESH_COOLDOWN_SECONDS = 20/);
 assert.match(nutrition, /refreshRevenueCatAccess\(context\.supabaseAdmin, data\.user\.id, networkHash\)/g,
   'both public refresh and stale-analysis reconciliation must supply the trusted network claim');
 assert.match(nutrition, /refundAnalysis\(/g);
+// Every refund records a fixed reason for private.ai_failure_daily.
+assert.doesNotMatch(nutrition, /await refundAnalysis\(\s*context\.supabaseAdmin\s*,\s*data\.user\.id\s*,\s*requestId\s*\)/,
+  'every refund path must pass a failure code');
+assert.match(nutrition, /result\.status === 200 \? 'correction_required'/);
+assert.match(nutrition, /p_failure_code: analysisFailureCode\(failureCode\)/);
+{
+  const failureMigration = await read('supabase/migrations/20261009100000_analysis_failure_codes.sql');
+  assert.match(failureMigration, /add column failure_code text/);
+  assert.match(failureMigration, /grant execute on function public\.refund_analysis_request\(uuid, uuid, text\) to service_role/);
+  assert.doesNotMatch(failureMigration, /to (?:anon|authenticated)\b/);
+}
 assert.match(nutrition, /quotaError \|\| !Number\.isSafeInteger\(used\) \|\| used < 1/,
   'a malformed per-user quota response must fail closed before the paid provider');
 assert.match(nutrition, /complete_analysis_request/);
 assert.match(nutrition, /Deno\.env\.get\('PRO_ANALYSIS_DAILY_LIMIT'\) \|\| '60'/);
 assert.match(gatewayEnv, /^PRO_ANALYSIS_DAILY_LIMIT=60$/m);
-assert.match(gatewayEnv, /^GLOBAL_ANALYSIS_DAILY_LIMIT=1000$/m);
+assert.match(gatewayEnv, /^GLOBAL_ANALYSIS_DAILY_LIMIT=5000$/m);
+assert.match(nutrition, /DEFAULT_GLOBAL_ANALYSIS_DAILY_LIMIT = 5000;/);
+assert.match(nutrition, /Deno\.env\.get\('GLOBAL_ANALYSIS_DAILY_LIMIT'\)/);
 assert.match(gatewayEnv, /^REVENUECAT_IOS_PRODUCT_RESOURCE_IDS=$/m);
 assert.match(gatewayDoc, /Sandbox Testing Access[\s\S]{0,500}`Anybody`/,
   'the loginless App Review runbook must not pre-allowlist an unknown reviewer UUID');

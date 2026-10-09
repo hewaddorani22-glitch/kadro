@@ -108,6 +108,11 @@ Autorisierung. Der gehostete Gateway entscheidet deshalb selbst:
 - `GLOBAL_ANALYSIS_DAILY_LIMIT` ist ein atomischer UTC-Tages-Circuit-Breaker
   über alle Nutzer-IDs. Er begrenzt die Sybil-Kosten bei neu angelegten
   anonymen Konten; zusätzlich bleibt ein harter Spend-Cap beim Provider nötig.
+  Ohne gesetztes Secret gilt seit 09.10.2026 der Standard **5000** (vorher
+  1000). Ein gesetztes Secret überschreibt den Standard immer; falls in
+  Produktion noch `GLOBAL_ANALYSIS_DAILY_LIMIT=1000` gesetzt ist, muss der
+  Eigentümer es anheben oder entfernen
+  (`supabase secrets set GLOBAL_ANALYSIS_DAILY_LIMIT=5000`).
 - Jede bezahlte Route verlangt eine UUIDv4 `requestId`. Eine Reservierung wird
   atomar erstellt, vor dem Provider als gestartet markiert und nur nach einem
   strukturierten HTTP-200-Ergebnis committed. Retry/Offline-Queue verwenden

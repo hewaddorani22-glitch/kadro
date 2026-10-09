@@ -62,10 +62,13 @@ const configuredDailyLimit = Number(Deno.env.get('ANALYSIS_DAILY_LIMIT') || '60'
 const dailyLimit = Number.isSafeInteger(configuredDailyLimit) && configuredDailyLimit > 0
   ? configuredDailyLimit
   : 60;
-const configuredGlobalDailyLimit = Number(Deno.env.get('GLOBAL_ANALYSIS_DAILY_LIMIT') || '1000');
+// Service-wide cost breaker, not a growth target. An explicitly configured
+// secret always wins; the default leaves headroom for launch-day spikes.
+const DEFAULT_GLOBAL_ANALYSIS_DAILY_LIMIT = 5000;
+const configuredGlobalDailyLimit = Number(Deno.env.get('GLOBAL_ANALYSIS_DAILY_LIMIT') || String(DEFAULT_GLOBAL_ANALYSIS_DAILY_LIMIT));
 const globalDailyLimit = Number.isSafeInteger(configuredGlobalDailyLimit) && configuredGlobalDailyLimit > 0
   ? configuredGlobalDailyLimit
-  : 1000;
+  : DEFAULT_GLOBAL_ANALYSIS_DAILY_LIMIT;
 const configuredProDailyLimit = Number(Deno.env.get('PRO_ANALYSIS_DAILY_LIMIT') || '60');
 const proDailyLimit = Number.isSafeInteger(configuredProDailyLimit) && configuredProDailyLimit > 0
   ? configuredProDailyLimit
@@ -158,12 +161,25 @@ async function reserveAnalysis(admin: any, userId: string, requestId: string, al
   });
 }
 
+/** Fixed, enumerable codes only: never a provider message or user input. */
+function analysisFailureCode(value: unknown) {
+  return typeof value === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(value) ? value : 'unknown';
+}
+
 // deno-lint-ignore no-explicit-any
-async function refundAnalysis(admin: any, userId: string, requestId: string) {
-  await accessRpc(admin, 'refund_analysis_request', {
+async function refundAnalysis(admin: any, userId: string, requestId: string, failureCode: string) {
+  const refunded = await accessRpc(admin, 'refund_analysis_request', {
     p_user_id: userId,
     p_request_id: requestId,
+    p_failure_code: analysisFailureCode(failureCode),
   });
+  // A database without the failure-code migration still returns the credit.
+  if (!refunded) {
+    await accessRpc(admin, 'refund_analysis_request', {
+      p_user_id: userId,
+      p_request_id: requestId,
+    });
+  }
 }
 
 function accessFailure(decision: AccessDecision | null): Result | null {
@@ -1132,11 +1148,11 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
 
   const { data: used, error: quotaError } = await context.supabase.rpc('consume_analysis_quota');
   if (quotaError || !Number.isSafeInteger(used) || used < 1) {
-    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId, 'quota_error');
     return reply({ status: 503, body: { code: 'provider_error', message: 'Die Analyse ist gerade nicht erreichbar.' } });
   }
   if (used > dailyLimit) {
-    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId, 'daily_limit');
     return reply({
       status: 429,
       body: { code: 'daily_limit_reached', message: 'Du hast heute sehr viele Mahlzeiten erfasst. Morgen geht es normal weiter.' },
@@ -1149,7 +1165,7 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
   try {
     await claimProviderRequest(context.supabaseAdmin, data.user.id, 'usda_analysis', networkHash);
   } catch (error) {
-    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId, error instanceof ProviderQuotaError ? 'provider_quota' : 'provider_error');
     if (error instanceof ProviderQuotaError) return reply(error.result);
     throw error;
   }
@@ -1159,7 +1175,7 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     p_daily_limit: globalDailyLimit,
   });
   if (globalQuota?.status !== 'allowed') {
-    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId, 'global_quota');
     return reply({
       status: 503,
       body: { code: 'provider_error', message: 'Die Analyse ist gerade ausgelastet. Bitte versuche es später erneut.' },
@@ -1177,7 +1193,7 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
   if (payload.captureProtocol === 2) {
     const decision = await accessRpc(context.supabaseAdmin,'reserve_capture_operation',captureArgs);
     if(decision?.status !== 'claimed') {
-      await refundAnalysis(context.supabaseAdmin,data.user.id,requestId);
+      await refundAnalysis(context.supabaseAdmin,data.user.id,requestId,'capture_conflict');
       if(decision?.status==='replay' && decision.result) return reply(decision.result as unknown as Result);
       return reply({status:409,body:{code:'request_completed'}});
     }
@@ -1192,7 +1208,7 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     p_request_id: requestId,
   });
   if (started?.status !== 'started') {
-    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId, 'start_failed');
     return reply({ status: 503, body: { code: 'access_unavailable', message: 'Die Analyse ist gerade nicht erreichbar.' } });
   }
 
@@ -1202,9 +1218,9 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
       ? await analyzePhoto(payload, context.supabaseAdmin, claimAnalysisUsda, candidate, request.signal)
       : await analyzeDescription(payload, context.supabaseAdmin, claimAnalysisUsda, candidate, request.signal);
   } catch (error) {
-    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
     if(error instanceof Error && ['mass_required','amount_ambiguous','amount_out_of_range'].includes(error.message)) error=new ModelError(error.message,422);
     if(error instanceof Error && /^(AbortError|TimeoutError)$/.test(error.name)) error=new ModelError('provider_timeout',504);
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId, error instanceof ProviderQuotaError ? 'provider_quota' : error instanceof ModelError ? error.code : 'provider_error');
     const failed: Result = error instanceof ProviderQuotaError ? error.result : {status:error instanceof ModelError?error.status:502,body:{code:error instanceof ModelError?error.code:'provider_error'},headers:error instanceof ModelError && error.retryAfter?{'Retry-After':String(error.retryAfter)}:undefined};
     await rememberCapture(failed);
     return reply(failed);
@@ -1213,7 +1229,7 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
   // A failed lookup still refunds the user's allowance. The new app can repair
   // its draft for free; provider rate limits still account for the real calls.
   if (result.status !== 200 || result.body.correctionRequired === true) {
-    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId);
+    await refundAnalysis(context.supabaseAdmin, data.user.id, requestId, result.status === 200 ? 'correction_required' : String(result.body.code ?? 'http_' + result.status));
     return reply(result);
   }
 
