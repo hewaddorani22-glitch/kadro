@@ -9,7 +9,7 @@ import { AppIntroduction } from '@/components/AppIntroduction';
 import { KandroMark } from '@/components/KandroMark';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
 import { useLanguage } from '@/i18n/LanguageProvider';
-import { shadows } from '@/constants/theme';
+import { scanShadow } from '@/constants/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -19,7 +19,7 @@ function TabIcon({ focused, active, inactive }: { focused: boolean; active: Icon
 }
 
 export default function TabLayout() {
-  const { colors } = useTheme();
+  const { colors, mode } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const pathname = usePathname();
   const router = useRouter();
@@ -76,7 +76,7 @@ export default function TabLayout() {
                     accessibilityRole="button"
                     accessibilityState={accessibilityState}
                     onPress={onPress}
-                    style={({ pressed }) => [styles.scanButton, pressed && styles.scanPressed]}
+                    style={({ pressed }) => [styles.scanButton, scanShadow(mode), pressed && styles.scanPressed]}
                   >
                     <KandroMark dotColor={colors.onAccent} strokeColor={colors.onAccent} size={38} />
                   </Pressable>
@@ -139,7 +139,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: -27,
-    ...shadows.scan,
   },
   scanPressed: {
     transform: [{ scale: 0.94 }],

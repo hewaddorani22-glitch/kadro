@@ -742,7 +742,8 @@ export const de = {
     appTour: 'App-Einführung ansehen',
 
     appearance: 'Darstellung',
-    appearanceDetail: 'Wähle, wie Kandro aussieht. Hell ist der Standard.',
+    appearanceDetail: 'Wähle, wie Kandro aussieht. Standard ist wie dein iPhone.',
+    system: 'System',
     light: 'Hell',
     dark: 'Dunkel',
     changePlan: 'Ziel und Angaben ändern',

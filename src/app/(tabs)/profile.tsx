@@ -43,7 +43,7 @@ const LANGUAGE_OPTIONS: { value: Language; label: string }[] = [
 ];
 
 export default function ProfileScreen() {
-  const { colors, mode: themeMode, setMode: setThemeMode } = useTheme();
+  const { colors, preference: themePreference, setPreference: setThemePreference } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
   const { hydrationReady, mealHistory, profile, setUnitSystem, targets, userName } = useApp();
@@ -261,8 +261,8 @@ export default function ProfileScreen() {
         <Card>
           <Text style={[styles.rowDetail, { padding: 16 }]}>{t.profile.appearanceDetail}</Text>
           <View style={styles.languageChoice}>
-            {(['light', 'dark'] as const).map((mode) => <Pressable key={mode} aria-checked={themeMode === mode} accessibilityRole="radio" accessibilityState={{ checked: themeMode === mode }} onPress={() => setThemeMode(mode)} style={[styles.languageOption, themeMode === mode && styles.languageOptionActive]}>
-              <Text style={[styles.languageLabel, themeMode === mode && styles.languageLabelActive]}>{t.profile[mode]}</Text>
+            {(['system', 'light', 'dark'] as const).map((choice) => <Pressable key={choice} aria-checked={themePreference === choice} accessibilityLabel={t.profile[choice]} accessibilityRole="radio" accessibilityState={{ checked: themePreference === choice }} onPress={() => setThemePreference(choice)} style={[styles.languageOption, themePreference === choice && styles.languageOptionActive]}>
+              <Text numberOfLines={1} style={[styles.languageLabel, themePreference === choice && styles.languageLabelActive]}>{t.profile[choice]}</Text>
             </Pressable>)}
           </View>
         </Card>

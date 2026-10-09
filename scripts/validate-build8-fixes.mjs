@@ -53,14 +53,24 @@ const luminance = (hex) => {
   return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
 };
 for (const palette of [lightColors, darkColors]) {
-  for (const [fg, bg] of [['text', 'surface'], ['muted', 'surface'], ['onAccent', 'accent'], ['surface', 'text'], ['onDeep', 'accentDeep']]) {
+  for (const [fg, bg] of [['text', 'surface'], ['muted', 'surface'], ['muted', 'background'], ['onAccent', 'accent'], ['surface', 'text'], ['onDeep', 'accentDeep'], ['attentionText', 'surface'], ['attentionText', 'background'], ['attentionText', 'attentionSoft']]) {
     const a = luminance(palette[fg]), b = luminance(palette[bg]);
     assert.ok((Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05) >= 4.5, `${fg}/${bg}: insufficient text contrast`);
   }
 }
 const theme = read('src/context/ThemeContext.tsx');
-assert.match(theme, /useState<ThemeMode>\('light'\)/);
-assert.doesNotMatch(theme, /getColorScheme\(/, 'device dark mode must not override the first-launch default');
+// First launch follows the system; a stored Hell/Dunkel choice from an older build is kept.
+assert.match(theme, /useState<ThemePreference>\('system'\)/);
+assert.match(theme, /useColorScheme\(\)/);
+const { readThemePreference } = await load(theme.slice(theme.indexOf('export function readThemePreference'), theme.indexOf('const ThemeContext')));
+assert.equal(readThemePreference(null), 'system');
+assert.equal(readThemePreference('light'), 'light');
+assert.equal(readThemePreference('dark'), 'dark');
+assert.equal(readThemePreference('system'), 'system');
+assert.equal(readThemePreference('sepia'), 'system');
+const themeTokens = read('src/constants/theme.ts');
+assert.doesNotMatch(themeTokens, /isDarkMode/, 'the Scan shadow must follow the active theme, not a constant');
+assert.match(read('src/app/(tabs)/_layout.tsx'), /scanShadow\(mode\)/);
 const sheet = read('src/components/PortionSheet.tsx');
 assert.doesNotMatch(sheet, /\bautoFocus\b/);
 assert.match(sheet, /keyboardShouldPersistTaps="handled"/);

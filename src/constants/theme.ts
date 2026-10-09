@@ -1,5 +1,3 @@
-export const isDarkMode = false;
-
 export const lightColors = {
   background: '#F5F3EE',
   surface: '#FFFFFF',
@@ -13,7 +11,10 @@ export const lightColors = {
   neutralSoft: '#F0EFE9',
   success: '#3F5233',
   successSoft: '#F0F1EC',
+  /** Fills, bars and borders only: 2.5:1 on white is too faint for text. */
   attention: '#C89B4B',
+  /** Amber for text and meaningful icons: 5.4:1 or better on surface, canvas and attentionSoft. */
+  attentionText: '#7F5A1E',
   attentionSoft: '#F6EFE1',
   error: '#8A5D28',
   camera: '#14150F',
@@ -21,6 +22,8 @@ export const lightColors = {
   white: '#FFFFFF',
   onAccent: '#14150F',
   onDeep: '#FFFFFF',
+  // Macro colours are for bars and dots. Their labels stay ink or muted:
+  // carbs amber is 2.3:1 on white and would fail as text.
   macroProtein: '#5E8C3A',
   macroCarbs: '#D9A441',
   macroFat: '#C9775A',
@@ -41,6 +44,7 @@ export const darkColors: ThemeColors = {
   success: '#BBDC8E',
   successSoft: '#1C281B',
   attention: '#D7AA56',
+  attentionText: '#D7AA56',
   attentionSoft: '#302719',
   error: '#E2A16C',
   camera: '#0C0E0B',
@@ -54,8 +58,8 @@ export const darkColors: ThemeColors = {
 };
 
 /**
- * Light is the first-launch default. Screens subscribe to ThemeProvider;
- * this fallback is only for the outer error boundary and pure defaults.
+ * The first launch follows the system appearance. Screens subscribe to
+ * ThemeProvider; this fallback is only for the outer error boundary and pure defaults.
  */
 export const colors = lightColors;
 
@@ -77,15 +81,17 @@ export const spacing = {
   xxl: 32,
 } as const;
 
-export const shadows = {
-  scan: {
-    shadowColor: isDarkMode ? '#000000' : '#14150F',
-    shadowOpacity: isDarkMode ? 0.28 : 0.08,
+/** The only shadow in the app: the central Scan button. It follows the active theme. */
+export function scanShadow(mode: 'light' | 'dark') {
+  const dark = mode === 'dark';
+  return {
+    shadowColor: dark ? '#000000' : '#14150F',
+    shadowOpacity: dark ? 0.28 : 0.08,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
-  },
-} as const;
+  } as const;
+}
 
 export const typeScale = {
   display: 56,
@@ -94,5 +100,6 @@ export const typeScale = {
   body: 17,
   compact: 15,
   caption: 13,
-  micro: 11,
+  /** The floor: no rendered text goes below 12 pt. */
+  micro: 12,
 } as const;

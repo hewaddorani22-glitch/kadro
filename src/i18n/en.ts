@@ -741,7 +741,8 @@ export const en: typeof de = {
     appTour: 'Show app introduction',
 
     appearance: 'Appearance',
-    appearanceDetail: 'Choose how Kandro looks. Light is the default.',
+    appearanceDetail: 'Choose how Kandro looks. By default it matches your iPhone.',
+    system: 'System',
     light: 'Light',
     dark: 'Dark',
     changePlan: 'Change goal and details',
