@@ -11,12 +11,15 @@ import { PrimaryButton } from '@/components/ui';
 import { useAccess } from '@/context/AccessContext';
 import { rememberAccessDestination, routeRequiresAccess } from '@/services/accessPolicy';
 import { useReminderOnboarding } from '@/hooks/useReminderOnboarding';
+import { useFirstRun } from '@/hooks/useFirstRun';
+import { firstRunRedirect } from '@/services/firstRun';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { requiresMealDraftRedirect } from '@/utils/mealDraftGuard';
 import { canSaveMealDraft } from '@/utils/ingredientCorrection';
 
 const publicBeforeConsent = new Set(['index', 'account-help', 'saved-meals', 'onboarding', 'data-consent', 'privacy', 'terms', 'sources', 'account-deletion']);
+// Every other root segment needs a completed profile: 'first-scan' included.
 
 export function AppRouteGuard({ children }: PropsWithChildren) {
   const { colors } = useTheme();
@@ -26,7 +29,8 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
   const path = usePathname();
   const access = useAccess();
   const reminderPending = useReminderOnboarding();
-  const { appleReauthenticationRequired, analysisStatus, detectedItems, hydrationReady, localStorageError, profile, retryAccountRecovery, syncMode, wellnessConsentGranted } = useApp();
+  const firstRunStage = useFirstRun();
+  const { appleReauthenticationRequired, analysisStatus, detectedItems, hydrationReady, localStorageError, mealHistory, profile, retryAccountRecovery, syncMode, wellnessConsentGranted } = useApp();
   const missingMealDraft = requiresMealDraftRedirect(segments[0] ?? 'index', analysisStatus);
   const incompleteResult = segments[0] === 'result' && analysisStatus === 'ready' && !canSaveMealDraft(detectedItems);
   const { t } = useLanguage();
@@ -56,15 +60,28 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
   };
 
   const accessApplies = !appleReauthenticationRequired && hydrationReady && wellnessConsentGranted && !!profile.completedAt && routeRequiresAccess(path);
-  const accessRedirect = accessApplies && reminderPending === false && access.ready
-    ? access.enrollmentPending ? '/access-setup' : (!access.canUse || access.entryPaywall) ? '/paywall' : null : null;
-  const accessWaiting = accessApplies && (!access.ready || reminderPending === null);
+  // The entry offer waits for the first saved meal (or "Später"): the first
+  // run shows it itself, after value, never in front of the first scan.
+  const entryPaywall = access.entryPaywall && firstRunStage === null;
+  const accessRedirect = accessApplies && reminderPending === false && access.ready && firstRunStage !== undefined
+    ? access.enrollmentPending ? '/access-setup' : (!access.canUse || entryPaywall) ? '/paywall' : null : null;
+  const accessWaiting = accessApplies && (!access.ready || reminderPending === null || firstRunStage === undefined);
+  const firstRunApplies = !appleReauthenticationRequired && hydrationReady && wellnessConsentGranted && !!profile.completedAt;
+  const firstRunTarget = firstRunApplies && !accessRedirect && !accessWaiting
+    ? firstRunRedirect(firstRunStage, path, mealHistory.length > 0) : null;
   useEffect(() => {
     if (accessRedirect) {
       rememberAccessDestination(path);
       router.replace(accessRedirect as never);
-    } else if (accessApplies && reminderPending) router.replace('/reminder-setup');
-  }, [accessRedirect, accessApplies, reminderPending, path, router]);
+    } else if (firstRunTarget) {
+      // A tab chosen on the result (Plan or Today) is where the run ends.
+      rememberAccessDestination(path);
+      router.replace(firstRunTarget as never);
+    } else if (accessApplies && reminderPending) {
+      rememberAccessDestination(path);
+      router.replace('/reminder-setup');
+    }
+  }, [accessRedirect, accessApplies, firstRunTarget, reminderPending, path, router]);
 
   useEffect(() => {
     if (appleReauthenticationRequired || !hydrationReady || accessRedirect || accessWaiting) return;
@@ -112,7 +129,7 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
 
   // Block the result's save-on-arrival effect before it can mount. Redirecting
   // only in an effect would be too late: child effects may already have run.
-  if (accessRedirect || accessWaiting || (accessApplies && reminderPending)) return <BrandGate />;
+  if (accessRedirect || accessWaiting || firstRunTarget || (accessApplies && reminderPending)) return <BrandGate />;
   if (missingMealDraft || incompleteResult) return <BrandGate />;
   return children;
 }

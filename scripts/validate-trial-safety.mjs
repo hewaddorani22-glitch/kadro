@@ -120,32 +120,77 @@ function hooks() {
   return { react, render(Screen) { cursor = 0; const tree = Screen(); const queue = effects; effects = []; queue.forEach(fn => fn()); return tree; } };
 }
 const nodes = node => !node || typeof node !== 'object' ? [] : [node, ...(Array.isArray(node.props?.children) ? node.props.children : [node.props?.children]).flatMap(child => Array.isArray(child) ? child.flatMap(nodes) : nodes(child))];
-function paywallFixture({ days = 7, eligible = true, mode = 'native-store', hard = true } = {}) {
-  const h = hooks(); let purchaseOutcome = 'cancelled';
-  const state = { status: 'ready', busy: false, error: null, snapshot: { configured: true, mode, plans: { yearly: { ...mapper('yearly', packageFor({ periodNumberOfUnits: days }), eligible) }, monthly: { ...mapper('monthly', packageFor(), eligible) } } }, async purchase() { return purchaseOutcome; }, async refresh() {}, async restore() { return 'none'; }, async syncTrialReminder() { return true; } };
+function paywallFixture({ days = 7, eligible = true, mode = 'native-store', hard = true, permission = 'authorized', yearlyAvailable = true, canUse = false } = {}) {
+  const h = hooks(); let purchaseOutcome = 'cancelled'; const permissionRequests = [];
+  const state = { status: 'ready', busy: false, error: null, snapshot: { configured: true, mode, plans: { yearly: yearlyAvailable ? { ...mapper('yearly', packageFor({ periodNumberOfUnits: days }), eligible) } : null, monthly: { ...mapper('monthly', packageFor(), eligible) } } }, async purchase() { return purchaseOutcome; }, async refresh() {}, async restore() { return 'none'; }, async syncTrialReminder() { return true; } };
   const jsx = (type, props) => ({ type, props });
   const screen = compile('src/app/paywall.tsx', {
     react: h.react, 'react/jsx-runtime': { jsx, jsxs: jsx },
-    'react-native': { ActivityIndicator: 'Spinner', Alert: { alert() {} }, BackHandler: { addEventListener: () => ({ remove() {} }) }, Pressable: 'Pressable', ScrollView: 'ScrollView', StyleSheet: { create: x => x }, Text: 'Text', View: 'View', useWindowDimensions: () => ({ fontScale: 1 }) },
-    'expo-router': { Stack: { Screen: 'Stack' }, useFocusEffect() {}, useLocalSearchParams: () => ({}), useRouter: () => ({ replace() {}, push() {} }) },
+    'react-native': { ActivityIndicator: 'Spinner', Alert: { alert() {} }, Animated: { Value: class { constructor(v) { this.v = v; } }, View: 'AnimatedView', timing: () => ({ start() {} }) }, BackHandler: { addEventListener: () => ({ remove() {} }) }, Linking: { openSettings: async () => {} }, Pressable: 'Pressable', ScrollView: 'ScrollView', StyleSheet: { create: x => x }, Text: 'Text', View: 'View', useWindowDimensions: () => ({ fontScale: 1 }) },
+    // Focus effects run like mount effects in this fixture.
+    'expo-router': { Stack: { Screen: 'Stack' }, useFocusEffect(fn) { h.react.useEffect(fn, [fn]); }, useLocalSearchParams: () => ({}), useRouter: () => ({ replace() {}, push() {} }) },
     'react-native-safe-area-context': { SafeAreaView: 'Safe', useSafeAreaInsets: () => ({ bottom: 0 }) },
     '@expo/vector-icons/Ionicons': 'Icon', '@/components/PersonalGoalSummary': { PersonalGoalSummary: 'PersonalGoalSummary' }, '@/components/ui': { PrimaryButton: 'Primary' }, '@/components/KandroMark': { KandroMark: 'Mark' }, '@/components/RevenueCatExperimentPreferences': { RevenueCatExperimentPreferences: 'MeasurementPreferences' }, '@/constants/theme': { radii: {} }, '@/constants/product': { FREE_SCAN_ALLOWANCE: 3 },
     '@/services/presentation': { usePresentationBlock() {} }, '@/context/ThemeContext': { useTheme: () => ({ colors: {} }), useThemedStyles: () => ({}) },
-    '@/context/AccessContext': { useAccess: () => ({ record: { hard, variant: hard ? 'B' : 'A', source: 'qa' }, refresh: async () => {}, markSeen() {}, ready: true, state: 'allowed' }) },
+    '@/context/AccessContext': { useAccess: () => ({ record: { hard, variant: hard ? 'B' : 'A', source: 'qa' }, refresh: async () => {}, markSeen() {}, ready: true, state: 'allowed', canUse }) },
     '@/context/AppContext': { useApp: () => ({ freeScansLeft: 3, profile: null, targets: { calories: 0 } }) }, '@/services/accessPolicy': { takeAccessDestination: () => '/' }, '@/context/SubscriptionContext': { useSubscription: () => state },
-    '@/i18n/LanguageProvider': { useLanguage: () => ({ t: dict, locale: 'en-GB' }) }, '@/services/haptics': { successHaptic() {} }, '@/services/reminders': { TRIAL_REMINDER_LEAD_DAYS: 2 }, '@/utils/format': { formatNumber: n => String(n) }, '@/utils/units': { formatWeight: kg => kg + ' kg' }, '@/services/telemetry': { toBillingMode: x => x, trackEvent() {} }, '@/services/paywallExposure': { markPaywallShown() {} },
+    '@/hooks/useFirstRun': { useFirstRun: () => null }, '@/services/firstRun': { finishFirstRunOffer: async () => {} },
+    '@/i18n/LanguageProvider': { useLanguage: () => ({ t: dict, locale: 'en-GB' }) }, '@/services/haptics': { successHaptic() {} },
+    '@/services/reminders': { TRIAL_REMINDER_LEAD_DAYS: 2, getReminderPermission: async () => permission, requestReminderPermission: async () => { permissionRequests.push(permission); return 'authorized'; } },
+    '@/utils/format': { formatNumber: n => String(n) }, '@/utils/units': { formatWeight: kg => kg + ' kg' },
+    '@/services/telemetry': { toBillingMode: x => x, trackEvent() {} }, '@/services/paywallExposure': { markPaywallShown() {} },
   }).default;
   const render = () => h.render(screen);
   const cards = tree => nodes(tree).filter(n => n.type?.name === 'PlanCard');
   const choose = (tree, label) => cards(tree).find(n => n.props.label === label).props.onPress();
   const selected = tree => cards(tree).find(n => n.props.selected)?.props.label;
-  return { state, render, selected, choose, setOutcome(v) { purchaseOutcome = v; } };
+  return { state, render, selected, choose, cards, permissionRequests, setOutcome(v) { purchaseOutcome = v; } };
 }
-await test('Annual defaults only for an eligible real seven-day offer and never overwrites manual monthly choice', () => {
+const settle = async () => { for (let i = 0; i < 4; i++) await Promise.resolve(); };
+await test('Annual is preselected whenever offered and never overwrites a manual monthly choice', () => {
   const f = paywallFixture(); f.render(); assert.equal(f.selected(f.render()), dict.paywall.yearly);
   f.choose(f.render(), dict.paywall.monthly); f.state.snapshot = { ...f.state.snapshot, plans: { ...f.state.snapshot.plans } };
   assert.equal(f.selected(f.render()), dict.paywall.monthly); assert.equal(f.selected(f.render()), dict.paywall.monthly);
-  for (const options of [{ eligible: false }, { days: 14 }, { mode: 'test-store' }]) { const other = paywallFixture(options); other.render(); assert.equal(other.selected(other.render()), dict.paywall.monthly); }
+  for (const options of [{ eligible: false }, { days: 14 }, { mode: 'test-store' }]) { const other = paywallFixture(options); other.render(); assert.equal(other.selected(other.render()), dict.paywall.yearly); }
+  const noYearly = paywallFixture({ yearlyAvailable: false }); noYearly.render(); assert.equal(noYearly.selected(noYearly.render()), dict.paywall.monthly);
+});
+await test('Annual card states the real monthly equivalent and the trial; badge is legible', async () => {
+  const f = paywallFixture();
+  f.state.snapshot.plans.yearly.package = { product: { ...f.state.snapshot.plans.yearly.package.product, pricePerMonthString: '4,17 €' } };
+  f.render(); const card = f.cards(f.render()).find(n => n.props.label === dict.paywall.yearly);
+  assert.equal(card.props.detail, `${dict.paywall.perMonthShort('4,17 €')} · ${dict.paywall.trialFree(f.state.snapshot.plans.yearly.trialLabel)}`);
+  // Without a store string, the equivalent is computed from the real yearly price.
+  const g = paywallFixture(); g.state.snapshot.plans.yearly.package = { product: { ...g.state.snapshot.plans.yearly.package.product, currencyCode: 'GBP' } };
+  g.render(); assert.match(g.cards(g.render()).find(n => n.props.label === dict.paywall.yearly).props.detail, /£4\.92/);
+  const source = fs.readFileSync(new URL('src/app/paywall.tsx', root), 'utf8');
+  assert.ok(Number(source.match(/badgeText: \{[^}]*fontSize: (\d+)/)?.[1]) >= 12, 'the saving badge is at least 12 pt');
+  assert.doesNotMatch(source, /goalHeadline|targetWeightKg|PersonalGoalSummary/, 'no weight promise or per-user headline override');
+  for (const key of ['headline', 'subtitle', 'benefitMeals', 'benefitAnalyze', 'benefitReview']) assert.doesNotMatch(dict.paywall[key], /60/, `${key}: the fair-use cap is fine print, not a benefit`);
+});
+const timeline = tree => nodes(tree).filter(n => n.type?.name === 'TimelineStep').map(n => n.props);
+await test('"We remind you" only with notification permission; otherwise an honest tip and an allow button', async () => {
+  const granted = paywallFixture(); granted.render(); await settle();
+  assert.ok(timeline(granted.render()).some(step => step.detail === dict.paywall.timelineReminderDetail && step.title === dict.paywall.timelineDay(5)));
+  for (const permission of ['notDetermined', 'denied', 'error']) {
+    const f = paywallFixture({ permission }); f.render(); await settle(); const steps = timeline(f.render());
+    assert.ok(!steps.some(step => step.detail === dict.paywall.timelineReminderDetail), `${permission}: no reminder promise`);
+    const tip = steps.find(step => step.detail === dict.paywall.timelineCancelTip);
+    assert.ok(tip && tip.title === dict.paywall.timelineDay(5), `${permission}: day-5 cancellation tip instead`);
+    assert.equal(tip.action?.label, permission === 'error' ? undefined : dict.paywall.allowReminder, `${permission}: allow button only when it can work`);
+  }
+  const f = paywallFixture({ permission: 'notDetermined' }); f.render(); await settle();
+  timeline(f.render()).find(step => step.action).action.onPress();
+  await settle(); assert.deepEqual(f.permissionRequests, ['notDetermined']);
+  assert.ok(timeline(f.render()).some(step => step.detail === dict.paywall.timelineReminderDetail), 'after allowing, the reminder step appears');
+});
+await test('Soft paywall: the close button exists for every non-locked visitor and fades in after a short delay', async () => {
+  const soft = paywallFixture({ hard: false }); const tree = soft.render();
+  const close = nodes(tree).find(n => n.type === 'Pressable' && n.props.accessibilityLabel === dict.paywall.close);
+  assert.ok(close, 'close button rendered'); assert.equal(close.props.disabled, true, 'not tappable before it is visible');
+  await new Promise(r => setTimeout(r, 2600));
+  assert.equal(nodes(soft.render()).find(n => n.type === 'Pressable' && n.props.accessibilityLabel === dict.paywall.close).props.disabled, false);
+  const usable = paywallFixture({ hard: true, canUse: true }); assert.ok(nodes(usable.render()).some(n => n.props?.accessibilityLabel === dict.paywall.close), 'B with access is closable too');
+  const locked = paywallFixture({ hard: true, canUse: false }); assert.ok(!nodes(locked.render()).some(n => n.props?.accessibilityLabel === dict.paywall.close), 'server-locked access keeps no dead close');
 });
 await test('Explicit store cancellation leaves hard paywall with honest guidance and no automatic retry', async () => {
   assert.equal(typeof dict.paywall.purchaseCancelledTitle, 'string');

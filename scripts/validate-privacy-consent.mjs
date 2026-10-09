@@ -69,20 +69,28 @@ assert.match(analysis, /MAX_IMAGE_BASE64/, 'the client must enforce the gateway 
 assert.match(analysis, /'invalid-input'/, 'oversized photos need a non-retry error');
 assert.ok(!analyzing.includes('const destination = needsReview'), 'every estimate must pass through confirmation');
 assert.ok(analyzing.includes("router.replace('/confirm')"), 'analysis must always lead to confirmation');
-assert.match(onboarding, /min=\{14\}/, 'onboarding must allow the promised minimum age of 14');
-assert.match(onboarding, /max=\{100\}[\s\S]*min=\{14\}/,
-  'the app age picker must match the database age range of 14 through 100');
-assert.match(onboarding, /const \[ageConfirmed, setAgeConfirmed\] = useState\(\(\) => editing\)/,
-  'the convenient age picker position is still treated as a declared age');
-assert.match(onboarding, /onChange=\{\(nextAge\) => \{[\s\S]*setAge\(nextAge\);[\s\S]*setAgeConfirmed\(true\)/,
-  'interacting with the age picker does not explicitly declare the selected age');
-assert.match(onboarding, /if \(step !== 'goal' && !ageConfirmed\) return;/,
+// Kandro is 16+ (owner decision 10/2026). The age is a deliberately chosen
+// birth year (nothing preselected), under 16 is a friendly block, and the
+// client no longer reaches the guardian-consent flow; the server boundary for
+// earlier 14–15 profiles below stays untouched.
+const personalGoalSource = await read('src/services/personalGoal.ts');
+assert.match(personalGoalSource, /export const MINIMUM_AGE = 16;/, 'the client minimum age is 16');
+assert.match(onboarding, /const \[birthYear, setBirthYear\] = useState<number \| null>\(null\)/,
+  'no birth year may be preselected');
+assert.match(onboarding, /const ageKnown = editing \|\| \(birthYear !== null/,
+  'a picker position is still treated as a declared age');
+assert.match(onboarding, /if \(step !== 'goal' && !ageKnown\) return;/,
   'a non-UI caller can advance past an undeclared age');
-assert.ok(onboarding.includes("disabled={(step === 'about' && !ageConfirmed)"),
-  'the combined about step allows the default age through');
+assert.ok(onboarding.includes("disabled={(step === 'about' && !ageKnown)"),
+  'the combined about step allows an undeclared age through');
+assert.match(onboarding, /if \(step === 'about' && !editing && age < MINIMUM_AGE\) \{ setUnderage\(true\); return; \}/,
+  'under-16 must stop at the friendly block before any consent or data processing');
+assert.doesNotMatch(onboarding, /from '@\/services\/guardianConsent'|requestGuardianConsent\(|getGuardianConsentStatus\(|confirmAge/,
+  'the client onboarding must not reach the guardian flow or the old age checkbox');
 assert.ok(onboarding.includes("step === 'about' && !editing"),
   'recorded age must not be editable in the plan editor');
-assert.match(ageMigration, /between 14 and 100/, 'database age policy must match 14+ onboarding');
+// The database keeps 14–100 so profiles created before the 16+ change stay valid.
+assert.match(ageMigration, /between 14 and 100/, 'database age policy must keep earlier 14+ profiles valid');
 assert.match(ageMigration, /age >= 16[\s\S]*guardian_consent_at is not null[\s\S]*guardian_consent_version/, 'under-16 consent must depend on server-recorded guardian approval');
 assert.match(ageMigration, /alter table public\.guardian_consent_requests enable row level security/, 'guardian requests need RLS');
 assert.match(ageMigration, /revoke all on table public\.guardian_consent_requests from anon, authenticated/, 'guardian emails must be unreachable to clients');
@@ -324,6 +332,6 @@ for (const key of ['NSPhotoLibraryUsageDescription', 'NSMicrophoneUsageDescripti
   }
 }
 
-console.log('Validated explicit AI consent, withdrawal, 14+ guardian enforcement and minimal native permissions.');
+console.log('Validated explicit AI consent, withdrawal, 16+ onboarding, server-side guardian enforcement for earlier 14–15 profiles and minimal native permissions.');
 
 await assert.rejects(requestStructured({apiKey:'synthetic',content:[],model:GEMINI_MODEL,fetchImpl:()=>{throw new Error('must not call');}}),/ai_route_not_approved/);

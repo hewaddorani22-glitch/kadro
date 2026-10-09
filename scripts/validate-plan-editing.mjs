@@ -24,13 +24,16 @@ const prefilled = [
   ['displayName', 'profile.displayName'],
   ['sex', 'profile.sex'],
   ['unitSystem', 'profile.unitSystem'],
-  ['age', 'profile.age'],
   ['height', 'profile.heightCm'],
   ['weight', 'profile.weightKg'],
   ['activity', 'profile.activityLevel'],
   ['weeklyRate', 'profile.weeklyRateKg'],
   ['preferences', 'profile.preferences'],
 ];
+// The age is derived, not a state: the recorded one when editing.
+if (!/const age = editing \? profile\.age :/.test(onboarding)) {
+  problems.push('onboarding: age is not prefilled from profile.age when editing');
+}
 for (const [state, source] of prefilled) {
   const pattern = new RegExp(`useState[^\\n]*editing \\? ${source.replace('.', '\\.')} :`);
   if (!pattern.test(onboarding)) {
@@ -44,17 +47,24 @@ if (!/completedAt: editing \? profile\.completedAt : null/.test(onboarding)) {
 if (!onboarding.includes("step === 'about' && !editing")) {
   problems.push('onboarding: recorded age is editable');
 }
-// Adult editing must not re-open consent. Moving a profile below 16 is the
-// exception: server-approved guardian permission has to exist before saving.
+// Editing never re-opens consent. The recorded age cannot be edited, and
+// earlier 14–15 profiles are protected server-side (guardian approval), so
+// the client no longer runs a guardian flow when saving.
 const saveBlock = onboarding.slice(onboarding.indexOf('const saveEdits'), onboarding.indexOf('const showFooterButton'));
 if (!saveBlock.includes('completeOnboarding(draftProfile)')) {
   problems.push('onboarding: saving edits does not go through completeOnboarding');
 }
-if (!/draftProfile\.age < 16 && !await getGuardianConsentStatus/.test(saveBlock)) {
-  problems.push('onboarding: editing an age to 14–15 bypasses guardian approval');
+if (!/if \(editing\) \{\s*await saveEdits\(\);\s*return;/.test(saveBlock)) {
+  problems.push('onboarding: an edit no longer saves directly');
 }
-if (!/else \{\s*await saveEdits\(\);/.test(saveBlock)) {
-  problems.push('onboarding: an adult edit no longer saves directly');
+// The wish (target weight, pace) and food preferences left first-run
+// onboarding; plan editing is where they live now.
+const goals = read('src/services/personalGoal.ts');
+if (!/if \(!editing\) return FIRST_RUN_STEPS;/.test(goals) || !/FIRST_RUN_STEPS = \['goal', 'about', 'body', 'activity', 'plan'\]/.test(goals)) {
+  problems.push('personalGoal: first run must skip target and preferences');
+}
+if (!/ONBOARDING_STEPS = \['goal', 'about', 'body', 'activity', 'target', 'preferences', 'plan'\]/.test(goals) || !onboarding.includes('onboardingSteps(age, planGoal, editing)')) {
+  problems.push('onboarding: plan editing no longer reaches the target and preference steps');
 }
 
 if (!profile.includes("router.push('/onboarding?edit=1' as never)")) {
@@ -74,4 +84,4 @@ if (problems.length) {
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
-console.log('Plan editing reuses onboarding, stays prefilled, and only re-checks guardian approval for ages 14–15.');
+console.log('Plan editing reuses onboarding, stays prefilled, saves without re-asking consent, and is where target, pace and preferences are edited.');

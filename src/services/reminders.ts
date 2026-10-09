@@ -118,6 +118,15 @@ export async function getReminderPermission(): Promise<ReminderPermission> {
   try { return permissionState(await Notifications.getPermissionsAsync()); }
   catch { return 'error'; }
 }
+/** Only from an explicit tap (paywall "allow reminders"); never re-prompts a denial. */
+export async function requestReminderPermission(): Promise<ReminderPermission> {
+  if (!remindersSupported) return 'unavailable';
+  const current = await getReminderPermission();
+  if (current !== 'notDetermined') return current;
+  configureNotifications();
+  try { return permissionState(await Notifications.requestPermissionsAsync({ ios: { allowAlert: true, allowSound: false, allowBadge: false } })); }
+  catch { return 'error'; }
+}
 export function validReminderTime(hour: number, minute: number) {
   return Number.isInteger(hour) && hour >= 0 && hour <= 23 && Number.isInteger(minute) && minute >= 0 && minute <= 59;
 }

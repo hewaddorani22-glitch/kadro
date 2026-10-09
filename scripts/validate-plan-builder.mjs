@@ -82,7 +82,7 @@ assert.match(onboarding, /step === 'plan' && building \? <View style=\{styles\.b
 assert.match(onboarding, /step === 'plan' && !building \?/);
 assert.doesNotMatch(onboarding, /setTimeout\(goNext/);
 assert.doesNotMatch(read('src/app/access-setup.tsx'), /PlanBuilder/);
-assert.match(onboarding, /onboardingSteps\(age, goal\)/);
+assert.match(onboarding, /onboardingSteps\(age, planGoal, editing\)/);
 assert.ok(BUILDING_MS > 0, 'retained animation helper stays valid');
 
 // --- Feedback where a finger expects it ------------------------------------

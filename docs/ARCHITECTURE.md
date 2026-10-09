@@ -237,12 +237,11 @@ adapters live outside this repository and must never enter a production bundle.
 ## Product loop
 
 ```text
-Versioned explicit AI/wellness consent
-   ↳ age 14–15: emailed guardian confirmation first
+Onboarding (goal, about incl. birth year, body, activity, plan reveal; 16+)
    ↓
-Onboarding
+Versioned explicit AI/wellness consent (+ optional adult analytics opt-in)
    ↓
-Today dashboard
+First scan prompt (photo / speak / type, or "Später")
    ↓
 Camera / description / barcode / demo capture
    ↓
@@ -424,6 +423,13 @@ the label shrink alongside its icon. No billing or entitlement logic changed.
 - `WeightEntry` replaces the hidden modal/0.1-unit picker for onboarding weight with a visible decimal input and ±1 kg/lb shortcuts. It accepts a comma or point and one decimal place, keeps the existing 40–200 kg bounds, and disables Continue for invalid drafts. Kilograms remain the internal representation; unit changes remount the input to prevent stale drafts. The Done control keeps its layout space on blur, preventing the first shortcut tap from being lost through layout movement.
 - Successful first-run consent/setup now routes to `today?tour=1`, not directly to the camera. `AppIntroduction` points to the five existing tabs. It can be closed at any step, started again from Profile, or finished by opening Scan. The route parameter is cleared on dismissal, so it does not gate subsequent navigation. No persistent tutorial flag, schema change, permission prompt or analytics event was added. Profile editing still saves through its existing path.
 - The introduction distinguishes free meal suggestions/search/barcodes from the lifetime allowance of three photo/text AI analyses (value read from `FREE_SCAN_ALLOWANCE`). No recommendation paywall or change to entitlements was introduced.
+
+### First run: value before the offer (2026-10-09)
+
+- Order: goal → about (year of birth, no preselection) → body → activity → plan reveal → consent sheet → `/first-scan` → normal scan/confirm/result → soft paywall (once) → optional reminder question → the tab chosen on the result (Today or Plan). Target weight/pace and food preferences left first run (defaults: calm 0.25 kg/week, no target, "Proteinreich") and are edited under Du → "Ziel und Angaben ändern" (`onboarding?edit=1`, all steps).
+- `services/firstRun.ts` stores the stage (`scan` | `paywall`) in AsyncStorage; `AppRouteGuard` sends primary tabs to `/first-scan` until a meal exists, then to `/paywall`, and suppresses the A/B entry paywall during the run. Viewing the paywall prepares the existing reminder-onboarding flag and clears the stage. Installs from before this flow have no stage and are unaffected. The Today tour is no longer opened automatically (still available from Du).
+- Kandro is 16+: under 16 sees a block screen; the guardian flow is no longer reachable from the client (server function and DB boundary unchanged for earlier 14–15 profiles). 16–17 keep the adolescent formula and see "Gesünder essen". BMI < 18.5 never gets a deficit (`effectiveGoal` in `personalization.ts`), and a target weight may not fall below BMI 18.5.
+- Onboarding answers are kept in `@kandro/onboarding-draft:v1` until completion so an app kill resumes on the same step.
 - Local and hosted search handlers return at most 60 existing reference results. Scan initially renders 15 and reveals additional batches locally. Every new query resets that count; debounce/stale-response guards remain. Common bare queries for bread, milk and yogurt receive targeted bilingual aliases and ordering from existing BLS rows. Explicit requests for chocolate, breadcrumbs, gluten-free bread and yogurt dip retain their identities. Nutrition values and the 7,140-row source snapshot are unchanged.
 - Full configured verification and DE/EN web interactions passed. Native simulator launch hung, including after a device restart; no native or physical-device pass is claimed. The simulator's prior AsyncStorage files were backed up and restored byte-for-byte. No new iOS build, TestFlight upload or gateway deployment was performed. Release still requires native checks and a paired deployment/build; save/sync and canonical meal-save analytics fixes remain outstanding.
 

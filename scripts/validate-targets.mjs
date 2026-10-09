@@ -49,7 +49,9 @@ for (let weightKg = 45; weightKg <= 160; weightKg += 5) {
     // Independent oracle for every input combination, not just a broad range.
     const sexOffset = { female: -161, male: 5, unspecified: -78 }[sex];
     const expectedMaintenance = (10 * weightKg + 6.25 * heightCm - 5 * age + sexOffset) * ACTIVITY[activityLevel];
-    const expectedOffset = goal === 'maintain' ? 0 : (goal === 'lose' ? -1 : 1) * weeklyRateKg * 1100;
+    // Below BMI 18.5 "lose" is planned as maintenance: never a deficit.
+    const planGoal = goal === 'lose' && bmi < 18.5 ? 'maintain' : goal;
+    const expectedOffset = planGoal === 'maintain' ? 0 : (planGoal === 'lose' ? -1 : 1) * weeklyRateKg * 1100;
     const expectedCalories = Math.min(4000, Math.max(1300, expectedMaintenance * 0.7, Math.round((expectedMaintenance + expectedOffset) / 10) * 10));
     assert.equal(t.calories, expectedCalories, 'profile inputs must reach the goal calculation unchanged');
 
@@ -86,7 +88,7 @@ for (let weightKg = 45; weightKg <= 160; weightKg += 5) {
     // --- The estimate must track the person ---------------------------------
     const resting = 10 * weightKg + 6.25 * heightCm - 5 * age - 78;
     const maintenance = resting * ACTIVITY[activityLevel];
-    if (goal === 'maintain') {
+    if (planGoal === 'maintain') {
       assert.ok(
         Math.abs(t.calories - maintenance) < Math.max(60, maintenance * 0.31),
         `maintaining should sit near maintenance, got ${t.calories} against ${Math.round(maintenance)}`,
@@ -101,6 +103,17 @@ assert.ok(
   `${mismatched} of ${checked} profiles have macros that do not add up to their calorie target`
   + (worst ? `; worst: ${JSON.stringify(worst)}` : ''),
 );
+
+// --- Underweight: no deficit, whatever was chosen ---------------------------
+{
+  const thin = { displayName: '', preferences: [], completedAt: null, unitSystem: 'metric', sex: 'female', age: 25, heightCm: 170, weightKg: 52, activityLevel: 'light', weeklyRateKg: 0.5 };
+  assert.ok(personalization.isUnderweight(thin), '52 kg at 170 cm is BMI 18.0');
+  assert.equal(personalization.effectiveGoal({ ...thin, goal: 'lose' }), 'maintain');
+  assert.deepEqual(calculateDailyTargets({ ...thin, goal: 'lose' }), calculateDailyTargets({ ...thin, goal: 'maintain' }), 'BMI < 18.5 must never get a deficit');
+  assert.ok(!explainTargets({ ...thin, goal: 'lose' }).some(step => step.id === 'goal'), 'the plan builder shows no deficit step either');
+  assert.equal(personalization.effectiveGoal({ ...thin, weightKg: 54, goal: 'lose' }), 'lose', 'BMI 18.7 may still choose to lose');
+  assert.equal(personalization.lowestHealthyWeightKg(170), 53.5);
+}
 
 // --- Two people who differ only in one input must differ in the same direction
 const base = { displayName: '', preferences: [], completedAt: null, unitSystem: 'metric', goal: 'lose', weeklyRateKg: 0.5, activityLevel: 'light' };

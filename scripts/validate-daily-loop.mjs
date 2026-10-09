@@ -178,15 +178,20 @@ if (analyzing.includes('needsReview')) {
   failures.push('model confidence must not bypass the user confirmation step');
 }
 
-// 11. The updated product contract moves the optional offer into first setup.
+// 11. The optional reminder question is the last step of the first run: after
+// the first meal (or "Später") and the soft offer, never before the first scan.
 // Actual permission/scheduling/race behavior is exercised by validate:companions.
 const onboarding = await read('src/app/onboarding.tsx');
 const reminderSetup = await read('src/app/reminder-setup.tsx');
+const firstRun = await read('src/services/firstRun.ts');
 if (result.includes('hasSeenReminderOffer') || result.includes('showReminderOffer')) {
   failures.push('saving a meal must not trigger the retired reminder offer');
 }
-if (!onboarding.includes('prepareReminderOnboarding') || !reminderSetup.includes('ReminderPreferences')) {
-  failures.push('first setup must wire the explicit optional reminder choice');
+if (onboarding.includes('prepareReminderOnboarding') || !onboarding.includes("setFirstRunStage('scan')")) {
+  failures.push('onboarding must lead to the first scan, not straight to the reminder question');
+}
+if (!/finishFirstRunOffer[\s\S]*prepareReminderOnboarding/.test(firstRun) || !reminderSetup.includes('ReminderPreferences')) {
+  failures.push('first setup must wire the explicit optional reminder choice after the offer');
 }
 if (!reminders.includes('kandro-morning-plan') || !reminders.includes("settings.mode === 'legacy'")) {
   failures.push('existing two-reminder preferences must survive migration');

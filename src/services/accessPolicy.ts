@@ -31,7 +31,8 @@ export function resolveAccess(record: AccessRecord, paymentPending = false, now 
   return 'verification' as const;
 }
 
-const availableWithoutNewUse = new Set(['/paywall', '/account-help', '/saved-meals', '/privacy', '/terms', '/sources', '/account-deletion', '/data-consent', '/onboarding', '/reminder-setup', '/access-setup']);
+// '/first-scan' only offers choices; the scan it leads to is checked as usual.
+const availableWithoutNewUse = new Set(['/paywall', '/account-help', '/saved-meals', '/privacy', '/terms', '/sources', '/account-deletion', '/data-consent', '/onboarding', '/reminder-setup', '/access-setup', '/first-scan']);
 export function routeRequiresAccess(path: string) { return !availableWithoutNewUse.has(path); }
 
 // Return intent is a navigation allowlist, never a URL or an automatic mutation.
