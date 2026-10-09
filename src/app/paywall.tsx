@@ -22,6 +22,7 @@ import { TRIAL_REMINDER_LEAD_DAYS } from '@/services/reminders';
 import { formatNumber } from '@/utils/format';
 import { formatWeight } from '@/utils/units';
 import { toBillingMode, trackEvent } from '@/services/telemetry';
+import { markPaywallShown } from '@/services/paywallExposure';
 
 type Plan = 'yearly' | 'monthly';
 
@@ -57,6 +58,7 @@ export default function PaywallScreen() {
   useFocusEffect(useCallback(() => {
     if (status !== 'loading' && access.ready && !paywallViewed.current) {
       paywallViewed.current = true;
+      markPaywallShown(blocked ? 'blocked' : hard ? 'hard' : access.entryPaywall ? 'entry' : 'manual');
       void access.markSeen();
       trackEvent('paywall viewed', { billing_mode: billingMode });
       if (access.record.source !== 'qa' && ['A', 'B'].includes(access.record.variant)) {
