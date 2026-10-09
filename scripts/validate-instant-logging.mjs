@@ -9,7 +9,7 @@ const references = await import(new URL('../supabase/functions/_shared/bls-refer
 const catalogue = await import(new URL('../supabase/functions/_shared/bls-search.mjs', import.meta.url));
 const labels = { portionPiece: '1 Stück', portionSlice: '1 Scheibe', portionGlass: '1 Glas', portionCup: '1 Tasse', portionPot: '1 Becher', portionCan: '1 Dose', portionBottle: '1 Flasche', portionTbsp: '1 EL', portionTsp: '1 TL', portionServing: '1 Portion', portionFillet: '1 Filet', portionBall: '1 Kugel', portionEgg: '1 Ei', portionHalf: '½ Stück' };
 let language = 'de';
-const active = { getDictionary: () => ({ scan: labels, errors: { warnAmountEstimated: 'estimated', warnGenericReference: 'generic' } }), getLanguage: () => language };
+const active = { getDictionary: () => ({ scan: labels, errors: { warnAmountEstimated: 'estimated', warnGenericReference: 'generic', warnUnmatched: 'unmatched', sourceUnmatched: 'no reference' } }), getLanguage: () => language };
 function load(path, deps) {
   const module = { exports: {} };
   const code = ts.transpileModule(fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
@@ -18,7 +18,7 @@ function load(path, deps) {
 }
 const suggest = load('src/services/foodSuggest.ts', { '@/i18n/active': active });
 const mealFromSearch = (result, grams) => ({ items: [{ id: `search-${result.id}`, name: result.name, amountG: grams, calories: Math.round(result.per100g.calories * grams / 100), source: result.source }] });
-const local = load('src/services/localDescription.ts', { '@/i18n/active': active, '@/services/foodSuggest': suggest, '@/services/mealAnalysis': { mealFromSearch } });
+const local = load('src/services/localDescription.ts', { '@/i18n/active': active, '@/services/foodSuggest': suggest, '@/services/mealAnalysis': { mealFromSearch }, '@/utils/ingredientCorrection': load('src/utils/ingredientCorrection.ts', {}) });
 let passed = 0;
 const test = async (name, fn) => { await fn(); passed++; console.log('PASS', name); };
 const top = (query, usage) => suggest.suggestFoods(query, usage)[0]?.source.referenceId;
@@ -127,9 +127,37 @@ await test('own foods and direct logging are wired end to end', () => {
   const form = fs.readFileSync(new URL('../src/components/ManualFoodForm.tsx', import.meta.url), 'utf8');
   assert.ok(form.includes("provider: 'manual', referenceId: id"));
   const scan = fs.readFileSync(new URL('../src/app/(tabs)/scan.tsx', import.meta.url), 'utf8');
-  assert.ok(scan.includes('await logFoodDirect(food, grams)') && scan.includes('suggestFoods(term, usage)') && scan.includes('parseLocalDescription(value, usage)'));
+  // Everything picked in one open search sheet is saved together as ONE meal.
+  assert.ok(scan.includes('await logFoodsDirect(added.map(entry => ({ result: entry.food, grams: entry.grams })))') && scan.includes('suggestFoods(term, usage)') && scan.includes('parseLocalDescription(value, usage)'));
+  assert.ok(scan.includes('t.scan.saveAs(mealTypeLabel(saveSlot, t.common))'), 'the save button names the slot');
   const context = fs.readFileSync(new URL('../src/context/AppContext.tsx', import.meta.url), 'utf8');
   assert.ok(/&& !localDescription\s*&& result\.correctionRequired/.test(context), 'local descriptions never spend a free analysis');
+});
+
+await test('amount unclear is never a dead end: recognised foods come back at a typical portion', () => {
+  const estimate = local.estimateDescriptionPortions('200 ml Reis mit Hähnchenbrust');
+  assert.ok(estimate, 'recognised foods must produce a draft');
+  assert.equal(estimate.estimatedPortion, true);
+  assert.equal(estimate.correctionRequired, true, 'stays in the free (refunded) bucket');
+  assert.equal(estimate.items.length, 2);
+  assert.ok(estimate.items.every(item => item.amountG >= 1 && item.amountG <= 5000 && item.confidence === 'medium'));
+  assert.deepEqual(estimate.warnings, ['estimated']);
+  const partial = local.estimateDescriptionPortions('Reis und Zauberbrei vom Mond');
+  assert.equal(partial.items.length, 2);
+  assert.equal(partial.items[1].source.code, 'unmatched', 'an unknown food is left for the user to pick, never dropped');
+  assert.deepEqual(partial.warnings, ['estimated', 'unmatched']);
+  assert.equal(local.estimateDescriptionPortions('Zauberbrei vom Mond'), null, 'nothing recognisable keeps the error');
+});
+
+await test('an unpriced ingredient is matched on the device at its detected amount and flagged', () => {
+  const unmatched = (id, name, amountG) => ({ id, name, amountG, baseAmountG: amountG, portionFactor: 1, calories: 0, protein: 0, carbs: 0, fat: 0, included: true, confidence: 'medium', source: { code: 'unmatched', provider: 'kandro-catalog', label: 'x' } });
+  const priced = { ...unmatched('rice', 'Reis', 150), calories: 195, source: { provider: 'bls', label: 'BLS' } };
+  const { items, matchedIds } = local.resolveUnmatchedItems([priced, unmatched('banana', 'Banane', 118), unmatched('moon', 'Zauberbrei vom Mond', 80)]);
+  assert.deepEqual(matchedIds, ['banana']);
+  assert.equal(items[0], priced, 'resolved rows are untouched');
+  assert.equal(items[1].id, 'banana'); assert.equal(items[1].amountG, 118); assert.equal(items[1].source.referenceId, 'F503100');
+  assert.equal(items[1].confidence, 'medium');
+  assert.equal(items[2].source.code, 'unmatched', 'no guess for an unknown food');
 });
 
 console.log(JSON.stringify({ passed, scope: 'instant suggestions, recents, local descriptions, own foods; real BLS snapshot; zero external HTTP' }));

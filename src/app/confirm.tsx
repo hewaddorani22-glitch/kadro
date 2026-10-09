@@ -20,12 +20,14 @@ import { canSaveMealDraft, needsIngredientCorrection } from '@/utils/ingredientC
 import { FoodSearchResult, searchIngredientReplacement } from '@/services/mealAnalysis';
 import { milkCorrectionQuery } from '@/utils/foodCorrectionQuery';
 import { MealItem } from '@/types/nutrition';
+import { LogTargetRow } from '@/components/LogTargetPicker';
+import { draftConfidence } from '@/utils/confidence';
 
 export default function ConfirmScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { analysisMessage, detectedItems, mealPortion, photoUri, removeDetectedItem, replaceDetectedItem, scanMode, scannedMeal, setItemAmount, setMealPortion } = useApp();
+  const { analysisMessage, autoMatchedItemIds, detectedItems, mealPortion, photoUri, portionEstimated, removeDetectedItem, replaceDetectedItem, scanMode, scannedMeal, scanTarget, setItemAmount, setMealPortion, setPlannedMealDate, setPlannedMealType } = useApp();
   const [amountFor, setAmountFor] = useState<string | null>(null);
   const [preferGrams, setPreferGrams] = useState(false);
   const [removeFor, setRemoveFor] = useState<string | null>(null);
@@ -35,9 +37,24 @@ export default function ConfirmScreen() {
   const hasIncludedFood = detectedItems.some((item) => item.included);
   const correctionRequired = detectedItems.some(needsIngredientCorrection);
   const canConfirm = canSaveMealDraft(detectedItems);
-  const { t: dict } = useLanguage();
-  const actionableHint = analysisMessage?.split('\n\n').find(line => line === dict.errors.warnUnmatched || line === dict.errors.warnHiddenCalories) ?? null;
   const { locale, t } = useLanguage();
+  // Estimates are normal and need no disclaimer wall. Only hints the person
+  // can act on are shown, each as one short line. The amount hint is folded
+  // into the "Portion geschätzt" banner when that is showing.
+  const warningLines = analysisMessage?.split('\n\n') ?? [];
+  const actionableHints = [
+    t.errors.warnUnmatched, t.errors.warnHiddenCalories, t.errors.warnWidePortion,
+    t.errors.warnMilkVolume, t.errors.warnDrinkVolume,
+    ...(portionEstimated ? [] : [t.errors.warnAmountEstimated]),
+  // "Values missing" only while a row is still unresolved, not after Kandro matched it.
+  ].filter(line => warningLines.includes(line) && !(line === t.errors.warnUnmatched && !correctionRequired));
+  const confidence = draftConfidence(detectedItems, {
+    autoMatchedIds: autoMatchedItemIds,
+    portionEstimated,
+    uncertainHint: warningLines.includes(t.errors.warnWidePortion) || warningLines.includes(t.errors.warnAmountEstimated),
+  });
+  // The banner opens the amount of the single food, or the first estimated one.
+  const firstAdjustable = singleItem ?? detectedItems.find(item => item.included && !needsIngredientCorrection(item)) ?? null;
   const replaceFood = (id: string) => router.push({ pathname: '/correct-food', params: { itemId: id } } as never);
 
   const changeInput = () => {
@@ -79,17 +96,41 @@ export default function ConfirmScreen() {
       <View style={styles.heading}>
         <View style={styles.headingRow}>
           <Text style={styles.title}>{t.confirm.heading}</Text>
-          {hasIncludedFood && !correctionRequired ? <ConfidenceBadge /> : null}
+          {hasIncludedFood ? <ConfidenceBadge level={confidence} /> : null}
         </View>
         <Text style={styles.subtitle}>{singleItem ? t.confirm.subtitleSingle : t.confirm.subtitle}</Text>
       </View>
 
-      {/* Estimates are normal and need no disclaimer wall. Only something the
-          person can act on is shown, as one calm line. */}
-      {actionableHint ? (
+      {scanMode !== 'demo' ? (
+        <LogTargetRow
+          date={scanTarget.date}
+          onChange={(type, date) => { setPlannedMealType(type); setPlannedMealDate(date); }}
+          type={scanTarget.type}
+        />
+      ) : null}
+
+      {/* "Amount unclear" is not an error: the typical portion is prefilled
+          and one tap opens it. */}
+      {portionEstimated && firstAdjustable ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setAmountFor(firstAdjustable.id)}
+          style={({ pressed }) => [styles.estimateBanner, pressed && { opacity: 0.7 }]}
+        >
+          <Ionicons color={colors.text} name="contrast" size={18} />
+          <Text style={styles.estimateBannerText}>{t.confirm.portionEstimated}</Text>
+          <Ionicons color={colors.text} name="create-outline" size={18} />
+        </Pressable>
+      ) : null}
+
+      {actionableHints.length ? (
         <View style={styles.analysisWarning}>
-          <Ionicons color={colors.accentText} name="information-circle-outline" size={18} />
-          <Text style={styles.analysisWarningText}>{actionableHint}</Text>
+          {actionableHints.map(line => (
+            <View key={line} style={styles.analysisWarningRow}>
+              <Ionicons color={colors.accentText} name="information-circle-outline" size={16} />
+              <Text style={styles.analysisWarningText}>{line}</Text>
+            </View>
+          ))}
         </View>
       ) : null}
 
@@ -183,6 +224,12 @@ export default function ConfirmScreen() {
               </Pressable>
             </View>
             {!unresolved && !item.included ? <Text style={styles.subtitle}>{t.confirm.excluded}</Text> : null}
+            {!unresolved && autoMatchedItemIds.includes(item.id) ? (
+              <View style={styles.autoMatchedRow}>
+                <Ionicons color={colors.attention} name="alert-circle" size={15} />
+                <Text style={styles.autoMatchedText}>{t.confirm.autoMatched}</Text>
+              </View>
+            ) : null}
             {unresolved ? <UnresolvedSuggestion item={item} duplicateOf={possibleDuplicate(item, detectedItems)} onRemove={() => removeDetectedItem(item.id)} onUse={(result) => replaceDetectedItem(item.id, result, item.amountG)} /> : null}
             {removeFor === item.id ? <View style={styles.removeRow}>
               <PrimaryButton icon="trash-outline" label={t.confirm.removeFood} onPress={() => { removeDetectedItem(item.id); setRemoveFor(null); }} variant="secondary" />
@@ -324,8 +371,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   ingredientMeta: { color: colors.muted, fontSize: 14, fontVariant: ['tabular-nums'] },
   iconAction: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   removeRow: { marginTop: 4 },
-  analysisWarning: { borderRadius: 15, backgroundColor: colors.neutralSoft, paddingHorizontal: 13, paddingVertical: 11, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  analysisWarning: { borderRadius: 15, backgroundColor: colors.neutralSoft, paddingHorizontal: 13, paddingVertical: 10, gap: 6 },
+  analysisWarningRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   analysisWarningText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 18 },
+  estimateBanner: { minHeight: 48, borderRadius: 15, backgroundColor: colors.attentionSoft, borderWidth: 1, borderColor: colors.attention, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 9 },
+  estimateBannerText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
+  autoMatchedRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  autoMatchedText: { flex: 1, color: colors.text, fontSize: 13, fontWeight: '600' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   detectedChip: { minHeight: 44, borderRadius: radii.pill, backgroundColor: colors.successSoft, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 6 },
   detectedChipQuestion: { backgroundColor: colors.attentionSoft },

@@ -254,7 +254,8 @@ function scanScreenHarness() {
     '@/context/SubscriptionContext': { useSubscription: () => ({ status: 'active' }) },
     '@/i18n/LanguageProvider': { useLanguage: () => ({ locale: 'en-GB', t: { scan: copy, common: copy, errors: copy } }) },
     '@/services/haptics': { primaryHaptic() {}, successHaptic() {} },
-    '@/utils/format': { formatNumber: String }, '@/hooks/useReducedMotion': { useReducedMotion: () => true },
+    '@/utils/format': { formatNumber: String, formatDayLabel: String, mealTypeLabel: String }, '@/hooks/useReducedMotion': { useReducedMotion: () => true },
+    '@/utils/mealDay': { mealTypeForTime: () => 'Lunch' }, '@/utils/date': { localDateKey: () => '2026-10-09' },
   }, process.env.SCAN_SCREEN_SOURCE ? fs.readFileSync(process.env.SCAN_SCREEN_SOURCE, 'utf8') : null).default;
   function render() {
     dirty = true;

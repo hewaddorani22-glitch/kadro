@@ -242,6 +242,7 @@ function evaluate(source, env) {
 }
 const portions = load('src/utils/portions.ts', {});
 const correction = load('src/utils/ingredientCorrection.ts', {});
+const mealDay = load('src/utils/mealDay.ts', { '@/utils/date': load('src/utils/date.ts', {}) });
 const scaleItem = evaluate(declaration('scaleItem') + '\nreturn scaleItem;', { ...portions, ...correction });
 const countScans = evaluate(declaration('countScans') + '\nreturn countScans;', {});
 const callback = (name, env) => evaluate(`return (${declaration(name)});`, { useCallback: x => x, ...env });
@@ -256,7 +257,8 @@ function mealCallbacks() {
   const env = {
     mealHistory: meals, meals, scaleItem, getLocalDataGeneration: () => generation,
     repeatInFlightRef: { current: new Map() },
-    consumePlannedMealType: () => null, formatClockTime: () => '12:00', localDateKey: () => '2026-09-26',
+    consumePlannedMealType: () => null, consumePlannedMealDate: () => null, formatClockTime: () => '12:00', localDateKey: () => '2026-09-26',
+    mealTypeForTime: mealDay.mealTypeForTime, mealMoment: mealDay.mealMoment,
     saveSyncedMeal: async m => { persisted.push(m); },
     nutritionFromItems: items => Object.fromEntries(['calories','protein','carbs','fat','fiber'].map(k => [k,items.filter(x => x.included).reduce((sum,x) => sum+(x[k]??0),0)])),
     setMeals: fn => { meals = fn(meals); }, setMealHistory: () => {},
@@ -265,7 +267,7 @@ function mealCallbacks() {
 }
 await test('Same draft portion preserves 3 g and 100.5 g ingredients', () => {
   let items = [item(3), item(100.5)];
-  const set = callback('setMealPortion', { scaleItem, setMealPortionState() {}, setDetectedItems: fn => { items = fn(items); } });
+  const set = callback('setMealPortion', { scaleItem, setMealPortionState() {}, setPortionEstimated() {}, setDetectedItems: fn => { items = fn(items); } });
   const original = structuredClone(items); set(1); assert.deepEqual(items, original);
 });
 await test('Logged portion round-trip preserves decimal base and nutrition reference', async () => {

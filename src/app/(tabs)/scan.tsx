@@ -26,7 +26,9 @@ import { parseLocalDescription } from '@/services/localDescription';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { primaryHaptic, successHaptic } from '@/services/haptics';
-import { formatNumber } from '@/utils/format';
+import { formatDayLabel, formatNumber, mealTypeLabel } from '@/utils/format';
+import { mealTypeForTime } from '@/utils/mealDay';
+import { localDateKey } from '@/utils/date';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useKeyboardInset } from '@/hooks/useKeyboardInset';
 import { subscribePrivateDataInvalidation } from '@/services/localRepository';
@@ -43,7 +45,7 @@ export default function ScanScreen() {
     const subscription = AppState.addEventListener('change', (state) => setForeground(state === 'active'));
     return () => subscription.remove();
   }, []);
-  const { applySearchResult, logFoodDirect, setPlannedMealType, descriptionInput, freeScansLeft, hasEverLoggedScan, isCurrentScanLogged, mealHistory, resetScan, scannedMeal, scanMode, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan } = useApp();
+  const { applySearchResult, logFoodsDirect, plannedMealDate, plannedMealType, setPlannedMealDate, setPlannedMealType, descriptionInput, freeScansLeft, hasEverLoggedScan, isCurrentScanLogged, mealHistory, resetScan, scannedMeal, scanMode, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan } = useApp();
   const { status: subscriptionStatus } = useSubscription();
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraReady, setCameraReady] = useState(false);
@@ -68,8 +70,10 @@ export default function ScanScreen() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [pendingFood, setPendingFood] = useState<FoodSearchResult | null>(restoredInput?.pendingFood ?? null);
   const [manualFor, setManualFor] = useState<string | null>(null);
-  // Foods logged in this search session, newest last; shown as a receipt.
-  const [added, setAdded] = useState<{ id: string; name: string; grams: number; kcal: number }[]>([]);
+  // Foods picked in this search session, newest last. They are saved together
+  // as one meal ("Als Frühstück speichern"), not as one entry per food.
+  const [added, setAdded] = useState<{ id: string; food: FoodSearchResult; name: string; grams: number; kcal: number }[]>([]);
+  const pickSerial = useRef(0);
   const [addError, setAddError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [portionDraft, setPortionDraft] = useState(restoredInput?.portion ?? null);
@@ -238,6 +242,7 @@ export default function ScanScreen() {
     if (searchTimer.current) clearTimeout(searchTimer.current);
     setScannerClosed(true);
     setDescription(''); setSearchQuery(''); setBarcodeEntry(''); setPendingFood(null); setPortionDraft(null); setScanInputDraft(null);
+    setAdded([]); setAddError(null);
     resetScan();
     setTorchOn(false);
     Keyboard.dismiss();
@@ -446,24 +451,41 @@ export default function ScanScreen() {
     setPendingFood(result);
   };
   const cancelPortion = () => { setPendingFood(null); setPortionDraft(null); if (searchQuery.trim().length >= 2) runSearch(searchQuery); };
-  const cancelSearch = () => { if (added.length) { doneAdding(); return; } setManualFor(null); setPendingFood(null); setPortionDraft(null); setSearchQuery(''); setSearchResults([]); setShowSearch(false); setMode('photo'); };
+  const cancelSearch = () => {
+    if (added.length) {
+      // Picks are not saved yet, so leaving must not silently drop or save them.
+      Alert.alert(t.scan.discardTitle, t.scan.discardBody, [
+        { text: t.scan.keepPicking, style: 'cancel' },
+        { text: t.scan.discardConfirm, style: 'destructive', onPress: doneAdding },
+      ]);
+      return;
+    }
+    setManualFor(null); setPendingFood(null); setPortionDraft(null); setSearchQuery(''); setSearchResults([]); setShowSearch(false); setMode('photo'); };
 
   const confirmPortion = (grams: number) => {
     if (!pendingFood) return;
     finishFood(pendingFood, grams);
   };
-  const finishFood = async (food: FoodSearchResult, grams: number) => {
+  const finishFood = (food: FoodSearchResult, grams: number) => {
     if (adding) return;
+    setAddError(null);
+    void successHaptic();
+    const kcal = Math.round(food.per100g.calories * grams / 100);
+    setAdded(list => [...list, { id: `pick-${++pickSerial.current}`, food, name: food.name, grams, kcal }]);
+    setPendingFood(null); setPortionDraft(null); setManualFor(null);
+    setSearchQuery(''); setSearchResults([]); setScanInputDraft(null);
+    setSearchError(null); setSearchNotice(null); setCompletedEmptySearch(false); setSearching(false);
+    searchGeneration.current += 1;
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  };
+  const removePicked = (id: string) => setAdded(list => list.filter(entry => entry.id !== id));
+  const savePicked = async () => {
+    if (adding || !added.length) return;
     setAdding(true); setAddError(null);
     try {
-      const meal = await logFoodDirect(food, grams);
+      await logFoodsDirect(added.map(entry => ({ result: entry.food, grams: entry.grams })));
       void successHaptic();
-      setAdded(list => [...list, { id: meal.id, name: food.name, grams, kcal: meal.calories }]);
-      setPendingFood(null); setPortionDraft(null); setManualFor(null);
-      setSearchQuery(''); setSearchResults([]); setScanInputDraft(null);
-      setSearchError(null); setSearchNotice(null); setCompletedEmptySearch(false); setSearching(false);
-      searchGeneration.current += 1;
-      if (searchTimer.current) clearTimeout(searchTimer.current);
+      doneAdding();
     } catch (error) {
       setAddError(error instanceof Error && error.message ? error.message : t.result.saveFailed);
     } finally {
@@ -471,12 +493,18 @@ export default function ScanScreen() {
     }
   };
   const doneAdding = () => {
-    setAdded([]); setAddError(null); setPlannedMealType(null);
+    setAdded([]); setAddError(null); setPlannedMealType(null); setPlannedMealDate(null);
     setPendingFood(null); setPortionDraft(null); setManualFor(null);
     setSearchQuery(''); setSearchResults([]); setShowSearch(false); setMode('photo');
     Keyboard.dismiss();
     router.replace('/(tabs)/today');
   };
+  // The slot the picks are saved under: the one chosen on Today, else the clock.
+  const saveSlot = plannedMealType ?? mealTypeForTime();
+  const pastDay = plannedMealDate && plannedMealDate !== localDateKey() ? plannedMealDate : null;
+  const targetLabel = plannedMealType || pastDay
+    ? [pastDay ? formatDayLabel(pastDay, localDateKey(), t.today, locale) : null, plannedMealType ? mealTypeLabel(plannedMealType, t.common) : null].filter(Boolean).join(' · ')
+    : null;
 
   const submitDescription = () => {
     const value = description.trim();
@@ -555,7 +583,7 @@ export default function ScanScreen() {
           </Pressable>
           <View style={styles.titlePill}>
             <Ionicons color={colors.accent} name="sparkles" size={15} />
-            <Text style={styles.screenTitle}>{t.scan.title}</Text>
+            <Text numberOfLines={1} style={styles.screenTitle}>{targetLabel ? `${t.scan.title} · ${targetLabel}` : t.scan.title}</Text>
           </View>
           {(mode === 'barcode' || mode === 'photo') && cameraActive ? (
             <Pressable
@@ -713,13 +741,16 @@ export default function ScanScreen() {
             </View>
             <Text style={styles.describeText}>{t.scan.searchHint}</Text>
             {added.length ? <View accessibilityLiveRegion="polite" style={styles.addedBox}>
-              {added.slice(-3).map(entry => (
+              {added.map(entry => (
                 <View key={entry.id} style={styles.addedRow}>
                   <Ionicons color={colors.success} name="checkmark-circle" size={18} />
                   <Text numberOfLines={1} style={styles.addedText}>{entry.name} · {formatNumber(entry.grams, locale)} g · {formatNumber(entry.kcal, locale)} kcal</Text>
+                  <Pressable accessibilityLabel={t.scan.removePicked(entry.name)} accessibilityRole="button" hitSlop={10} onPress={() => removePicked(entry.id)} style={styles.addedRemove}>
+                    <Ionicons color={colors.muted} name="close" size={18} />
+                  </Pressable>
                 </View>
               ))}
-              <Text style={styles.addedHint}>{t.scan.addedHint(added.length, formatNumber(added.reduce((sum, entry) => sum + entry.kcal, 0), locale))}</Text>
+              <Text style={styles.addedHint}>{t.scan.pickedHint(added.length, formatNumber(added.reduce((sum, entry) => sum + entry.kcal, 0), locale))}</Text>
             </View> : null}
             {addError ? <Text accessibilityRole="alert" style={styles.searchError}>{addError}</Text> : null}
             <TextInput
@@ -784,7 +815,12 @@ export default function ScanScreen() {
             </View>
             </>}
             </ScrollView>
-            {manualFor !== null ? null : added.length ? <PrimaryButton icon="checkmark" label={t.scan.addedDone} onPress={doneAdding} /> : (
+            {manualFor !== null ? null : added.length ? <>
+              <PrimaryButton disabled={adding} icon="checkmark" label={t.scan.saveAs(mealTypeLabel(saveSlot, t.common))} onPress={() => void savePicked()} />
+              <Pressable accessibilityRole="button" onPress={cancelSearch} style={styles.describeCancel}>
+                <Text style={styles.describeCancelText}>{t.common.cancel}</Text>
+              </Pressable>
+            </> : (
             <Pressable accessibilityRole="button" onPress={cancelSearch} style={styles.describeCancel}>
               <Text style={styles.describeCancelText}>{t.common.cancel}</Text>
             </Pressable>)}
@@ -901,6 +937,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   addedBox: { gap: 6, padding: 12, borderRadius: 14, backgroundColor: colors.successSoft },
   addedRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   addedText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
+  addedRemove: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   addedHint: { color: colors.muted, fontSize: 13 },
   searchSection: { color: colors.muted, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 8, marginBottom: 4 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.border },

@@ -11,6 +11,8 @@ export type MealAnalysisInput = {
 export type MealAnalysisResult = {
   /** Opt-in protocol: editable draft, not a complete nutrition result. */
   correctionRequired?: boolean;
+  /** The amounts are a typical portion because the input's amount was unclear. */
+  estimatedPortion?: boolean;
   title: string;
   confidence: 'high' | 'medium';
   items: MealItem[];

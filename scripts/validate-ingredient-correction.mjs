@@ -236,3 +236,55 @@ console.log('PASS: correction protocol, legacy rejection, replacement isolation,
   assert.equal((client.match(/captureProtocol: 2, estimates: 1/g) ?? []).length, 2, 'photo and description announce the estimate protocol');
   console.log('PASS: estimate protocol is negotiated; legacy clients keep correction drafts, new clients accept estimates.');
 }
+
+// "Amount unclear" is no longer a dead end (owner goal: AI success > 85 %).
+// The gateway answers amount ambiguity with the recognised foods at typical
+// grams, flagged estimatedPortion and still refunded; the app lands on Confirm
+// with "Portion geschätzt" and a three-state confidence badge.
+{
+  const { analysisResultBody } = await import('../server/core.mjs');
+  const detection = { title: 'Reis mit Hähnchen', confidence: 'high', amountFallback: true, items: [] };
+  const body = analysisResultBody(detection, [known], ['amount_estimated'], 1);
+  assert.equal(body.estimatedPortion, true);
+  assert.equal(body.correctionRequired, true, 'correction-capable clients keep the refunded (free) bucket');
+  assert.equal(body.confidence, 'medium');
+  assert.equal(analysisResultBody(detection, [known], [], undefined).correctionRequired, undefined, 'legacy clients never receive a correction flag');
+  assert.equal(analysisResultBody({ ...detection, amountFallback: false }, [known], [], 1).estimatedPortion, undefined, 'a bound amount is not an estimate');
+  const edge = read('supabase/functions/nutrition/index.ts');
+  assert.match(edge, /body: analysisResultBody\(detection, items, warnings, correctionProtocol\)/, 'the edge function uses the shared shaping');
+  assert.match(read('server/index.mjs'), /body: analysisResultBody\(detection, items, warnings, correctionProtocol\)/, 'the local gateway uses the shared shaping');
+
+  const context = read('src/context/AppContext.tsx');
+  assert.match(context, /AMOUNT_ERROR_CODES = new Set\(\['mass_required', 'amount_ambiguous', 'amount_out_of_range'\]\)/);
+  assert.match(context, /activeScanMode === 'description' && AMOUNT_ERROR_CODES\.has\(failure\.code \?\? ''\)\s*\? estimateDescriptionPortions\(descriptionInput/, 'an older gateway 422 still lands on Confirm');
+  assert.match(context, /resolveUnmatchedItems\(result\.items, foodUsage\(mealHistory\)\)/, 'unpriced rows are matched on the device');
+  assert.match(context, /setPortionEstimated\(result\.estimatedPortion === true/);
+
+  const { draftConfidence } = compile(read('src/utils/ingredientCorrection.ts').replace(/^import[^;]+;$/gm, '') + read('src/utils/confidence.ts').replace(/^import[^;]+;$/gm, ''));
+  const sure = { ...known, confidence: 'high', included: true };
+  assert.equal(draftConfidence([sure]), 'sure');
+  assert.equal(draftConfidence([sure], { portionEstimated: true }), 'estimated');
+  assert.equal(draftConfidence([{ ...sure, confidence: 'medium' }]), 'estimated');
+  assert.equal(draftConfidence([sure], { uncertainHint: true }), 'estimated', 'a wide portion range is an estimate');
+  assert.equal(draftConfidence([sure, unknown]), 'check');
+  assert.equal(draftConfidence([sure], { autoMatchedIds: [sure.id] }), 'check', 'a row Kandro matched itself asks for a glance');
+  assert.equal(draftConfidence([{ ...unknown, included: false }, sure]), 'check', 'an excluded unresolved row still blocks saving');
+  assert.equal(draftConfidence([{ ...sure, id: 'off', confidence: 'medium', included: false }, sure]), 'sure', 'an excluded estimate does not count');
+
+  const confirm = read('src/app/confirm.tsx');
+  assert.match(confirm, /t\.confirm\.portionEstimated/);
+  for (const hint of ['warnWidePortion', 'warnAmountEstimated', 'warnMilkVolume', 'warnDrinkVolume']) {
+    assert.ok(confirm.includes(`t.errors.${hint}`), `confirm shows ${hint}`);
+  }
+  for (const [file, dictionary] of [['de', /confidenceSure: 'Sicher'[\s\S]*confidenceEstimated: 'Geschätzt'[\s\S]*confidenceCheck: 'Bitte prüfen'[\s\S]*portionEstimated: 'Portion geschätzt – tippe zum Anpassen'/], ['en', /confidenceSure: 'Confident'[\s\S]*portionEstimated: 'Portion estimated – tap to adjust'/]]) {
+    assert.match(read(`src/i18n/${file}.ts`), dictionary);
+  }
+
+  const analyzing = read('src/app/analyzing.tsx');
+  assert.doesNotMatch(analyzing, /stage1|setVisible/, 'no fake step progress');
+  assert.match(analyzing, /const SLOW_AFTER_MS = 15_000;/);
+  assert.match(analyzing, /t\.analyzing\.cancelDescribe/);
+  assert.match(analyzing, /analysisError === 'unclear-image' && scanMode !== 'description'[\s\S]{0,400}t\.analyzing\.retakePhoto[\s\S]{0,300}t\.analyzing\.describeInstead/, 'an unclear photo offers retake and describe');
+  assert.match(read('src/services/mealAnalysis.ts'), /}, 90_000\);/, 'the 90 s request deadline is unchanged');
+  console.log('PASS: amount ambiguity returns estimated portions; three-state confidence; honest analysis progress.');
+}

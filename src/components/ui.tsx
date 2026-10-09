@@ -20,6 +20,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { radii, spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
+import type { ConfidenceLevel } from '@/utils/confidence';
 
 type ButtonProps = {
   label: string;
@@ -204,15 +205,24 @@ export function MacroCard({
 }
 
 /** A calm "estimate" label. Model confidence is not shown as doubt to people. */
-export function ConfidenceBadge({ uncertain = false }: { uncertain?: boolean }) {
-  void uncertain;
+/**
+ * Three states, each with its own symbol so colour is never the only signal:
+ * ✓ Sicher (database values at a known amount), ◐ Geschätzt (portion or
+ * values estimated), ! Bitte prüfen (something Kandro could not match itself).
+ */
+export function ConfidenceBadge({ level = 'estimated' }: { level?: ConfidenceLevel }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const { t } = useLanguage();
+  const copy = {
+    sure: { icon: 'checkmark-circle' as const, label: t.confirm.confidenceSure, hint: t.confirm.confidenceSureHint, color: colors.success },
+    estimated: { icon: 'contrast' as const, label: t.confirm.confidenceEstimated, hint: t.confirm.confidenceEstimatedHint, color: colors.text },
+    check: { icon: 'alert-circle' as const, label: t.confirm.confidenceCheck, hint: t.confirm.confidenceCheckHint, color: colors.attention },
+  }[level];
   return (
-    <View style={styles.confidence}>
-      <Ionicons color={colors.success} name="checkmark-circle" size={14} />
-      <Text style={styles.confidenceText}>{t.confirm.highConfidence}</Text>
+    <View accessibilityHint={copy.hint} accessibilityLabel={copy.label} accessible style={[styles.confidence, level === 'check' && styles.confidenceUncertain]}>
+      <Ionicons color={copy.color} name={copy.icon} size={14} />
+      <Text style={[styles.confidenceText, { color: copy.color }]}>{copy.label}</Text>
     </View>
   );
 }

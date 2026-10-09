@@ -11,6 +11,7 @@ export {
   buildMealItem,
   incompleteNutritionError,
   ingredientCorrectionDraft,
+  analysisResultBody,
   openFoodFactsNutrition,
   chooseFood,
   chooseFoodMatch,
