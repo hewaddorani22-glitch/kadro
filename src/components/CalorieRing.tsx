@@ -56,7 +56,7 @@ export function CalorieRing({
   const level = overBudgetLevel(consumed, total);
   // Warm amber at most; the ring never turns into a red warning.
   const ringColor = over > 0 ? colors.attention : colors.accentText;
-  const statusColor = over > 0 ? colors.attention : colors.success;
+  const statusColor = over > 0 ? colors.attentionText : colors.success;
   const celebrating = proteinReached && over === 0;
   // Every logged meal visibly fills the ring: the moment of progress is felt.
   const reduceMotion = useReducedMotion();

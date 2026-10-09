@@ -196,7 +196,7 @@ export default function ResultScreen() {
       </View>
 
       {saveStatus === 'failed' ? <Card>
-        <Text accessibilityRole="alert" style={{ color: colors.attention }}>{t.result.saveFailed}</Text>
+        <Text accessibilityRole="alert" style={{ color: colors.attentionText }}>{t.result.saveFailed}</Text>
         <PrimaryButton label={t.result.retrySave} onPress={() => void saveCurrentMeal()} />
       </Card> : null}
       {demo ? <Text accessibilityLiveRegion="polite" style={{ color: colors.muted }}>{t.result.demoNotSaved}</Text>
@@ -256,7 +256,7 @@ export default function ResultScreen() {
             <Text style={styles.onTrack}>{pastDay ? (overBudget ? t.today.pastDayOver : t.today.pastDayLogged) : overBudget ? t.result.overToday : t.result.stillOnTrack}</Text>
           </View>
           <Ionicons
-            color={overBudget ? colors.attention : colors.success}
+            color={overBudget ? colors.attentionText : colors.success}
             name={overBudget ? 'alert-circle' : 'checkmark-circle'}
             size={25}
           />
@@ -284,7 +284,7 @@ export default function ResultScreen() {
       {pastDay ? null : dayIsDone ? (
         <Card style={styles.nextCard}>
           <Text style={styles.nextTitle}>{overBudget ? t.today.dayOver : t.today.dayComplete}</Text>
-          <Text style={styles.remainingLabel}>{overBudget ? t.today.dayOverText : t.today.dayCompleteText}</Text>
+          <Text style={styles.reminderText}>{overBudget ? t.today.dayOverText : t.today.dayCompleteText}</Text>
           <PrimaryButton icon="arrow-forward" label={t.plan.smallIdeas} onPress={showOptions} variant="secondary" />
         </Card>
       ) : <Card style={styles.nextCard}>
@@ -373,12 +373,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   impactRing: { position: 'absolute', top: 0, left: 0 },
   calorieCenter: { maxWidth: '100%', alignItems: 'center' },
   calories: { color: colors.text, fontSize: 25, lineHeight: 30, fontWeight: '700', letterSpacing: -0.8, fontVariant: ['tabular-nums'] },
-  calorieLabel: { color: colors.muted, fontSize: 10, textAlign: 'center' },
+  calorieLabel: { color: colors.muted, fontSize: 12, textAlign: 'center' },
   macros: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, paddingVertical: 15 },
   macroResult: { flex: 1, alignItems: 'center', gap: 4 },
   macroValue: { color: colors.text, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  macroUnit: { fontSize: 11, fontWeight: '600' },
-  macroLabel: { color: colors.muted, fontSize: 10 },
+  macroUnit: { fontSize: 12, fontWeight: '600' },
+  macroLabel: { color: colors.muted, fontSize: 12 },
   section: { gap: 13 },
   edit: { color: colors.accentText, fontSize: 13, fontWeight: '700' },
   ingredientsCard: { padding: 8 },
@@ -387,7 +387,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   ingredientName: { flex: 1, color: colors.text, fontSize: 13, fontWeight: '600' },
   ingredientMeta: { alignItems: 'flex-end', gap: 2 },
   ingredientAmount: { color: colors.muted, fontSize: 12, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  ingredientSource: { color: colors.muted, fontSize: 11 },
+  ingredientSource: { color: colors.muted, fontSize: 12 },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 46 },
   dayCard: { backgroundColor: colors.camera, borderColor: colors.camera, gap: 19 },
   dayHeader: { flexDirection: 'row', alignItems: 'center', gap: 11 },
@@ -396,7 +396,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   onTrack: { color: colors.white, fontSize: 18, fontWeight: '700' },
   remainingRow: { flexDirection: 'row', alignItems: 'center' },
   remainingValue: { color: colors.white, fontSize: 25, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  remainingLabel: { color: 'rgba(255,255,255,0.54)', fontSize: 10, marginTop: 3 },
+  remainingLabel: { color: 'rgba(255,255,255,0.54)', fontSize: 12, marginTop: 3 },
   remainingDivider: { width: 1, height: 42, backgroundColor: 'rgba(255,255,255,0.13)', marginHorizontal: 28 },
   nextCard: { backgroundColor: colors.accentSoft, borderColor: colors.accent, gap: 18 },
   nextTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
@@ -406,12 +406,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   aimRow: { flexDirection: 'row' },
   aimBlock: { flex: 1, gap: 4 },
   aimValue: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  aimLabel: { color: colors.muted, fontSize: 10 },
+  aimLabel: { color: colors.muted, fontSize: 12 },
   reminderCard: { gap: 12 },
   reminderTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   reminderIcon: { width: 42, height: 42, borderRadius: 16, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   reminderCopy: { flex: 1, minWidth: 0, gap: 3 },
   reminderTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   reminderText: { color: colors.muted, fontSize: 12, lineHeight: 18 },
-  estimateNote: { color: colors.muted, fontSize: 10, lineHeight: 16, textAlign: 'center', paddingHorizontal: 18 },
+  estimateNote: { color: colors.muted, fontSize: 12, lineHeight: 16, textAlign: 'center', paddingHorizontal: 18 },
 });

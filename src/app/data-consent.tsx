@@ -45,7 +45,7 @@ export default function DataConsentScreen() {
 
       <View style={styles.heading}>
         <View style={[styles.statusIcon, !wellnessConsentGranted && styles.statusIconPaused]}>
-          <Ionicons color={wellnessConsentGranted ? colors.onAccent : colors.attention} name={wellnessConsentGranted ? 'shield-checkmark-outline' : 'pause-outline'} size={28} />
+          <Ionicons color={wellnessConsentGranted ? colors.onAccent : colors.attentionText} name={wellnessConsentGranted ? 'shield-checkmark-outline' : 'pause-outline'} size={28} />
         </View>
         <Text accessibilityRole="header" style={styles.title}>{t.consent.title}</Text>
         <Text style={styles.stateTitle}>{wellnessConsentGranted ? t.consent.activeTitle : t.consent.pausedTitle}</Text>
@@ -88,6 +88,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   card: { gap: 8 },
   cardTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
   cardText: { color: colors.muted, fontSize: 12, lineHeight: 19 },
-  hint: { color: colors.muted, fontSize: 11, lineHeight: 17, textAlign: 'center' },
-  error: { color: colors.attention, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  hint: { color: colors.muted, fontSize: 12, lineHeight: 17, textAlign: 'center' },
+  error: { color: colors.attentionText, fontSize: 12, lineHeight: 18, textAlign: 'center' },
 });

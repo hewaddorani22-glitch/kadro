@@ -88,7 +88,7 @@ export function ManualFoodForm({ initialName, onCancel, onConfirm }: {
         {field(t.common.carbs, carbs, setCarbs, 'g')}
         {field(t.common.fat, fat, setFat, 'g')}
       </View>
-      {error ? <Text accessibilityRole="alert" style={{ color: colors.attention }}>{copy.manualInvalid}</Text> : null}
+      {error ? <Text accessibilityRole="alert" style={{ color: colors.attentionText }}>{copy.manualInvalid}</Text> : null}
       <PrimaryButton icon="checkmark" label={copy.manualSave} onPress={save} />
       <PrimaryButton variant="ghost" label={t.common.cancel} onPress={onCancel} />
     </View>

@@ -121,7 +121,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     display: 'none',
   },
   label: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     marginTop: 2,
   },

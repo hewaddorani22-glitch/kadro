@@ -129,7 +129,7 @@ export function ReminderPreferences({ onDone, initialSetup = false }: { onDone?:
     </View> : null}
     {permission === 'quiet' ? <Text style={{ color: colors.muted }}>{copy.quiet}</Text> : null}
     {permission === 'denied' ? <View><Text style={{ color: colors.muted }}>{copy.permissionDenied}</Text><PrimaryButton label={copy.settings} variant="ghost" onPress={() => void Linking.openSettings().catch(() => setError(copy.reminderError))} /></View> : null}
-    {error ? <Text accessibilityRole="alert" style={{ color: colors.attention }}>{error}</Text> : null}
+    {error ? <Text accessibilityRole="alert" style={{ color: colors.attentionText }}>{error}</Text> : null}
     <PrimaryButton disabled={busy || !settings || !slots || permission === 'unavailable'} label={busy ? t.common.moment : initialSetup ? copy.reminderAskYes : settings?.enabled ? copy.save : copy.activate} onPress={() => void apply(true)} />
     {settings?.enabled ? <PrimaryButton disabled={busy} variant="ghost" label={copy.disable} onPress={() => void apply(false)} /> : null}
     {onDone ? <PrimaryButton disabled={busy} variant="ghost" label={initialSetup ? copy.reminderAskLater : copy.skip} onPress={() => onDone('skipped')} /> : null}

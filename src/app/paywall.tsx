@@ -9,7 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { PrimaryButton } from '@/components/ui';
 import { KandroMark } from '@/components/KandroMark';
-import { radii } from '@/constants/theme';
+import { radii, typeScale } from '@/constants/theme';
 import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
 import { useAccess } from '@/context/AccessContext';
 import { useApp } from '@/context/AppContext';
@@ -400,13 +400,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topBar: { minHeight: 55, paddingVertical: 6, gap: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   closeButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   restoreButton: { flexShrink: 1, minHeight: 44, justifyContent: 'center' },
-  restore: { textAlign: 'right', color: colors.muted, fontSize: 15, fontWeight: '600' },
+  restore: { textAlign: 'right', color: colors.muted, fontSize: typeScale.compact, fontWeight: '600' },
   scroll: { flex: 1 },
   content: { flexGrow: 1, alignItems: 'center', paddingTop: 15, paddingBottom: 16 },
   heroMark: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   testBadge: { backgroundColor: colors.accent, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 5, marginTop: 10 },
-  testBadgeText: { color: colors.onAccent, fontSize: 12, fontWeight: '800', letterSpacing: 0.7 },
-  eyebrow: { color: colors.accentText, fontSize: 12, fontWeight: '800', letterSpacing: 1.3, marginTop: 16 },
+  testBadgeText: { color: colors.onAccent, fontSize: typeScale.micro, fontWeight: '800', letterSpacing: 0.7 },
+  eyebrow: { color: colors.accentText, fontSize: typeScale.micro, fontWeight: '800', letterSpacing: 1.3, marginTop: 16 },
   title: { color: colors.text, fontSize: 36, lineHeight: 41, fontWeight: '700', letterSpacing: -1.2, textAlign: 'center', marginTop: 7 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 340, marginTop: 10 },
   keepsCard: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 18, borderRadius: radii.card, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent, padding: 13 },
@@ -424,7 +424,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   stepLine: { flex: 1, width: 2, backgroundColor: colors.accent, marginVertical: 3 },
   stepAction: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   inlineTerms: { alignSelf: 'stretch', marginTop: 4 },
-  dueToday: { color: colors.text, fontSize: 13, fontWeight: '600', textAlign: 'center' },
+  dueToday: { color: colors.text, fontSize: typeScale.caption, fontWeight: '600', textAlign: 'center' },
   plans: { alignSelf: 'stretch', gap: 10, marginTop: 25 },
   planCard: { minHeight: 76, borderRadius: radii.button, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', gap: 11 },
   planCardLarge: { alignItems: 'flex-start', paddingVertical: 14 },
@@ -435,21 +435,21 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.accentText },
   planCopy: { flex: 1, minWidth: 0, gap: 4 },
   planLabelRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 7 },
-  planLabel: { color: colors.text, fontSize: 15, fontWeight: '700' },
-  planDetail: { color: colors.muted, fontSize: 13 },
+  planLabel: { color: colors.text, fontSize: typeScale.compact, fontWeight: '700' },
+  planDetail: { color: colors.muted, fontSize: typeScale.caption },
   badge: { flexShrink: 0, backgroundColor: colors.text, borderRadius: radii.pill, paddingHorizontal: 7, paddingVertical: 4 },
-  badgeText: { color: colors.surface, fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
-  planPrice: { flexShrink: 0, color: colors.text, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  badgeText: { color: colors.surface, fontSize: typeScale.micro, fontWeight: '800', letterSpacing: 0.5 },
+  planPrice: { flexShrink: 0, color: colors.text, fontSize: typeScale.body, fontWeight: '700', fontVariant: ['tabular-nums'] },
   planPriceLarge: { flexShrink: 1 },
   scrollingFooter: { alignSelf: 'stretch', marginTop: 20 },
   cancelNotice: { alignSelf: 'stretch', gap: 4, paddingVertical: 8 },
   footer: { gap: 9, paddingTop: 10, backgroundColor: colors.background },
   loader: { marginTop: 12 },
-  error: { color: colors.attention, fontSize: 14, lineHeight: 20, marginTop: 12, textAlign: 'center' },
+  error: { color: colors.attentionText, fontSize: 14, lineHeight: 20, marginTop: 12, textAlign: 'center' },
   disabledText: { opacity: 0.45 },
-  billing: { color: colors.muted, fontSize: 12, textAlign: 'center' },
-  renewal: { color: colors.text, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingHorizontal: 4 },
+  billing: { color: colors.muted, fontSize: typeScale.micro, textAlign: 'center' },
+  renewal: { color: colors.text, fontSize: typeScale.micro, lineHeight: 17, textAlign: 'center', paddingHorizontal: 4 },
   legalRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8 },
-  legal: { color: colors.accentText, fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' },
+  legal: { color: colors.accentText, fontSize: typeScale.micro, fontWeight: '600', textDecorationLine: 'underline' },
   legalDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.muted },
 });

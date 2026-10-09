@@ -30,7 +30,7 @@ export function RevenueCatExperimentPreferences() {
       }} />
     </View>
     <Text style={{ color: colors.muted, fontSize: 15, lineHeight: 22 }}>{detail}</Text>
-    {error || snapshot.status === 'error' ? <Text accessibilityRole="alert" style={{ color: colors.attention }}>{copy.error}</Text> : null}
+    {error || snapshot.status === 'error' ? <Text accessibilityRole="alert" style={{ color: colors.attentionText }}>{copy.error}</Text> : null}
     <Pressable accessibilityRole="link" onPress={() => router.push('/privacy')} style={{ minHeight: 44, justifyContent: 'center' }}><Text style={{ color: colors.accentText }}>{copy.privacyLink}</Text></Pressable>
   </Card>;
 }

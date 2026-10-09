@@ -82,7 +82,7 @@ export function PersonalGoalSummary({ profile }: { profile: UserProfile }) {
       <Text style={{ color: colors.muted, fontSize: 12, fontWeight: '600' }}>{t.onboarding.projectionToday} · {formatWeight(profile.weightKg, profile.unitSystem, locale)}</Text>
       <Text style={{ color: colors.text, fontSize: 12, fontWeight: '700' }}>{short(endIso)} · {weight}</Text>
     </View> : null}
-    <Text style={{ color: colors.muted, fontSize: 11, lineHeight: 15 }}>{t.onboarding.personalGoalDisclaimer}</Text>
+    <Text style={{ color: colors.muted, fontSize: 12, lineHeight: 16 }}>{t.onboarding.personalGoalDisclaimer}</Text>
   </View>;
 }
 

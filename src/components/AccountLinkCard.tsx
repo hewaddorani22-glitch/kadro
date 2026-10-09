@@ -408,7 +408,7 @@ function Feedback({ error, message }: { error: string | null; message: string | 
   if (!error && !message) return null;
   return (
     <View accessibilityLiveRegion={error ? 'assertive' : 'polite'} style={[styles.feedback, error ? styles.errorFeedback : styles.successFeedback]}>
-      <Ionicons color={error ? colors.attention : colors.success} name={error ? 'alert-circle-outline' : 'checkmark-circle-outline'} size={17} />
+      <Ionicons color={error ? colors.attentionText : colors.success} name={error ? 'alert-circle-outline' : 'checkmark-circle-outline'} size={17} />
       <Text style={[styles.feedbackText, error ? styles.errorText : styles.successText]}>{error ?? message}</Text>
     </View>
   );
@@ -434,7 +434,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   feedback: { borderRadius: 14, padding: 11, flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   errorFeedback: { backgroundColor: colors.attentionSoft },
   successFeedback: { backgroundColor: colors.accentSoft },
-  feedbackText: { flex: 1, fontSize: 11, lineHeight: 16 },
-  errorText: { color: colors.attention },
+  feedbackText: { flex: 1, fontSize: 12, lineHeight: 16 },
+  errorText: { color: colors.attentionText },
   successText: { color: colors.success },
 });

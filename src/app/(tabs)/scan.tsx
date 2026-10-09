@@ -16,7 +16,7 @@ import { PrimaryButton } from '@/components/ui';
 import { PortionSheet } from '@/components/PortionSheet';
 import { ManualFoodForm } from '@/components/ManualFoodForm';
 import { VoiceInputButton } from '@/components/VoiceInputButton';
-import { radii } from '@/constants/theme';
+import { radii, typeScale } from '@/constants/theme';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { frameToPhotoCrop, type Rect } from '@/utils/cameraCrop';
 import { useApp } from '@/context/AppContext';
@@ -865,7 +865,7 @@ function ModeButton({ active, label, onPress }: { active: boolean; label: string
   const styles = useThemedStyles(makeStyles);
   return (
     <Pressable aria-checked={active} accessibilityRole="radio" accessibilityState={{ checked: active }} onPress={onPress} style={[styles.modeButton, active && styles.modeButtonActive]}>
-      <Text style={[styles.modeText, active && styles.modeTextActive]}>{label.toUpperCase()}</Text>
+      <Text numberOfLines={1} style={[styles.modeText, active && styles.modeTextActive]}>{label}</Text>
     </Pressable>
   );
 }
@@ -877,12 +877,12 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   fallback: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 36, paddingVertical: 18 },
   fallbackOrb: { width: 112, height: 112, borderRadius: 56, backgroundColor: 'rgba(187,220,142,0.12)', borderWidth: 1, borderColor: 'rgba(187,220,142,0.32)', alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
   fallbackTitle: { color: colors.white, fontSize: 21, fontWeight: '700', textAlign: 'center' },
-  fallbackText: { color: 'rgba(255,255,255,0.6)', fontSize: 13, lineHeight: 19, textAlign: 'center', marginTop: 8 },
+  fallbackText: { color: 'rgba(255,255,255,0.6)', fontSize: typeScale.caption, lineHeight: 19, textAlign: 'center', marginTop: 8 },
   permissionButton: { marginTop: 18, minHeight: 44, borderRadius: radii.pill, paddingHorizontal: 16, backgroundColor: colors.accent, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  permissionText: { flexShrink: 1, textAlign: 'center', color: colors.onAccent, fontSize: 13, fontWeight: '700' },
+  permissionText: { flexShrink: 1, textAlign: 'center', color: colors.onAccent, fontSize: typeScale.caption, fontWeight: '700' },
   cameraStarting: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  cameraStartingText: { color: 'rgba(255,255,255,0.72)', fontSize: 13, fontWeight: '600' },
-  permissionStatus: { color: 'rgba(255,255,255,0.58)', fontSize: 12, marginTop: 16 },
+  cameraStartingText: { color: 'rgba(255,255,255,0.72)', fontSize: typeScale.caption, fontWeight: '600' },
+  permissionStatus: { color: 'rgba(255,255,255,0.58)', fontSize: typeScale.micro, marginTop: 16 },
   scrimTop: { pointerEvents: 'none', position: 'absolute', left: 0, right: 0, top: 0, height: 160, backgroundColor: 'rgba(0,0,0,0.36)' },
   scrimBottom: { pointerEvents: 'none', position: 'absolute', left: 0, right: 0, bottom: 0, height: 250, backgroundColor: 'rgba(0,0,0,0.48)' },
   overlay: { flex: 1, justifyContent: 'space-between', pointerEvents: 'box-none', zIndex: 2 },
@@ -891,7 +891,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   circleButtonActive: { backgroundColor: colors.accent, borderColor: colors.accent },
   circlePlaceholder: { flexShrink: 0, width: 42, height: 42 },
   titlePill: { flexShrink: 1, minWidth: 0, minHeight: 38, paddingVertical: 8, borderRadius: 19, backgroundColor: 'rgba(17,19,15,0.58)', paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  screenTitle: { flexShrink: 1, textAlign: 'center', color: colors.white, fontSize: 15, fontWeight: '700' },
+  screenTitle: { flexShrink: 1, textAlign: 'center', color: colors.white, fontSize: typeScale.compact, fontWeight: '700' },
   guideArea: { pointerEvents: 'none', flex: 1, marginHorizontal: 28, marginVertical: 42 },
   cornerTopLeft: { position: 'absolute', top: 0, left: 0, width: 50, height: 50, borderTopWidth: 2, borderLeftWidth: 2, borderColor: 'rgba(255,255,255,0.74)', borderTopLeftRadius: 18 },
   cornerTopRight: { position: 'absolute', top: 0, right: 0, width: 50, height: 50, borderTopWidth: 2, borderRightWidth: 2, borderColor: 'rgba(255,255,255,0.74)', borderTopRightRadius: 18 },
@@ -899,14 +899,15 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   cornerBottomRight: { position: 'absolute', bottom: 0, right: 0, width: 50, height: 50, borderBottomWidth: 2, borderRightWidth: 2, borderColor: 'rgba(255,255,255,0.74)', borderBottomRightRadius: 18 },
   tipPill: { position: 'absolute', bottom: 18, alignSelf: 'center', height: 34, borderRadius: 17, backgroundColor: 'rgba(17,19,15,0.62)', paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 7 },
   tipDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.accent },
-  tipText: { color: colors.white, fontSize: 11, fontWeight: '600' },
+  tipText: { color: colors.white, fontSize: typeScale.micro, fontWeight: '600' },
   controls: { paddingHorizontal: 24, paddingBottom: 7, alignItems: 'center', gap: 16 },
   allowancePill: { minHeight: 30, maxWidth: '100%', borderRadius: 15, backgroundColor: 'rgba(17,19,15,0.62)', paddingHorizontal: 12, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  allowanceText: { flexShrink: 1, textAlign: 'center', color: colors.white, fontSize: 11, fontWeight: '700' },
+  allowanceText: { flexShrink: 1, textAlign: 'center', color: colors.white, fontSize: typeScale.micro, fontWeight: '700' },
   modeLabel: { width: '100%', flexDirection: 'row', flexWrap: 'wrap', borderRadius: radii.pill, backgroundColor: 'rgba(17,19,15,0.58)', padding: 3 },
-  modeButton: { flexGrow: 1, maxWidth: '100%', minHeight: 44, borderRadius: 17, paddingHorizontal: 11, alignItems: 'center', justifyContent: 'center' },
+  modeButton: { flexGrow: 1, maxWidth: '100%', minHeight: 44, borderRadius: radii.pill, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center' },
   modeButtonActive: { backgroundColor: colors.accent },
-  modeText: { textAlign: 'center', color: 'rgba(255,255,255,0.62)', fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
+  // 13 pt semibold in sentence case: the old 9 pt capitals were unreadable over a live camera.
+  modeText: { textAlign: 'center', color: 'rgba(255,255,255,0.78)', fontSize: typeScale.caption, fontWeight: '600' },
   modeTextActive: { color: colors.onAccent },
   shutterRow: { width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' },
   shutterOuter: { width: 82, height: 82, borderRadius: 41, borderWidth: 3, borderColor: colors.white, alignItems: 'center', justifyContent: 'center' },
@@ -914,42 +915,42 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   shutterPressed: { transform: [{ scale: 0.92 }] },
   smallPlaceholder: { width: 62, height: 46 },
   demoControl: { width: 62, height: 46, borderRadius: 23, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 3 },
-  demoControlText: { color: colors.white, fontSize: 10, fontWeight: '700' },
+  demoControlText: { color: colors.white, fontSize: typeScale.micro, fontWeight: '700' },
   barcodeState: { minHeight: 92, alignItems: 'center', justifyContent: 'center', gap: 7 },
-  barcodeText: { color: colors.white, fontSize: 12, fontWeight: '700' },
+  barcodeText: { color: colors.white, fontSize: typeScale.micro, fontWeight: '700' },
   barcodeManualButton: { minHeight: 34, borderRadius: radii.pill, borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)', backgroundColor: 'rgba(255,255,255,0.10)', paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  barcodeManualText: { color: colors.white, fontSize: 11, fontWeight: '700' },
+  barcodeManualText: { color: colors.white, fontSize: typeScale.micro, fontWeight: '700' },
   describeButton: { minHeight: 52, borderRadius: radii.pill, backgroundColor: colors.accent, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  describeButtonText: { color: colors.onAccent, fontSize: 13, fontWeight: '800' },
-  privacy: { color: 'rgba(255,255,255,0.48)', fontSize: 10 },
+  describeButtonText: { color: colors.onAccent, fontSize: typeScale.caption, fontWeight: '800' },
+  privacy: { color: 'rgba(255,255,255,0.48)', fontSize: typeScale.micro },
   modalScrim: { flex: 1, backgroundColor: 'rgba(20,21,15,0.58)', justifyContent: 'flex-end' },
   barcodeSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 22, gap: 13 },
   barcodeInput: { minHeight: 56, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, color: colors.text, fontSize: 20, fontWeight: '700', letterSpacing: 1, paddingHorizontal: 15 },
   searchSheet: { maxHeight: '86%', borderTopLeftRadius: radii.card, borderTopRightRadius: radii.card, backgroundColor: colors.background, paddingHorizontal: 20, paddingTop: 20, gap: 12 },
   searchHead: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, alignItems: 'center', justifyContent: 'space-between' },
   freePill: { borderRadius: radii.pill, backgroundColor: colors.accentSoft, paddingHorizontal: 10, paddingVertical: 4 },
-  freePillText: { color: colors.accentText, fontSize: 11, fontWeight: '800', letterSpacing: 0.4 },
-  searchInput: { minHeight: 52, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: 17, paddingHorizontal: 16 },
+  freePillText: { color: colors.accentText, fontSize: typeScale.micro, fontWeight: '800', letterSpacing: 0.4 },
+  searchInput: { minHeight: 52, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, color: colors.text, fontSize: typeScale.body, paddingHorizontal: 16 },
   searchResults: { flexShrink: 1 },
   searchContent: { gap: 12 },
-  searchError: { color: colors.attention, fontSize: 14, lineHeight: 21, paddingVertical: 12 },
+  searchError: { color: colors.attentionText, fontSize: 14, lineHeight: 21, paddingVertical: 12 },
   searchStatus: { color: colors.muted, fontSize: 14, lineHeight: 21, paddingVertical: 12 },
   addedBox: { gap: 6, padding: 12, borderRadius: 14, backgroundColor: colors.successSoft },
   addedRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   addedText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
   addedRemove: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  addedHint: { color: colors.muted, fontSize: 13 },
-  searchSection: { color: colors.muted, fontSize: 13, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 8, marginBottom: 4 },
+  addedHint: { color: colors.muted, fontSize: typeScale.caption },
+  searchSection: { color: colors.muted, fontSize: typeScale.caption, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 8, marginBottom: 4 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.border },
   searchRowCopy: { flex: 1, gap: 3 },
   searchRowName: { color: colors.text, fontSize: 16, fontWeight: '600', lineHeight: 21 },
-  searchRowMeta: { color: colors.muted, fontSize: 13 },
+  searchRowMeta: { color: colors.muted, fontSize: typeScale.caption },
   describeSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 22, gap: 13 },
   describeTitle: { color: colors.text, fontSize: 26, fontWeight: '700' },
-  describeText: { color: colors.muted, fontSize: 13, lineHeight: 19 },
+  describeText: { color: colors.muted, fontSize: typeScale.caption, lineHeight: 19 },
   describeInput: { minHeight: 128, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, color: colors.text, fontSize: 16, lineHeight: 23, padding: 14, textAlignVertical: 'top' },
   describeSubmit: { minHeight: 54, borderRadius: radii.button, backgroundColor: colors.camera, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  describeSubmitText: { color: colors.white, fontSize: 15, fontWeight: '800' },
+  describeSubmitText: { color: colors.white, fontSize: typeScale.compact, fontWeight: '800' },
   describeCancel: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  describeCancelText: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  describeCancelText: { color: colors.muted, fontSize: typeScale.caption, fontWeight: '700' },
 });

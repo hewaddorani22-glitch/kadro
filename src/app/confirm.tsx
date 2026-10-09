@@ -8,7 +8,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { mealPhotoPlaceholder } from '@/utils/format';
 import { PortionSheet } from '@/components/PortionSheet';
 import { Card, ConfidenceBadge, MealPhoto, PrimaryButton, Screen } from '@/components/ui';
-import { radii } from '@/constants/theme';
+import { radii, typeScale } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { countBucket, trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -226,7 +226,7 @@ export default function ConfirmScreen() {
             {!unresolved && !item.included ? <Text style={styles.subtitle}>{t.confirm.excluded}</Text> : null}
             {!unresolved && autoMatchedItemIds.includes(item.id) ? (
               <View style={styles.autoMatchedRow}>
-                <Ionicons color={colors.attention} name="alert-circle" size={15} />
+                <Ionicons color={colors.attentionText} name="alert-circle" size={15} />
                 <Text style={styles.autoMatchedText}>{t.confirm.autoMatched}</Text>
               </View>
             ) : null}
@@ -373,36 +373,36 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   removeRow: { marginTop: 4 },
   analysisWarning: { borderRadius: 15, backgroundColor: colors.neutralSoft, paddingHorizontal: 13, paddingVertical: 10, gap: 6 },
   analysisWarningRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  analysisWarningText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 18 },
+  analysisWarningText: { flex: 1, color: colors.text, fontSize: typeScale.caption, lineHeight: 18 },
   estimateBanner: { minHeight: 48, borderRadius: 15, backgroundColor: colors.attentionSoft, borderWidth: 1, borderColor: colors.attention, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 9 },
   estimateBannerText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
   autoMatchedRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  autoMatchedText: { flex: 1, color: colors.text, fontSize: 13, fontWeight: '600' },
+  autoMatchedText: { flex: 1, color: colors.text, fontSize: typeScale.caption, fontWeight: '600' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   detectedChip: { minHeight: 44, borderRadius: radii.pill, backgroundColor: colors.successSoft, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 6 },
   detectedChipQuestion: { backgroundColor: colors.attentionSoft },
   detectedChipOff: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  detectedChipText: { color: colors.text, fontSize: 12, fontWeight: '600' },
+  detectedChipText: { color: colors.text, fontSize: typeScale.micro, fontWeight: '600' },
   detectedChipTextOff: { color: colors.muted, textDecorationLine: 'line-through' },
   listCard: { padding: 8 },
   portionCard: { gap: 16 },
   ingredientCard: { gap: 10 },
   ingredientActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   ingredientAction: { minHeight: 44, paddingHorizontal: 12, paddingVertical: 10, justifyContent: 'center', borderRadius: 12, backgroundColor: colors.neutralSoft },
-  actionText: { color: colors.accentText, fontSize: 13, fontWeight: '600', flexShrink: 1 },
+  actionText: { color: colors.accentText, fontSize: typeScale.caption, fontWeight: '600', flexShrink: 1 },
   amountField: { minHeight: 60, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.neutralSoft, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   amountFieldValue: { color: colors.text, fontSize: 24, fontWeight: '700' },
   portionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  portionTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
-  portionSubtitle: { color: colors.muted, fontSize: 11, marginTop: 4 },
+  portionTitle: { color: colors.text, fontSize: typeScale.body, fontWeight: '700' },
+  portionSubtitle: { color: colors.muted, fontSize: typeScale.micro, marginTop: 4 },
   portionSelector: { flexDirection: 'row', borderRadius: radii.input, backgroundColor: colors.neutralSoft, padding: 4, gap: 4 },
   portionChoice: { flex: 1, minHeight: 52, borderRadius: 11, alignItems: 'center', justifyContent: 'center', gap: 2 },
   portionChoiceActive: { backgroundColor: colors.accent },
-  portionChoiceLabel: { color: colors.muted, fontSize: 13, fontWeight: '700' },
+  portionChoiceLabel: { color: colors.muted, fontSize: typeScale.caption, fontWeight: '700' },
   portionChoiceLabelActive: { color: colors.onAccent },
-  portionMultiplier: { color: colors.muted, fontSize: 10, fontVariant: ['tabular-nums'] },
+  portionMultiplier: { color: colors.muted, fontSize: typeScale.micro, fontVariant: ['tabular-nums'] },
   detailsToggle: { minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  detailsToggleText: { color: colors.muted, fontSize: 12, fontWeight: '600' },
+  detailsToggleText: { color: colors.muted, fontSize: typeScale.micro, fontWeight: '600' },
   itemRow: { minHeight: 72, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 11, paddingHorizontal: 7, paddingVertical: 12 },
   itemRowOff: { opacity: 0.48 },
   checkButton: { width: 44, height: 44, borderRadius: 13, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
@@ -410,17 +410,17 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   itemCopy: { flex: 1, minWidth: 0, gap: 3 },
   itemNameRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
   itemName: { flexShrink: 1, color: colors.text, fontSize: 14, fontWeight: '700' },
-  uncertain: { color: colors.attention, fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
-  itemCalories: { color: colors.muted, fontSize: 11, fontVariant: ['tabular-nums'] },
+  uncertain: { color: colors.attentionText, fontSize: typeScale.micro, fontWeight: '800', letterSpacing: 0.7 },
+  itemCalories: { color: colors.muted, fontSize: typeScale.micro, fontVariant: ['tabular-nums'] },
   stepper: { width: '100%', minHeight: 44, borderRadius: 14, backgroundColor: colors.background, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   stepperButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  amount: { minWidth: 44, color: colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center', fontVariant: ['tabular-nums'] },
+  amount: { minWidth: 44, color: colors.text, fontSize: typeScale.micro, fontWeight: '700', textAlign: 'center', fontVariant: ['tabular-nums'] },
   divider: { height: 1, backgroundColor: colors.border, marginLeft: 52 },
   estimateCard: { backgroundColor: colors.camera, borderColor: colors.camera, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   estimateCopy: { maxWidth: '100%' },
-  estimateLabel: { color: 'rgba(255,255,255,0.58)', fontSize: 9, fontWeight: '800', letterSpacing: 0.9 },
-  estimateValue: { color: colors.white, fontSize: 22, fontWeight: '700', marginTop: 4, fontVariant: ['tabular-nums'] },
+  estimateLabel: { color: 'rgba(255,255,255,0.58)', fontSize: typeScale.micro, fontWeight: '800', letterSpacing: 0.9 },
+  estimateValue: { color: colors.white, fontSize: typeScale.heading, fontWeight: '700', marginTop: 4, fontVariant: ['tabular-nums'] },
   macroSummary: { flexDirection: 'row', flexWrap: 'wrap', maxWidth: '100%', alignItems: 'center', gap: 6 },
-  macroSummaryText: { color: colors.accent, fontSize: 11, fontWeight: '700' },
+  macroSummaryText: { color: colors.accent, fontSize: typeScale.micro, fontWeight: '700' },
   dot: { width: 3, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.3)' },
 });

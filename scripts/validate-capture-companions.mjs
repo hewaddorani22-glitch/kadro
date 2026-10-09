@@ -232,7 +232,7 @@ function scanScreenHarness() {
     '@/services/localDescription': { parseLocalDescription: () => null },
     '@/services/telemetry': { trackEvent() {}, durationBucket: () => 'fast' },
     '@/context/ThemeContext': { useTheme: () => ({ colors }), useThemedStyles: fn => fn(colors) },
-    '@/constants/theme': { radii: { pill: 22 } },
+    '@/constants/theme': { radii: { pill: 22 }, typeScale: { micro: 12, caption: 13, compact: 15, body: 17, heading: 22, title: 32, display: 56 } },
     '@expo/vector-icons/Ionicons': 'Icon',
     'expo-camera': { CameraView: 'CameraView', useCameraPermissions: () => [{ granted: false, canAskAgain: false }, async () => ({ granted: false })] },
     'expo-router': {

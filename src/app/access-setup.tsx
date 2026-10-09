@@ -42,7 +42,7 @@ export default function AccessSetup() {
         <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 22, lineHeight: 28, fontWeight: '700', textAlign: 'center' }}>{t.access.settingUp}</Text>
       </View>
       {error ? <View style={{ gap: 10 }}>
-        <Text accessibilityRole="alert" style={{ color: colors.attention, fontSize: 15, lineHeight: 22, textAlign: 'center' }}>{t.access.verify}</Text>
+        <Text accessibilityRole="alert" style={{ color: colors.attentionText, fontSize: 15, lineHeight: 22, textAlign: 'center' }}>{t.access.verify}</Text>
         <PrimaryButton disabled={busy} label={busy ? t.common.moment : t.access.identityContinue} onPress={() => void finish(true)} />
         <PrimaryButton disabled={busy} variant="ghost" label={t.access.identitySkip} onPress={() => void finish(false)} />
       </View> : null}

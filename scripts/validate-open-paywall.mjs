@@ -108,7 +108,7 @@ function guardFixture(state) {
   const Screen = compileModule('src/app/first-scan.tsx', {
     '@expo/vector-icons/Ionicons': { __esModule: true, default: 'Icon' }, 'expo-router': { Redirect: 'Redirect', useRouter: () => ({ replace: to => routes.push(to) }) }, react: { useRef: v => ({ current: v }) }, 'react/jsx-runtime': { jsx, jsxs: jsx },
     'react-native': { Pressable: 'Pressable', StyleSheet: { create: a => a }, Text: 'Text', View: 'View' }, '@/components/KandroMark': { KandroMark: 'Mark' }, '@/components/ui': { Screen: 'Screen' },
-    '@/constants/product': { FREE_SCAN_ALLOWANCE: 3 }, '@/constants/theme': { radii: {} }, '@/context/AppContext': { useApp: () => ({ freeScansLeft: 3 }) },
+    '@/constants/product': { FREE_SCAN_ALLOWANCE: 3 }, '@/constants/theme': { radii: {}, typeScale: { micro: 12, caption: 13, compact: 15, body: 17, heading: 22, title: 32, display: 56 } }, '@/context/AppContext': { useApp: () => ({ freeScansLeft: 3 }) },
     '@/context/ThemeContext': { useTheme: () => ({ colors: {} }), useThemedStyles: () => ({}) }, '@/hooks/useFirstRun': { useFirstRun: () => stage },
     '@/i18n/LanguageProvider': { useLanguage: () => ({ t: dict }) }, '@/services/firstRun': { setFirstRunStage: async next => { stages.push(next); } }, '@/services/haptics': { selectionHaptic() {} },
   }).default;

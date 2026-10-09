@@ -12,12 +12,12 @@ import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
-async function walk(dir) {
+async function walk(dir, extensions = ['.tsx']) {
   const found = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
-    if (entry.isDirectory()) found.push(...await walk(full));
-    else if (entry.name.endsWith('.tsx')) found.push(full);
+    if (entry.isDirectory()) found.push(...await walk(full, extensions));
+    else if (extensions.some((extension) => entry.name.endsWith(extension))) found.push(full);
   }
   return found;
 }
@@ -89,8 +89,36 @@ for (const file of files) {
   }
 }
 
+// Typography floor: nothing rendered in the app is smaller than 12 pt.
+// Captions at 9-11 pt were unreadable over the camera and on the paywall.
+const FONT_FLOOR = 12;
+const themeSource = await readFile(resolve(projectRoot, 'src/constants/theme.ts'), 'utf8');
+const typeScale = Object.fromEntries([...themeSource.match(/export const typeScale = \{([^}]*)\}/)[1].matchAll(/(\w+): (\d+(?:\.\d+)?)/g)]
+  .map(([, name, value]) => [name, Number(value)]));
+for (const [name, size] of Object.entries(typeScale)) {
+  if (size < FONT_FLOOR) failures.push(`typeScale.${name} is ${size} pt, below the ${FONT_FLOOR} pt floor`);
+}
+const sourceFiles = await walk(resolve(projectRoot, 'src'), ['.ts', '.tsx']);
+for (const file of sourceFiles) {
+  const source = await readFile(file, 'utf8');
+  const label = relative(projectRoot, file);
+  for (const match of source.matchAll(/fontSize\s*(?::|=)\s*\{?\s*["']?(\d+(?:\.\d+)?|typeScale\.\w+)/g)) {
+    const raw = match[1];
+    const size = raw.startsWith('typeScale.') ? typeScale[raw.slice('typeScale.'.length)] : Number(raw);
+    if (!(size >= FONT_FLOOR)) {
+      failures.push(`${label}:${source.slice(0, match.index).split('\n').length} fontSize ${raw} is below the ${FONT_FLOOR} pt floor`);
+    }
+  }
+  // The light amber is 2.5:1 on white: fine for fills and borders, not for
+  // words or meaningful icons. Those use attentionText. Macro colours are for
+  // bars and dots only; their labels stay ink or muted.
+  for (const match of source.matchAll(/(?<![A-Za-z])color\s*(?::|=)\s*\{?\s*colors\.(attention|macroCarbs|macroProtein|macroFat)\b(?!Text|Soft)/g)) {
+    failures.push(`${label}:${source.slice(0, match.index).split('\n').length} colors.${match[1]} is used as a text/icon colour; use attentionText, text or muted`);
+  }
+}
+
 if (failures.length) {
   throw new Error(`Accessibility validation failed:\n- ${failures.join('\n- ')}`);
 }
 
-console.log(`Validated ${files.length} screens: controls announce labels and every radio exposes its checked state.`);
+console.log(`Validated ${files.length} screens: controls announce labels, every radio exposes its checked state, no text is below ${FONT_FLOOR} pt and amber text meets contrast.`);

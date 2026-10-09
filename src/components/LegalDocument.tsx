@@ -45,7 +45,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
   heading: { gap: 9 },
   title: { color: colors.text, fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -0.8 },
-  version: { color: colors.muted, fontSize: 11 },
+  version: { color: colors.muted, fontSize: 12 },
   intro: { color: colors.text, fontSize: 15, lineHeight: 23, marginTop: 5 },
   section: { borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 20, gap: 10 },
   sectionTitle: { color: colors.text, fontSize: 18, lineHeight: 23, fontWeight: '700' },

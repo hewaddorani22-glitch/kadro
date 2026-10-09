@@ -87,7 +87,7 @@ export default function AccountDeletionScreen() {
       </View>
 
       <Card style={styles.warningCard}>
-        <Ionicons color={colors.attention} name="information-circle-outline" size={22} />
+        <Ionicons color={colors.attentionText} name="information-circle-outline" size={22} />
         <View style={styles.warningCopy}>
           <Text style={styles.warningTitle}>{t.deletion.warningTitle}</Text>
           <Text style={styles.warningText}>{t.deletion.warningText}</Text>
@@ -137,7 +137,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   checkbox: { width: 24, height: 24, borderRadius: 8, borderWidth: 1, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   checkboxSelected: { backgroundColor: colors.accentDeep, borderColor: colors.accentDeep },
   confirmText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 19 },
-  error: { color: colors.attention, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  error: { color: colors.attentionText, fontSize: 12, lineHeight: 18, textAlign: 'center' },
   success: { flex: 1, minHeight: 440, alignItems: 'center', justifyContent: 'center', gap: 14 },
   successIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
 });

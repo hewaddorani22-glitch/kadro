@@ -63,7 +63,7 @@ async function controller(profile=base,editing=false,drafts=draftStore()){
   '@expo/vector-icons/Ionicons':{default:'Icon'},'@/components/WeightEntry':{WeightEntry:'WeightEntry'},'@/components/KandroMark':{KandroMark:'Mark'},
   '@/components/PersonalGoalSummary':{PersonalGoalSummary:'PersonalGoalSummary'},'@/components/PlanBuilder':{PlanBuilder:'PlanBuilder',BUILDING_MS:-250},
   '@/components/ui':{PrimaryButton:'PrimaryButton',ProgressBar:'ProgressBar'},
-  '@/constants/theme':{radii:{},spacing:{}},'@/context/ThemeContext':{useTheme:()=>({colors:{}}),useThemedStyles:()=>new Proxy({},{get:()=>({})})},
+  '@/constants/theme':{radii:{},spacing:{},typeScale:{micro:12,caption:13,compact:15,body:17,heading:22,title:32,display:56}},'@/context/ThemeContext':{useTheme:()=>({colors:{}}),useThemedStyles:()=>new Proxy({},{get:()=>({})})},
   '@/context/AppContext':{useApp:()=>({profile,completeOnboarding:async p=>saved.push(p),grantWellnessConsent:async age=>grants.push(age)})},
   '@/i18n/LanguageProvider':{useLanguage:()=>({language:'de',locale:'de-DE',t})},
   '@/services/personalization':personalization,'@/services/personalGoal':goals,'@/services/onboardingDraft':drafts.mock,

@@ -122,7 +122,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   ingredientState: { color: colors.muted, fontSize: 12, lineHeight: 17 },
   ingredientAmount: { color: colors.muted, fontSize: 14, fontWeight: '700' },
   divider: { height: 1, backgroundColor: colors.border, marginHorizontal: 12 },
-  note: { color: colors.muted, fontSize: 11, lineHeight: 16 },
+  note: { color: colors.muted, fontSize: 12, lineHeight: 16 },
   stepRow: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   stepNumber: { width: 26, height: 26, borderRadius: 13, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   stepNumberText: { color: colors.onAccent, fontSize: 12, fontWeight: '800' },

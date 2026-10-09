@@ -130,7 +130,7 @@ function paywallFixture({ days = 7, eligible = true, mode = 'native-store', hard
     // Focus effects run like mount effects in this fixture.
     'expo-router': { Stack: { Screen: 'Stack' }, useFocusEffect(fn) { h.react.useEffect(fn, [fn]); }, useLocalSearchParams: () => ({}), useRouter: () => ({ replace() {}, push() {} }) },
     'react-native-safe-area-context': { SafeAreaView: 'Safe', useSafeAreaInsets: () => ({ bottom: 0 }) },
-    '@expo/vector-icons/Ionicons': 'Icon', '@/components/PersonalGoalSummary': { PersonalGoalSummary: 'PersonalGoalSummary' }, '@/components/ui': { PrimaryButton: 'Primary' }, '@/components/KandroMark': { KandroMark: 'Mark' }, '@/components/RevenueCatExperimentPreferences': { RevenueCatExperimentPreferences: 'MeasurementPreferences' }, '@/constants/theme': { radii: {} }, '@/constants/product': { FREE_SCAN_ALLOWANCE: 3 },
+    '@expo/vector-icons/Ionicons': 'Icon', '@/components/PersonalGoalSummary': { PersonalGoalSummary: 'PersonalGoalSummary' }, '@/components/ui': { PrimaryButton: 'Primary' }, '@/components/KandroMark': { KandroMark: 'Mark' }, '@/components/RevenueCatExperimentPreferences': { RevenueCatExperimentPreferences: 'MeasurementPreferences' }, '@/constants/theme': { radii: {}, typeScale: { micro: 12, caption: 13, compact: 15, body: 17, heading: 22, title: 32, display: 56 } }, '@/constants/product': { FREE_SCAN_ALLOWANCE: 3 },
     '@/services/presentation': { usePresentationBlock() {} }, '@/context/ThemeContext': { useTheme: () => ({ colors: {} }), useThemedStyles: () => ({}) },
     '@/context/AccessContext': { useAccess: () => ({ record: { hard, variant: hard ? 'B' : 'A', source: 'qa' }, refresh: async () => {}, markSeen() {}, ready: true, state: 'allowed', canUse }) },
     '@/context/AppContext': { useApp: () => ({ freeScansLeft: 3, profile: null, targets: { calories: 0 } }) }, '@/services/accessPolicy': { takeAccessDestination: () => '/' }, '@/context/SubscriptionContext': { useSubscription: () => state },
@@ -163,7 +163,10 @@ await test('Annual card states the real monthly equivalent and the trial; badge 
   const g = paywallFixture(); g.state.snapshot.plans.yearly.package = { product: { ...g.state.snapshot.plans.yearly.package.product, currencyCode: 'GBP' } };
   g.render(); assert.match(g.cards(g.render()).find(n => n.props.label === dict.paywall.yearly).props.detail, /£4\.92/);
   const source = fs.readFileSync(new URL('src/app/paywall.tsx', root), 'utf8');
-  assert.ok(Number(source.match(/badgeText: \{[^}]*fontSize: (\d+)/)?.[1]) >= 12, 'the saving badge is at least 12 pt');
+  const typeScale = Object.fromEntries([...fs.readFileSync(new URL('src/constants/theme.ts', root), 'utf8')
+    .match(/export const typeScale = \{([^}]*)\}/)[1].matchAll(/(\w+): (\d+)/g)].map(([, name, value]) => [name, Number(value)]));
+  const badgeSize = source.match(/badgeText: \{[^}]*fontSize: (\d+|typeScale\.\w+)/)?.[1] ?? '0';
+  assert.ok((badgeSize.startsWith('typeScale.') ? typeScale[badgeSize.slice(10)] : Number(badgeSize)) >= 12, 'the saving badge is at least 12 pt');
   assert.doesNotMatch(source, /goalHeadline|targetWeightKg|PersonalGoalSummary/, 'no weight promise or per-user headline override');
   for (const key of ['headline', 'subtitle', 'benefitMeals', 'benefitAnalyze', 'benefitReview']) assert.doesNotMatch(dict.paywall[key], /60/, `${key}: the fair-use cap is fine print, not a benefit`);
 });

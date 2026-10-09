@@ -217,7 +217,7 @@ export function ConfidenceBadge({ level = 'estimated' }: { level?: ConfidenceLev
   const copy = {
     sure: { icon: 'checkmark-circle' as const, label: t.confirm.confidenceSure, hint: t.confirm.confidenceSureHint, color: colors.success },
     estimated: { icon: 'contrast' as const, label: t.confirm.confidenceEstimated, hint: t.confirm.confidenceEstimatedHint, color: colors.text },
-    check: { icon: 'alert-circle' as const, label: t.confirm.confidenceCheck, hint: t.confirm.confidenceCheckHint, color: colors.attention },
+    check: { icon: 'alert-circle' as const, label: t.confirm.confidenceCheck, hint: t.confirm.confidenceCheckHint, color: colors.attentionText },
   }[level];
   return (
     <View accessibilityHint={copy.hint} accessibilityLabel={copy.label} accessible style={[styles.confidence, level === 'check' && styles.confidenceUncertain]}>
@@ -430,7 +430,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   macroTarget: {
     color: colors.muted,
-    fontSize: 11,
+    fontSize: 12,
     marginBottom: 7,
     fontVariant: ['tabular-nums'],
   },
@@ -458,7 +458,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     fontWeight: '700',
   },
   confidenceTextUncertain: {
-    color: colors.attention,
+    color: colors.attentionText,
   },
   photoFrame: {
     width: '100%',
@@ -485,7 +485,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   demoBadgeText: {
     color: colors.white,
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '800',
     letterSpacing: 0.8,
   },
