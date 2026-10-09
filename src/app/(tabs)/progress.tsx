@@ -11,7 +11,7 @@ import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { formatNumber } from '@/utils/format';
 import { useLanguage } from '@/i18n/LanguageProvider';
-import { currentLoggingStreak, proteinConsistency } from '@/services/consistency';
+import { proteinConsistency, weeklyLoggingGoal } from '@/services/consistency';
 import { progressPresentation } from '@/utils/progressPresentation';
 import { useLocalDay } from '@/hooks/useLocalDay';
 import { formatWeight, formatWeightDelta, kgToStoneParts, parseStoneInput, parseWeightInput, weightInputUnit, weightInputValue } from '@/utils/units';
@@ -44,7 +44,8 @@ export default function ProgressScreen() {
     () => proteinConsistency(mealHistory, targets.protein),
     [currentDay, locale, mealHistory, targets.protein],
   );
-  const loggingStreak = useMemo(() => currentLoggingStreak(mealHistory), [currentDay, mealHistory]);
+  // A forgiving weekly goal, not a streak: a missed day never resets anything.
+  const weekGoal = useMemo(() => weeklyLoggingGoal(mealHistory), [currentDay, mealHistory]);
   // Calories per weekday, same seven days as the protein strip. A day without
   // a logged meal stays empty ("not logged"), never a false 0 kcal success.
   const calorieWeek = useMemo(() => consistency.days.map((day) => {
@@ -197,12 +198,19 @@ export default function ProgressScreen() {
         <Text style={styles.heroFoot}>{t.progress.currentTargetNote}</Text>
       </Card>
 
+      <Card style={styles.weekGoalCard}>
+        <View accessible accessibilityLabel={`${t.progress.weekGoal(weekGoal.logged, weekGoal.goal)}. ${weekGoal.reached ? t.progress.weekGoalReached : t.progress.weekGoalOpen}`} style={styles.weekGoalBody}>
+          <Text style={styles.weekGoalTitle}>{t.progress.weekGoal(weekGoal.logged, weekGoal.goal)}</Text>
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.weekGoalDots}>
+            {weekGoal.days.map((day) => (
+              <View key={day.key} style={[styles.weekGoalDot, day.logged && styles.weekGoalDotLogged, day.today && styles.weekGoalDotToday]} />
+            ))}
+          </View>
+          <Text style={styles.weekGoalText}>{weekGoal.reached ? t.progress.weekGoalReached : t.progress.weekGoalOpen}</Text>
+        </View>
+      </Card>
+
       <View style={styles.statsRow}>
-        <Card style={styles.statCard}>
-          <IconCircle name="flame-outline" size={38} tone="neutral" />
-          <Text style={styles.statValue}>{loggingStreak}</Text>
-          <Text style={styles.statLabel}>{t.progress.daysTracked}</Text>
-        </Card>
         <Card style={styles.statCard}>
           <IconCircle name="barbell-outline" size={38} tone="neutral" />
           <Text style={styles.statValue}>{trackedDays ? `${averageProtein} g` : t.progress.noLoggedProtein}</Text>
@@ -364,6 +372,15 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   lastDot: { position: 'absolute', top: -4, left: -4, width: 16, height: 16, borderRadius: 8, backgroundColor: colors.accentDeep, borderWidth: 4, borderColor: colors.surface },
   chartLabels: { flexDirection: 'row', justifyContent: 'space-between' },
   chartLabel: { color: colors.muted, fontSize: 10 },
+  weekGoalCard: { padding: 18 },
+  weekGoalBody: { gap: 12 },
+  weekGoalTitle: { color: colors.text, fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  weekGoalDots: { flexDirection: 'row', gap: 8 },
+  // Logged days fill in; empty days stay a quiet outline, never a warning colour.
+  weekGoalDot: { width: 14, height: 14, borderRadius: 7, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface },
+  weekGoalDotLogged: { backgroundColor: colors.accent, borderColor: colors.accent },
+  weekGoalDotToday: { borderColor: colors.accentText },
+  weekGoalText: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 9 },
   statCard: { flexGrow: 1, flexBasis: 95, padding: 13, borderRadius: 20, gap: 6 },
   statValue: { color: colors.text, fontSize: 17, fontWeight: '700', marginTop: 4, fontVariant: ['tabular-nums'] },

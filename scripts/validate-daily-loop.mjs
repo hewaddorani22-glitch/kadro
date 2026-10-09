@@ -154,7 +154,8 @@ if (!ring.includes('proteinReached && over === 0')) {
 if (!uiKit.includes('current >= target * 0.9')) {
   failures.push('the macro card must use the same 10% tolerance as the weekly strip');
 }
-if (!progress.includes('currentLoggingStreak')) failures.push('the progress screen does not show the real current logging streak');
+if (!progress.includes('weeklyLoggingGoal')) failures.push('the progress screen does not show the forgiving weekly logging goal');
+if (/Tage in Folge|days in a row|Tage dran|days in\b/.test(dictDe + dictEn)) failures.push('streak copy contradicts "Keine Serien, kein Druck"');
 if (/Serie am Leben|verloren|nicht verlieren|save your streak|lost your streak/i.test(progress + ring + dictDe + dictEn)) {
   failures.push('the factual streak must not be framed as loss or pressure');
 }

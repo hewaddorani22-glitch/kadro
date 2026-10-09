@@ -21,8 +21,28 @@ export const DEFAULT_SLOTS: Record<MealSlot, SlotSetting> = {
 const SLOT_IDS: Record<MealSlot, string> = { breakfast: 'kandro-reminder-breakfast', lunch: 'kandro-reminder-lunch', dinner: 'kandro-reminder-dinner', evening: 'kandro-reminder-evening' };
 // Meals open the camera (fastest), the end-of-day check opens a description.
 const SLOT_MODE: Record<MealSlot, 'photo' | 'description'> = { breakfast: 'photo', lunch: 'photo', dinner: 'photo', evening: 'description' };
+/**
+ * Meal reminders are one-off dates for the next week instead of a repeating
+ * daily trigger: only then can today's reminder carry today's real numbers
+ * while later days stay neutral. Every app start and every saved or removed
+ * meal tops the window up again. Someone who stops opening Kandro gets one
+ * more week of the reminders they chose, then silence; never a nagging loop.
+ */
+export const SLOT_OCCURRENCES = 7;
+const slotId = (slot: MealSlot, occurrence: number) => occurrence === 0 ? SLOT_IDS[slot] : `${SLOT_IDS[slot]}-${occurrence}`;
+const SLOT_OCCURRENCE_IDS = MEAL_SLOTS.flatMap(slot => Array.from({ length: SLOT_OCCURRENCES }, (_, occurrence) => slotId(slot, occurrence)));
 export const REMINDER_IDS = ['kandro-meal-reminder', 'kandro-evening-summary', 'kandro-morning-plan', ...Object.values(SLOT_IDS)] as const;
 const IDS = REMINDER_IDS;
+const OWN_IDS: readonly string[] = [...IDS, ...SLOT_OCCURRENCE_IDS.filter(id => !(IDS as readonly string[]).includes(id))];
+const SLOT_MEAL_TYPE: Record<MealSlot, 'Breakfast' | 'Lunch' | 'Dinner' | null> = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', evening: null };
+/** Today's numbers as the app last saw them; personalises today's reminders only. */
+export type ReminderDayStatus = { day: string; remainingCalories: number; remainingProtein: number; loggedTypes: string[] };
+let dayStatus: ReminderDayStatus | null = null;
+export function setReminderDayStatus(status: ReminderDayStatus | null) { dayStatus = status; }
+// Local calendar key without importing date utilities (kept dependency-free).
+const dayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+/** Below this many kcal the day counts as complete: no "3 ideas" nudge, only a neutral note. */
+export const DAY_COMPLETE_KCAL = 200;
 export const REMINDER_HOUR = 20;
 export const REMINDER_MINUTE = 30;
 export const MORNING_HOUR = 8;
@@ -66,7 +86,7 @@ let accessAllowed = true;
 /** Keep the preference; only scheduled/delivered reminders are paused. */
 export function setReminderAccessAllowed(allowed: boolean) {
   accessAllowed = allowed;
-  if (!allowed && remindersSupported) void serialize(async () => { await cancelOwn(); }).catch(() => undefined);
+  if (!allowed && remindersSupported) void serialize(async () => { await cancelOwn(); await cancelReengagement(); }).catch(() => undefined);
 }
 function serialize<T>(fn: (epoch: number) => Promise<T>) {
   const epoch = generation;
@@ -132,24 +152,62 @@ export async function finishReminderOnboarding(choice: ReminderOnboardingChoice 
   await AsyncStorage.removeItem(PENDING_KEY);
 }
 async function cancelOwn() {
-  await Promise.all(IDS.map(async id => {
+  await Promise.all(OWN_IDS.map(async id => {
     await Notifications.cancelScheduledNotificationAsync(id);
     await Notifications.dismissNotificationAsync(id);
   }));
+}
+type ScheduledReminder = { id: string; title: string; body: string; data: Record<string, string>; trigger: Notifications.NotificationTriggerInput };
+/**
+ * One slot occurrence. Today's breakfast/lunch/dinner reminder names what is
+ * really left and leads to the three ideas on Plan; a meal already logged for
+ * that slot skips it. An exceeded or nearly complete day, the end-of-day check
+ * and every later day get a neutral note that simply opens the capture.
+ */
+function slotReminder(slot: MealSlot, occurrence: number, at: Date, today: boolean): ScheduledReminder | null {
+  const t = getDictionary().captureExtras;
+  const label: Record<MealSlot, string> = { breakfast: t.slotBreakfast, lunch: t.slotLunch, dinner: t.slotDinner, evening: t.slotEvening };
+  const neutralBody: Record<MealSlot, string> = { breakfast: t.notifyBreakfast, lunch: t.notifyLunch, dinner: t.notifyDinner, evening: t.notifyEvening };
+  const trigger = { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}) } as Notifications.NotificationTriggerInput;
+  const neutral = { id: slotId(slot, occurrence), title: label[slot], body: neutralBody[slot], data: { route: '/capture', mode: SLOT_MODE[slot] }, trigger };
+  const status = today && dayStatus?.day === dayKey(at) ? dayStatus : null;
+  const type = SLOT_MEAL_TYPE[slot];
+  if (!status || !type) return neutral;
+  if (status.loggedTypes.includes(type)) return null;
+  const kcal = Math.round(status.remainingCalories);
+  if (kcal < DAY_COMPLETE_KCAL) return neutral;
+  const protein = Math.max(0, Math.round(status.remainingProtein));
+  return { ...neutral, title: protein > 0 ? t.mealReminderLeft(kcal, protein) : t.mealReminderLeftKcal(kcal), body: t.mealReminderIdeas(label[slot]), data: { route: '/plan' } };
+}
+function mealReminders(slots: Record<MealSlot, SlotSetting>, now = new Date()): ScheduledReminder[] {
+  const result: ScheduledReminder[] = [];
+  for (const slot of MEAL_SLOTS) {
+    if (!slots[slot].enabled) continue;
+    const first = new Date(now); first.setHours(slots[slot].hour, slots[slot].minute, 0, 0);
+    // A time that already passed today starts the window tomorrow.
+    if (first.getTime() <= now.getTime() + 60_000) first.setDate(first.getDate() + 1);
+    for (let occurrence = 0; occurrence < SLOT_OCCURRENCES; occurrence++) {
+      const at = new Date(first); at.setDate(first.getDate() + occurrence);
+      const reminder = slotReminder(slot, occurrence, at, dayKey(at) === dayKey(now));
+      if (reminder) result.push(reminder);
+    }
+  }
+  return result;
 }
 async function schedule(settings: ReminderSettings, epoch: number) {
   await cancelOwn();
   if (!current(epoch) || !accessAllowed) return;
   const t = getDictionary().captureExtras;
-  const slotBody: Record<MealSlot, string> = { breakfast: t.notifyBreakfast, lunch: t.notifyLunch, dinner: t.notifyDinner, evening: t.notifyEvening };
-  const times = settings.mode === 'meals' && settings.slots
-    ? MEAL_SLOTS.filter(slot => settings.slots![slot].enabled).map(slot => ({ id: SLOT_IDS[slot], hour: settings.slots![slot].hour, minute: settings.slots![slot].minute, body: slotBody[slot], mode: SLOT_MODE[slot] }))
+  const channel = Platform.OS === 'android' ? { channelId: 'evening-summary' } : {};
+  const daily = (hour: number, minute: number) => ({ type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute, ...channel }) as Notifications.NotificationTriggerInput;
+  const times: ScheduledReminder[] = settings.mode === 'meals' && settings.slots
+    ? mealReminders(settings.slots)
     : settings.mode === 'legacy'
-      ? [{ id: IDS[1], hour: settings.hour, minute: settings.minute, body: t.notificationBody, mode: 'search' }, { id: IDS[2], hour: MORNING_HOUR, minute: MORNING_MINUTE, body: t.notificationBody, mode: 'search' }]
-      : [{ id: IDS[0], hour: settings.hour, minute: settings.minute, body: t.notificationBody, mode: 'search' }];
+      ? [{ id: IDS[1], title: t.notificationTitle, body: t.notificationBody, data: { route: '/capture', mode: 'search' }, trigger: daily(settings.hour, settings.minute) }, { id: IDS[2], title: t.notificationTitle, body: t.notificationBody, data: { route: '/capture', mode: 'search' }, trigger: daily(MORNING_HOUR, MORNING_MINUTE) }]
+      : [{ id: IDS[0], title: t.notificationTitle, body: t.notificationBody, data: { route: '/capture', mode: 'search' }, trigger: daily(settings.hour, settings.minute) }];
   for (const time of times) {
     if (!current(epoch) || !accessAllowed) return;
-    await Notifications.scheduleNotificationAsync({ identifier: time.id, content: { title: t.notificationTitle, body: time.body, data: { route: '/capture', mode: time.mode } }, trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: time.hour, minute: time.minute, ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}) } });
+    await Notifications.scheduleNotificationAsync({ identifier: time.id, content: { title: time.title, body: time.body, data: time.data }, trigger: time.trigger });
   }
 }
 /** Only an explicit user action may ask the OS. No network or push token. */
@@ -179,6 +237,15 @@ export function updateReminder(settings: ReminderSettings): Promise<{ enabled: b
 export async function setEveningReminderEnabled(enabled: boolean, _targets?: { calories: number; protein: number }): Promise<boolean> {
   return (await updateReminder({ ...await getReminderSettings(), enabled })).enabled;
 }
+/**
+ * The end-of-day offer promises exactly one calm evening message, so it turns
+ * on the end-of-day slot alone (at its saved time) and nothing else.
+ */
+export async function enableEveningCheckIn(): Promise<boolean> {
+  const base = reminderSlots(await getReminderSettings());
+  const slots = Object.fromEntries(MEAL_SLOTS.map(slot => [slot, { ...base[slot], enabled: slot === 'evening' }])) as Record<MealSlot, SlotSetting>;
+  return (await updateReminder({ enabled: true, mode: 'meals', slots, hour: slots.evening.hour, minute: slots.evening.minute })).enabled;
+}
 /** Permission changes do not erase the user's choice or re-prompt. */
 export function syncEveningReminder(_targets?: { calories: number; protein: number }) {
   return serialize(async epoch => {
@@ -190,6 +257,45 @@ export function syncEveningReminder(_targets?: { calories: number; protein: numb
     if (settings.enabled && ['authorized', 'quiet'].includes(permission)) await schedule(settings, epoch);
     else await cancelOwn();
   });
+}
+const REENGAGE_ID = 'kandro-reengage';
+const REENGAGE_KEY = '@kandro/reengage-reminder:v1';
+export const REENGAGE_AFTER_DAYS = 3;
+export async function isReengagementEnabled() { return (await AsyncStorage.getItem(REENGAGE_KEY).catch(() => null)) !== 'false'; }
+async function cancelReengagement() {
+  await Notifications.cancelScheduledNotificationAsync(REENGAGE_ID);
+  await Notifications.dismissNotificationAsync(REENGAGE_ID);
+}
+/** Calm daytime only: a pause that ends late at night is answered in the afternoon. */
+export function reengagementDate(lastSavedAt: number) {
+  const at = new Date(lastSavedAt + REENGAGE_AFTER_DAYS * 86_400_000);
+  if (at.getHours() < 9) at.setHours(9, 0, 0, 0);
+  else if (at.getHours() >= 20) at.setHours(18, 0, 0, 0);
+  return at;
+}
+/**
+ * One gentle note three days after the last saved meal; every new save moves
+ * it. Once delivered nothing follows until the next save. Never asks the OS
+ * for permission and respects its own switch under Du → Benachrichtigungen.
+ */
+export function syncReengagementReminder(lastSavedAt: number | null) {
+  return serialize(async epoch => {
+    if (!remindersSupported) return false;
+    try {
+      configureNotifications();
+      const [enabled, permission] = await Promise.all([isReengagementEnabled(), getReminderPermission()]);
+      if (!current(epoch)) return false;
+      await cancelReengagement();
+      const at = lastSavedAt !== null && Number.isFinite(lastSavedAt) ? reengagementDate(lastSavedAt) : null;
+      if (!enabled || !accessAllowed || !at || at.getTime() <= Date.now() || (permission !== 'authorized' && permission !== 'quiet')) return false;
+      await Notifications.scheduleNotificationAsync({ identifier: REENGAGE_ID, content: { body: getDictionary().captureExtras.reengageBody, data: { route: '/capture', mode: 'photo' } }, trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}) } });
+      return true;
+    } catch { return false; }
+  });
+}
+export async function setReengagementEnabled(enabled: boolean, lastSavedAt: number | null) {
+  await AsyncStorage.setItem(REENGAGE_KEY, String(enabled));
+  await syncReengagementReminder(lastSavedAt);
 }
 const TRIAL_ID = 'kandro-trial-ending';
 const TRIAL_KEY = '@kandro/trial-reminder:v1';
@@ -246,10 +352,11 @@ export async function markFirstMealCelebrated() {
   await AsyncStorage.setItem(FIRST_MEAL_KEY, 'true').catch(() => undefined);
 }
 /**
- * Third distinct logging day: a short, true summary next morning. Values are
- * computed now from saved meals; nothing is promised that did not happen.
+ * Third distinct logging day: a short, true summary next morning, framed as the
+ * forgiving weekly goal ("3 von 7 Tagen erfasst · Ziel: 4"), never as a streak.
+ * Values are computed now from saved meals; nothing is promised that did not happen.
  */
-export async function scheduleThreeDayMilestone(averageCalories: number, targetCalories: number) {
+export async function scheduleThreeDayMilestone(averageCalories: number, targetCalories: number, weekDays: number, weekGoal: number) {
   if (!remindersSupported) return 'skipped' as const;
   if ((await AsyncStorage.getItem(STREAK_KEY).catch(() => 'error')) !== null) return 'done' as const;
   await AsyncStorage.setItem(STREAK_KEY, 'true').catch(() => undefined);
@@ -260,7 +367,7 @@ export async function scheduleThreeDayMilestone(averageCalories: number, targetC
     const t = getDictionary().milestones;
     const morning = new Date(); morning.setDate(morning.getDate() + 1); morning.setHours(8, 30, 0, 0);
     const near = targetCalories > 0 && Math.abs(averageCalories / targetCalories - 1) <= 0.1;
-    await Notifications.scheduleNotificationAsync({ identifier: STREAK_ID, content: { title: t.threeDaysTitle, body: t.threeDaysBody(averageCalories, targetCalories, near) }, trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: morning, ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}) } });
+    await Notifications.scheduleNotificationAsync({ identifier: STREAK_ID, content: { title: t.threeDaysTitle(weekDays, weekGoal), body: t.threeDaysBody(averageCalories, targetCalories, near) }, trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: morning, ...(Platform.OS === 'android' ? { channelId: 'evening-summary' } : {}) } });
     return 'scheduled' as const;
   } catch { return 'skipped' as const; }
 }
@@ -272,8 +379,8 @@ export function clearRemindersAfterAccountDeletion() {
   generation += 1;
   publishOnboardingPending(false);
   return serialize(async () => {
-    if (remindersSupported) { await cancelOwn(); await cancelTrial().catch(() => undefined); await Notifications.cancelScheduledNotificationAsync(STREAK_ID).catch(() => undefined); }
-    await AsyncStorage.multiRemove([KEY, LEGACY_KEY, OFFER_KEY, PENDING_KEY, DECISION_KEY, TRIAL_KEY, FIRST_MEAL_KEY, STREAK_KEY]);
+    if (remindersSupported) { await cancelOwn(); await cancelTrial().catch(() => undefined); await cancelReengagement().catch(() => undefined); await Notifications.cancelScheduledNotificationAsync(STREAK_ID).catch(() => undefined); }
+    await AsyncStorage.multiRemove([KEY, LEGACY_KEY, OFFER_KEY, PENDING_KEY, DECISION_KEY, TRIAL_KEY, FIRST_MEAL_KEY, STREAK_KEY, REENGAGE_KEY]);
   });
 }
 export const clearRemindersForAccountSwitch = clearRemindersAfterAccountDeletion;

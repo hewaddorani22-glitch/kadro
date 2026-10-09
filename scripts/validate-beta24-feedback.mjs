@@ -59,31 +59,110 @@ const memory = new Map();
 const storage = { getItem: async key => memory.get(key) ?? null, setItem: async (key, value) => { memory.set(key, value); }, removeItem: async key => { memory.delete(key); }, multiRemove: async keys => { keys.forEach(key => memory.delete(key)); } };
 const scheduled = new Map();
 let permission = 2;
-const notifications = { IosAuthorizationStatus: { NOT_DETERMINED: 0, DENIED: 1, AUTHORIZED: 2, PROVISIONAL: 3, EPHEMERAL: 4 }, SchedulableTriggerInputTypes: { DAILY: 'daily' }, setNotificationHandler() {},
+const notifications = { IosAuthorizationStatus: { NOT_DETERMINED: 0, DENIED: 1, AUTHORIZED: 2, PROVISIONAL: 3, EPHEMERAL: 4 }, SchedulableTriggerInputTypes: { DAILY: 'daily', DATE: 'date' }, setNotificationHandler() {},
   getPermissionsAsync: async () => ({ ios: { status: permission }, granted: permission === 2, canAskAgain: permission === 0 }), requestPermissionsAsync: async () => ({ ios: { status: 2 }, granted: true }),
   cancelScheduledNotificationAsync: async id => { scheduled.delete(id); }, dismissNotificationAsync: async () => undefined, scheduleNotificationAsync: async record => { scheduled.set(record.identifier, record); return record.identifier; } };
-const copy = { notificationTitle: 'Ein Moment für dich', notificationBody: 'generic', notifyBreakfast: 'b', notifyLunch: 'l', notifyDinner: 'd', notifyEvening: 'e', reminderTitle: 'r' };
+const copy = { notificationTitle: 'Ein Moment für dich', notificationBody: 'generic', notifyBreakfast: 'b', notifyLunch: 'l', notifyDinner: 'd', notifyEvening: 'e', reminderTitle: 'r', slotBreakfast: 'Frühstück', slotLunch: 'Mittagessen', slotDinner: 'Abendessen', slotEvening: 'Tagesabschluss',
+  mealReminderLeft: (kcal, protein) => `Noch ${kcal} kcal und ${protein} g Protein übrig`, mealReminderLeftKcal: kcal => `Noch ${kcal} kcal übrig · Protein geschafft`, mealReminderIdeas: slot => `3 Ideen fürs ${slot} warten auf dich.`, reengageBody: 'Kein Stress.' };
 const reminders = compile('src/services/reminders.ts', { '@react-native-async-storage/async-storage': storage, 'expo-notifications': notifications, 'react-native': { Platform: { OS: 'ios' } }, '@/i18n/active': { getDictionary: () => ({ captureExtras: copy }) } });
 const intents = compile('src/services/captureIntents.ts');
 
-await test('meal reminders schedule one notification per tapped meal with its own time and capture mode', async () => {
+const slotIds = () => [...new Set([...scheduled.keys()].map(id => id.replace(/-\d$/, '')))].sort();
+await test('meal reminders schedule each tapped meal for the coming week with its own time, title and capture mode', async () => {
+  reminders.setReminderDayStatus(null);
   const slots = { ...reminders.DEFAULT_SLOTS, breakfast: { enabled: true, hour: 7, minute: 45 }, evening: { enabled: true, hour: 21, minute: 0 } };
   const result = await reminders.updateReminder({ enabled: true, mode: 'meals', slots, hour: 7, minute: 45 });
   assert.equal(result.enabled, true);
-  assert.deepEqual([...scheduled.keys()].sort(), ['kandro-reminder-breakfast', 'kandro-reminder-dinner', 'kandro-reminder-evening', 'kandro-reminder-lunch']);
+  assert.deepEqual(slotIds(), ['kandro-reminder-breakfast', 'kandro-reminder-dinner', 'kandro-reminder-evening', 'kandro-reminder-lunch']);
+  assert.equal(scheduled.size, 4 * reminders.SLOT_OCCURRENCES);
   const breakfast = scheduled.get('kandro-reminder-breakfast');
-  assert.equal(breakfast.trigger.hour, 7); assert.equal(breakfast.trigger.minute, 45); assert.equal(breakfast.content.body, 'b'); assert.equal(breakfast.content.data.mode, 'photo');
+  assert.equal(breakfast.trigger.type, 'date'); assert.equal(breakfast.trigger.date.getHours(), 7); assert.equal(breakfast.trigger.date.getMinutes(), 45);
+  assert.equal(breakfast.content.body, 'b'); assert.equal(breakfast.content.data.mode, 'photo');
+  // Meal reminders name their meal; the generic title stays only for the old single daily reminder.
+  assert.ok([...scheduled.values()].every(row => row.content.title !== copy.notificationTitle));
+  assert.equal(breakfast.content.title, 'Frühstück');
+  const days = [...scheduled.keys()].filter(id => id.startsWith('kandro-reminder-lunch')).map(id => scheduled.get(id).trigger.date.getTime()).sort((a, b) => a - b);
+  assert.equal(new Set(days.map(time => new Date(time).toDateString())).size, reminders.SLOT_OCCURRENCES, 'one per day, never two on the same day');
   assert.equal(scheduled.get('kandro-reminder-evening').content.data.mode, 'description');
   const stored = await reminders.getReminderSettings();
   assert.equal(stored.mode, 'meals'); assert.equal(stored.slots.breakfast.minute, 45);
   // Turning one meal off removes only that notification.
   await reminders.updateReminder({ ...stored, slots: { ...stored.slots, lunch: { ...stored.slots.lunch, enabled: false } } });
-  assert.ok(!scheduled.has('kandro-reminder-lunch')); assert.ok(scheduled.has('kandro-reminder-dinner'));
+  assert.ok(![...scheduled.keys()].some(id => id.startsWith('kandro-reminder-lunch'))); assert.ok(scheduled.has('kandro-reminder-dinner'));
   // No meal selected means nothing scheduled, never an empty "enabled" state.
   const none = Object.fromEntries(reminders.MEAL_SLOTS.map(slot => [slot, { ...stored.slots[slot], enabled: false }]));
   assert.equal((await reminders.updateReminder({ ...stored, slots: none })).enabled, false);
   assert.equal(scheduled.size, 0);
   await assert.rejects(reminders.updateReminder({ ...stored, slots: { ...stored.slots, dinner: { enabled: true, hour: 25, minute: 0 } } }));
+});
+
+await test("today's remaining meal reminders carry today's real numbers and open Plan; done or over days stay neutral", async () => {
+  const RealDate = Date; const fixed = new RealDate('2026-10-09T09:00:00');
+  globalThis.Date = class extends RealDate { constructor(...args) { super(...(args.length ? args : [fixed])); } static now() { return fixed.getTime(); } };
+  try {
+    const key = '2026-10-09';
+    const slots = { ...reminders.DEFAULT_SLOTS, breakfast: { enabled: true, hour: 8, minute: 0 }, lunch: { enabled: true, hour: 12, minute: 30 }, dinner: { enabled: true, hour: 18, minute: 30 }, evening: { enabled: true, hour: 20, minute: 30 } };
+    reminders.setReminderDayStatus({ day: key, remainingCalories: 1234.4, remainingProtein: 61.6, loggedTypes: ['Breakfast'] });
+    await reminders.updateReminder({ enabled: true, mode: 'meals', slots, hour: 12, minute: 30 });
+    const lunch = scheduled.get('kandro-reminder-lunch');
+    assert.equal(lunch.content.title, 'Noch 1234 kcal und 62 g Protein übrig');
+    assert.equal(lunch.content.body, '3 Ideen fürs Mittagessen warten auf dich.');
+    assert.deepEqual(lunch.content.data, { route: '/plan' });
+    assert.equal(scheduled.get('kandro-reminder-dinner').content.body, '3 Ideen fürs Abendessen warten auf dich.');
+    // 08:00 already passed: breakfast starts tomorrow, neutral, because tomorrow's numbers are unknown.
+    const breakfast = scheduled.get('kandro-reminder-breakfast');
+    assert.equal(breakfast.trigger.date.getDate(), 10); assert.equal(breakfast.content.title, 'Frühstück'); assert.equal(breakfast.content.data.route, '/capture');
+    assert.equal(scheduled.get('kandro-reminder-lunch-1').content.title, 'Mittagessen', 'later days stay neutral');
+    assert.equal(scheduled.get('kandro-reminder-evening').content.data.mode, 'description', 'the end-of-day check stays a neutral capture');
+    // Lunch already logged: no lunch nudge today; tomorrow's lunch remains.
+    reminders.setReminderDayStatus({ day: key, remainingCalories: 900, remainingProtein: 0, loggedTypes: ['Lunch'] });
+    await reminders.syncEveningReminder();
+    assert.ok(!scheduled.has('kandro-reminder-lunch')); assert.ok(scheduled.has('kandro-reminder-lunch-1'));
+    assert.equal(scheduled.get('kandro-reminder-dinner').content.title, 'Noch 900 kcal übrig · Protein geschafft');
+    // Over budget or nearly complete: neutral, never "3 ideas", never negative numbers.
+    for (const remainingCalories of [-300, 150]) {
+      reminders.setReminderDayStatus({ day: key, remainingCalories, remainingProtein: 20, loggedTypes: [] });
+      await reminders.syncEveningReminder();
+      const dinner = scheduled.get('kandro-reminder-dinner');
+      assert.equal(dinner.content.title, 'Abendessen'); assert.equal(dinner.content.body, 'd'); assert.equal(dinner.content.data.route, '/capture');
+    }
+    // A stale status from yesterday never personalises today.
+    reminders.setReminderDayStatus({ day: '2026-10-08', remainingCalories: 1500, remainingProtein: 80, loggedTypes: [] });
+    await reminders.syncEveningReminder();
+    assert.equal(scheduled.get('kandro-reminder-dinner').content.title, 'Abendessen');
+  } finally { globalThis.Date = RealDate; reminders.setReminderDayStatus(null); }
+});
+
+await test('re-engagement: one note three days after the last save, moved by each save, respecting switch and permission', async () => {
+  const day = 86_400_000; const now = Date.now();
+  const saved = new Date(now); saved.setHours(13, 0, 0, 0);
+  assert.equal(await reminders.syncReengagementReminder(saved.getTime()), true);
+  const row = scheduled.get('kandro-reengage');
+  assert.equal(row.content.body, 'Kein Stress.'); assert.equal(row.content.title, undefined); assert.deepEqual(row.content.data, { route: '/capture', mode: 'photo' });
+  assert.equal(row.trigger.date.getTime(), saved.getTime() + 3 * day);
+  const later = saved.getTime() + day; await reminders.syncReengagementReminder(later);
+  assert.equal(scheduled.get('kandro-reengage').trigger.date.getTime(), later + 3 * day, 'each save moves the single note');
+  assert.equal([...scheduled.keys()].filter(id => id === 'kandro-reengage').length, 1);
+  const lateNight = new Date(now); lateNight.setHours(23, 30, 0, 0);
+  assert.equal(reminders.reengagementDate(lateNight.getTime()).getHours(), 18, 'a late-night save is answered in the afternoon');
+  // Once the moment passed nothing new is scheduled until the next save: no nagging loop.
+  assert.equal(await reminders.syncReengagementReminder(now - 4 * day), false); assert.ok(!scheduled.has('kandro-reengage'));
+  await reminders.setReengagementEnabled(false, saved.getTime()); assert.ok(!scheduled.has('kandro-reengage'));
+  await reminders.setReengagementEnabled(true, saved.getTime()); assert.ok(scheduled.has('kandro-reengage'));
+  permission = 1; assert.equal(await reminders.syncReengagementReminder(saved.getTime()), false); assert.ok(!scheduled.has('kandro-reengage')); permission = 2;
+  assert.equal(await reminders.syncReengagementReminder(null), false);
+});
+
+await test('the end-of-day offer enables exactly the one evening reminder it promises', async () => {
+  reminders.setReminderDayStatus(null);
+  await reminders.updateReminder({ enabled: false, mode: 'meals', slots: { ...reminders.DEFAULT_SLOTS }, hour: 12, minute: 30 });
+  assert.equal(await reminders.enableEveningCheckIn(), true);
+  assert.deepEqual(slotIds(), ['kandro-reminder-evening']);
+  const stored = await reminders.getReminderSettings();
+  assert.deepEqual(reminders.MEAL_SLOTS.filter(slot => stored.slots[slot].enabled), ['evening']);
+  const de = fs.readFileSync(new URL('../src/i18n/de.ts', import.meta.url), 'utf8');
+  assert.ok(!de.includes('Zwei ruhige Nachrichten'), 'the offer must not promise two messages');
+  assert.ok(de.includes("reminderText: 'Eine ruhige Nachricht am Abend"));
 });
 
 await test('an existing single daily reminder is offered as the dinner slot', () => {

@@ -66,8 +66,8 @@ assert.doesNotMatch(scan.slice(scan.indexOf('const openBarcode'), scan.indexOf('
 assert.match(plan, /freeScansLeft === 0/,
   'the after-meal paywall must wait until all free analyses are used');
 
-assert.match(consistency, /if \(!loggedDates\.has\(todayKey\)\) cursor\.setDate\(cursor\.getDate\(\) - 1\)/,
-  'a streak must stay alive until the user has had today to log');
+// The streak was replaced by a forgiving weekly goal: nothing to lose, nothing reset.
+assert.doesNotMatch(consistency, /currentLoggingStreak/, 'no consecutive-day streak may come back');
 
 const consistencySource = `
   const localDateKey = (date = new Date()) => {
@@ -82,14 +82,20 @@ const consistencySource = `
 const compiled = ts.transpileModule(consistencySource, {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;
-const { currentLoggingStreak } = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(compiled)}`);
-const on = (date) => ({ date });
+const { weeklyLoggingGoal, WEEKLY_LOG_GOAL, lastMealSavedAt } = await import(`data:text/javascript;charset=utf-8,${encodeURIComponent(compiled)}`);
+const on = (date, extra = {}) => ({ date, ...extra });
 const today = new Date(2026, 8, 4, 12);
-assert.equal(currentLoggingStreak([on('2026-09-04')], today), 1);
-assert.equal(currentLoggingStreak([on('2026-09-03')], today), 1, 'the streak must not expire before today ends');
-assert.equal(currentLoggingStreak([on('2026-09-03'), on('2026-09-02')], today), 2);
-assert.equal(currentLoggingStreak([on('2026-09-04'), on('2026-09-02')], today), 1, 'a missing day must break the streak');
-assert.equal(currentLoggingStreak([on('2026-09-05')], today), 0, 'a future meal must not create a current streak');
+assert.equal(WEEKLY_LOG_GOAL, 4);
+assert.equal(weeklyLoggingGoal([on('2026-09-04')], today).logged, 1);
+assert.equal(weeklyLoggingGoal([on('2026-09-03')], today).logged, 1, 'yesterday still counts this week');
+assert.equal(weeklyLoggingGoal([on('2026-09-04'), on('2026-09-02'), on('2026-08-31')], today).logged, 3, 'a gap never resets the week');
+assert.equal(weeklyLoggingGoal([on('2026-08-28')], today).logged, 0, 'only the last seven days count');
+assert.equal(weeklyLoggingGoal([on('2026-09-05')], today).logged, 0, 'a future meal does not count');
+assert.equal(weeklyLoggingGoal([on('2026-09-04', { origin: 'seed' })], today).logged, 0, 'demo meals do not count');
+const fourDays = weeklyLoggingGoal(['2026-09-04', '2026-09-03', '2026-09-01', '2026-08-29'].map((d) => on(d)), today);
+assert.equal(fourDays.reached, true); assert.equal(fourDays.days.length, 7); assert.equal(fourDays.days[6].today, true); assert.equal(fourDays.days[6].key, '2026-09-04');
+assert.equal(lastMealSavedAt([on('2026-09-01', { savedAt: '2026-09-01T10:00:00Z' }), on('2026-09-03', { savedAt: '2026-09-03T08:00:00Z' }), on('2026-09-04', { origin: 'seed', savedAt: '2026-09-04T08:00:00Z' })]), Date.parse('2026-09-03T08:00:00Z'));
+assert.equal(lastMealSavedAt([]), null);
 assert.match(progress, /range === 0 \? 0\.5/,
   'an unchanged weight trend must render flat instead of at the chart minimum');
 assert.doesNotMatch(progress, /weightChange > 0 \? colors\.attention/,

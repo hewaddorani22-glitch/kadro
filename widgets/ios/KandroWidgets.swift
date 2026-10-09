@@ -88,11 +88,11 @@ struct TodayWidgetView: View {
       heading
       if let value = shared, let calories = value.calories, let protein = value.protein {
         VStack(alignment: .leading, spacing: 1) {
-          Text(formatted(calories)).font(.system(size: small ? 32 : 36, weight: .semibold, design: .rounded))
+          Text(formatted(calorieFigure(calories, value.targetCalories))).font(.system(size: small ? 32 : 36, weight: .semibold, design: .rounded))
             .monospacedDigit().lineLimit(1).minimumScaleFactor(0.8)
-          Text(verbatim: entry.german ? "kcal erfasst" : "kcal logged").font(.caption).foregroundStyle(.secondary)
+          Text(verbatim: calorieCaption(calories, value.targetCalories)).font(.caption).foregroundStyle(.secondary)
         }.accessibilityElement(children: .combine).privacySensitive()
-        Text("\(formatted(protein)) g Protein").font(.subheadline.weight(.medium)).monospacedDigit().privacySensitive()
+        Text(verbatim: proteinLine(protein, value.targetProtein)).font(.subheadline.weight(.medium)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.8).privacySensitive()
         if let target = value.targetCalories, target > 0 {
           GeometryReader { geometry in
             ZStack(alignment: .leading) {
@@ -111,6 +111,22 @@ struct TodayWidgetView: View {
         if !small { Spacer(minLength: 0) }
       }
     }
+  }
+  // Same reading as the app's ring: what is left today, or how far over, never a bare total.
+  private func calorieFigure(_ calories: Double, _ target: Double?) -> Double {
+    guard let target = target, target > 0 else { return calories }
+    return abs(target - calories)
+  }
+  private func calorieCaption(_ calories: Double, _ target: Double?) -> String {
+    guard let target = target, target > 0 else { return entry.german ? "kcal erfasst" : "kcal logged" }
+    if calories > target { return entry.german ? "kcal drüber" : "kcal over" }
+    return entry.german ? "kcal übrig" : "kcal left"
+  }
+  private func proteinLine(_ protein: Double, _ target: Double?) -> String {
+    guard let target = target, target > 0 else { return "\(formatted(protein)) g Protein" }
+    let left = max(0, target - protein)
+    if left.rounded() <= 0 { return entry.german ? "Protein geschafft" : "Protein done" }
+    return entry.german ? "\(formatted(left)) g Protein übrig" : "\(formatted(left)) g protein left"
   }
   private func action(_ symbol: String, _ label: String, _ mode: String) -> some View {
     Link(destination: captureURL(mode)) {
