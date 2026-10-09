@@ -165,7 +165,7 @@
         "Dein Ziel.",
         "Dein Tempo."
       ],
-      "sub": "In einer Minute berechnet: Kalorien, Protein und ein Zieldatum, das zu deinem Tempo passt."
+      "sub": "In einer Minute berechnet: Kalorien und Protein aus deinen Angaben – in einem ruhigen Tempo."
     },
     "en-US": {
       "eyebrow": "Your personal plan",
@@ -173,7 +173,7 @@
         "Your goal.",
         "Your pace."
       ],
-      "sub": "Built in a minute: calories, protein and a target date that fits your pace."
+      "sub": "Built in a minute: calories and protein from your details – at a calm pace."
     }
   }
 ]
