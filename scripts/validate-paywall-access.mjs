@@ -49,4 +49,16 @@ network=true;remote=b;assert.equal((await app.refreshAppAccess()).variant,'B');r
 assert.equal(policy.resolveAccess({...policy.FREE_ACCESS,access:'active',validUntil:new Date(Date.now()+10000).toISOString()}),'active');
 let release;held=new Promise(r=>release=r);const late=app.refreshAppAccess();await new Promise(r=>setTimeout(r,0));owner='third';app.invalidateAppAccess();release();held=null;await assert.rejects(late,/cloud_identity_changed/);assert.equal(app.isAppAccessMeasurementVerified('first'),false);assert.equal(app.isAppAccessMeasurementVerified('third'),false,'late old response cannot open the new identity measurement gate');
 assert.equal(storage.has('@kandro/access:v1:third'),false);
+// Paused test (2026-10-09): both flags off, so an assigned B is soft again.
+const pause=fs.readFileSync(new URL('../supabase/migrations/20261009100300_pause_paywall_access_test.sql',import.meta.url),'utf8');
+assert.match(pause,/set public_enabled = false,\s*enforcement_enabled = false\s*where experiment = 'paywall_access_v1'/);
+assert.equal(policy.resolveAccess({...b,hard:false,access:'free'}),'free','a B record without hard enforcement is free');
+// Paywall exposure: own-row idempotent insert, authenticated only, fixed contexts.
+const exposure=fs.readFileSync(new URL('../supabase/migrations/20261009100100_paywall_exposures.sql',import.meta.url),'utf8');
+assert.match(exposure,/on conflict \(user_id, context\) do nothing/);
+assert.match(exposure,/values \(auth\.uid\(\), p_context\)/);
+assert.match(exposure,/revoke all on function public\.mark_paywall_shown\(text\) from public, anon;/);
+assert.doesNotMatch(exposure,/grant [^;]+ to anon/);
+const paywallScreen=fs.readFileSync(new URL('../src/app/paywall.tsx',import.meta.url),'utf8');
+assert.match(paywallScreen,/paywallViewed\.current = true;\s*markPaywallShown\(/,'paywall marks its first sighting once per mount');
 console.log('PASS access states, protected entry routes, legal/history access, safe return intent, stable B, free fallback, account race and per-meal authorization; actual client modules with local mocked boundaries.');

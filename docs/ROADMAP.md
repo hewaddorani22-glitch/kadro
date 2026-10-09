@@ -1,5 +1,13 @@
 # Roadmap
 
+## 09.10.2026 – Paywall-Test pausiert, Backend-Messung ohne Client-Analytics
+
+- **Paywall-A/B-Test `paywall_access_v1` pausiert.** Grund: nur ~10 eingeschriebene Nutzer, Ergebnis nicht interpretierbar; die harte Wall kostete Aktivierung. Migration `20261009100300_pause_paywall_access_test.sql` setzt `public_enabled = false` **und** `enforcement_enabled = false`: weiche Paywall für alle, auch bisher zugeordnete B-Nutzer (nur `public_enabled = false` hätte B hart gelassen). Zuordnungen bleiben für die Auswertung erhalten. Neustart nur per Eigentümerentscheidung (`supabase/queries/enable_paywall_experiment.sql`).
+- Fehlercodes für erstattete KI-Analysen (`analysis_requests.failure_code`), Funnel-Views `private.growth_funnel_daily` / `private.ai_failure_daily`, serverseitige Paywall-Sichtungen (`private.paywall_exposures`, RPC `mark_paywall_shown`). Abfragen: `docs/GROWTH_FUNNEL.md`.
+- Globaler KI-Tages-Breaker: Standard 5000 statt 1000 (`GLOBAL_ANALYSIS_DAILY_LIMIT`, siehe `docs/GATEWAY.md`).
+- [ ] Freigabe: Migrationen `20261009100000`–`20261009100300` anwenden, **danach** `nutrition` deployen; Produktions-Secret `GLOBAL_ANALYSIS_DAILY_LIMIT` prüfen.
+- [ ] Prüfen, ob `20260926221131_meal_portion_factor_range.sql` (Grammänderungen > Faktor 20) in Produktion angewendet ist; laut `docs/qa/SYNC-KORREKTUREN-2026-09-27.md` war sie am 27.09. noch nicht live.
+
 ## Apple-Warnung nach Verknüpfung — 05.10.2026, nach Build 38
 
 - [x] Gemeldete Kombination „Mit Apple verknüpft“ plus generische Warnung im
