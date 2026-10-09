@@ -1,25 +1,47 @@
 [
   {
-    "id": "01-photo",
+    "id": "01-adapt",
     "theme": "moss",
+    "capture": "adapt.png",
+    "de-DE": {
+      "eyebrow": "Was als Nächstes passt",
+      "headline": [
+        "782 kcal übrig.",
+        "Was jetzt?"
+      ],
+      "sub": "Drei Mahlzeiten, die in deinen restlichen Tag passen – zu Hause, im Supermarkt oder unterwegs."
+    },
+    "en-US": {
+      "eyebrow": "What fits next",
+      "headline": [
+        "585 kcal left.",
+        "Now what?"
+      ],
+      "sub": "Three meals that fit what’s left of your day – at home, from the shop or on the go."
+    }
+  },
+  {
+    "id": "02-photo",
+    "theme": "pistachio",
     "capture": "photo.png",
     "de-DE": {
       "eyebrow": "Kalorien per Foto",
       "headline": [
         "Foto machen.",
-        "Fertig."
+        "Kandro schätzt."
       ],
-      "sub": "Kandro erkennt deine Mahlzeit und rechnet Kalorien, Protein und Makros für dich aus.",
+      "sub": "Kandro erkennt deine Mahlzeit und schätzt Kalorien, Protein und Makros. Du prüfst und passt an.",
       "cardLabel": "Dein Foto"
     },
     "en-US": {
       "eyebrow": "Calories from a photo",
       "headline": [
         "Snap it.",
-        "Done."
+        "Kandro estimates."
       ],
-      "sub": "Kandro recognizes your meal and works out calories, protein and macros for you.",
-      "cardLabel": "Your photo"
+      "sub": "Kandro recognizes your meal and estimates calories, protein and macros. You check and adjust.",
+      "cardLabel": "Your photo",
+      "size": 112
     },
     "covers": [
       {
@@ -41,7 +63,7 @@
     }
   },
   {
-    "id": "02-voice",
+    "id": "03-voice",
     "theme": "cream",
     "capture": "voice.png",
     "de-DE": {
@@ -79,8 +101,8 @@
     "sheetTop": 880
   },
   {
-    "id": "03-today",
-    "theme": "pistachio",
+    "id": "04-today",
+    "theme": "moss",
     "capture": "today.png",
     "de-DE": {
       "eyebrow": "Dein Tag auf einen Blick",
@@ -97,28 +119,6 @@
         "what’s left."
       ],
       "sub": "Calories and protein, live – recalculated after every meal."
-    }
-  },
-  {
-    "id": "04-adapt",
-    "theme": "moss",
-    "capture": "adapt.png",
-    "de-DE": {
-      "eyebrow": "Kandro plant neu. Du nicht.",
-      "headline": [
-        "Großes Mittagessen?",
-        "Kein Problem."
-      ],
-      "sub": "Drei Mahlzeiten, die genau in deinen restlichen Tag passen.",
-      "size": 112
-    },
-    "en-US": {
-      "eyebrow": "It re-plans. You don’t.",
-      "headline": [
-        "Big lunch?",
-        "No problem."
-      ],
-      "sub": "Three meals that fit exactly what’s left of your day."
     }
   },
   {
@@ -165,7 +165,7 @@
         "Dein Ziel.",
         "Dein Tempo."
       ],
-      "sub": "In einer Minute berechnet: Kalorien, Protein und ein realistisches Zieldatum."
+      "sub": "In einer Minute berechnet: Kalorien, Protein und ein Zieldatum, das zu deinem Tempo passt."
     },
     "en-US": {
       "eyebrow": "Your personal plan",
@@ -173,7 +173,7 @@
         "Your goal.",
         "Your pace."
       ],
-      "sub": "Built in a minute: calories, protein and a realistic target date."
+      "sub": "Built in a minute: calories, protein and a target date that fits your pace."
     }
   }
 ]

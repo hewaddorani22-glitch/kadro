@@ -22,8 +22,8 @@ const markers = [
   ['src/components/VoiceInputButton.tsx', 'function recognitionAvailable', 'microphone shows after a fresh install'],
   ['src/components/VoiceInputButton.tsx', 'stopTimer.current = setTimeout', 'microphone stops instantly'],
   ['src/app/onboarding.tsx', 't.portion.decimalMark', 'localized decimal mark in the target weight'],
-  ['app-store/screenshots/de-DE/01-photo.png', null, 'new German store screenshots'],
-  ['app-store/screenshots/en-US/01-photo.png', null, 'new English store screenshots'],
+  ['app-store/screenshots/de-DE/02-photo.png', null, 'new German store screenshots'],
+  ['app-store/screenshots/en-US/02-photo.png', null, 'new English store screenshots'],
 ];
 
 const errors = [];
