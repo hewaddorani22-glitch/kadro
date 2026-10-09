@@ -26,6 +26,33 @@ export function isTeenProfile(profile: Pick<UserProfile, 'age'>) {
   return profile.age >= 14 && profile.age < 18;
 }
 
+/** Below this BMI Kandro never plans a calorie deficit. */
+export const UNDERWEIGHT_BMI = 18.5;
+
+export function bodyMassIndex(profile: Pick<UserProfile, 'heightCm' | 'weightKg'>) {
+  const heightM = profile.heightCm / 100;
+  return heightM > 0 && Number.isFinite(profile.weightKg) ? profile.weightKg / (heightM * heightM) : NaN;
+}
+
+export function isUnderweight(profile: Pick<UserProfile, 'heightCm' | 'weightKg'>) {
+  return bodyMassIndex(profile) < UNDERWEIGHT_BMI;
+}
+
+/** Lowest weight (kg) that keeps BMI at or above 18.5 for this height. */
+export function lowestHealthyWeightKg(heightCm: number) {
+  const heightM = heightCm / 100;
+  return Math.ceil(UNDERWEIGHT_BMI * heightM * heightM * 10) / 10;
+}
+
+/**
+ * The goal the plan is actually calculated with. Someone underweight who
+ * picked "lose" gets a maintenance plan: Kandro helps them eat enough, it
+ * never prescribes a deficit. Also protects profiles saved before this rule.
+ */
+export function effectiveGoal(profile: Pick<UserProfile, 'goal' | 'heightCm' | 'weightKg'>): NutritionGoal {
+  return profile.goal === 'lose' && isUnderweight(profile) ? 'maintain' : profile.goal;
+}
+
 /** Existing planning coefficient, not a guarantee of real weight change. */
 const KCAL_PER_KG = 7700;
 
@@ -112,7 +139,7 @@ export function maintenanceCalories(profile: UserProfile) {
 export function caloriePlan(profile: UserProfile) {
   const maintenance = maintenanceCalories(profile);
   const teen = isTeenProfile(profile);
-  const requestedOffset = teen ? 0 : dailyGoalOffset(profile.goal, profile.weeklyRateKg ?? 0.5);
+  const requestedOffset = teen ? 0 : dailyGoalOffset(effectiveGoal(profile), profile.weeklyRateKg ?? 0.5);
   const requestedCalories = roundTo(maintenance + requestedOffset, 10);
   const floor = Math.max(1_300, maintenance * 0.7);
   const calories = teen ? requestedCalories : Math.min(4_000, Math.max(floor, requestedCalories));
@@ -142,7 +169,7 @@ export function calculateDailyTargets(profile: UserProfile): DailyTargets {
   // person on a deficit was given macros that added up to far more than their
   // calorie target: 1320 kcal shown, 1845 kcal once the three were summed. The
   // 35% ceilings are what make the three numbers describe the same day.
-  const proteinFactor = profile.goal === 'maintain' ? 1.6 : 1.8;
+  const proteinFactor = effectiveGoal(profile) === 'maintain' ? 1.6 : 1.8;
   const proteinCeiling = Math.min(260, Math.floor((calories * 0.35) / 4));
   // Protein follows lean mass, not fat mass: above BMI 30 the usual "adjusted
   // body weight" (weight at BMI 25 plus a quarter of the excess) is used, so
@@ -207,7 +234,7 @@ export function explainTargets(profile: UserProfile): TargetStep[] {
     { id: 'resting', value: roundTo(resting, 10), unit: 'kcal' },
     { id: 'activity', value: roundTo(maintenance, 10), unit: 'kcal' },
   ];
-  if (profile.goal !== 'maintain') {
+  if (effectiveGoal(profile) !== 'maintain') {
     steps.push({ id: 'goal', value: roundTo(maintenance + offset, 10), unit: 'kcal' });
   }
   // Only when a bound actually moved the number. Comparing against the
@@ -221,14 +248,15 @@ export function explainTargets(profile: UserProfile): TargetStep[] {
   return steps;
 }
 
-type GoalLabels = { goalLose: string; goalMaintain: string; goalGain: string };
+type GoalLabels = { goalLose: string; goalMaintain: string; goalGain: string; goalLoseTeen?: string };
 type ActivityLabels = { activityLow: string; activityLight: string; activityHigh: string };
 
-export function goalLabel(goal: NutritionGoal, labels?: GoalLabels) {
+/** Teens never get a deficit, so their "lose" choice is named for what it does. */
+export function goalLabel(goal: NutritionGoal, labels?: GoalLabels, teen = false) {
   const source = labels ?? getDictionary().common;
   if (goal === 'maintain') return source.goalMaintain;
   if (goal === 'gain') return source.goalGain;
-  return source.goalLose;
+  return teen && source.goalLoseTeen ? source.goalLoseTeen : source.goalLose;
 }
 
 export function activityLabel(activity: ActivityLevel, labels?: ActivityLabels) {
