@@ -356,6 +356,7 @@ function reminderPreferencesHarness({ onboarding = true } = {}) {
     '@/components/ReminderPreferences': { ReminderPreferences: Component },
     '@/services/reminders': { finishReminderOnboarding: async choice => { choices.push(choice); } },
     '@/hooks/useReminderOnboarding': { useReminderOnboarding: () => true },
+    '@/services/accessPolicy': { takeAccessDestination: () => '/today' },
     '@/context/AppContext': { useApp: () => ({ profile: { completedAt: '2026-10-04' }, wellnessConsentGranted: true }) },
   }).default;
   const props = onboarding ? Setup().props.children.props : {};
@@ -394,23 +395,25 @@ await test('first reminder setup allows one chosen time and activates exactly on
   await h.press('slotLunch, 12:30'); assert.deepEqual(h.checked(), ['slotLunch, 12:30']);
   await h.press('slotLunch: later'); assert.deepEqual(h.checked(), ['slotLunch, 12:45']);
   await h.press('slotDinner, 18:30'); assert.deepEqual(h.checked(), ['slotDinner, 18:30']);
-  await h.press('slotLunch, 12:45'); await h.press('activate');
+  // First run asks a yes/no question after the offer.
+  assert.ok(h.text().includes('reminderAskTitle')); assert.ok(!h.text().includes('reminderTitle'));
+  await h.press('slotLunch, 12:45'); await h.press('reminderAskYes');
   assert.equal(requests, 1); assert.deepEqual([...scheduled.keys()], ['kandro-reminder-lunch']);
   assert.deepEqual([...scheduled.values()][0].trigger, { type: 'daily', hour: 12, minute: 45 });
   assert.equal(Object.values((await reminders.getReminderSettings()).slots).filter(x => x.enabled).length, 1);
   assert.deepEqual(h.choices, ['enabled']); h.unmount();
 });
 await test('first setup skip, denial, foreground refresh and reopening never silently add a second reminder or OS prompt', async () => {
-  await resetReminderFixture(); const skip = reminderPreferencesHarness(); await skip.settle(); await skip.press('skip');
+  await resetReminderFixture(); const skip = reminderPreferencesHarness(); await skip.settle(); await skip.press('reminderAskLater');
   assert.deepEqual(skip.choices, ['skipped']); assert.equal(requests, 0); assert.equal(scheduled.size, 0); skip.unmount();
   const h = reminderPreferencesHarness(); await h.settle(); answer = 1;
-  await h.press('activate'); assert.equal(requests, 1); assert.equal(scheduled.size, 0); assert.deepEqual(h.choices, []);
+  await h.press('reminderAskYes'); assert.equal(requests, 1); assert.equal(scheduled.size, 0); assert.deepEqual(h.choices, []);
   await h.foreground(); await h.press('slotLunch, 12:30'); assert.deepEqual(h.checked(), ['slotLunch, 12:30']);
-  await h.press('activate'); assert.equal(requests, 1); h.unmount();
+  await h.press('reminderAskYes'); assert.equal(requests, 1); h.unmount();
   const reopened = reminderPreferencesHarness(); await reopened.settle();
   assert.deepEqual(reopened.checked(), ['slotLunch, 12:30']);
   await reopened.press('slotDinner, 18:30'); assert.deepEqual(reopened.checked(), ['slotDinner, 18:30']);
-  await reopened.press('activate'); assert.equal(requests, 1); assert.equal(scheduled.size, 0); reopened.unmount();
+  await reopened.press('reminderAskYes'); assert.equal(requests, 1); assert.equal(scheduled.size, 0); reopened.unmount();
 });
 await test('stored multiple preferences and later explicit trial/profile routine retain both chosen daily times', async () => {
   const slots = structuredClone(reminders.DEFAULT_SLOTS); slots.lunch.minute = 45; slots.dinner.hour = 19;
@@ -419,7 +422,7 @@ await test('stored multiple preferences and later explicit trial/profile routine
   const existing = reminderPreferencesHarness(); await existing.settle();
   assert.deepEqual(existing.checked(), ['slotLunch, 12:45', 'slotDinner, 19:30']);
   assert.ok(existing.text().includes('reminderText')); assert.ok(!existing.text().includes('reminderSingleText'));
-  await existing.press('save'); assert.equal(requests, 0); assert.equal(scheduled.size, 2);
+  await existing.press('reminderAskYes'); assert.equal(requests, 0); assert.equal(scheduled.size, 2);
   assert.deepEqual(await reminders.getReminderSettings(), saved); existing.unmount();
   await resetReminderFixture(); const later = reminderPreferencesHarness({ onboarding: false }); await later.settle();
   assert.deepEqual(later.checked(), ['slotLunch, 12:30', 'slotDinner, 18:30']);

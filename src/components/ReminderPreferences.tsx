@@ -93,7 +93,7 @@ export function ReminderPreferences({ onDone, initialSetup = false }: { onDone?:
     {initialSetup ? <View style={{ width: 56, height: 56, borderRadius: 20, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 4 }}>
       <Ionicons color={colors.onAccent} name="notifications" size={26} />
     </View> : null}
-    <Text accessibilityRole="header" style={initialSetup ? { color: colors.text, fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -1 } : { color: colors.text, fontSize: 22, fontWeight: '700' }}>{copy.reminderTitle}</Text>
+    <Text accessibilityRole="header" style={initialSetup ? { color: colors.text, fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -1 } : { color: colors.text, fontSize: 22, fontWeight: '700' }}>{initialSetup ? copy.reminderAskTitle : copy.reminderTitle}</Text>
     <Text style={{ color: colors.muted, fontSize: 16, lineHeight: 23 }}>{singleSelection ? copy.reminderSingleText : copy.reminderText}</Text>
     {access.ready && !access.canUse && !onDone ? <Text style={{ color: colors.muted, fontSize: 16 }}>{t.access.pausedReminder}</Text> : null}
     {slots ? <View style={{ gap: 10, marginTop: 8 }}>
@@ -130,8 +130,8 @@ export function ReminderPreferences({ onDone, initialSetup = false }: { onDone?:
     {permission === 'quiet' ? <Text style={{ color: colors.muted }}>{copy.quiet}</Text> : null}
     {permission === 'denied' ? <View><Text style={{ color: colors.muted }}>{copy.permissionDenied}</Text><PrimaryButton label={copy.settings} variant="ghost" onPress={() => void Linking.openSettings().catch(() => setError(copy.reminderError))} /></View> : null}
     {error ? <Text accessibilityRole="alert" style={{ color: colors.attention }}>{error}</Text> : null}
-    <PrimaryButton disabled={busy || !settings || !slots || permission === 'unavailable'} label={busy ? t.common.moment : settings?.enabled ? copy.save : copy.activate} onPress={() => void apply(true)} />
+    <PrimaryButton disabled={busy || !settings || !slots || permission === 'unavailable'} label={busy ? t.common.moment : initialSetup ? copy.reminderAskYes : settings?.enabled ? copy.save : copy.activate} onPress={() => void apply(true)} />
     {settings?.enabled ? <PrimaryButton disabled={busy} variant="ghost" label={copy.disable} onPress={() => void apply(false)} /> : null}
-    {onDone ? <PrimaryButton disabled={busy} variant="ghost" label={copy.skip} onPress={() => onDone('skipped')} /> : null}
+    {onDone ? <PrimaryButton disabled={busy} variant="ghost" label={initialSetup ? copy.reminderAskLater : copy.skip} onPress={() => onDone('skipped')} /> : null}
   </Wrapper>;
 }

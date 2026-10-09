@@ -1,11 +1,10 @@
-import { PersonalGoalSummary } from '@/components/PersonalGoalSummary';
 import { usePresentationBlock } from '@/services/presentation';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, BackHandler, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, BackHandler, Linking, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '@/components/ui';
@@ -16,12 +15,15 @@ import { useAccess } from '@/context/AccessContext';
 import { useApp } from '@/context/AppContext';
 import { takeAccessDestination } from '@/services/accessPolicy';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { useFirstRun } from '@/hooks/useFirstRun';
 import { useLanguage } from '@/i18n/LanguageProvider';
+import { finishFirstRunOffer } from '@/services/firstRun';
 import { successHaptic } from '@/services/haptics';
-import { TRIAL_REMINDER_LEAD_DAYS } from '@/services/reminders';
-import { formatNumber } from '@/utils/format';
-import { formatWeight } from '@/utils/units';
+import { TRIAL_REMINDER_LEAD_DAYS, getReminderPermission, requestReminderPermission, type ReminderPermission } from '@/services/reminders';
 import { toBillingMode, trackEvent } from '@/services/telemetry';
+
+/** The close button arrives after a short, calm moment; it is never removed. */
+const CLOSE_DELAY_MS = 2500;
 
 type Plan = 'yearly' | 'monthly';
 
@@ -36,13 +38,16 @@ export default function PaywallScreen() {
   // in view instead of below the fold.
   const largeText = fontScale > 1.15;
   const access = useAccess();
-  const { freeScansLeft, profile, targets } = useApp();
+  const { freeScansLeft } = useApp();
   const hard = access.record.hard;
+  // Soft for everyone: only a server-enforced lock (old B cohort) without
+  // usable access keeps the screen without a close button.
+  const closable = !hard || access.canUse;
   // Interrupted mid-scan after the free analyses: say why the paywall appears.
   const { reason } = useLocalSearchParams<{ reason?: string }>();
   const blocked = reason === 'blocked' && !hard;
   const { t, locale } = useLanguage();
-  const [selected, setSelected] = useState<Plan>('monthly');
+  const [selected, setSelected] = useState<Plan>('yearly');
   const [cancelled, setCancelled] = useState(false);
   const planChosen = useRef(false);
   const { busy, error, purchase, refresh, restore, snapshot, status, syncTrialReminder } = useSubscription();
@@ -52,6 +57,34 @@ export default function PaywallScreen() {
   const testStore = snapshot?.mode === 'test-store';
   const billingMode = toBillingMode(snapshot?.mode);
   const paywallViewed = useRef(false);
+  // Shown once in the first run (after the first meal or "Später"); viewing
+  // it hands over to the optional reminder question.
+  const firstRunStage = useFirstRun();
+  useEffect(() => {
+    if (firstRunStage === 'scan' || firstRunStage === 'paywall') void finishFirstRunOffer();
+  }, [firstRunStage]);
+  const closeOpacity = useRef(new Animated.Value(0)).current;
+  const [closeVisible, setCloseVisible] = useState(false);
+  useEffect(() => {
+    if (!closable) return;
+    const timer = setTimeout(() => {
+      setCloseVisible(true);
+      Animated.timing(closeOpacity, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+    }, CLOSE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [closable, closeOpacity]);
+  // "We remind you" is only promised when a reminder can actually arrive.
+  const [notifications, setNotifications] = useState<ReminderPermission | null>(null);
+  useFocusEffect(useCallback(() => {
+    let active = true;
+    void getReminderPermission().then(value => { if (active) setNotifications(value); });
+    return () => { active = false; };
+  }, []));
+  const remindersAllowed = notifications === 'authorized' || notifications === 'quiet';
+  const allowReminders = async () => {
+    if (notifications === 'denied') { await Linking.openSettings().catch(() => undefined); return; }
+    setNotifications(await requestReminderPermission());
+  };
 
   const resume = async () => { await access.refresh(); router.replace(takeAccessDestination() as never); };
   useFocusEffect(useCallback(() => {
@@ -63,17 +96,17 @@ export default function PaywallScreen() {
         trackEvent('access paywall shown', { experiment: 'paywall_access_v1', variant: access.record.variant as 'A' | 'B', environment: 'production', cohort_source: 'public', access_version: 'v1' });
       }
     }
-    const back = BackHandler.addEventListener('hardwareBackPress', () => hard);
+    const back = BackHandler.addEventListener('hardwareBackPress', () => !closable);
     return () => back.remove();
-  }, [access.ready, access.record.variant, access.record.source, billingMode, status, hard]));
+  }, [access.ready, access.record.variant, access.record.source, billingMode, status, closable]));
 
   useEffect(() => {
     if (!snapshot?.configured) return;
-    // Annual is the default only for this customer's real seven-day offer.
-    // Refreshes must not overwrite a plan the customer deliberately selected.
+    // Annual is preselected whenever the store offers it; its card states the
+    // real yearly price, the monthly equivalent and any trial. Refreshes must
+    // not overwrite a plan the customer deliberately selected.
     if (!planChosen.current) {
-      setSelected(snapshot.mode === 'native-store' && yearly?.hasFreeTrial && yearly.trialDays === 7
-        ? 'yearly' : monthly ? 'monthly' : 'yearly');
+      setSelected(yearly ? 'yearly' : 'monthly');
     } else if (!selectedPlan) {
       setSelected(monthly ? 'monthly' : 'yearly');
     }
@@ -135,12 +168,14 @@ export default function PaywallScreen() {
   // happens today, when we remind, when billing starts. No pressure framing.
   const trialTimeline = Boolean(status !== 'active' && !testStore && selectedPlan?.hasFreeTrial
     && selectedPlan.trialDays && selectedPlan.trialDays > TRIAL_REMINDER_LEAD_DAYS);
-  // A user's own goal is the strongest reason to start: name it.
-  const goalWeight = profile && profile.age >= 18 && profile.goal !== 'maintain' && profile.targetWeightKg ? profile.targetWeightKg : null;
-  const goalHeadline = goalWeight ? t.paywall.goalHeadline(formatWeight(goalWeight, profile.unitSystem, locale)) : null;
-  const plan = profile && targets.calories > 0
-    ? t.paywall.planLine(formatNumber(targets.calories, locale), formatNumber(targets.protein, locale))
-    : null;
+  // The yearly card names its monthly equivalent from the store's own price.
+  const yearlyProduct = yearly?.package.product;
+  const yearlyPerMonth = yearlyProduct?.pricePerMonthString
+    ?? (yearly?.monthlyEquivalent && yearlyProduct?.currencyCode ? formatCurrency(yearly.monthlyEquivalent, yearlyProduct.currencyCode, locale) : null);
+  const yearlyDetail = [
+    yearlyPerMonth ? t.paywall.perMonthShort(yearlyPerMonth) : null,
+    yearly?.trialLabel ? t.paywall.trialFree(yearly.trialLabel) : null,
+  ].filter(Boolean).join(' · ') || (yearly?.detail ?? t.paywall.yearlyFallback);
 
   const buttonLabel = busy
     ? t.paywall.ctaProcessing
@@ -184,7 +219,7 @@ export default function PaywallScreen() {
   // Keep every plan, action and legal link in the same scrollable flow then.
   const renewalTerms = status !== 'active' ? (
     <Text style={styles.renewal}>
-      {renewalCopy} {t.paywall.renewalTail}
+      {renewalCopy} {t.paywall.renewalTail} {t.paywall.fairUse}
     </Text>
   ) : null;
   const purchaseControls = (
@@ -208,11 +243,13 @@ export default function PaywallScreen() {
 
   return (
     <SafeAreaView key={fontScale} edges={['top', 'left', 'right']} style={styles.safe}>
-      <Stack.Screen options={{ gestureEnabled: !hard, presentation: hard ? 'card' : 'modal' }} />
+      <Stack.Screen options={{ gestureEnabled: closable, presentation: closable ? 'modal' : 'card' }} />
       <View style={styles.topBar}>
-        {!hard ? <Pressable accessibilityLabel={t.paywall.close} accessibilityRole="button" hitSlop={8} onPress={() => { void resume(); }} style={styles.closeButton}>
-          <Ionicons color={colors.text} name="close" size={22} />
-        </Pressable> : <KandroMark size={28} />}
+        {closable ? <Animated.View pointerEvents={closeVisible ? 'auto' : 'none'} style={{ opacity: closeOpacity }}>
+          <Pressable accessibilityElementsHidden={!closeVisible} accessibilityLabel={t.paywall.close} accessibilityRole="button" disabled={!closeVisible} hitSlop={8} importantForAccessibility={closeVisible ? 'auto' : 'no-hide-descendants'} onPress={() => { void resume(); }} style={styles.closeButton}>
+            <Ionicons color={colors.text} name="close" size={22} />
+          </Pressable>
+        </Animated.View> : <KandroMark size={28} />}
         <Pressable accessibilityRole="button" accessibilityState={{ disabled: busy || status === 'loading' }} disabled={busy || status === 'loading'} onPress={() => void restorePurchase()} style={styles.restoreButton}>
           <Text style={[styles.restore, (busy || status === 'loading') && styles.disabledText]}>{t.paywall.restore}</Text>
         </Pressable>
@@ -224,23 +261,18 @@ export default function PaywallScreen() {
         showsVerticalScrollIndicator={false}
         style={styles.scroll}
       >
-        {plan && !blocked ? <View style={styles.planReady}>
-          <Ionicons color={colors.accentText} name="checkmark-circle" size={18} />
-          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-            <Text style={styles.planReadyLabel}>{t.paywall.planReady}</Text>
-            <Text style={styles.planReadyValue}>{plan}</Text>
-          </View>
-        </View> : <View style={styles.heroMark}><KandroMark size={32} /></View>}
+        {/* One headline for every non-blocked entry: no weight promise, no
+            per-user override that would split the measured offer. */}
+        <View style={styles.heroMark}><KandroMark size={32} /></View>
         {testStore ? <View style={styles.testBadge}><Text style={styles.testBadgeText}>{t.paywall.testStoreBadge}</Text></View> : null}
         <Text style={styles.eyebrow}>{t.paywall.eyebrow}</Text>
-        <Text style={styles.title}>{blocked ? t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE) : goalHeadline ?? (hard ? t.paywall.hardTitle : t.access.title)}</Text>
-        <Text style={styles.subtitle}>{blocked ? t.paywall.blockedSub : hard ? t.paywall.hardSubtitle : t.access.subtitle}</Text>
-
-        {!blocked ? <PersonalGoalSummary profile={profile} /> : null}
+        <Text style={styles.title}>{blocked ? t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE) : hard ? t.paywall.hardTitle : t.paywall.headline}</Text>
+        <Text style={styles.subtitle}>{blocked ? t.paywall.blockedSub : hard ? t.paywall.hardSubtitle : t.paywall.subtitle}</Text>
 
         <View style={styles.benefits}>
-          <Benefit detail={t.paywall.benefit1Detail} icon="scan-outline" title={t.paywall.benefit1} />
-          <Benefit detail={t.paywall.benefit2Detail} icon="create-outline" title={t.paywall.benefit2} />
+          <Benefit icon="restaurant-outline" title={t.paywall.benefitMeals} />
+          <Benefit icon="camera-outline" title={t.paywall.benefitAnalyze} />
+          <Benefit icon="calendar-outline" title={t.paywall.benefitReview} />
         </View>
 
         {!hard ? <View style={styles.keepsCard}>
@@ -254,6 +286,15 @@ export default function PaywallScreen() {
 
         <View style={styles.plans}>
           <PlanCard
+            badge={yearlyBadge}
+            detail={yearlyDetail}
+            disabled={!yearly}
+            label={t.paywall.yearly}
+            onPress={() => choosePlan('yearly')}
+            price={yearly?.price ?? t.paywall.unavailable}
+            selected={selected === 'yearly'}
+          />
+          <PlanCard
             detail={monthly?.trialLabel ? t.paywall.trialFirst(monthly.trialLabel) : (monthly?.detail ?? t.paywall.monthlyFallback)}
             disabled={!monthly}
             label={t.paywall.monthly}
@@ -261,19 +302,17 @@ export default function PaywallScreen() {
             price={monthly?.price ?? t.paywall.unavailable}
             selected={selected === 'monthly'}
           />
-          <PlanCard
-            badge={yearlyBadge}
-            detail={yearly?.trialLabel ? t.paywall.trialFirst(yearly.trialLabel) : (yearly?.detail ?? t.paywall.yearlyFallback)}
-            disabled={!yearly}
-            label={t.paywall.yearly}
-            onPress={() => choosePlan('yearly')}
-            price={yearly?.price ?? t.paywall.unavailable}
-            selected={selected === 'yearly'}
-          />
         </View>
         {trialTimeline && selectedPlan ? <View style={styles.timeline}>
           <TimelineStep detail={t.paywall.timelineTodayDetail} icon="lock-open-outline" title={t.paywall.timelineToday} />
-          <TimelineStep detail={t.paywall.timelineReminderDetail} icon="notifications-outline" title={t.paywall.timelineDay(selectedPlan.trialDays! - TRIAL_REMINDER_LEAD_DAYS)} />
+          {remindersAllowed
+            ? <TimelineStep detail={t.paywall.timelineReminderDetail} icon="notifications-outline" title={t.paywall.timelineDay(selectedPlan.trialDays! - TRIAL_REMINDER_LEAD_DAYS)} />
+            : <TimelineStep
+              action={notifications === 'notDetermined' || notifications === 'denied' ? { label: t.paywall.allowReminder, onPress: () => void allowReminders() } : undefined}
+              detail={t.paywall.timelineCancelTip}
+              icon="information-circle-outline"
+              title={t.paywall.timelineDay(selectedPlan.trialDays! - TRIAL_REMINDER_LEAD_DAYS)}
+            />}
           <TimelineStep detail={t.paywall.timelineChargeDetail(selectedPlan.price)} icon="card-outline" last title={t.paywall.timelineDay(selectedPlan.trialDays!)} />
         </View> : null}
         {cancelled && hard ? <View accessibilityLiveRegion="polite" style={styles.cancelNotice}>
@@ -293,22 +332,24 @@ export default function PaywallScreen() {
   );
 }
 
-function Benefit({ detail, icon, title }: { detail: string; icon: keyof typeof Ionicons.glyphMap; title: string }) {
+function formatCurrency(amount: number, currency: string, locale: string) {
+  try { return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amount); }
+  catch { return null; }
+}
+
+function Benefit({ icon, title }: { icon: keyof typeof Ionicons.glyphMap; title: string }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.benefit}>
       <View style={styles.benefitIcon}><Ionicons color={colors.accentText} name={icon} size={20} /></View>
-      <View style={styles.benefitCopy}>
-        <Text style={styles.benefitTitle}>{title}</Text>
-        <Text style={styles.benefitDetail}>{detail}</Text>
-      </View>
+      <Text style={[styles.benefitTitle, styles.benefitCopy]}>{title}</Text>
       <Ionicons color={colors.success} name="checkmark-circle" size={20} />
     </View>
   );
 }
 
-function TimelineStep({ detail, icon, last, title }: { detail: string; icon: keyof typeof Ionicons.glyphMap; last?: boolean; title: string }) {
+function TimelineStep({ action, detail, icon, last, title }: { action?: { label: string; onPress: () => void }; detail: string; icon: keyof typeof Ionicons.glyphMap; last?: boolean; title: string }) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   return (
@@ -320,6 +361,9 @@ function TimelineStep({ detail, icon, last, title }: { detail: string; icon: key
       <View style={[styles.benefitCopy, !last && { paddingBottom: 14 }]}>
         <Text style={styles.benefitTitle}>{title}</Text>
         <Text style={styles.benefitDetail}>{detail}</Text>
+        {action ? <Pressable accessibilityRole="button" hitSlop={8} onPress={action.onPress} style={styles.stepAction}>
+          <Text style={styles.legal}>{action.label}</Text>
+        </Pressable> : null}
       </View>
     </View>
   );
@@ -359,29 +403,24 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   content: { flexGrow: 1, alignItems: 'center', paddingTop: 15, paddingBottom: 16 },
   heroMark: { width: 48, height: 48, borderRadius: 24, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   testBadge: { backgroundColor: colors.accent, borderRadius: radii.pill, paddingHorizontal: 10, paddingVertical: 5, marginTop: 10 },
-  testBadgeText: { color: colors.onAccent, fontSize: 8, fontWeight: '800', letterSpacing: 0.7 },
-  eyebrow: { color: colors.accentText, fontSize: 10, fontWeight: '800', letterSpacing: 1.3, marginTop: 16 },
+  testBadgeText: { color: colors.onAccent, fontSize: 12, fontWeight: '800', letterSpacing: 0.7 },
+  eyebrow: { color: colors.accentText, fontSize: 12, fontWeight: '800', letterSpacing: 1.3, marginTop: 16 },
   title: { color: colors.text, fontSize: 36, lineHeight: 41, fontWeight: '700', letterSpacing: -1.2, textAlign: 'center', marginTop: 7 },
   subtitle: { color: colors.muted, fontSize: 14, lineHeight: 21, textAlign: 'center', maxWidth: 340, marginTop: 10 },
-  progressCard: { alignSelf: 'stretch', marginTop: 20, borderRadius: radii.card, backgroundColor: colors.neutralSoft, paddingHorizontal: 14, paddingVertical: 12, gap: 3 },
-  progressLabel: { color: colors.muted, fontSize: 9, fontWeight: '800', letterSpacing: 1 },
-  progressValue: { color: colors.text, fontSize: 13, fontWeight: '700', lineHeight: 18 },
   keepsCard: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'flex-start', gap: 9, marginTop: 18, borderRadius: radii.card, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent, padding: 13 },
   keepsText: { flex: 1, minWidth: 0, color: colors.text, fontSize: 14, lineHeight: 20 },
   benefits: { alignSelf: 'stretch', gap: 9, marginTop: 22 },
-  benefit: { minHeight: 70, flexDirection: 'row', alignItems: 'center', gap: 11, borderRadius: radii.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 13, paddingVertical: 11 },
+  benefit: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 11, borderRadius: radii.card, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 13, paddingVertical: 11 },
   benefitIcon: { width: 40, height: 40, borderRadius: 14, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
   benefitCopy: { flex: 1, minWidth: 0, gap: 3 },
   benefitTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
   benefitDetail: { color: colors.muted, fontSize: 14, lineHeight: 20 },
-  planReady: { alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: radii.card, backgroundColor: colors.accentSoft, borderWidth: 1, borderColor: colors.accent, paddingHorizontal: 14, paddingVertical: 12 },
-  planReadyLabel: { color: colors.accentText, fontSize: 11, fontWeight: '800', letterSpacing: 1 },
-  planReadyValue: { color: colors.text, fontSize: 16, fontWeight: '700', fontVariant: ['tabular-nums'] },
   timeline: { alignSelf: 'stretch', marginTop: 22 },
   step: { flexDirection: 'row', gap: 12 },
   stepRail: { alignItems: 'center', width: 30 },
   stepIcon: { width: 30, height: 30, borderRadius: 15, backgroundColor: colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
   stepLine: { flex: 1, width: 2, backgroundColor: colors.accent, marginVertical: 3 },
+  stepAction: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   inlineTerms: { alignSelf: 'stretch', marginTop: 4 },
   dueToday: { color: colors.text, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   plans: { alignSelf: 'stretch', gap: 10, marginTop: 25 },
@@ -397,17 +436,16 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   planLabel: { color: colors.text, fontSize: 15, fontWeight: '700' },
   planDetail: { color: colors.muted, fontSize: 13 },
   badge: { flexShrink: 0, backgroundColor: colors.text, borderRadius: radii.pill, paddingHorizontal: 7, paddingVertical: 4 },
-  badgeText: { color: colors.surface, fontSize: 7, fontWeight: '800', letterSpacing: 0.7 },
+  badgeText: { color: colors.surface, fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
   planPrice: { flexShrink: 0, color: colors.text, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'] },
   planPriceLarge: { flexShrink: 1 },
   scrollingFooter: { alignSelf: 'stretch', marginTop: 20 },
   cancelNotice: { alignSelf: 'stretch', gap: 4, paddingVertical: 8 },
-  measurement: { alignSelf: 'stretch', marginTop: 16 },
   footer: { gap: 9, paddingTop: 10, backgroundColor: colors.background },
   loader: { marginTop: 12 },
   error: { color: colors.attention, fontSize: 14, lineHeight: 20, marginTop: 12, textAlign: 'center' },
   disabledText: { opacity: 0.45 },
-  billing: { color: colors.muted, fontSize: 11, textAlign: 'center' },
+  billing: { color: colors.muted, fontSize: 12, textAlign: 'center' },
   renewal: { color: colors.text, fontSize: 12, lineHeight: 17, textAlign: 'center', paddingHorizontal: 4 },
   legalRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', gap: 8 },
   legal: { color: colors.accentText, fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' },

@@ -1,25 +1,25 @@
 import { prepareAccessEnrollment } from '@/services/appAccess';
-import { prepareReminderOnboarding } from '@/services/reminders';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { WeightEntry } from '@/components/WeightEntry';
 import { KandroMark } from '@/components/KandroMark';
 import { PersonalGoalSummary } from '@/components/PersonalGoalSummary';
 import { BUILDING_MS, PlanBuilder } from '@/components/PlanBuilder';
-import { normalizePersonalGoal, onboardingSteps, personalGoalError, parsePersonalGoalWeight, type OnboardingStep } from '@/services/personalGoal';
+import { FIRST_RUN_STEPS, MINIMUM_AGE, ageFromBirthYear, birthYearNeedsBirthday, normalizePersonalGoal, onboardingSteps, personalGoalError, parsePersonalGoalWeight, type OnboardingStep } from '@/services/personalGoal';
 import { localDateKey } from '@/utils/date';
 import { PrimaryButton, ProgressBar } from '@/components/ui';
 import { radii, spacing } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
-import { BIOLOGICAL_SEXES, caloriePlan, dailyGoalOffset, calculateDailyTargets, estimatedPace, isRateLimited, isTeenProfile, weeklyRateLabel } from '@/services/personalization';
-import { getGuardianConsentStatus, requestGuardianConsent } from '@/services/guardianConsent';
-import { trackEvent } from '@/services/telemetry';
+import { BIOLOGICAL_SEXES, caloriePlan, dailyGoalOffset, calculateDailyTargets, effectiveGoal, estimatedPace, isRateLimited, isTeenProfile, isUnderweight, lowestHealthyWeightKg, weeklyRateLabel } from '@/services/personalization';
+import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft } from '@/services/onboardingDraft';
+import { setFirstRunStage } from '@/services/firstRun';
+import { setAnalyticsCollectionEnabled, trackEvent } from '@/services/telemetry';
 import { errorHaptic, selectionHaptic, stepHaptic, successHaptic } from '@/services/haptics';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatDateParts, formatNumber } from '@/utils/format';
@@ -39,7 +39,7 @@ import {
 } from '@/utils/units';
 import type { BiologicalSex } from '@/types/nutrition';
 
-type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap };
+type Choice = { label: string; detail: string; icon: keyof typeof Ionicons.glyphMap; disabled?: boolean };
 
 
 type StepId = OnboardingStep;
@@ -58,9 +58,17 @@ function addMonthsIso(iso: string, months: number) {
 
 type Dict = ReturnType<typeof useLanguage>['t'];
 
-function goalChoicesFor(t: Dict): Choice[] {
+/**
+ * Teens never get a deficit, so "lose" is offered as what it really is.
+ * Underweight (BMI < 18.5) disables it outright: maintenance is the plan.
+ */
+function goalChoicesFor(t: Dict, teen: boolean, underweight: boolean): Choice[] {
   return [
-    { label: t.onboarding.goalLose, detail: t.onboarding.goalLoseDetail, icon: 'trending-down' },
+    underweight
+      ? { label: teen ? t.onboarding.goalLoseTeen : t.onboarding.goalLose, detail: t.onboarding.underweightNotice, icon: 'trending-down', disabled: true }
+      : teen
+        ? { label: t.onboarding.goalLoseTeen, detail: t.onboarding.goalLoseTeenDetail, icon: 'leaf-outline' }
+        : { label: t.onboarding.goalLose, detail: t.onboarding.goalLoseDetail, icon: 'trending-down' },
     { label: t.onboarding.goalMaintain, detail: t.onboarding.goalMaintainDetail, icon: 'remove' },
     { label: t.onboarding.goalGain, detail: t.onboarding.goalGainDetail, icon: 'trending-up' },
   ];
@@ -109,9 +117,16 @@ function copyFor(t: Dict): Record<StepId, { title: string; subtitle: string }> {
   };
 }
 
-/** Steps the user may leave without answering. Age needs an explicit confirmation. */
+/** Steps the user may leave without answering (plan editing only). */
 const skippableSteps = new Set<StepId>(['preferences']);
 
+/*
+ * Kandro is 16+. The guardian-consent flow for 14–15 year olds
+ * (services/guardianConsent.ts, supabase/functions/guardian-consent) is
+ * intentionally no longer reachable from onboarding: younger people see a
+ * friendly block instead. The backend function stays untouched so earlier
+ * approvals keep working server-side.
+ */
 export default function OnboardingScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -120,9 +135,8 @@ export default function OnboardingScreen() {
   const { height: windowHeight, fontScale } = useWindowDimensions();
   const compactHeight = windowHeight <= 600;
   const { completeOnboarding, grantWellnessConsent, profile } = useApp();
-  const { language, locale, t } = useLanguage();
+  const { locale, t } = useLanguage();
   const copy = copyFor(t);
-  const goalChoices = goalChoicesFor(t);
   const sexChoices = sexChoicesFor(t);
   const activityChoices = activityChoicesFor(t);
   const preferenceChoices = preferenceChoicesFor(t);
@@ -137,15 +151,27 @@ export default function OnboardingScreen() {
   // Guessed from the device so most people never touch it, but visible and
   // switchable right on the step where it matters.
   const [unitSystem, setUnitSystem] = useState<UnitSystem>(() => (editing ? profile.unitSystem : defaultUnitSystem()));
-  const [age, setAge] = useState(() => (editing ? profile.age : 29));
-  // The visible starting value is only a convenient picker position. It must
-  // never become the user's declared age until they adjust or affirm it.
-  const [ageConfirmed, setAgeConfirmed] = useState(() => editing);
+  // The birth year starts empty: no picker position can become a declared age.
+  const currentYear = Number(localDateKey().slice(0, 4));
+  const [birthYear, setBirthYear] = useState<number | null>(null);
+  const [hadBirthday, setHadBirthday] = useState<boolean | null>(null);
+  const needsBirthday = birthYear !== null && birthYearNeedsBirthday(birthYear, currentYear);
+  const ageKnown = editing || (birthYear !== null && (!needsBirthday || hadBirthday !== null));
+  const age = editing ? profile.age : ageKnown && birthYear !== null ? ageFromBirthYear(birthYear, currentYear, hadBirthday) : 29;
+  const [underage, setUnderage] = useState(false);
   const [height, setHeight] = useState(() => (editing ? profile.heightCm : 178));
   const [weight, setWeight] = useState(() => (editing ? profile.weightKg : 78));
   const [weightInputValid, setWeightInputValid] = useState(true);
   const [activity, setActivity] = useState<UserProfile['activityLevel']>(() => (editing ? profile.activityLevel : 'light'));
-  const [weeklyRate, setWeeklyRate] = useState<WeeklyRateKg>(() => (editing ? profile.weeklyRateKg : 0.5));
+  // First run asks no pace: the calm one until the plan is edited under "Du".
+  const [weeklyRate, setWeeklyRate] = useState<WeeklyRateKg>(() => (editing ? profile.weeklyRateKg : 0.25));
+  const teen = ageKnown && isTeenProfile({ age });
+  // The weight is known once the body step was shown; the plan never uses a
+  // deficit below BMI 18.5, whatever was tapped on the goal step.
+  const [bodySeen, setBodySeen] = useState(editing);
+  const underweight = bodySeen && isUnderweight({ heightCm: height, weightKg: weight });
+  const planGoal = effectiveGoal({ goal, heightCm: height, weightKg: weight });
+  const goalChoices = goalChoicesFor(t, teen, underweight);
   const initialPersonalGoal = normalizePersonalGoal(profile);
   const [targetWeightInput, setTargetWeightInput] = useState(() => editing && initialPersonalGoal.targetWeightKg !== null
     ? String(usesMetricWeight(profile.unitSystem) ? initialPersonalGoal.targetWeightKg : Math.round(kgToPounds(initialPersonalGoal.targetWeightKg) * 10) / 10) : '');
@@ -164,30 +190,33 @@ export default function OnboardingScreen() {
       return String(Math.round((usesMetricWeight(unitSystem) ? kg : kgToPounds(kg)) * 10) / 10);
     });
   }, [unitSystem]);
-  const steps = useMemo(() => onboardingSteps(age, goal), [age, goal]);
+  const steps = useMemo(() => onboardingSteps(age, planGoal, editing), [age, planGoal, editing]);
   const targetWeightNumber = targetWeightInput.trim() ? parsePersonalGoalWeight(targetWeightInput) : null;
   const targetWeightKg = targetWeightNumber === null ? (targetWeightInput.trim() ? NaN : null)
     : usesMetricWeight(unitSystem) ? targetWeightNumber : poundsToKg(targetWeightNumber);
   const targetDate = targetDateInput.trim() || null;
-  const targetError = age >= 18 && goal !== 'maintain' ? personalGoalError(targetWeightKg, targetDate, localDateKey()) : null;
+  const targetError = age >= 18 && planGoal !== 'maintain' ? personalGoalError(targetWeightKg, targetDate, localDateKey(), height) : null;
   const weightUnit = usesMetricWeight(unitSystem) ? 'kg' : 'lb';
   const currentWeightDisplay = usesMetricWeight(unitSystem) ? weight : kgToPounds(weight);
   const weightStep = usesMetricWeight(unitSystem) ? 0.5 : 1;
   const roundToStep = (value: number) => Math.round(value / weightStep) * weightStep;
+  // A wish never points below BMI 18.5 for this height.
+  const healthyFloorKg = Math.max(40, lowestHealthyWeightKg(height));
+  const healthyFloorDisplay = usesMetricWeight(unitSystem) ? Math.ceil(healthyFloorKg / weightStep) * weightStep : Math.ceil(kgToPounds(healthyFloorKg));
   // A sensible first target: a few kilos in the chosen direction, on the step grid.
-  const suggestedTargetWeight = formatNumberPlain(roundToStep(goal === 'gain'
+  const suggestedTargetWeight = formatNumberPlain(Math.max(healthyFloorDisplay, roundToStep(planGoal === 'gain'
     ? currentWeightDisplay + (usesMetricWeight(unitSystem) ? 3 : 6)
-    : currentWeightDisplay - (usesMetricWeight(unitSystem) ? 5 : 10)));
+    : currentWeightDisplay - (usesMetricWeight(unitSystem) ? 5 : 10))));
   const nudgeTargetWeight = (direction: -1 | 1) => {
     void selectionHaptic();
     const current = parsePersonalGoalWeight(targetWeightInput) ?? currentWeightDisplay;
-    const limits = usesMetricWeight(unitSystem) ? [40, 200] : [Math.ceil(kgToPounds(40)), Math.floor(kgToPounds(200))];
+    const limits = usesMetricWeight(unitSystem) ? [healthyFloorDisplay, 200] : [healthyFloorDisplay, Math.floor(kgToPounds(200))];
     const next = Math.min(limits[1], Math.max(limits[0], roundToStep(current) + direction * weightStep));
     setTargetWeightInput(formatNumberPlain(next));
   };
   const targetDiffKg = targetWeightKg !== null && Number.isFinite(targetWeightKg) ? targetWeightKg - weight : null;
   const targetDiffLabel = targetDiffKg === null ? '' : t.onboarding.targetDiff(`${targetDiffKg > 0 ? '+' : targetDiffKg < 0 ? '−' : '±'}${formatWeight(Math.abs(targetDiffKg), unitSystem, locale)}`);
-  const towardGoal = targetDiffKg !== null && ((goal === 'lose' && targetDiffKg < 0) || (goal === 'gain' && targetDiffKg > 0));
+  const towardGoal = targetDiffKg !== null && ((planGoal === 'lose' && targetDiffKg < 0) || (planGoal === 'gain' && targetDiffKg > 0));
   const paceWeeks = towardGoal ? Math.min(104, Math.max(1, Math.ceil(Math.abs(targetDiffKg!) / weeklyRate))) : null;
   const today = localDateKey();
   const dateOptions: { key: string; label: string; value: string | null }[] = [
@@ -205,23 +234,54 @@ export default function OnboardingScreen() {
   // The suggested target arrives with the matching date already chosen.
   const suggestedKg = usesMetricWeight(unitSystem) ? Number(suggestedTargetWeight) : poundsToKg(Number(suggestedTargetWeight));
   const suggestedWeeks = Math.min(104, Math.max(1, Math.ceil(Math.abs(suggestedKg - weight) / weeklyRate)));
-  const suggestedTargetDate = goal === 'maintain' ? null : addDaysIso(today, suggestedWeeks * 7);
+  const suggestedTargetDate = planGoal === 'maintain' ? null : addDaysIso(today, suggestedWeeks * 7);
   function formatShortDate(iso: string) {
     return formatDateParts(new Date(`${iso}T12:00:00`), { day: 'numeric', month: 'short' }, locale);
   }
   function formatGoalDate(iso: string) {
     return formatDateParts(new Date(`${iso}T12:00:00`), { day: 'numeric', month: 'short', year: 'numeric' }, locale);
   }
+  // First run applies "Proteinreich"; the choice lives in plan editing.
   const [preferences, setPreferences] = useState<string[]>(() => (editing ? profile.preferences : ['high-protein']));
   const [showConsent, setShowConsent] = useState(false);
   const [consentDetails, setConsentDetails] = useState(false);
   const [consentBusy, setConsentBusy] = useState(false);
   const [consentError, setConsentError] = useState<string | null>(null);
-  const [guardianEmail, setGuardianEmail] = useState('');
-  const [guardianRequestSent, setGuardianRequestSent] = useState(false);
+  // Optional, adults only, never preselected; applied after completion.
+  const [analyticsOptIn, setAnalyticsOptIn] = useState(false);
   const [skippedAnything, setSkippedAnything] = useState(false);
-  const step = steps[stepIndex];
+  const step = steps[Math.min(stepIndex, steps.length - 1)];
   useEffect(() => { trackEvent('setup step viewed', { step, editing }); }, [step, editing]);
+  useEffect(() => { if (step === 'body') setBodySeen(true); }, [step]);
+
+  // An app kill mid-setup resumes on the same step with the same answers.
+  const [draftReady, setDraftReady] = useState(editing);
+  useEffect(() => {
+    if (editing) return;
+    let active = true;
+    void loadOnboardingDraft().then(draft => {
+      if (!active) return;
+      if (draft) {
+        setGoal(draft.goal); setDisplayName(draft.displayName); setSex(draft.sex); setSexChosen(draft.sexChosen);
+        setUnitSystem(draft.unitSystem); previousUnit.current = draft.unitSystem;
+        setBirthYear(draft.birthYear); setHadBirthday(draft.hadBirthday);
+        setHeight(draft.heightCm); setWeight(draft.weightKg); setActivity(draft.activityLevel);
+        if (draft.stepIndex > 2) setBodySeen(true);
+        // Never resume past the age gate without a known, allowed age.
+        const knownAge = draft.birthYear !== null && (!birthYearNeedsBirthday(draft.birthYear, currentYear) || draft.hadBirthday !== null)
+          ? ageFromBirthYear(draft.birthYear, currentYear, draft.hadBirthday) : null;
+        const maxStep = knownAge !== null && knownAge >= MINIMUM_AGE ? FIRST_RUN_STEPS.length - 1 : 1;
+        setStepIndex(Math.min(draft.stepIndex, maxStep));
+      }
+      setDraftReady(true);
+    });
+    return () => { active = false; };
+  }, [editing]);
+  useEffect(() => {
+    if (editing || !draftReady) return;
+    void saveOnboardingDraft({ stepIndex, goal, displayName, sex, sexChosen, unitSystem, birthYear, hadBirthday, heightCm: height, weightKg: weight, activityLevel: activity });
+  }, [editing, draftReady, stepIndex, goal, displayName, sex, sexChosen, unitSystem, birthYear, hadBirthday, height, weight, activity]);
+
   // A goal makes the plan concrete (and powers the projection): the target
   // step opens with a sensible suggestion the user can adjust or remove.
   const goalSuggested = useRef(editing);
@@ -274,57 +334,62 @@ export default function OnboardingScreen() {
     displayName: displayName.trim(),
     sex,
     unitSystem,
-    goal,
+    goal: planGoal,
     age,
     heightCm: height,
     weightKg: weight,
     activityLevel: activity,
     weeklyRateKg: weeklyRate,
     preferences,
-    ...normalizePersonalGoal({ age, goal, targetWeightKg, targetDate }),
+    ...normalizePersonalGoal({ age, goal: planGoal, targetWeightKg, targetDate, heightCm: height }),
     completedAt: editing ? profile.completedAt : null,
-  }), [activity, editing, profile.completedAt, age, displayName, goal, height, preferences, sex, unitSystem, weeklyRate, weight, targetWeightKg, targetDate]);
+  }), [activity, editing, profile.completedAt, age, displayName, planGoal, height, preferences, sex, unitSystem, weeklyRate, weight, targetWeightKg, targetDate]);
   const startingTargets = useMemo(() => calculateDailyTargets(draftProfile), [draftProfile]);
 
   const finishOnboarding = async () => {
     await grantWellnessConsent(draftProfile.age);
-    if (!editing && !profile.completedAt) await prepareReminderOnboarding().catch(() => undefined);
-    if (!editing && !profile.completedAt) await prepareAccessEnrollment(ageConfirmed);
+    const firstRun = !editing && !profile.completedAt;
+    // The age was chosen explicitly (birth year), never a picker default.
+    if (firstRun) await prepareAccessEnrollment(ageKnown);
+    // Value before the offer: the first scan comes next, then the paywall,
+    // then the optional reminder question (see services/firstRun.ts).
+    if (firstRun) await setFirstRunStage('scan');
     await completeOnboarding(draftProfile);
+    if (firstRun && analyticsOptIn && draftProfile.age >= 18) void setAnalyticsCollectionEnabled(true).catch(() => false);
+    await clearOnboardingDraft();
     trackEvent('onboarding completed', { completion: skippedAnything ? 'skipped' : 'finished' });
     void successHaptic();
     setShowConsent(false);
-    router.replace(editing ? '/(tabs)/profile' : '/reminder-setup');
+    // Through Today, so the route guard settles access first and then opens
+    // the first-scan prompt.
+    router.replace(editing ? '/(tabs)/profile' : '/(tabs)/today');
   };
 
   const acceptConsent = async () => {
     setConsentBusy(true);
     setConsentError(null);
     try {
-      if (draftProfile.age < 16) {
-        if (!guardianRequestSent) {
-          const normalized = guardianEmail.trim().toLowerCase();
-          if (!/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(normalized)) {
-            setConsentError(t.onboarding.guardianInvalidEmail);
-            return;
-          }
-          const status = await requestGuardianConsent(normalized, draftProfile.age, language);
-          if (status === 'approved') await finishOnboarding();
-          else setGuardianRequestSent(true);
-          return;
-        }
-        if (!await getGuardianConsentStatus()) {
-          setConsentError(t.onboarding.guardianPending);
-          return;
-        }
-      }
       await finishOnboarding();
     } catch {
       void errorHaptic();
-      setConsentError(draftProfile.age < 16 ? t.onboarding.guardianCloudRequired : t.onboarding.consentError);
+      setConsentError(t.onboarding.consentError);
     } finally {
       setConsentBusy(false);
     }
+  };
+
+  // Legal pages open above onboarding; the sheet (and its choices) comes back
+  // when they are closed instead of being lost.
+  const reopenConsent = useRef(false);
+  useFocusEffect(useCallback(() => {
+    if (!reopenConsent.current) return;
+    reopenConsent.current = false;
+    setShowConsent(true);
+  }, []));
+  const openLegal = (path: '/privacy' | '/terms') => {
+    reopenConsent.current = true;
+    setShowConsent(false);
+    router.push(path);
   };
 
   /**
@@ -340,23 +405,17 @@ export default function OnboardingScreen() {
   const primaryAction = async () => {
     void selectionHaptic();
     // Keep the invariant here as well as on the disabled button: navigation
-    // must not persist the convenient picker default through another caller.
-    if (step !== 'goal' && !ageConfirmed) return;
+    // must not persist an age the user never chose.
+    if (step !== 'goal' && !ageKnown) return;
     if (step === 'about' && !sexChosen) return;
+    if (step === 'about' && !editing && age < MINIMUM_AGE) { setUnderage(true); return; }
     if (step === 'body' && !weightInputValid) return;
     if ((step === 'target' || step === 'plan') && targetError) return;
     if (step === 'plan') {
       if (editing) {
-        if (draftProfile.age < 16 && !await getGuardianConsentStatus().catch(() => false)) {
-          setGuardianRequestSent(false);
-          setConsentError(null);
-          setShowConsent(true);
-        } else {
-          await saveEdits();
-        }
+        await saveEdits();
         return;
       }
-      setGuardianRequestSent(false);
       setConsentError(null);
       setShowConsent(true);
       return;
@@ -374,6 +433,26 @@ export default function OnboardingScreen() {
     return () => { show.remove(); hide.remove(); };
   }, []);
   const footerLabel = step === 'plan' ? (editing ? t.onboarding.saveChanges : t.onboarding.openApp) : t.common.next;
+  const underweightLose = goal === 'lose' && planGoal === 'maintain';
+
+  if (!draftReady) return <SafeAreaView edges={['top', 'left', 'right']} style={styles.safe} />;
+
+  // Under 16: a friendly stop, no data processed, no consent asked. A typo in
+  // the year can be corrected.
+  if (underage) {
+    return (
+      <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={styles.safe}>
+        <View style={styles.blockContent}>
+          <View style={styles.blockIcon}><KandroMark size={42} /></View>
+          <Text accessibilityRole="header" style={styles.title}>{t.onboarding.underageTitle}</Text>
+          <Text style={styles.subtitle}>{t.onboarding.underageBody}</Text>
+        </View>
+        <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+          <PrimaryButton label={t.onboarding.underageFix} onPress={() => { void selectionHaptic(); setBirthYear(null); setHadBirthday(null); setUnderage(false); }} variant="ghost" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView key={fontScale} edges={['top', 'left', 'right']} style={styles.safe}>
@@ -423,7 +502,7 @@ export default function OnboardingScreen() {
 
           <View style={[styles.body, compactHeight && styles.bodyCompact]}>
             {step === 'goal' ? (
-              <ChoiceList choices={goalChoices} compact={compactHeight} onSelect={(value) => selectChoice(() => setGoal(value))} selected={goal} values={['lose', 'maintain', 'gain'] as NutritionGoal[]} />
+              <ChoiceList choices={goalChoices} compact={compactHeight} onSelect={(value) => selectChoice(() => setGoal(value))} selected={underweight && goal === 'lose' ? 'maintain' : goal} values={['lose', 'maintain', 'gain'] as NutritionGoal[]} />
             ) : null}
 
             {step === 'target' ? (
@@ -539,35 +618,24 @@ export default function OnboardingScreen() {
 
             {step === 'about' && !editing ? (
               <View style={styles.section}>
-                <NumberStep
-                  label={t.onboarding.ageLabel}
-                  layout="row"
-                  max={100}
-                  min={14}
-                  onChange={(nextAge) => {
-                    setAge(nextAge);
-                    setAgeConfirmed(true);
-                  }}
-                  step={1}
-                  unit={t.onboarding.years}
-                  value={age}
+                <Text style={styles.sectionLabel}>{t.onboarding.birthYearLabel}</Text>
+                <BirthYearPicker
+                  currentYear={currentYear}
+                  onChange={(year) => { setBirthYear(year); setHadBirthday(null); }}
+                  value={birthYear}
                 />
-                <Pressable
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: ageConfirmed }}
-                  onPress={() => {
-                    void selectionHaptic();
-                    setAgeConfirmed(true);
-                  }}
-                  style={styles.ageConfirmRow}
-                >
-                  <Ionicons
-                    color={ageConfirmed ? colors.accentText : colors.muted}
-                    name={ageConfirmed ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={22}
-                  />
-                  <Text style={styles.ageConfirmationText}>{t.onboarding.confirmAge(age)}</Text>
-                </Pressable>
+                {needsBirthday ? (
+                  <>
+                    <Text style={styles.sectionLabel}>{t.onboarding.birthdayQuestion}</Text>
+                    <Segmented
+                      labels={[t.onboarding.birthdayYes, t.onboarding.birthdayNo]}
+                      onSelect={(value) => selectChoice(() => setHadBirthday(value === 'yes'))}
+                      selected={hadBirthday === null ? null : hadBirthday ? 'yes' : 'no'}
+                      values={['yes', 'no'] as const}
+                    />
+                  </>
+                ) : null}
+                <Text style={styles.fieldHint}>{t.onboarding.birthYearHint}</Text>
               </View>
             ) : null}
 
@@ -647,6 +715,7 @@ export default function OnboardingScreen() {
                     value={Math.round(kgToPounds(weight) * 10) / 10}
                   />
                 )}
+                {underweightLose ? <SafetyNotice text={t.onboarding.underweightNotice} /> : null}
               </View>
             ) : null}
 
@@ -681,14 +750,14 @@ export default function OnboardingScreen() {
             ) : null}
 
             {step === 'plan' && building ? <View style={styles.buildingStage}><PlanBuilder profile={draftProfile} showcase /></View> : null}
-            {step === 'plan' && !building ? <><PersonalGoalSummary profile={draftProfile} /><StartingPlan limited={isRateLimited(draftProfile)} profile={draftProfile} targets={startingTargets} /></> : null}
+            {step === 'plan' && !building ? <>{underweightLose ? <SafetyNotice text={t.onboarding.underweightNotice} /> : null}<PersonalGoalSummary profile={draftProfile} /><StartingPlan limited={isRateLimited(draftProfile)} profile={draftProfile} targets={startingTargets} />{!editing ? <Text style={styles.fieldHint}>{t.onboarding.laterInProfile}</Text> : null}</> : null}
           </View>
         </ScrollView>
 
         {showFooterButton && !keyboardOpen && !(step === 'plan' && building) ? (
           <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
             <PrimaryButton
-              disabled={(step === 'about' && !ageConfirmed) || (step === 'about' && !sexChosen) || (step === 'body' && !weightInputValid) || ((step === 'target' || step === 'plan') && !!targetError)}
+              disabled={(step === 'about' && !ageKnown) || (step === 'about' && !sexChosen) || (step === 'body' && !weightInputValid) || ((step === 'target' || step === 'plan') && !!targetError)}
               icon="arrow-forward"
               label={footerLabel}
               onPress={() => void primaryAction()}
@@ -702,46 +771,34 @@ export default function OnboardingScreen() {
           <View accessibilityViewIsModal style={styles.consentSheet}>
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.consentContent, { paddingBottom: insets.bottom + 18 }]}>
             <View style={styles.consentIcon}><Ionicons color={colors.onAccent} name="shield-checkmark-outline" size={26} /></View>
-            <Text accessibilityRole="header" style={styles.consentTitle}>
-              {draftProfile.age < 16 ? t.onboarding.guardianTitle : t.onboarding.consentTitle}
-            </Text>
-            <Text style={styles.consentText}>
-              {draftProfile.age < 16 ? t.onboarding.guardianBody : consentDetails ? t.onboarding.consentBody : t.onboarding.consentShort}
-            </Text>
-            {draftProfile.age >= 16 ? <Pressable accessibilityRole="button" accessibilityState={{ expanded: consentDetails }} hitSlop={8} onPress={() => setConsentDetails(value => !value)}>
+            <Text accessibilityRole="header" style={styles.consentTitle}>{t.onboarding.consentTitle}</Text>
+            <Text style={styles.consentText}>{consentDetails ? t.onboarding.consentBody : t.onboarding.consentShort}</Text>
+            <Pressable accessibilityRole="button" accessibilityState={{ expanded: consentDetails }} hitSlop={8} onPress={() => setConsentDetails(value => !value)}>
               <Text style={styles.consentLink}>{consentDetails ? t.onboarding.consentLess : t.onboarding.consentMore}</Text>
-            </Pressable> : null}
-            {draftProfile.age < 16 ? (
-              <View style={styles.guardianBlock}>
-                <Text style={styles.guardianLabel}>{t.onboarding.guardianEmail}</Text>
-                <TextInput
-                  accessibilityLabel={t.onboarding.guardianEmail}
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  editable={!guardianRequestSent && !consentBusy}
-                  inputMode="email"
-                  onChangeText={setGuardianEmail}
-                  placeholder={t.onboarding.guardianPlaceholder}
-                  placeholderTextColor={colors.muted}
-                  style={styles.guardianInput}
-                  value={guardianEmail}
+            </Pressable>
+            <View style={styles.consentLinks}>
+              <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openLegal('/privacy')}><Text style={styles.consentLink}>{t.onboarding.consentPrivacy}</Text></Pressable>
+              <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openLegal('/terms')}><Text style={styles.consentLink}>{t.onboarding.consentTerms}</Text></Pressable>
+            </View>
+            {draftProfile.age >= 18 ? (
+              <View style={styles.analyticsRow}>
+                <Text style={styles.analyticsText}>{t.onboarding.analyticsOptIn}</Text>
+                <Switch
+                  accessibilityLabel={t.onboarding.analyticsOptIn}
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: analyticsOptIn, disabled: consentBusy }}
+                  disabled={consentBusy}
+                  onValueChange={setAnalyticsOptIn}
+                  trackColor={{ false: colors.border, true: colors.accent }}
+                  value={analyticsOptIn}
                 />
-                {guardianRequestSent ? <Text style={styles.guardianSent}>{t.onboarding.guardianSent}</Text> : null}
               </View>
             ) : null}
-            <View style={styles.consentLinks}>
-              <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/privacy'); }}><Text style={styles.consentLink}>{t.onboarding.consentPrivacy}</Text></Pressable>
-              <Pressable accessibilityRole="link" onPress={() => { setShowConsent(false); router.push('/terms'); }}><Text style={styles.consentLink}>{t.onboarding.consentTerms}</Text></Pressable>
-            </View>
             {consentError ? <Text accessibilityLiveRegion="assertive" style={styles.consentError}>{consentError}</Text> : null}
             <PrimaryButton
               disabled={consentBusy}
-              icon={draftProfile.age < 16 && !guardianRequestSent ? 'mail-outline' : 'checkmark'}
-              label={consentBusy
-                ? t.common.moment
-                : draftProfile.age < 16
-                  ? (guardianRequestSent ? t.onboarding.guardianCheck : t.onboarding.guardianSend)
-                  : t.onboarding.consentAccept}
+              icon="checkmark"
+              label={consentBusy ? t.common.moment : t.onboarding.consentAccept}
               onPress={() => void acceptConsent()}
             />
             <PrimaryButton disabled={consentBusy} label={t.common.back} onPress={() => setShowConsent(false)} variant="ghost" />
@@ -752,6 +809,53 @@ export default function OnboardingScreen() {
     </SafeAreaView>
   );
 }
+
+function SafetyNotice({ text }: { text: string }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View accessibilityLiveRegion="polite" style={styles.teenRow}>
+      <Ionicons color={colors.accentText} name="shield-checkmark-outline" size={16} />
+      <Text style={styles.noticeText}>{text}</Text>
+    </View>
+  );
+}
+
+const YEAR_ROW = 48;
+/**
+ * A scrolling list of years, nothing preselected. It opens around a typical
+ * adult year so most people scroll a little, and every row is a real radio.
+ */
+function BirthYearPicker({ currentYear, onChange, value }: { currentYear: number; onChange: (year: number) => void; value: number | null }) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const { t } = useLanguage();
+  const years = useMemo(() => Array.from({ length: 91 }, (_, index) => currentYear - 10 - index), [currentYear]);
+  const initialIndex = value === null ? years.indexOf(currentYear - 25) : Math.max(0, years.indexOf(value));
+  return (
+    <View accessibilityLabel={t.onboarding.birthYearLabel} accessibilityRole="radiogroup" style={styles.yearBox}>
+      <ScrollView contentOffset={{ x: 0, y: Math.max(0, (initialIndex - 2) * YEAR_ROW) }} nestedScrollEnabled showsVerticalScrollIndicator>
+        {years.map(year => {
+          const active = value === year;
+          return (
+            <Pressable
+              aria-checked={active}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: active }}
+              key={year}
+              onPress={() => { void selectionHaptic(); onChange(year); }}
+              style={[styles.yearRow, active && styles.yearRowActive]}
+            >
+              <Text style={[styles.yearText, active && styles.yearTextActive]}>{year}</Text>
+              {active ? <Ionicons color={colors.accentText} name="checkmark-circle" size={20} /> : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+
 
 function ChoiceList<T extends string>({ choices, compact = false, onSelect, selected, values }: { choices: Choice[]; compact?: boolean; onSelect: (choice: T) => void; selected: T; values: T[] }) {
   const { colors } = useTheme();
@@ -765,10 +869,11 @@ function ChoiceList<T extends string>({ choices, compact = false, onSelect, sele
           <Pressable
             aria-checked={active}
             accessibilityRole="radio"
-            accessibilityState={{ checked: active }}
+            accessibilityState={{ checked: active, disabled: !!choice.disabled }}
+            disabled={choice.disabled}
             key={value}
             onPress={() => onSelect(value)}
-            style={({ pressed }) => [styles.choice, compact && styles.choiceCompact, active && styles.choiceActive, pressed && styles.choicePressed]}
+            style={({ pressed }) => [styles.choice, compact && styles.choiceCompact, active && styles.choiceActive, choice.disabled && styles.choiceDisabled, pressed && styles.choicePressed]}
           >
             <View style={[styles.choiceIcon, compact && styles.choiceIconCompact, active && styles.choiceIconActive]}>
               <Ionicons color={active ? colors.onAccent : colors.text} name={choice.icon} size={22} />
@@ -1070,6 +1175,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   choiceCompact: { minHeight: 70, borderRadius: 20, padding: 10, gap: 10 },
   choiceActive: { borderColor: colors.accentText, backgroundColor: colors.neutralSoft },
   choicePressed: { transform: [{ scale: 0.985 }] },
+  choiceDisabled: { opacity: 0.55 },
   choiceIcon: { width: 48, height: 48, borderRadius: 18, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   choiceIconCompact: { width: 42, height: 42, borderRadius: 15 },
   choiceIconActive: { backgroundColor: colors.accent },
@@ -1185,13 +1291,20 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   consentIcon: { width: 50, height: 50, borderRadius: 18, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' },
   consentTitle: { color: colors.text, fontSize: 25, lineHeight: 30, fontWeight: '700' },
   consentText: { color: colors.muted, fontSize: 13, lineHeight: 20 },
-  guardianBlock: { gap: 7 },
-  guardianLabel: { color: colors.text, fontSize: 12, fontWeight: '700' },
   guardianInput: { minHeight: 52, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, color: colors.text, fontSize: 16, paddingHorizontal: 15 },
-  guardianSent: { color: colors.accentText, fontSize: 12, lineHeight: 18, fontWeight: '600' },
   consentLinks: { flexDirection: 'row', flexWrap: 'wrap', gap: 18 },
   consentLink: { color: colors.accentText, fontSize: 12, fontWeight: '800', textDecorationLine: 'underline' },
   consentError: { color: colors.attention, fontSize: 12, lineHeight: 18 },
   teenRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginTop: 16, backgroundColor: colors.neutralSoft, borderRadius: 14, padding: 11 },
   teenText: { flex: 1, color: colors.text, fontSize: 11, lineHeight: 16 },
+  noticeText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 19 },
+  analyticsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: radii.input, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.background, paddingHorizontal: 14, paddingVertical: 10 },
+  analyticsText: { flex: 1, color: colors.text, fontSize: 13, lineHeight: 19 },
+  yearBox: { height: 240, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: 'hidden' },
+  yearRow: { height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  yearRowActive: { backgroundColor: colors.neutralSoft },
+  yearText: { color: colors.text, fontSize: 18, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  yearTextActive: { color: colors.accentText, fontWeight: '800' },
+  blockContent: { flex: 1, justifyContent: 'center', gap: 14 },
+  blockIcon: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
 });

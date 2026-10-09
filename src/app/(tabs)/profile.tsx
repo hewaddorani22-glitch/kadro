@@ -19,7 +19,7 @@ import {
   isTelemetryConfigured,
   setAnalyticsCollectionEnabled,
 } from '@/services/telemetry';
-import { activityLabel, goalLabel, isTeenProfile, weeklyRateLabel } from '@/services/personalization';
+import { activityLabel, effectiveGoal, goalLabel, isTeenProfile, weeklyRateLabel } from '@/services/personalization';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { formatNumber } from '@/utils/format';
 import type { Language } from '@/i18n';
@@ -94,10 +94,10 @@ export default function ProfileScreen() {
           <View style={styles.planGrid}>
             <PlanStat label={t.profile.calories} value={formatNumber(targets.calories, locale)} />
             <PlanStat label={t.common.protein} value={`${targets.protein} g`} />
-            <PlanStat label={t.profile.goal} value={goalLabel(profile.goal, t.common)} />
+            <PlanStat label={t.profile.goal} value={goalLabel(effectiveGoal(profile), t.common, isTeenProfile(profile))} />
             <PlanStat label={t.profile.pace} value={isTeenProfile(profile)
               ? t.onboarding.teenPace
-              : weeklyRateLabel(profile.goal, profile.weeklyRateKg, t.common, profile.unitSystem)} />
+              : weeklyRateLabel(effectiveGoal(profile), profile.weeklyRateKg, t.common, profile.unitSystem)} />
             <PlanStat label={t.profile.activity} value={activityLabel(profile.activityLevel, t.common)} />
           </View>
           <View style={styles.divider} />

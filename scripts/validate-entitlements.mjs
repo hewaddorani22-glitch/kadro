@@ -407,10 +407,14 @@ assert.match(gatewayDoc, /`store=app_store`[\s\S]{0,500}(?:Test Store|`rc_billin
   'the runbook must identify the server store allowlist, not Sandbox Testing Access, as the Test Store boundary');
 
 for (const [language, source] of [['en', english], ['de', german]]) {
-  assert.match(source, /benefit2Detail: ["'][^\n]*60[^\n]*(?:per day|pro Tag)[^\n]*["']/i, `${language}: visible paid benefit must disclose the combined 60/day cap`);
+  // The 60/day fair-use cap moved from a benefit line into the paywall's fine
+  // print: still disclosed before purchase, no longer marketing copy.
+  assert.match(source, /fairUse: ["'][^\n]*60[^\n]*(?:per day|pro Tag)[^\n]*["']/i, `${language}: the paywall fine print must disclose the combined 60/day cap`);
+  assert.doesNotMatch(source, /benefit\w*: ["'][^\n]*60 (?:analyses|Analysen)/i, `${language}: the fair-use cap is not a marketing benefit`);
   assert.match(source, /freeTitle:/, `${language}: permanently free features have their own heading`);
   assert.doesNotMatch(source, /(?:unlimited (?:AI |photo)|unbegrenzte (?:Foto|Scans)|ohne Limit)/i, `${language}: paid analysis must not be described as unlimited`);
 }
+assert.match(await read('src/app/paywall.tsx'), /t\.paywall\.fairUse/, 'the paywall renders the fair-use cap with the renewal terms');
 
 assert.match(config, /\[functions\.revenuecat-webhook\]\s*verify_jwt = false/);
 assert.match(webhook, /request\.body\.getReader\(\)/);
