@@ -18,7 +18,7 @@ const scaleFunction = ast.statements.find((n) => ts.isFunctionDeclaration(n) && 
 assert.ok(scaleFunction);
 const { scaleItem } = await load(`${portionSource}\nexport ${scaleFunction.getText(ast)}`);
 const setterSource = app.slice(app.indexOf('  const setItemAmount ='), app.indexOf('  const setMealPortion ='));
-const { setDecimalAmount } = await load(`${portionSource}\n${scaleFunction.getText(ast)}\nexport function setDecimalAmount(items, grams) { let result = items; const setMealPortionState = () => {}; const setDetectedItems = (fn) => { result = fn(result); }; ${setterSource}\nsetItemAmount(items[0].id, grams); return result[0]; }`);
+const { setDecimalAmount } = await load(`${portionSource}\n${scaleFunction.getText(ast)}\nexport function setDecimalAmount(items, grams) { let result = items; const setMealPortionState = () => {}; const setPortionEstimated = () => {}; const setDetectedItems = (fn) => { result = fn(result); }; ${setterSource}\nsetItemAmount(items[0].id, grams); return result[0]; }`);
 
 const facts = { calories: 201, protein: 6.3, carbs: 26.4, fat: 7.2, fiber: 1.3, provider: 'bls', referenceId: 'test' };
 const detection = { name: 'Pfannkuchen', estimatedGrams: 240, pieceCount: 3, pieceLabel: 'Pfannkuchen', confidence: 'medium' };
@@ -70,7 +70,8 @@ const scan = read('src/app/(tabs)/scan.tsx');
 const confirm = read('src/app/confirm.tsx');
 assert.match(confirm, /if \(!canConfirm\) return;/);
 assert.match(confirm, /disabled=\{!canConfirm\}/);
-assert.match(confirm, /hasIncludedFood && !correctionRequired \? <ConfidenceBadge/);
+// The badge now has three states; an unresolved draft shows "Bitte prüfen" instead of nothing.
+assert.match(confirm, /hasIncludedFood \? <ConfidenceBadge level=\{confidence\} \/>/);
 const saveStart = app.slice(app.indexOf('const logScannedMeal = useCallback(async () => {') + 'const logScannedMeal = useCallback(async () => {'.length, app.indexOf('const existing = mealHistory.find', app.indexOf('const logScannedMeal =')));
 const { canSaveMealDraft } = await load(read('src/utils/ingredientCorrection.ts').replace(/^import[^;]+;$/gm, ''));
 const assertSaveable = new Function('canSaveMealDraft', 'getLocalDataGeneration', `return function(detectedItems, analysisStatus = "ready") { ${saveStart} };`)(canSaveMealDraft, () => 0);
@@ -81,7 +82,7 @@ assert.doesNotThrow(() => assertSaveable([item]));
 assert.throws(() => assertSaveable([{ included: true }]), /incomplete meal/);
 const resultScreen = read('src/app/result.tsx');
 assert.match(resultScreen, /const dayIsDone = projected.calories < 200;/);
-assert.match(resultScreen, /\{dayIsDone \? \([\s\S]*t.today.dayComplete[\s\S]*\) : <Card/);
+assert.match(resultScreen, /\{pastDay \? null : dayIsDone \? \([\s\S]*t.today.dayComplete[\s\S]*\) : <Card/);
 assert.match(scan, /<PortionSheet\s+embedded/, 'search must not present a second sibling native modal');
 assert.equal((scan.match(/<PortionSheet/g) ?? []).length, 1);
 console.log('Build 8 regressions passed: counted portions, repeated correction, search ranking, theme contrast and dialog wiring. Native keyboard/touch checks still require an iPhone.');

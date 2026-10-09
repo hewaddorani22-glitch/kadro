@@ -126,10 +126,27 @@ await test('Today repeat action uses the existing single-save path and explicitl
   let callback;
   const visit=node=>{if(ts.isVariableDeclaration(node)&&node.name.getText(ast)==='repeat')callback=node.initializer.getText(ast);ts.forEachChild(node,visit);};visit(ast);
   assert.ok(callback);const candidate=repeats.yesterdayBreakfast([meal('oats','2026-10-03')],[],'2026-10-04');
-  const calls=[], env={repeatChoices:[candidate],repeatMeals:[candidate],yesterday:candidate,repeating:null,setRepeating:()=>{},setPlannedMealType:type=>calls.push(['slot',type]),logRepeatMeal:async value=>calls.push(['save',value]),Alert:{alert:()=>{throw Error('Unexpected alert');}},t:{result:{saveFailed:'error'}}};
+  const calls=[], env={repeatChoices:[candidate],repeatMeals:[candidate],yesterday:candidate,repeating:null,setRepeating:()=>{},setPlannedMealType:type=>calls.push(['slot',type]),setPlannedMealDate:date=>calls.push(['day',date]),isToday:true,viewDay:'2026-10-04',logRepeatMeal:async value=>calls.push(['save',value]),Alert:{alert:()=>{throw Error('Unexpected alert');}},t:{result:{saveFailed:'error'}}};
   const js=ts.transpileModule('return ('+callback+');',{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
   await new Function(...Object.keys(env),js)(...Object.values(env))(candidate.key);
   assert.deepEqual(calls,[['slot','Breakfast'],['save',candidate]]);
+  // Viewing an earlier day files the repeat on that day, through the same save path.
+  const past=[], pastEnv={...env,yesterday:null,isToday:false,viewDay:'2026-10-01',setPlannedMealType:type=>past.push(['slot',type]),setPlannedMealDate:date=>past.push(['day',date]),logRepeatMeal:async value=>past.push(['save',value])};
+  await new Function(...Object.keys(pastEnv),js)(...Object.values(pastEnv))(candidate.key);
+  assert.deepEqual(past,[['day','2026-10-01'],['save',candidate]]);
   assert.match(source,/t\.today\.yesterdayBreakfast/,'Yesterday card must be identifiable in the existing repeat strip');
+});
+await test('favourites come first in the repeat strip, keep their latest numbers and never duplicate',()=>{
+  const history=[meal('skyr','2026-10-01','Breakfast',300),meal('skyr','2026-10-03','Breakfast',350),...Array.from({length:5},(_,i)=>meal('frequent','2026-09-'+String(i+10).padStart(2,'0')))];
+  const base=repeats.availableRepeats(history,[]);
+  assert.equal(base[0].title,'frequent');
+  const favorites=[{key:repeats.favoriteKey({title:' Skyr '}),meal:meal('skyr','2026-09-01','Breakfast',200),starredAt:'2026-10-02T10:00:00Z'}];
+  const merged=repeats.withFavorites(base,favorites,history);
+  assert.equal(merged[0].title,'skyr');assert.equal(merged[0].favorite,true);
+  assert.equal(merged[0].calories,350,'the most recent logged version wins over the starred snapshot');
+  assert.equal(merged.filter(c=>c.title==='skyr').length,1,'a favourite is not listed twice');
+  assert.equal(repeats.withFavorites(base,[],history).length,base.length);
+  const snapshot=repeats.favoriteSnapshot({...meal('x','2026-10-03'),sync:{mealId:'x',revision:2,status:'synced'}});
+  assert.equal(snapshot.sync,undefined,'a favourite never carries a sync identity');
 });
 console.log(JSON.stringify({passed,scope:'Existing BLS snapshot, actual local food matcher, repeat selector and Today handler; zero network or native UI claims'}));

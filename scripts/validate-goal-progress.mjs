@@ -34,6 +34,7 @@ dictionary = en;
 const personalization = load('src/services/personalization.ts');
 const units = load('src/utils/units.ts');
 const dates = load('src/utils/date.ts');
+const mealDay = load('src/utils/mealDay.ts', { '@/utils/date': dates });
 const consistency = load('src/services/consistency.ts');
 const nutrition = load('src/services/mockNutrition.ts', {'@/utils/format': { formatClockTime: () => '12:00' }});
 const correction = load('src/utils/ingredientCorrection.ts');
@@ -128,7 +129,7 @@ for(const goal of ['lose','maintain','gain']) for(const access of ['free_remaini
  for(const mode of ['search','barcode','live','description']) {
   const logEnv={analysisStatus:'ready',detectedItems:items,canSaveMealDraft:correction.canSaveMealDraft,...f.local,...nutrition,...dates,
    mealHistory:history,scannedMeal:{...meal('same-id','2026-09-26'),items},scanModeRef:{current:mode},correctionDraftRef:{current:false},
-   FREE_ANALYSIS_MODES:new Set(freeModes),consumePlannedMealType:()=>null,telemetryScanSource:x=>x,
+   FREE_ANALYSIS_MODES:new Set(freeModes),consumePlannedMealType:()=>null,consumePlannedMealDate:()=>null,mealMoment:mealDay.mealMoment,formatClockTime:()=>'12:00',telemetryScanSource:x=>x,
    saveSyncedMeal:f.local.saveMeal,setMeals:fn=>{visibleMeals=fn(visibleMeals);},setMealHistory:fn=>{history=fn(history);}};
   const log=callback('logScannedMeal',logEnv);await Promise.all([log(),log()]);
   assert.equal((await f.local.loadMeals()).length,1);assert.equal(visibleMeals.length,1);
@@ -136,7 +137,7 @@ for(const goal of ['lose','maintain','gain']) for(const access of ['free_remaini
  }
  // Confirming a corrected draft returns through the same actual callback.
  items=items.map(item=>({...item,calories:300,protein:30,amountG:150}));
- const saveCorrected=callback('logScannedMeal',{analysisStatus:'ready',detectedItems:items,canSaveMealDraft:correction.canSaveMealDraft,...f.local,...nutrition,...dates,mealHistory:history,scannedMeal:{...meal('same-id','2026-09-26'),items},scanModeRef:{current:'search'},correctionDraftRef:{current:false},FREE_ANALYSIS_MODES:new Set(freeModes),consumePlannedMealType:()=>null,telemetryScanSource:x=>x,saveSyncedMeal:f.local.saveMeal,setMeals:fn=>{visibleMeals=fn(visibleMeals);},setMealHistory:fn=>{history=fn(history);}});
+ const saveCorrected=callback('logScannedMeal',{analysisStatus:'ready',detectedItems:items,canSaveMealDraft:correction.canSaveMealDraft,...f.local,...nutrition,...dates,mealHistory:history,scannedMeal:{...meal('same-id','2026-09-26'),items},scanModeRef:{current:'search'},correctionDraftRef:{current:false},FREE_ANALYSIS_MODES:new Set(freeModes),consumePlannedMealType:()=>null,consumePlannedMealDate:()=>null,mealMoment:mealDay.mealMoment,formatClockTime:()=>'12:00',telemetryScanSource:x=>x,saveSyncedMeal:f.local.saveMeal,setMeals:fn=>{visibleMeals=fn(visibleMeals);},setMealHistory:fn=>{history=fn(history);}});
  await saveCorrected();await saveCorrected();assert.equal((await f.local.loadMeals()).length,1);assert.equal((await f.local.loadMeals())[0].calories,300);
  const used=nutrition.sumMeals(await f.local.loadMeals());assert.equal(used.calories,300);assert.equal(nutrition.getRemaining(targets,used).calories,targets.calories-300);
 
