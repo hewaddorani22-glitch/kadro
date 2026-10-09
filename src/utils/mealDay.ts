@@ -1,5 +1,6 @@
 import type { Meal } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
+import { mealTypeForHour } from '@/utils/daypart';
 
 /** Logging reaches back four weeks; older days are history, not a diary to fill. */
 export const MAX_BACKDATE_DAYS = 30;
@@ -18,10 +19,9 @@ const SLOT_CLOCK: Record<Meal['type'], [number, number]> = {
   Dinner: [19, 0],
 };
 
-/** The slot the clock suggests when nobody has chosen one. */
+/** The slot the clock suggests when nobody has chosen one (the shared daypart clock). */
 export function mealTypeForTime(date = new Date()): Meal['type'] {
-  const hour = date.getHours();
-  return hour < 11 ? 'Breakfast' : hour < 15 ? 'Lunch' : hour < 21 ? 'Dinner' : 'Snack';
+  return mealTypeForHour(date.getHours());
 }
 
 /** Calendar arithmetic at local noon, so a DST change never skips a day. */

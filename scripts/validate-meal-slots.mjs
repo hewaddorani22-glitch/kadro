@@ -39,10 +39,14 @@ for (const [language, source] of Object.entries(dictionaries)) {
   }
 }
 
-// A stated slot must win over the clock in both logging paths.
-const guess = /hour < 11 \? 'Breakfast' : hour < 15 \? 'Lunch' : hour < 21 \? 'Dinner' : 'Snack'/;
-if (!guess.test(mealDay) || !/consumePlannedMealType\(\) \?\? mealTypeForTime\(now\)/.test(context)) {
+// A stated slot must win over the clock in both logging paths. The clock is
+// the one shared daypart helper; no path keeps its own copy of the hours.
+const daypart = readFileSync(new URL('../src/utils/daypart.ts', import.meta.url), 'utf8');
+if (!/breakfastUntil: 11, lunchUntil: 15, dinnerUntil: 21/.test(daypart) || !/consumePlannedMealType\(\) \?\? mealTypeForHour\(now\.getHours\(\)\)/.test(context)) {
   problems.push('AppContext: the clock fallback is gone, so an unstated slot has no answer');
+}
+for (const [file, source] of [['AppContext.tsx', context], ['mealDay.ts', mealDay]]) {
+  if (/hour < 11 \?/.test(source)) problems.push(`${file}: duplicates the daypart clock instead of using src/utils/daypart.ts`);
 }
 // Back-dating: a slot tapped while Today shows an earlier day files the meal
 // on that day; the choice is cleared with the slot and spent by the meal.
@@ -94,7 +98,7 @@ for (const [label, slice] of [
     new Function('require', 'module', 'exports', code)((id) => deps[id], module, module.exports);
     return module.exports;
   };
-  const day = load('src/utils/mealDay.ts', { '@/utils/date': load('src/utils/date.ts', {}) });
+  const day = load('src/utils/mealDay.ts', { '@/utils/date': load('src/utils/date.ts', {}), '@/utils/daypart': load('src/utils/daypart.ts', {}) });
   const now = new Date('2026-10-09T21:40:00');
   const key = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   const today = day.mealMoment(null, 'Lunch', now);

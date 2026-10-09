@@ -242,7 +242,8 @@ function evaluate(source, env) {
 }
 const portions = load('src/utils/portions.ts', {});
 const correction = load('src/utils/ingredientCorrection.ts', {});
-const mealDay = load('src/utils/mealDay.ts', { '@/utils/date': load('src/utils/date.ts', {}) });
+const daypart = load('src/utils/daypart.ts', {});
+const mealDay = load('src/utils/mealDay.ts', { '@/utils/date': load('src/utils/date.ts', {}), '@/utils/daypart': daypart });
 const scaleItem = evaluate(declaration('scaleItem') + '\nreturn scaleItem;', { ...portions, ...correction });
 const countScans = evaluate(declaration('countScans') + '\nreturn countScans;', {});
 const callback = (name, env) => evaluate(`return (${declaration(name)});`, { useCallback: x => x, ...env });
@@ -258,7 +259,7 @@ function mealCallbacks() {
     mealHistory: meals, meals, scaleItem, getLocalDataGeneration: () => generation,
     repeatInFlightRef: { current: new Map() },
     consumePlannedMealType: () => null, consumePlannedMealDate: () => null, formatClockTime: () => '12:00', localDateKey: () => '2026-09-26',
-    mealTypeForTime: mealDay.mealTypeForTime, mealMoment: mealDay.mealMoment,
+    mealTypeForHour: daypart.mealTypeForHour, mealMoment: mealDay.mealMoment,
     saveSyncedMeal: async m => { persisted.push(m); },
     nutritionFromItems: items => Object.fromEntries(['calories','protein','carbs','fat','fiber'].map(k => [k,items.filter(x => x.included).reduce((sum,x) => sum+(x[k]??0),0)])),
     setMeals: fn => { meals = fn(meals); }, setMealHistory: () => {},

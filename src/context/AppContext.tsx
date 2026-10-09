@@ -49,7 +49,8 @@ import { getCurrentSessionUserId, isSupabaseConfigured, rememberSupabaseUser, st
 import { applyAnalyticsAgePolicy, captureOperationalError, clearTelemetryForAccountSwitch, countBucket, durationBucket, trackEvent } from '@/services/telemetry';
 import { DailyTargets, Meal, MealItem, MealSuggestion, Nutrition, PortionFactor, UserProfile, WeightEntry } from '@/types/nutrition';
 import { localDateKey } from '@/utils/date';
-import { clampLogDate, mealMoment, mealTypeForTime } from '@/utils/mealDay';
+import { mealTypeForHour } from '@/utils/daypart';
+import { clampLogDate, mealMoment } from '@/utils/mealDay';
 import { itemNutritionPer100g } from '@/utils/portions';
 import { getDictionary } from '@/i18n/active';
 import type { UnitSystem } from '@/utils/units';
@@ -1362,7 +1363,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     if (inFlight) return inFlight;
     const operation = (async () => {
       const now = new Date();
-      const type = consumePlannedMealType() ?? mealTypeForTime(now);
+      const type = consumePlannedMealType() ?? mealTypeForHour(now.getHours());
       const moment = mealMoment(consumePlannedMealDate(), type, now);
       const repeated: Meal = {
         ...candidate.source,
