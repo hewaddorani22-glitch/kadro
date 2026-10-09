@@ -25,7 +25,7 @@ const appJson = JSON.parse(appJsonRaw);
 assert.doesNotMatch(telemetry, /goal: NutritionGoal/, 'analytics must not accept nutrition goals');
 assert.doesNotMatch(onboarding, /trackEvent\('plan edited',\s*\{\s*goal:/, 'plan edits must not send health goals');
 assert.match(telemetry, /blockedAutomaticProperties = new Set\([\s\S]*?'goal'/, 'legacy queued goal properties must be scrubbed before sending');
-assert.match(await read('src/app/data-consent.tsx'), /color=\{wellnessConsentGranted \? colors\.onAccent : colors\.attention\}/, 'paused consent icon must remain visible in dark mode');
+assert.match(await read('src/app/data-consent.tsx'), /color=\{wellnessConsentGranted \? colors\.onAccent : colors\.attentionText\}/, 'paused consent icon must remain visible in dark mode and meet contrast on the pale amber');
 const version = consent.match(/PRIVACY_VERSION = '([^']+)'/)?.[1];
 assert.ok(version, 'the app must expose a versioned privacy consent');
 assert.ok(gateway.includes(`REQUIRED_PRIVACY_VERSION = '${version}'`), 'app and gateway consent versions must match');
