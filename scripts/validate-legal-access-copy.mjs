@@ -3,22 +3,47 @@ import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=process.argv[2] ?? fileURLToPath(new URL('../',import.meta.url));
-// This disclosure must be in the subscription terms in both languages, while
-// the separate functional-data disclosure stays in privacy.
+// The commercial access disclosure (free scope, Pro scope, trial) must be in
+// the subscription terms in both languages, while the separate
+// functional-data disclosure stays in privacy.
 for (const [language, clause, dataClause] of [
- ['de', 'Bei einem begrenzten Test unter geeigneten neuen Nutzern', 'Für den begrenzten Zugangstest speichert Supabase'],
- ['en', 'A limited test among eligible new users aged 18', 'For the limited access test, Supabase']
+ ['de', 'Kostenlos sind Lebensmittelsuche, Barcode', 'Für die Zugangssteuerung speichert Supabase'],
+ ['en', 'Food search, barcode, daily balance, meal suggestions and history are free', 'For access control, Supabase stores']
 ]) {
  const source=readFileSync(resolve(root,`src/i18n/legal.${language}.ts`),'utf8');
  const privacy=source.slice(source.indexOf('  privacy: {'),source.indexOf('  terms: {'));
  const terms=source.slice(source.indexOf('  terms: {'),source.indexOf('  sources: {'));
- assert.ok(terms.includes(clause),`${language}: access/introductory-offer disclosure missing from terms`);
+ assert.ok(terms.includes(clause),`${language}: free/Pro access disclosure missing from terms`);
  assert.ok(!privacy.includes(clause),`${language}: commercial access disclosure misplaced in privacy`);
  assert.ok(privacy.includes(dataClause),`${language}: functional access-data disclosure missing from privacy`);
- // Owner decision 04.10.2026 (evening): open to new adult installs, no linked account needed.
- assert.match(privacy, language === 'de' ? /ein verknüpftes Konto ist nicht erforderlich/ : /a linked account is not required/);
- assert.match(privacy, language === 'de' ? /neue Installationen von Erwachsenen ohne bisherige Nutzung/ : /new installs by adults with no prior use/);
+ // Owner decision 09.10.2026: the access test is paused, soft paywall for
+ // everyone. Terms and privacy must say so instead of describing a live test.
+ assert.match(terms, language === 'de' ? /drei erfolgreiche KI-Analysen/ : /three successful AI analyses/);
+ assert.match(terms, language === 'de' ? /Fair-Use-Grenze/ : /fair-use limit/);
+ assert.match(terms, language === 'de' ? /Test mit zwei Zugangsvarianten ist pausiert/ : /test of two access variants is paused/);
+ assert.doesNotMatch(terms, /Bei einem begrenzten Test unter geeigneten neuen Nutzern|A limited test among eligible new users/,
+  `${language}: terms still describe the paused access test as running`);
+ assert.match(privacy, language === 'de' ? /Zugangstest .* ist pausiert: Es werden keine neuen Varianten zugeordnet/ : /access test .* is paused: no new variants are assigned/);
+ assert.match(privacy, language === 'de' ? /Wird dir die Paywall angezeigt, speichert Supabase/ : /When the paywall is shown to you, Supabase also stores/,
+  `${language}: the per-account paywall exposure record must be disclosed`);
  assert.match(privacy, language === 'de' ? /standardmäßig ausgeschalteten Einwilligung/ : /separate, default-off consent/);
-
+ // Server-side aggregate funnel: purpose, minimal data, legal basis, objection.
+ const funnel = privacy.split('\n').find(line => language === 'de' ? line.includes('Zählwerte je Anmeldetag') : line.includes('counts per sign-up day')) ?? '';
+ for (const rule of language === 'de'
+  ? [/Art\. 6 Abs\. 1 lit\. f DSGVO/, /Art\. 21 DSGVO/, /keine zusätzlichen Daten/, /nicht was/]
+  : [/Art\. 6\(1\)\(f\) GDPR/, /Art\. 21 GDPR/, /No additional data/, /not what/]) {
+  assert.match(funnel, rule, `${language}: aggregate funnel disclosure must state ${rule}`);
+ }
+ // International transfers: DPF where certified, otherwise SCCs.
+ const transfers = privacy.split('\n').find(line => language === 'de' ? line.includes('Übermittlung in Drittländer') : line.includes('Transfers to third countries')) ?? '';
+ for (const rule of [/OpenRouter/, /Microsoft Azure/, /Data Privacy Framework/, language === 'de' ? /Art\. 46 Abs\. 2 lit\. c DSGVO/ : /Art\. 46\(2\)\(c\) GDPR/]) {
+  assert.match(transfers, rule, `${language}: transfer disclosure must mention ${rule}`);
+ }
+ assert.match(privacy, /OWNER MUST VERIFY: OpenRouter DPF certification\/SCC in their DPA before release/,
+  `${language}: keep the owner verification note next to the transfer paragraph`);
+ // 16+ (owner decision 09.10.2026).
+ assert.match(terms, language === 'de' ? /für Nutzer ab 16 Jahren/ : /for users aged 16 and over/);
+ assert.doesNotMatch(terms, /ab 14 Jahren|aged 14 and over|14- bis 17|14–17/, `${language}: terms still state the old 14+ minimum`);
+ assert.doesNotMatch(privacy, /Kandro ist ab 14|available from age 14/, `${language}: privacy still states the old 14+ minimum`);
 }
-console.log('PASS: bilingual access/trial terms and separate functional-data privacy disclosure.');
+console.log('PASS: bilingual free/Pro terms, paused access test, aggregate funnel and transfer disclosures, 16+.');
