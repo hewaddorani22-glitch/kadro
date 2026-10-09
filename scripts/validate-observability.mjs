@@ -151,4 +151,25 @@ await Promise.all([c1, c2, c3]);
 assert.deepEqual(writes, ['save:101', 'delete'], 'superseded edit is coalesced and deletion stays last');
 assert.ok(!(await local.loadAllStoredScans()).some((m) => m.id === 'ordered'));
 assert.ok(!(await local.loadDeletedMealIds()).includes('ordered'));
+// Sentry: 10% traces, but spans and transactions keep the privacy scrubbing.
+{
+  let sentryOptions = null;
+  const previousDsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
+  process.env.EXPO_PUBLIC_SENTRY_DSN = 'https://public@o1.ingest.de.sentry.io/1';
+  load('src/services/crashReporting.ts', { '@sentry/react-native': { init(options) { sentryOptions = options; }, captureException() {}, wrap: x => x } });
+  if (previousDsn === undefined) delete process.env.EXPO_PUBLIC_SENTRY_DSN; else process.env.EXPO_PUBLIC_SENTRY_DSN = previousDsn;
+  assert.equal(sentryOptions.tracesSampleRate, 0.1);
+  assert.deepEqual(sentryOptions.tracePropagationTargets, []);
+  assert.equal(sentryOptions.sendDefaultPii, false);
+  assert.equal(sentryOptions.attachScreenshot, false);
+  const span = sentryOptions.beforeSendSpan({ description: 'GET https://x.supabase.co/rest/v1/meals?user_id=eq.abc', data: { url: 'https://x.supabase.co/rest/v1/meals?id=eq.m1', 'http.query': '?user_id=eq.abc', 'http.method': 'GET', meal_title: 'x' } });
+  assert.equal(span.description, 'GET https://x.supabase.co/rest/v1/meals');
+  assert.equal(span.data.url, 'https://x.supabase.co/rest/v1/meals');
+  assert.equal(span.data['http.method'], 'GET');
+  assert.ok(!('http.query' in span.data) && !('meal_title' in span.data));
+  const transaction = sentryOptions.beforeSendTransaction({ user: { id: 'u' }, transaction: '/meal?id=1', request: { url: 'https://a/b?c=d', query_string: 'c=d', data: '{}' } });
+  assert.equal(transaction.user, undefined);
+  assert.equal(transaction.transaction, '/meal');
+  assert.deepEqual(transaction.request, { url: 'https://a/b' });
+}
 console.log('Cloud ordering passed: delayed earlier writes cannot overtake a correction or resurrect a deleted meal.');
