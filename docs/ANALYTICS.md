@@ -4,11 +4,11 @@ Current implementation: `src/services/telemetry.ts`, schema **2**, first release
 
 ## Coverage and privacy
 
-Collection is off by default. Only a known adult profile with explicit opt-in in Profile can emit. Unknown age, users under 18, revocation, deletion and account switching close the gate. No retroactive events are sent. In particular, **first-run onboarding before opt-in cannot be measured**; do not call the setup-step chart an all-installs onboarding funnel.
+Collection is off by default. Only a known adult profile with an explicit opt-in can emit; the opt-in is offered in the onboarding consent step and stays changeable under You → Privacy settings. Unknown age, users under 18, revocation, deletion and account switching close the gate. No retroactive events are sent. In particular, **onboarding steps before the opt-in cannot be measured**; do not call the setup-step chart an all-installs onboarding funnel. For all-installs numbers use the server-side funnel below.
 
 PostHog EU receives a random installation identity, fixed feature/outcome categories and app version/build/platform/environment. The identity is reset at account boundaries. It is not a unique-person or cross-device account count. App foreground events enable activity/retention measurement within this consenting sample.
 
-Never send photos, search queries, barcode numbers, food names, descriptions, ingredient names, email, Supabase IDs, meal IDs, body values, goals, calories, macros, payment receipts or provider responses. Typed properties also pass a runtime categorical allowlist. Device name/model/manufacturer, locale/timezone, dimensions and old goal properties are scrubbed. Person profiles, GeoIP, feature flags, touch/lifecycle autocapture, surveys and replay remain disabled. No Sentry or new paid analytics service is installed.
+Never send photos, search queries, barcode numbers, food names, descriptions, ingredient names, email, Supabase IDs, meal IDs, body values, goals, calories, macros, payment receipts or provider responses. Typed properties also pass a runtime categorical allowlist. Device name/model/manufacturer, locale/timezone, dimensions and old goal properties are scrubbed. Person profiles, GeoIP, feature flags, touch/lifecycle autocapture, surveys and replay remain disabled. No other product-analytics service is installed. Crash and error reports go separately to Sentry (EU region, `src/services/crashReporting.ts`): no user object, no default PII, no screenshots, no input breadcrumbs, independent of the analytics opt-in; see APP_PRIVACY.md.
 
 ## Event contract
 
@@ -36,7 +36,7 @@ All product events include `analytics_schema=2`, `app_version`, `app_build`, `ap
 | `subscription purchase started`, `subscription purchase ended` | Selected plan, billing mode, active/cancelled/pending/interrupted/failed. Pending is an unresolved store/server confirmation; interrupted belongs to an obsolete account context. Completed means StoreKit plus backend entitlement confirmed. |
 | `subscription purchase completed` | Successful activation only. Not booked revenue. |
 | `subscription restore started`, `subscription restore ended`, `subscription restore completed` | Active/no purchase/pending/interrupted/failed; restore is not a new sale. |
-| `$exception` | Explicit scrubbed JS/render/integration errors with fixed area/operation/code. No raw error message or payload. Native crashes are assessed in Apple's diagnostics, not claimed covered by JS tracking. |
+| `$exception` | Explicit scrubbed JS/render/integration errors with fixed area/operation/code, only for opted-in adults. No raw error message or payload. Native and JavaScript crashes for all users are covered by Sentry, not by these events; Apple's diagnostics remain a second source. |
 
 Duration buckets: under 1s, 1–3s, 3–10s, 10–30s, over 30s. Counts: 1/2–3/4+ where applicable. No per-keystroke analytics.
 
@@ -56,6 +56,10 @@ Useful ordered funnels (30-minute window, distinct installation, same filters):
 
 A missing next step is an **observed drop-off**, not proof of a bug: users may leave voluntarily, background the app, revoke consent or be offline. Replaced search requests intentionally have no latest-result event; start-to-complete is not an exact network error rate. Use explicit failure events and latency buckets to narrow causes. Events buffered by the SDK can arrive late, and app termination between persistence and capture can still undercount. This is not an exactly-once server ledger.
 
+## Server-side funnel (no client analytics)
+
+Because the PostHog sample is opt-in only, all-installs questions (how many new accounts try an AI analysis, save a meal, come back on day 1+ or 7+, see the paywall, start a trial) are answered from data Supabase already holds, as aggregate counts per sign-up day (Europe/Berlin): `private.growth_funnel_daily` and `private.ai_failure_daily` (failure code per day), plus `private.paywall_exposures` (first paywall exposure per account and context). They are readable only with the service role (Supabase SQL editor); never export per-person rows. The privacy notice 2.5 discloses this under Art. 6(1)(f) GDPR with a right to object. How to query them: `docs/GROWTH_FUNNEL.md`.
+
 Use Apple App Store Connect for first-time downloads, redownloads and native crash diagnostics, and RevenueCat/Apple financial records for active subscriptions, renewals, refunds and revenue. Client events diagnose flow friction, not financial truth.
 
 ## Verification
@@ -66,6 +70,8 @@ Release-specific native and live ingestion evidence belongs in the workspace rel
 
 
 ## paywall_access_v1 (03.10.2026)
+
+**Pausiert seit 09.10.2026:** zu wenige Nutzer für eine interpretierbare Auswertung; alle erhalten die weiche Paywall mit kostenloser Option (3 KI-Analysen, Suche/Barcode/Plan/Verlauf frei). Bestehende Zuordnungen bleiben gespeichert, neue Varianten werden nicht vergeben. Der folgende Abschnitt beschreibt die Auswertungsregeln für den Fall einer Wiederaufnahme.
 
 Die Grundgesamtheit heißt ausdrücklich **freiwillig verknüpfte geeignete Neunutzer**, nicht alle Downloads. Die einmalige funktionale Serverzuordnung ist unabhängig von Analytics-Einwilligung; A/B, Grund und Zeitpunkt sind private Kontodaten, keine Tracking-ID. Anonyme, ausgeschlossene und bestehende Nutzer sind keine Kontrollgruppe. Auswertung nach ursprünglicher Zuteilung: Auch Nutzer, die nach Zuteilung abbrechen oder nie kaufen, bleiben im Nenner ihrer Gruppe. Keine Neuverlosung nach Restore, Login oder Eligibilityverlust.
 
