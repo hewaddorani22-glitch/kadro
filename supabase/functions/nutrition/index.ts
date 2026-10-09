@@ -82,7 +82,13 @@ const revenueCatIosProductResourceIds = (Deno.env.get('REVENUECAT_IOS_PRODUCT_RE
   .filter(Boolean);
 const revenueCatSecretApiKey = Deno.env.get('REVENUECAT_SECRET_API_KEY') ?? '';
 const ENTITLEMENT_REFRESH_COOLDOWN_SECONDS = 20;
-const REQUIRED_PRIVACY_VERSION = '2026-09-04-ai-v2';
+const REQUIRED_PRIVACY_VERSION = '2026-10-09-ai-v3';
+// Builds up to 1.0.3 can only ever record the previous version: refusing it
+// would loop them between "consent required" and a re-consent that writes the
+// same value again. Its recipients and purposes (OpenRouter -> Azure) are
+// unchanged, so it stays accepted until those builds are retired; current
+// builds re-ask on their own because their local version differs.
+const ACCEPTED_PRIVACY_VERSIONS = new Set([REQUIRED_PRIVACY_VERSION, '2026-09-04-ai-v2']);
 const REQUIRED_GUARDIAN_VERSION = '2026-09-04-guardian-v1';
 
 /** Largest base64 payload we accept. The client sends a 1600px JPEG at q0.82. */
@@ -905,8 +911,8 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     !Number.isInteger(age)
     || age < 14
     || !guardianApproved
-    || consent?.privacy_version !== REQUIRED_PRIVACY_VERSION
-    || !consent.wellness_consent_at
+    || !ACCEPTED_PRIVACY_VERSIONS.has(consent?.privacy_version ?? '')
+    || !consent?.wellness_consent_at
   ) {
     return reply({ status: 403, body: { code: 'consent_required', message: 'Bitte bestätige zuerst die aktuelle Datenschutzeinwilligung.' } });
   }

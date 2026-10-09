@@ -43,6 +43,39 @@ for (const [locale, info] of locales) {
     problems.push(`${locale}: trial disclosure must require the actual Apple offer and eligibility, and explain the full annual renewal charge`);
   }
 
+  // Positioning decision 09.10.2026: the listing leads with "what fits next"
+  // (three dishes for the rest of the day), the app is 16+, and the paused
+  // access test is not described to customers.
+  const german = locale === 'de-DE';
+  const lead = info.description.split('\n\n').slice(0, 2).join(' ');
+  if (!(german ? /was als Nächstes passt/ : /what fits next/).test(lead)
+    || !(german ? /drei Gerichte/ : /three dishes/).test(lead)
+    || !(german ? /zu Hause.*Supermarkt.*unterwegs/ : /at home.*supermarket.*on the go/).test(lead)) {
+    problems.push(`${locale}: the description must open with the next-meal promise (three dishes, at home / supermarket / on the go)`);
+  }
+  if (!(german ? /ab 16 Jahren/ : /aged 16 and over/).test(info.description)
+    || /\b14\b|sorgeberechtig|Elternteil|guardian/i.test(info.description)) {
+    problems.push(`${locale}: the description must state 16+ and no longer mention ages 14–15 or guardian consent`);
+  }
+  if (!(german ? /medizinische Beratung/ : /medical advice/).test(info.description)) {
+    problems.push(`${locale}: keep the short no-medical-advice line`);
+  }
+  const freeAndPro = german ? [/Kostenlos:/, /drei KI-Analysen/, /Kandro Pro:/, /Fair Use/, /Wochenrückblick/]
+    : [/Free:/, /three AI analyses/, /Kandro Pro:/, /fair use/, /weekly review/];
+  if (freeAndPro.some(rule => !rule.test(info.description))) {
+    problems.push(`${locale}: the free and Pro scope must be stated plainly`);
+  }
+  const listing = [info.description, info.promoText, info.releaseNotes ?? ''].join('\n');
+  if (/A\/B|variant|Variante|verifi|Zugangstest|access test|experiment/i.test(listing)) {
+    problems.push(`${locale}: customer copy must not describe access tests, variants or verified accounts`);
+  }
+  if (!info.description.includes('stdeula')) problems.push(`${locale}: link Apple's standard EULA`);
+  // Apple counts characters, but multi-byte umlauts have tripped the field
+  // before. Staying within 100 bytes is safe under either reading.
+  if (Buffer.byteLength(keywords, 'utf8') > 100) {
+    problems.push(`${locale}: keywords are ${Buffer.byteLength(keywords, 'utf8')} bytes; keep them within 100 bytes`);
+  }
+
   const words = (text) => new Set(text.toLowerCase().match(/[\p{L}]+/gu) ?? []);
   const named = new Set([...words(name), ...words(info.subtitle)]);
   for (const keyword of info.keywords ?? []) {

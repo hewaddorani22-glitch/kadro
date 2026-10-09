@@ -5,8 +5,13 @@ import { ensureSupabaseUser, isSupabaseConfigured, supabase } from '@/services/s
 /**
  * Bump this whenever the recipients or purposes in the explicit consent text
  * change. Older consent must not silently cover a newly disclosed transfer.
+ *
+ * 2026-10-09-ai-v3: notice 2.5 (16+, third-country transfer safeguards,
+ * aggregate server-side funnel, paused access test). A stored record with
+ * any other version reads as "no consent", so the route guard sends the user
+ * back to /data-consent and the new version is written server-first.
  */
-export const PRIVACY_VERSION = '2026-09-04-ai-v2';
+export const PRIVACY_VERSION = '2026-10-09-ai-v3';
 const CONSENT_KEY = '@kandro/wellness-consent:v1';
 
 type StoredConsent = {

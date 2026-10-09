@@ -14,9 +14,11 @@ Use this as the source of truth when completing **App Privacy** in App Store Con
 | Health & Fitness → Health | App Functionality | Body measurements, nutrition targets, confirmed meals and macros are stored under the user's Supabase account. |
 | Identifiers → User ID | App Functionality | Supabase anonymous or secured account ID; also used as the RevenueCat App User ID. |
 | Purchases → Purchase History | App Functionality | RevenueCat and Apple maintain subscription entitlement state. |
-| Contact Info → Email Address | App Functionality, Account Management | When the user voluntarily secures/restores the guest account, or when a 14–15-year-old asks a parent/guardian to confirm permission. The guardian address is used from Edge Function memory for Resend delivery and is never written to Kandro's database. Short-lived, separately salted account, recipient and network fingerprints enforce guardian-mail limits and are purged within three hours. |
+| Contact Info → Email Address | App Functionality, Account Management | When the user voluntarily secures/restores the guest account, or (builds up to 1.0.3 only; Kandro is 16+ from 09.10.2026) when a 14–15-year-old asks a parent/guardian to confirm permission. The guardian address is used from Edge Function memory for Resend delivery and is never written to Kandro's database. Short-lived, separately salted account, recipient and network fingerprints enforce guardian-mail limits and are purged within three hours. |
 | Contact Info → Name | App Functionality | An optional display name is stored in the Supabase profile and used for the greeting. |
-| Usage Data → Product Interaction | App Functionality | The authenticated gateway stores linked request IDs, state, access kind and short-lived structured nutrition results to enforce the three free analyses, paid access, abuse limits and idempotent retries. |
+| Usage Data → Product Interaction | App Functionality | The authenticated gateway stores linked request IDs, state, access kind, failure code and short-lived structured nutrition results to enforce the three free analyses, paid access, abuse limits and idempotent retries. The access assignment (variant or exclusion reason of the paused access test) and the first paywall exposure per context are stored against the account. |
+
+These records also feed the server-side aggregate funnel (`private.growth_funnel_daily`, `private.ai_failure_daily`): counts per sign-up day, read only with the service role, never exported per person. It collects nothing new, so it adds no App Store data type; the privacy notice (2.5) discloses it under Art. 6(1)(f) GDPR.
 
 ## Optional analytics
 
@@ -29,6 +31,19 @@ Production currently has PostHog enabled. Even though collection is off by defau
 | Diagnostics → Other Diagnostic Data | Analytics, App Functionality | Sanitized operational exception type/code and original stack frames, plus limited app/OS/SDK metadata used to diagnose failures. |
 
 If PostHog is deliberately disabled in the submitted production environment, re-run the packet/log test before removing these disclosures merely because the dormant SDK remains present. A default opt-out does **not** make collection undisclosable when an adult can opt in.
+
+## Crash diagnostics (Sentry)
+
+Sentry (`@sentry/react-native`, EU region) is active whenever `EXPO_PUBLIC_SENTRY_DSN` is set in the build, independent of the analytics opt-in. `src/services/crashReporting.ts` sends no user object, no default PII, no screenshots or view hierarchy, no request bodies, and drops console, network, navigation and text-input breadcrumbs. Declare as **not linked to the user**:
+
+| App Store data type | Purpose | Why |
+|---|---|---|
+| Diagnostics → Crash Data | App Functionality | Native and JavaScript crash reports with stack traces. |
+| Diagnostics → Performance Data | App Functionality | Release-health session counts (`enableAutoSessionTracking`), and sampled performance traces whenever `tracesSampleRate` is above 0. |
+| Diagnostics → Other Diagnostic Data | App Functionality | Sanitised error type, app version, device model, OS version and the last interface breadcrumbs without input. |
+| Identifiers → Device ID | App Functionality | Sentry's random installation identifier, used only to group reports. Declared conservatively; it is never joined to the Supabase account. |
+
+If a release build ships without a DSN, Sentry stays inactive; keep the declaration anyway if any later build of the same version can enable it.
 
 ## Transient photos and descriptions
 
@@ -48,7 +63,8 @@ USDA receives normalized food search terms. Open Food Facts receives a barcode. 
 - German Privacy Policy URL: `https://getkandro.com/privacy`
 - In-app withdrawal: **You → Analysis & data use → Withdraw consent**
 - Account deletion: **You → Delete account and data**
-- Analytics opt-out: **You → Privacy settings → Anonymous usage analytics**
+- Analytics opt-in/opt-out: offered in the onboarding consent step; changeable under **You → Privacy settings → Anonymous usage analytics**
+- Minimum age: 16+ in the listing, privacy notice and terms (set the App Store Connect age rating to 16+, see APP_STORE.md)
 - Account deletion does not cancel an Apple subscription; the app says this before deletion.
 
 

@@ -4,8 +4,22 @@ import process from 'node:process';
 
 const root = process.cwd();
 // Composed from real release-app captures by app-store/compose/render.py.
-const expected = ['01-photo.png', '02-voice.png', '03-today.png', '04-adapt.png', '05-portions.png', '06-plan.png'];
+// Upload order follows the filenames: the next-meal answer leads (09.10.2026).
+const expected = ['01-adapt.png', '02-photo.png', '03-voice.png', '04-today.png', '05-portions.png', '06-plan.png'];
+const frames = JSON.parse(fs.readFileSync(path.join(root, 'app-store', 'compose', 'frames.json'), 'utf8'));
 const errors = [];
+if (JSON.stringify(frames.map((frame) => `${frame.id}.png`)) !== JSON.stringify(expected)) {
+  errors.push(`frames.json order ${frames.map((frame) => frame.id).join(', ')} does not match ${expected.join(', ')}`);
+}
+// Captions promise estimates, not exactness, and headline numbers must match the capture.
+const captions = JSON.stringify(frames);
+for (const banned of ['Fertig.', 'Done.', 'genau in deinen', 'fit exactly', 'realistisches Zieldatum', 'realistic target date']) {
+  if (captions.includes(banned)) errors.push(`frames.json still claims "${banned}"`);
+}
+const adapt = frames.find((frame) => frame.id === '01-adapt');
+if (adapt?.['de-DE'].headline[0] !== '782 kcal übrig.' || adapt?.['en-US'].headline[0] !== '585 kcal left.') {
+  errors.push('01-adapt headline must state the kcal left shown in each locale capture (DE 782, EN 585)');
+}
 
 for (const locale of ['en-US', 'de-DE']) {
   const directory = path.join(root, 'app-store', 'screenshots', locale);

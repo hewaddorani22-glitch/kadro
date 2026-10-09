@@ -1,66 +1,53 @@
 # App Store and TestFlight handoff
 
-This file is the source of truth for Kandro's first iOS release. English is the primary App Store localization; German is provided as an additional localization. Apple activated the Developer Program membership on 4 September 2026. Signed TestFlight builds 4 and 5 were processed, but neither contains the final audited source. Nothing has been submitted to App Review and neither build may be treated as release evidence for the current source.
+This file is the source of truth for Kandro's iOS App Store setup. English is the primary App Store localization; German is the additional localization. Customer-facing listing text (name, subtitle, keywords, promotional text, description, What's New) lives in `store.config.json` and is checked by `npm run validate:store-listing`; do not copy it here, where it goes stale.
 
-## Product metadata (English — primary)
+**Version state (09.10.2026):** `app.json` and `store.config.json` are at `1.0.3`; work happens on `release/1.0.4`. Builds 38 and older must not be submitted (release gate in `AGENTS.md`), and App Review submission needs the owner's explicit approval for the exact build number. The build history is in `docs/ROADMAP.md`.
 
-- **Name:** Kandro Macro & Protein Tracker
-- **Subtitle:** Know what to eat next
-- **Primary category:** Health & Fitness
+## Product metadata
+
+- **Name:** `Kandro: AI Calorie Counter` (en-US) · `Kandro: Kalorienzähler & KI` (de-DE)
+- **Subtitle:** `Food photo log & meal ideas` (en-US) · `Kalorien per Foto & Essensplan` (de-DE)
+- **Positioning:** "Kandro sagt dir, was als Nächstes passt." / "Kandro tells you what fits next." Target group 18–30, DACH first.
+- **Primary category:** Health & Fitness · **Secondary:** Food & Drink
 - **Bundle ID:** `com.hewaddorani.kandro`
 - **Apple Team ID:** `85S69CVRAY`
 - **App Store Connect Apple ID:** `6808622187`
-- **Version:** `1.0.0`
+- **Version:** see `app.json` → `expo.version` (currently `1.0.3`)
 - **SKU suggestion:** `kandro-ios-001`
 - **Copyright:** `2026 Hewad Dorani`
-- **Support URL:** `https://getkandro.com/en/support`
-- **Privacy Policy URL:** `https://getkandro.com/en/privacy`
-- **Age rating:** answer the current questionnaire truthfully with **Health or Wellness Topics** present and no medical-treatment or objectionable-content descriptors. Set the developer minimum to **13+**, the closest Apple tier below Kandro's enforced 14+ onboarding minimum. Do not select the Kids category.
+- **Support URL:** `https://getkandro.com/en/support` · `https://getkandro.com/support`
+- **Privacy Policy URL:** `https://getkandro.com/en/privacy` · `https://getkandro.com/privacy`
 
-### Promotional text
+## Age rating: 16+ (set in App Store Connect)
 
-Snap what you ate. Confirm the estimate and know what fits next. Kandro re-plans your day after every meal.
+Owner decision 09.10.2026: Kandro is for people aged 16 and over; there are no under-16 users, and 16–17-year-olds never get a calorie deficit.
 
-### Description
+- In App Store Connect → App Information → Age Rating, answer the questionnaire truthfully (**Health or Wellness Topics** present, no medical-treatment or objectionable-content descriptors), then set the age rating to **16+**. If the questionnaire computes a lower rating, use the developer override to raise it to 16+. Do not select the Kids category.
+- The listing, privacy notice, terms and website already say 16+ (`store.config.json`, `src/i18n/legal.*.ts`, `site/`). The in-app age picker and server age checks are a separate change; confirm they enforce 16 before submitting a build with this rating.
+- Older builds offered ages 14–15 with emailed guardian approval. The `guardian-consent` function stays deployed until those builds are retired, and the privacy notice still describes how it handles requests.
 
-Kandro is not another food diary. It helps you make the next practical decision after every meal.
+## Store listing
 
-How it works:
-
-- Photograph or describe a meal, scan a barcode, or search for a food.
-- Review every detected ingredient and adjust the portion before saving.
-- See estimated calories and macros with confidence and source labels.
-- Get a recalculated daily balance.
-- Choose from exactly three ideas for home, the supermarket or on the go.
-
-Kandro shows estimates honestly and keeps every ingredient and portion editable. Original photos are discarded after analysis and are not saved with your meal. Kandro is a general wellness tool from age 14 and does not replace medical advice. Ages 14–15 require guardian confirmation; ages 14–17 receive no prescribed calorie deficit or surplus.
-
-### Keywords
-
-nutrition,calories,macros,meal,protein,food,photo,wellness,daily plan
-
-### What's New
-
-Meet Kandro: meal photo, description, barcode and food search; ingredient and portion review; adaptive daily totals; three practical next-meal ideas; progress and secure cloud sync.
-
-## German localization
-
-- **Subtitle:** Die Aufstellung deines Tages
-- **Promotional text:** Fotografiere deine Mahlzeit, bestätige die Schätzung und sieh sofort, was heute noch passt. Kandro stellt deinen Tag nach jedem Essen neu auf.
-- **Keywords:** Ernährung,Kalorien,Makros,Mahlzeit,Protein,Essensplan,Foto,Wellness,Tagesplan
-- **Support URL:** `https://getkandro.com/support`
-- **Privacy Policy URL:** `https://getkandro.com/privacy`
-- Use the German description from `store.config.json`, with the same 14+, guardian, growth-safe estimate and non-medical disclosures as the English description.
+`store.config.json` holds both locales. Rules the validator enforces: name and subtitle at most 30 characters, keywords at most 100 bytes with no word repeated from the name or subtitle, promotional text at most 170 characters, the description opens with the next-meal promise (three dishes for the rest of the day, at home / supermarket / on the go), states 16+, states the free scope (search, barcode, daily balance, suggestions, history, three AI analyses) and the Pro scope (fair-use analyses, weekly review), carries the trial, renewal and cancellation terms, links Terms, Privacy and Apple's standard EULA, and does not mention access tests or variants.
 
 ## Screenshot package
 
-The repository contains five English and five German 6.9-inch portrait assets at `1320 × 2868` px. Before submission, compare every depicted control and claim to the exact final native build; replace any screen that no longer matches. Keep personal email addresses and account identifiers out of all assets.
+Six 6.9-inch portrait screenshots per locale at `1320 × 2868` px in `app-store/screenshots/<locale>/`, uploaded in filename order: `01-adapt` (782 / 585 kcal left, now what?), `02-photo`, `03-voice`, `04-today`, `05-portions`, `06-plan`. Captions live in `app-store/compose/frames.json`.
 
-1. Daily calorie/protein target and next move.
-2. Reviewable photo analysis and editable portions.
-3. Three adaptive next-meal options.
-4. Fast database/barcode/search logging.
-5. Fully specified recipe/ingredient view.
+**Re-render before upload:** on 09.10.2026 the captions and the order changed, but the PNGs were only renamed. Run `python3 app-store/compose/render.py` (needs Google Chrome and Pillow) to regenerate all twelve, then `npm run validate:store-screenshots`. Before submission, compare every depicted control and claim to the exact final native build. Keep personal email addresses and account identifiers out of all assets.
+
+## CI repository variables
+
+`.github/workflows/ci.yml` reads the provider identity that the legal pages and the release check need from repository variables instead of the workflow file. The owner must create them once under GitHub → repository → Settings → Secrets and variables → Actions → **Variables**:
+
+| Variable | Value |
+|---|---|
+| `IMPRESSUM_NAME` | provider name as on getkandro.com/impressum |
+| `IMPRESSUM_ADDRESS` | street, postcode and city as on the Impressum |
+| `IMPRESSUM_EMAIL` | public contact email |
+
+Until they exist, the "Check legal identity variables" step fails with a message naming the missing variable. CI runs on pushes to `main`, `audit/**` and `release/**`, and on pull requests.
 
 ## Native TestFlight gate
 
@@ -72,7 +59,7 @@ The repository contains five English and five German 6.9-inch portrait assets at
 6. Deploy the reviewed server-authoritative analysis/entitlement and privacy-remediation migrations/functions before treating the fresh build as a release candidate.
 7. For this loginless App Review flow, set RevenueCat **Sandbox Testing Access** to `Anybody`: the reviewer receives a fresh anonymous Supabase UUID that cannot be pre-allowlisted. Then run Apple-sandbox purchase, cancellation, server entitlement refresh, expiry/refund, pending and restore on a physical iPhone. The server must still accept only `store=app_store` plus the exact internal iOS app, product and entitlement IDs. Expo Go/RevenueCat Test Store (`rc_billing`) is UI simulation only and must remain unable to unlock hosted Pro.
 8. Test camera permission denied/granted, network failure/retry, account linking, consent, analytics opt-out and live account deletion in that exact build.
-9. Compare and, if needed, regenerate all five localized screenshot pairs only after that build passes.
+9. Compare and, if needed, regenerate all six localized screenshot pairs only after that build passes.
 
 ## Remaining native evidence
 
@@ -81,7 +68,7 @@ The repository contains five English and five German 6.9-inch portrait assets at
 - At least 30 real iPhone meal-photo results reviewed against the confirmed food and portion, including poor light, blur, partial plates, multiple dishes, and offline retry.
 - Native accessibility pass with VoiceOver, Dynamic Type, Reduce Motion, and contrast on a physical iPhone.
 - Finish the DSA trader verification code, bank account and US tax questionnaire. These require the account holder's private verification/financial answers.
-- Reconfirm the five localized screenshot pairs against the final binary, select the processed build and both subscriptions, then stop for the account holder's final inspection before App Review.
+- Reconfirm the six localized screenshot pairs against the final binary, select the processed build and both subscriptions, then stop for the account holder's final inspection before App Review.
 
 ## Anbieter- und URL-Angaben
 

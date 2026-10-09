@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, 'audit/**']
+    branches: [main, 'audit/**', 'release/**']
   pull_request:
 
 permissions:
@@ -26,15 +26,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Not secrets: § 5 DDG requires this identity to be published, and it is
-      # already visible on getkandro.com/impressum. The checks need it because
-      # the legal pages are generated from it, and the release check refuses to
-      # ship a build whose own privacy notice has no controller named.
+      # § 5 DDG requires this identity to be published (getkandro.com/impressum),
+      # and the checks need it: the legal pages are generated from it, and the
+      # release check refuses a build whose privacy notice names no controller.
+      # It is kept out of this file as repository variables; see "CI repository
+      # variables" in docs/APP_STORE.md.
+      - name: Check legal identity variables
+        env:
+          IMPRESSUM_NAME: ${{ vars.IMPRESSUM_NAME }}
+          IMPRESSUM_ADDRESS: ${{ vars.IMPRESSUM_ADDRESS }}
+          IMPRESSUM_EMAIL: ${{ vars.IMPRESSUM_EMAIL }}
+        run: |
+          missing=0
+          for name in IMPRESSUM_NAME IMPRESSUM_ADDRESS IMPRESSUM_EMAIL; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Repository variable $name is not set (Settings > Secrets and variables > Actions > Variables)."
+              missing=1
+            fi
+          done
+          exit $missing
+
       - name: Verify project
         env:
-          EXPO_PUBLIC_LEGAL_PROVIDER_NAME: Hewad Dorani
-          EXPO_PUBLIC_LEGAL_PROVIDER_ADDRESS: Altenessener Str. 124, 45326 Essen
-          EXPO_PUBLIC_LEGAL_CONTACT_EMAIL: hewaddorani22@gmail.com
+          EXPO_PUBLIC_LEGAL_PROVIDER_NAME: ${{ vars.IMPRESSUM_NAME }}
+          EXPO_PUBLIC_LEGAL_PROVIDER_ADDRESS: ${{ vars.IMPRESSUM_ADDRESS }}
+          EXPO_PUBLIC_LEGAL_CONTACT_EMAIL: ${{ vars.IMPRESSUM_EMAIL }}
           EXPO_PUBLIC_LEGAL_PRIVACY_URL: https://getkandro.com/privacy
           EXPO_PUBLIC_LEGAL_TERMS_URL: https://getkandro.com/terms
           EXPO_PUBLIC_LEGAL_SUPPORT_URL: https://getkandro.com/support

@@ -761,13 +761,6 @@ export const de = {
    * or an inline error, so they belong in the dictionary like any other copy.
    */
   errors: {
-    aiAnalysisConsent: 'Optional: Für diese Foto-/Textanalysen erhält Google Vertex AI (Gemini) über OpenRouter das ausgewählte Foto oder die eingegebene Beschreibung. Die Verarbeitung kann weltweit erfolgen. Es werden keine weiteren Mahlzeiten oder Profildaten mitgesendet. Ergebnisse sind Schätzungen und müssen vor dem Speichern geprüft werden. Die zusätzliche Zustimmung ist widerrufbar. Die normale Lebensmittelsuche bleibt kostenlos.',
-    aiSearchTitle: 'Suche mit KI klären',
-    aiSearchConsent: 'Optional: Kandro sendet diesen Suchbegriff über OpenRouter an Google Vertex AI (Gemini), um einen Vorschlag zu erstellen. Die Verarbeitung kann weltweit erfolgen. Es werden keine Fotos oder anderen Mahlzeiten mitgesendet. Die vorgeschlagene Lebensmittelidentität musst du selbst bestätigen. Die Hilfe verbraucht keine Foto-/Textanalyse. Du kannst diese zusätzliche Zustimmung hier widerrufen.',
-    aiSearchAccept: 'Zustimmen und Vorschlag anfordern',
-    aiSearchApply: 'Begriff bestätigen und suchen',
-    aiSearchRevoke: 'KI-Zustimmung widerrufen',
-
     gatewayTimeout: "Der Dienst braucht zu lange. Deine Eingabe bleibt erhalten. Versuche diese Anfrage später erneut.",
     gatewayInvalidResponse: "Der Dienst hat ein unvollständiges oder ungültiges Ergebnis geliefert. Es wurde nichts gespeichert.",
     gatewayRateLimited: "Zu viele Anfragen. Bitte warte vor einem neuen Versuch.",
