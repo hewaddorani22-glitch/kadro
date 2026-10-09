@@ -743,13 +743,6 @@ export const en: typeof de = {
     version: (version: string) => `Kandro · Version ${version}`,
   },
   errors: {
-    aiAnalysisConsent: 'Optional: For these photo/text analyses, Google Vertex AI (Gemini) receives the selected photo or entered description through OpenRouter. Processing may take place worldwide. No other meals or profile data are sent with it. Results are estimates and must be checked before saving. You can withdraw this additional consent. Ordinary food search remains free.',
-    aiSearchTitle: 'Clarify search with AI',
-    aiSearchConsent: 'Optional: Kandro sends this search term through OpenRouter to Google Vertex AI (Gemini) to suggest a clearer query. Processing may take place worldwide. No photos or other meals are sent with it. You must confirm the proposed food identity yourself. This help does not use a photo/text analysis. You can withdraw this additional consent here.',
-    aiSearchAccept: 'Agree and request suggestion',
-    aiSearchApply: 'Confirm term and search',
-    aiSearchRevoke: 'Withdraw AI consent',
-
     gatewayTimeout: "The service took too long. Your input is preserved. Try this request again later.",
     gatewayInvalidResponse: "The service returned an incomplete or invalid result. Nothing was saved.",
     gatewayRateLimited: "Too many requests. Please wait before trying again.",
