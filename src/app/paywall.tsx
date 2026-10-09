@@ -286,7 +286,7 @@ export default function PaywallScreen() {
           </View>
         </View> : null}
 
-        <View style={styles.plans}>
+        <View accessibilityRole="radiogroup" style={styles.plans}>
           <PlanCard
             badge={yearlyBadge}
             detail={yearlyDetail}
@@ -378,7 +378,7 @@ function PlanCard({ badge, detail, disabled, label, onPress, price, selected }: 
   const largeText = fontScale > 1;
   const priceLabel = <Text style={[styles.planPrice, largeText && styles.planPriceLarge]}>{price}</Text>;
   return (
-    <Pressable aria-checked={selected} accessibilityRole="radio" accessibilityState={{ checked: selected, disabled: Boolean(disabled) }} disabled={disabled} onPress={onPress} style={[styles.planCard, largeText && styles.planCardLarge, selected && styles.planCardSelected, disabled && styles.planCardDisabled]}>
+    <Pressable aria-checked={selected} accessibilityLabel={[label, badge, price, detail].filter(Boolean).join(', ')} accessibilityRole="radio" accessibilityState={{ checked: selected, disabled: Boolean(disabled) }} disabled={disabled} onPress={onPress} style={[styles.planCard, largeText && styles.planCardLarge, selected && styles.planCardSelected, disabled && styles.planCardDisabled]}>
       <View style={[styles.radio, selected && styles.radioSelected]}>
         {selected ? <View style={styles.radioDot} /> : null}
       </View>
@@ -426,7 +426,7 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   inlineTerms: { alignSelf: 'stretch', marginTop: 4 },
   dueToday: { color: colors.text, fontSize: typeScale.caption, fontWeight: '600', textAlign: 'center' },
   plans: { alignSelf: 'stretch', gap: 10, marginTop: 25 },
-  planCard: { minHeight: 76, borderRadius: radii.button, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', gap: 11 },
+  planCard: { minHeight: 76, borderRadius: radii.button, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 15, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 11 },
   planCardLarge: { alignItems: 'flex-start', paddingVertical: 14 },
   planCardSelected: { borderColor: colors.accentText, backgroundColor: colors.neutralSoft },
   planCardDisabled: { opacity: 0.45 },

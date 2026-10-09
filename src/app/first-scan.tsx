@@ -59,7 +59,7 @@ export default function FirstScanScreen() {
   return (
     <Screen>
       <View style={styles.content}>
-        <View style={styles.mark}><KandroMark size={40} /></View>
+        <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={styles.mark}><KandroMark size={40} /></View>
         <Text accessibilityRole="header" style={styles.title}>{copy.title}</Text>
         <Text style={styles.subtitle}>{copy.subtitle}</Text>
         <View style={styles.options}>
@@ -85,7 +85,7 @@ export default function FirstScanScreen() {
           <Ionicons color={colors.accentText} name="sparkles-outline" size={16} />
           <Text style={styles.allowanceText}>{allowance}</Text>
         </View>
-        <Pressable accessibilityRole="button" hitSlop={8} onPress={() => void later()} style={styles.later}>
+        <Pressable accessibilityLabel={copy.later} accessibilityRole="button" hitSlop={8} onPress={() => void later()} style={styles.later}>
           <Text style={styles.laterText}>{copy.later}</Text>
         </Pressable>
       </View>

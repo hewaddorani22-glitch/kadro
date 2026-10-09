@@ -148,8 +148,10 @@ export default function TodayScreen() {
         </Pressable>
         <Pressable
           accessibilityHint={isToday ? undefined : t.today.backToToday}
+          accessibilityLabel={formatDayLabel(viewDay, day, t.today, locale)}
           accessibilityLiveRegion="polite"
           accessibilityRole="button"
+          accessibilityState={{ disabled: isToday }}
           disabled={isToday}
           onPress={() => showDay(0)}
           style={styles.dayLabelWrap}
@@ -173,7 +175,13 @@ export default function TodayScreen() {
       <MealSyncStatus />
 
       {pendingAnalysisCount > 0 ? (
-        <Pressable onPress={resumePending} style={styles.pendingBanner}>
+        <Pressable
+          accessibilityHint={t.today.pendingHint}
+          accessibilityLabel={pendingAnalysisCount === 1 ? t.today.pendingOne : t.today.pendingMany(pendingAnalysisCount)}
+          accessibilityRole="button"
+          onPress={resumePending}
+          style={styles.pendingBanner}
+        >
           <View style={styles.pendingIcon}><Ionicons color={colors.text} name="cloud-offline-outline" size={19} /></View>
           <View style={styles.pendingCopy}>
             <Text style={styles.pendingTitle}>
@@ -221,7 +229,7 @@ export default function TodayScreen() {
         <Card style={styles.pastCard}>
           <Ionicons color={colors.text} name="calendar-outline" size={20} />
           <Text style={styles.pastText}>{t.today.pastDayHint}</Text>
-          <Pressable accessibilityRole="button" hitSlop={8} onPress={() => showDay(0)}>
+          <Pressable accessibilityLabel={t.today.backToToday} accessibilityRole="button" hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }} onPress={() => showDay(0)}>
             <Text style={styles.pastAction}>{t.today.backToToday}</Text>
           </Pressable>
         </Card>
@@ -277,7 +285,7 @@ export default function TodayScreen() {
       {repeatChoices.length ? (
         <View style={styles.sectionBlock}>
           <SectionTitle action={favoriteMeals.length ? (
-            <Pressable accessibilityRole="button" hitSlop={8} onPress={() => router.push('/saved-meals' as never)}>
+            <Pressable accessibilityLabel={t.today.allFavorites} accessibilityRole="button" hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }} onPress={() => router.push('/saved-meals' as never)}>
               <Text style={styles.sectionAction}>{t.today.allFavorites}</Text>
             </Pressable>
           ) : undefined}>{t.today.eatAgain}</SectionTitle>
@@ -339,6 +347,7 @@ export default function TodayScreen() {
                 <View style={styles.rowDivider} />
                 <Pressable
                   accessibilityHint={t.today.addTo(mealTypeLabel(slot.type, t.common))}
+                  accessibilityLabel={t.today.logSlot(mealTypeLabel(slot.type, t.common))}
                   accessibilityRole="button"
                   onPress={() => startScan(slot.type)}
                   style={({ pressed }) => [styles.addMealRow, pressed && styles.mealRowPressed]}
@@ -376,7 +385,7 @@ export default function TodayScreen() {
       </View>
 
       {eveningReady && isToday ? (
-        <Pressable accessibilityRole="button" onPress={() => router.push('/evening')} style={styles.eveningRow}>
+        <Pressable accessibilityHint={t.today.eveningText} accessibilityLabel={t.today.eveningTitle} accessibilityRole="button" onPress={() => router.push('/evening')} style={styles.eveningRow}>
           <View style={styles.eveningIcon}><Ionicons color={colors.text} name="moon-outline" size={19} /></View>
           <View style={styles.eveningCopy}>
             <Text style={styles.eveningTitle}>{t.today.eveningTitle}</Text>

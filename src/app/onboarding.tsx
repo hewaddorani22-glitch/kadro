@@ -840,6 +840,7 @@ function BirthYearPicker({ currentYear, onChange, value }: { currentYear: number
           return (
             <Pressable
               aria-checked={active}
+              accessibilityLabel={String(year)}
               accessibilityRole="radio"
               accessibilityState={{ checked: active }}
               key={year}
