@@ -10,12 +10,19 @@ import { KandroMark } from '@/components/KandroMark';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { scanShadow } from '@/constants/theme';
+import { selectionHaptic } from '@/services/haptics';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
+/** Active tab: filled glyph on a quiet pill, so the state never rests on colour alone. */
 function TabIcon({ focused, active, inactive }: { focused: boolean; active: IconName; inactive: IconName }) {
   const { colors } = useTheme();
-  return <Ionicons color={focused ? colors.text : colors.muted} name={focused ? active : inactive} size={22} />;
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View style={[styles.tabPill, focused && styles.tabPillActive]}>
+      <Ionicons color={focused ? colors.text : colors.muted} name={focused ? active : inactive} size={22} />
+    </View>
+  );
 }
 
 export default function TabLayout() {
@@ -40,6 +47,7 @@ export default function TabLayout() {
     <View style={styles.flex}>
       <View style={styles.flex} aria-hidden={showTour} accessibilityElementsHidden={showTour} importantForAccessibility={showTour ? 'no-hide-descendants' : 'auto'}>
         <Tabs
+          screenListeners={{ tabPress: () => { void selectionHaptic(); } }}
           screenOptions={{
             headerShown: false,
             sceneStyle: { backgroundColor: colors.background },
@@ -142,5 +150,15 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   scanPressed: {
     transform: [{ scale: 0.94 }],
+  },
+  tabPill: {
+    width: 52,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabPillActive: {
+    backgroundColor: colors.neutralSoft,
   },
 });

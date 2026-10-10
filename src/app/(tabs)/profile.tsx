@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { AccountLinkCard } from '@/components/AccountLinkCard';
-import { Card, Eyebrow, PageTitle, Screen, SectionTitle } from '@/components/ui';
+import { Card, Eyebrow, PageTitle, PressableScale, Screen, SectionTitle } from '@/components/ui';
 import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
@@ -102,16 +102,17 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <Pressable accessibilityLabel={t.profile.proView} accessibilityRole="button" onPress={() => router.push('/paywall')}>
+      <PressableScale accessibilityLabel={t.profile.proView} accessibilityRole="button" onPress={() => router.push('/paywall')}>
         <Card style={styles.proCard}>
-          <View style={styles.proIcon}><Ionicons color={colors.onAccent} name="infinite" size={26} /></View>
+          {/* Not "infinite": Pro has a fair-use cap, so the glyph must not promise otherwise. */}
+          <View style={styles.proIcon}><Ionicons color={colors.onAccent} name="sparkles" size={22} /></View>
           <View style={styles.proCopy}>
             <Text style={styles.proTitle}>{subscriptionStatus === 'active' ? t.profile.proActive : t.profile.proTitle}</Text>
             <Text style={styles.proText}>{subscriptionStatus === 'active' ? t.profile.proActiveText : t.profile.proText}</Text>
           </View>
           <View style={styles.tryPill}><Text style={styles.tryText}>{subscriptionStatus === 'active' ? t.profile.badgeActive : t.profile.badgeView}</Text></View>
         </Card>
-      </Pressable>
+      </PressableScale>
 
       <View style={styles.section}>
         <SectionTitle>{t.profile.plan}</SectionTitle>
@@ -356,14 +357,14 @@ function MenuRow({ detail, icon, label, onPress }: { detail?: string; icon: keyo
   const { colors, mode: themeMode } = useTheme();
   const styles = useThemedStyles(makeStyles);
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.menuRow}>
+    <PressableScale accessibilityRole="button" onPress={onPress} style={styles.menuRow}>
       <View style={styles.rowIcon}><Ionicons color={colors.text} name={icon} size={20} /></View>
       <View style={styles.menuCopy}>
         <Text style={styles.menuLabel}>{label}</Text>
         {detail ? <Text style={styles.menuDetail}>{detail}</Text> : null}
       </View>
       <Ionicons color={colors.muted} name="chevron-forward" size={18} />
-    </Pressable>
+    </PressableScale>
   );
 }
 

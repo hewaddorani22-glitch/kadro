@@ -2,12 +2,18 @@ import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSegments } from 'expo-router';
-import { PropsWithChildren, ReactNode } from 'react';
+import { PropsWithChildren, ReactElement, ReactNode, useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
+  GestureResponderEvent,
   Image,
   ImageSourcePropType,
   Platform,
   Pressable,
+  PressableProps,
+  PressableStateCallbackType,
+  RefreshControlProps,
   ScrollView,
   StyleProp,
   StyleSheet,
@@ -16,11 +22,64 @@ import {
   ViewStyle,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Circle, Rect } from 'react-native-svg';
 
 import { radii, spacing } from '@/constants/theme';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/layout';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
+import { stepHaptic } from '@/services/haptics';
 import type { ConfidenceLevel } from '@/utils/confidence';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+/** The one press feel for buttons and tappable cards: 0.98 and a light tick. */
+export const PRESS_SCALE = 0.98;
+
+type PressableScaleProps = Omit<PressableProps, 'style'> & {
+  style?: StyleProp<ViewStyle> | ((state: PressableStateCallbackType) => StyleProp<ViewStyle>);
+  /** Light impact on touch-down. Off where the screen plays its own haptic on press. */
+  haptic?: boolean;
+};
+
+/**
+ * Shared press feedback. The card eases to 98% while the finger is down and
+ * springs back; Reduce Motion swaps the movement for a quiet opacity change.
+ */
+export function PressableScale({ haptic = true, onPressIn, onPressOut, style, disabled, children, ...rest }: PressableScaleProps) {
+  const reduceMotion = useReducedMotion();
+  const scale = useRef(new Animated.Value(1)).current;
+  // Function styles are resolved here: Animated cannot see values returned
+  // from a style callback, so the component hands it a plain array instead.
+  const [isPressed, setPressed] = useState(false);
+  const animate = (down: boolean) => {
+    setPressed(down);
+    if (reduceMotion) return;
+    Animated.spring(scale, { toValue: down ? PRESS_SCALE : 1, speed: 40, bounciness: down ? 0 : 6, useNativeDriver: true }).start();
+  };
+  const handlePressIn = (event: GestureResponderEvent) => {
+    animate(true);
+    if (haptic && !disabled) void stepHaptic(true);
+    onPressIn?.(event);
+  };
+  const handlePressOut = (event: GestureResponderEvent) => {
+    animate(false);
+    onPressOut?.(event);
+  };
+  const resolved = typeof style === 'function' ? style({ pressed: isPressed }) : style;
+  const motion = reduceMotion ? (isPressed ? { opacity: 0.72 } : null) : { transform: [{ scale }] };
+  return (
+    <AnimatedPressable
+      {...rest}
+      disabled={disabled}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={[resolved, motion]}
+    >
+      {children}
+    </AnimatedPressable>
+  );
+}
 
 type ButtonProps = {
   label: string;
@@ -29,6 +88,8 @@ type ButtonProps = {
   variant?: 'primary' | 'secondary' | 'dark' | 'ghost';
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** Light tick on touch-down. Opt-in, so screens that already confirm with their own haptic stay single. */
+  haptic?: boolean;
 };
 
 export function PrimaryButton({
@@ -38,6 +99,7 @@ export function PrimaryButton({
   variant = 'primary',
   disabled,
   style,
+  haptic = false,
 }: ButtonProps) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -47,19 +109,19 @@ export function PrimaryButton({
   const lightText = variant === 'primary' || dark;
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
+      haptic={haptic}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.button,
         dark && styles.buttonDark,
         secondary && styles.buttonSecondary,
         ghost && styles.buttonGhost,
         disabled && styles.buttonDisabled,
-        pressed && !disabled && styles.pressed,
         style,
       ]}
     >
@@ -73,7 +135,7 @@ export function PrimaryButton({
           size={18}
         />
       ) : null}
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -81,7 +143,8 @@ export function Screen({
   children,
   scroll = true,
   style,
-}: PropsWithChildren<{ scroll?: boolean; style?: StyleProp<ViewStyle> }>) {
+  refreshControl,
+}: PropsWithChildren<{ scroll?: boolean; style?: StyleProp<ViewStyle>; refreshControl?: ReactElement<RefreshControlProps> }>) {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -111,6 +174,7 @@ export function Screen({
         contentInsetAdjustmentBehavior="never"
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
+        refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
       >
         {children}
@@ -198,7 +262,9 @@ export function MacroCard({
         <Ionicons color={reached ? colors.onAccent : colors.text} name={reached ? 'checkmark' : over ? 'information-circle-outline' : icon} size={16} />
       </View>
       <Text numberOfLines={1} style={styles.macroLabel}>{label}</Text>
-      <Text numberOfLines={1} style={styles.macroValue}>{current}<Text style={styles.macroUnit}> / {target} {unit}</Text></Text>
+      {/* Three equal cards on a 320pt phone: the figure shrinks a little
+          rather than cutting "/ 150 g" off. */}
+      <Text adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1} style={styles.macroValue}>{current}<Text style={styles.macroUnit}> / {target} {unit}</Text></Text>
       <ProgressBar color={tint} value={current / target} />
     </Card>
   );
@@ -296,6 +362,66 @@ export function IconCircle({
   );
 }
 
+/**
+ * A calm placeholder in the shape of what is coming, instead of an empty
+ * flash. It breathes slowly; with Reduce Motion it simply stays put.
+ */
+export function SkeletonBlock({ height = 16, width = '100%', radius = 8, style }: { height?: number; width?: number | `${number}%`; radius?: number; style?: StyleProp<ViewStyle> }) {
+  const { colors } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const pulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (reduceMotion) { pulse.setValue(1); return; }
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(pulse, { toValue: 0.5, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 1, duration: 700, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [pulse, reduceMotion]);
+  return (
+    <Animated.View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[{ height, width, borderRadius: radius, backgroundColor: colors.neutralSoft, opacity: pulse }, style]}
+    />
+  );
+}
+
+/**
+ * Friendly empty-state art built from the brand's own shapes: a soft disc,
+ * a partial ring like the Kandro mark, a pistachio dot and the topic's icon.
+ * Decorative only: the caller's text carries the meaning.
+ */
+export function EmptyIllustration({ icon, size = 96 }: { icon: keyof typeof Ionicons.glyphMap; size?: number }) {
+  const { colors } = useTheme();
+  const c = size / 2;
+  const r = size * 0.36;
+  const circumference = 2 * Math.PI * r;
+  return (
+    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg height={size} style={StyleSheet.absoluteFill} width={size}>
+        <Circle cx={c} cy={c} fill={colors.neutralSoft} r={size * 0.46} />
+        <Circle cx={c} cy={c} fill="none" r={r} stroke={colors.border} strokeWidth={size * 0.05} />
+        <Circle
+          cx={c}
+          cy={c}
+          fill="none"
+          r={r}
+          stroke={colors.accentText}
+          strokeDasharray={`${circumference * 0.62} ${circumference}`}
+          strokeLinecap="round"
+          strokeWidth={size * 0.05}
+          transform={`rotate(-200 ${c} ${c})`}
+        />
+        <Circle cx={c + size * 0.31} cy={c - size * 0.31} fill={colors.accent} r={size * 0.075} />
+        <Rect fill={colors.surface} height={size * 0.3} rx={size * 0.1} width={size * 0.3} x={c - size * 0.15} y={c - size * 0.15} />
+      </Svg>
+      <Ionicons color={colors.text} name={icon} size={Math.round(size * 0.2)} />
+    </View>
+  );
+}
+
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   safe: {
     flex: 1,
@@ -352,10 +478,6 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   buttonTextDark: {
     color: colors.text,
   },
-  pressed: {
-    opacity: 0.76,
-    transform: [{ scale: 0.988 }],
-  },
   eyebrow: {
     color: colors.muted,
     fontSize: 12,
@@ -400,8 +522,9 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
     flex: 1,
     minWidth: 0,
     padding: 14,
-    borderRadius: 20,
+    borderRadius: radii.card,
     gap: 4,
+    justifyContent: 'space-between',
   },
   macroIconReached: {
     backgroundColor: colors.accent,

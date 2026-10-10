@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Card, PrimaryButton } from '@/components/ui';
+import { Card, IconCircle, PrimaryButton, SkeletonBlock } from '@/components/ui';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -49,13 +49,26 @@ export function WeeklyReviewCard() {
     setFreeWeek(week);
     void AsyncStorage.setItem(FREE_REVIEW_KEY, week).catch(() => undefined);
   }, [pro, access?.claim, review?.current.from]);
+  // Reading the free-review marker takes a moment; hold the card's place
+  // instead of letting it pop in under the reader's thumb.
+  if (eligible && review && !pro && freeWeek === undefined) {
+    return <Card style={{ gap: 12 }}>
+      <SkeletonBlock height={22} width="55%" />
+      <SkeletonBlock height={14} width="35%" />
+      <SkeletonBlock height={14} />
+      <SkeletonBlock height={14} width="80%" />
+    </Card>;
+  }
   if (!eligible || !review || (!pro && !access)) return null;
   const copy = t.weeklyReview;
   const { current, previous, proteinChangePercent } = review;
   const number = (value: number) => value.toLocaleString(locale);
   const text = { color: colors.muted, fontSize: 15, lineHeight: 22 };
-  return <Card>
-    <Text accessibilityRole="header" style={{ color: colors.text, fontSize: 21, fontWeight: '700' }}>{copy.title}</Text>
+  return <Card style={{ gap: 10 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <IconCircle name="calendar-clear-outline" size={40} tone="neutral" />
+      <Text accessibilityRole="header" style={{ flex: 1, color: colors.text, fontSize: 21, lineHeight: 26, fontWeight: '700', letterSpacing: -0.4 }}>{copy.title}</Text>
+    </View>
     {pro || access?.full ? <>
       <Text style={text}>{formatDateParts(current.from, { day: 'numeric', month: 'short' }, locale)} – {formatDateParts(current.to, { day: 'numeric', month: 'short' }, locale)}</Text>
       <Text style={{ color: colors.text, fontSize: 18, fontWeight: '600' }}>{copy.loggedDays(current.loggedDays)}</Text>
