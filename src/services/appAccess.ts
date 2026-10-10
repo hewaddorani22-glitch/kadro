@@ -44,8 +44,10 @@ async function request(path: string, body?: Record<string, unknown>) {
     });
     if (!response.ok) throw Error('access_unavailable');
     const parsed = parseAccessRecord(await response.json());
-    // A server without the 20261010120000 mode still answered: legacy scope.
-    const record: AccessRecord = { ...parsed, mode: parsed.mode ?? 'legacy' };
+    // A server without the 20261010120000 mode has no opinion on the hard wall:
+    // the install flag decides, so fresh installs are walled before that
+    // migration is live and earlier installs keep their legacy scope.
+    const record: AccessRecord = parsed;
     if (epoch !== generation || session.userId !== await getCurrentSessionUserId()) throw Error('cloud_identity_changed');
     return { owner: session.userId, record };
   } finally { clearTimeout(timeout); }

@@ -72,12 +72,15 @@ network = false; owner = 'offline-fresh'; app.invalidateAppAccess();
 assert.equal(hardWall.getHardWallSnapshot().serverMode, null, 'an identity change forgets the server mode');
 assert.equal((await app.refreshAppAccess()).mode, undefined, 'offline without cache: no server mode');
 await assert.rejects(app.assertNewAppUse(), /access_required/, 'offline after the first meal: paywall');
-owner = 'legacy'; network = true; remote = { ...policy.FREE_ACCESS }; app.invalidateAppAccess();
-assert.equal((await app.refreshAppAccess()).mode, 'legacy', 'a server answer without mode is the legacy scope');
+owner = 'pre-migration'; network = true; remote = { ...policy.FREE_ACCESS }; app.invalidateAppAccess();
+assert.equal((await app.refreshAppAccess()).mode, undefined, 'a server answer without mode leaves the decision to the install flag');
+await assert.rejects(app.assertNewAppUse(), /access_required/, 'before the server migration a fresh install is still walled after its free meal');
+owner = 'legacy'; remote = { ...policy.FREE_ACCESS, mode: 'legacy' }; app.invalidateAppAccess();
+assert.equal((await app.refreshAppAccess()).mode, 'legacy', 'the server legacy mode keeps the free scope');
 await app.assertNewAppUse();
 network = false; assert.equal((await app.refreshAppAccess()).mode, 'legacy', 'offline keeps the last server mode');
 await app.assertNewAppUse();
-check('appAccess: free first meal offline, locked after it, trial receipt, offline fallback, legacy server scope and cached mode');
+check('appAccess: free first meal offline, locked after it, trial receipt, offline fallback, pre-migration server, legacy server scope and cached mode');
 
 // 3. The real paywall screen.
 const dict = compile('src/i18n/en.ts').en;
