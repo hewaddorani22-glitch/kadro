@@ -361,7 +361,7 @@ Raw provider payloads should be mapped to the domain types in `src/types/nutriti
 
 The current analysis pipeline:
 
-1. resizes to 1600 px and compresses to JPEG locally;
+1. resizes to 1024 px on the long edge and compresses to JPEG (q0.8, target about 600 KB) locally, after the scan screen's guide-frame crop;
 2. deletes the camera original after the compressed working copy exists;
 3. sends the working copy to the authenticated Supabase gateway, or to the explicit local development override;
 4. keeps at most three failed scans locally for explicit retry;
@@ -377,6 +377,26 @@ Product analytics never receives photos, food or ingredient names, email address
 During Expo Go testing, the root React error boundary and explicitly caught integration failures report scrubbed JavaScript errors through PostHog. Native Sentry crash reporting is reserved for the development/TestFlight build because the official React Native SDK includes native iOS and Android code that Expo Go does not bundle.
 
 The `delete-account` Edge Function requires a valid user JWT, deletes that exact Auth user with server-only admin privileges, and relies on foreign-key cascades for owned rows. After a successful response, the app clears local meals, queued scans, consent, and telemetry state and does not silently create a replacement anonymous account. The live deletion regression verifies the profile cascade and that the deleted refresh token cannot mint another session.
+
+### Analysis robustness and latency (2026-10-10)
+
+A paid analysis makes at most two model calls inside one request: the first
+on `OPENROUTER_VISION_MODEL`, and one automatic retry only after a transient
+failure (timeout, 5xx/network, unparsable or truncated output; a 429 only
+when a different fallback model is configured). The retry is the cheaper path:
+the same photo at `detail: low`, on `VISION_FALLBACK_MODEL` when that optional
+secret names an allowlisted Azure-routed OpenAI model (Gemini is never
+selectable this way). The user's allowance is reserved and counted once per
+request; the retry claims one more unit of the global cost breaker and is
+skipped when that is exhausted. Structured output tolerates framing slips
+(code fences, trailing text, trailing commas) before schema validation, which
+still rejects any content error. Uncached USDA lookups run three at a time.
+Each analysis logs one `nutrition timing` line with fixed codes and durations
+only (access, model, lookup, total, attempts), never content or identifiers.
+`scripts/validate-vision-robustness.mjs` covers this contract;
+`npm run eval:analysis` runs 48 German descriptions offline through the
+shipped resolution path and reports usable rate, BLS match rate and kcal
+plausibility.
 
 ## Supabase ownership boundary
 
