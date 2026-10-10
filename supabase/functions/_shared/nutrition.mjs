@@ -26,6 +26,31 @@ export function safeGatewayFailureCode(error) {
   return error instanceof SyntaxError ? 'provider_response_invalid' : 'gateway_unexpected_error';
 }
 
+/**
+ * Runs `task` over `values` with at most `limit` in flight and keeps the input
+ * order. The first failure rejects the whole call (like Promise.all) and no
+ * further task is started after it.
+ */
+export async function mapBounded(values, limit, task) {
+  const results = new Array(values.length);
+  let next = 0;
+  let failed = false;
+  const worker = async () => {
+    while (!failed && next < values.length) {
+      const index = next++;
+      try {
+        results[index] = await task(values[index], index);
+      } catch (error) {
+        failed = true;
+        throw error;
+      }
+    }
+  };
+  const width = Math.max(1, Math.min(Math.floor(limit) || 1, values.length));
+  await Promise.all(Array.from({ length: values.length ? width : 0 }, worker));
+  return results;
+}
+
 export function validateAnalysisInput(input) {
   const encoded = input?.imageBase64;
   if (input?.mimeType !== 'image/jpeg' || typeof encoded !== 'string' || encoded.length < 100) return false;

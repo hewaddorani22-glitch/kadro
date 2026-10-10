@@ -2,7 +2,7 @@ import { runSearchAssistance } from '../_shared/search-assistance.mjs';
 import { referenceCache } from '../_shared/reference-cache.mjs';
 import { isSearchQuery, compatibleSearchIdentity, SEARCH_VERSION } from '../_shared/search-policy.mjs';
 import { offMassNutrition, offMassPortions } from '../_shared/off-product.mjs';
-import { requestStructured, ModelError, GEMINI_MODEL, GEMINI_CONSENT_VERSION, GEMINI_RELEASE_APPROVED } from '../_shared/model-adapter.mjs';
+import { requestStructured, requestStructuredWithRetry, resolveFallbackModel, ModelError, GEMINI_MODEL, GEMINI_CONSENT_VERSION, GEMINI_RELEASE_APPROVED } from '../_shared/model-adapter.mjs';
 import { applyDescriptionAmountsTolerant } from '../_shared/description-amounts.mjs';
 import { withSupabase } from 'npm:@supabase/server@1.5.1';
 import { canonicalFoodQuery } from '../_shared/food-query.mjs';
@@ -22,6 +22,7 @@ import {
   toFoodFacts,
   usdaCacheKey,
   isUsableSearchTerm,
+  mapBounded,
   rankFoodMatches,
   requestedLanguage,
   safeGatewayFailureCode,
@@ -57,6 +58,21 @@ const aiApiUrl = 'https://openrouter.ai/api/v1/responses';
 const visionModel = Deno.env.get('OPENROUTER_VISION_MODEL') || 'openai/gpt-4.1-mini';
 const configuredImageDetail = (Deno.env.get('VISION_IMAGE_DETAIL') || 'high').toLowerCase();
 const imageDetail = ['low', 'high', 'auto'].includes(configuredImageDetail) ? configuredImageDetail : 'high';
+// Optional second model for the single automatic retry. Unset (the default) or
+// any value outside the Azure/ZDR allowlist means the retry stays on the
+// primary model, just with a cheaper low-detail image.
+const fallbackVisionModel = resolveFallbackModel(Deno.env.get('VISION_FALLBACK_MODEL'));
+/**
+ * Model budgets per analysis. The first attempt gets most of it; one retry on
+ * a transient failure gets the rest. Together they stay well inside the app's
+ * 90 s request deadline, including the reference lookups afterwards.
+ */
+const MODEL_BUDGET = {
+  photo: { primaryMs: 28_000, retryMs: 16_000 },
+  text: { primaryMs: 20_000, retryMs: 12_000 },
+} as const;
+/** Parallel USDA lookups per analysis; each still claims its own provider unit. */
+const LOOKUP_CONCURRENCY = 3;
 const usdaApiKey = Deno.env.get('USDA_API_KEY') || 'DEMO_KEY';
 const nutritionRateLimitSalt = Deno.env.get('NUTRITION_RATE_LIMIT_SALT') ?? '';
 const configuredDailyLimit = Number(Deno.env.get('ANALYSIS_DAILY_LIMIT') || '60');
@@ -92,7 +108,11 @@ const REQUIRED_PRIVACY_VERSION = '2026-10-09-ai-v3';
 const ACCEPTED_PRIVACY_VERSIONS = new Set([REQUIRED_PRIVACY_VERSION, '2026-09-04-ai-v2']);
 const REQUIRED_GUARDIAN_VERSION = '2026-09-04-guardian-v1';
 
-/** Largest base64 payload we accept. The client sends a 1600px JPEG at q0.82. */
+/**
+ * Largest base64 payload we accept. Current builds send a 1024 px (long edge)
+ * JPEG at q0.8, normally well under 800,000 characters; older builds sent
+ * 1600 px and stay accepted.
+ */
 const MAX_IMAGE_BASE64 = 3_000_000;
 
 /** USDA values do not change; a miss only needs re-checking now and then. */
@@ -353,9 +373,78 @@ async function refreshRevenueCatAccess(admin: any, userId: string, networkHash: 
   });
 }
 
+/**
+ * Fixed codes and durations for one analysis. Never food names, descriptions,
+ * prompts, model output or identifiers: only what is needed to see where the
+ * seconds go (access checks, model attempts, reference lookups).
+ */
+type AnalysisTiming = {
+  route: 'photo' | 'text';
+  startedAt: number;
+  accessMs?: number;
+  modelMs: number;
+  lookupMs: number;
+  attempts: number;
+  retried: boolean;
+  fallbackModel: boolean;
+  firstFailure?: string;
+};
+
+function newAnalysisTiming(route: 'photo' | 'text'): AnalysisTiming {
+  return { route, startedAt: Date.now(), modelMs: 0, lookupMs: 0, attempts: 0, retried: false, fallbackModel: false };
+}
+
+function logAnalysisTiming(timing: AnalysisTiming, outcome: string) {
+  console.info('nutrition timing', JSON.stringify({
+    route: timing.route,
+    outcome: analysisFailureCode(outcome),
+    total_ms: Date.now() - timing.startedAt,
+    access_ms: timing.accessMs ?? null,
+    model_ms: timing.modelMs,
+    lookup_ms: timing.lookupMs,
+    attempts: timing.attempts,
+    retried: timing.retried,
+    fallback_model: timing.fallbackModel,
+    first_failure: timing.firstFailure ? analysisFailureCode(timing.firstFailure) : null,
+  }));
+}
+
+type AnalysisHooks = {
+  /** Claims the service-wide breaker for the extra provider call; false skips the retry. */
+  beforeRetry?: () => Promise<boolean>;
+  timing?: AnalysisTiming;
+};
+
 // deno-lint-ignore no-explicit-any
-async function requestDetection(content: unknown[], candidate = false, signal?: AbortSignal) {
-  return requestStructured({apiKey: aiApiKey, content, model: candidate ? GEMINI_MODEL : visionModel, provider: aiProvider, routeAuthorized: candidate && GEMINI_RELEASE_APPROVED, signal});
+async function requestDetection(content: unknown[], candidate = false, signal?: AbortSignal, hooks: AnalysisHooks = {}, retryContent: unknown[] = content) {
+  if (candidate) {
+    return requestStructured({apiKey: aiApiKey, content, model: GEMINI_MODEL, provider: aiProvider, routeAuthorized: GEMINI_RELEASE_APPROVED, signal});
+  }
+  const timing = hooks.timing;
+  const budget = MODEL_BUDGET[timing?.route ?? 'photo'];
+  const started = Date.now();
+  // One retry at most, inside this already-paid request: the user's allowance
+  // was reserved once above and is never charged again for the second call.
+  return requestStructuredWithRetry({
+    primary: { apiKey: aiApiKey, content, model: visionModel, provider: aiProvider, timeoutMs: budget.primaryMs },
+    retry: { apiKey: aiApiKey, content: retryContent, model: fallbackVisionModel ?? visionModel, provider: aiProvider, timeoutMs: budget.retryMs },
+    beforeRetry: async () => {
+      if (!hooks.beforeRetry) return false;
+      return hooks.beforeRetry();
+    },
+    deadline: started + budget.primaryMs + budget.retryMs,
+    signal,
+    onAttempt: ({ attempt, model, outcome, ms }: { attempt: number; model: string; outcome: string; ms: number }) => {
+      if (!timing) return;
+      timing.attempts = attempt;
+      timing.modelMs += ms;
+      if (attempt === 1 && outcome !== 'ok') timing.firstFailure = outcome;
+      if (attempt === 2) {
+        timing.retried = true;
+        timing.fallbackModel = model !== visionModel;
+      }
+    },
+  });
 }
 
 async function searchUsdaOnce(
@@ -448,14 +537,15 @@ async function resolveFacts(
   }
 
   const missing = [...new Set(unknown.filter((term) => !resolved.has(term)))];
-  // Sequential requests keep quota claims and provider traffic bounded even
-  // when a model returns several uncached ingredients in one meal.
-  const fetched: { term: string; facts: FoodFacts | null; cacheable: boolean }[] = [];
+  // Cache hits are already answered above. The remaining lookups run a few at
+  // a time: a plate with four uncached sides no longer waits for four USDA
+  // round trips in a row, while quota claims and provider traffic stay
+  // bounded (every request still claims its own provider unit first).
   const lookupDeadline = Date.now() + 22_000;
-  for (const term of missing) {
+  const fetched: { term: string; facts: FoodFacts | null; cacheable: boolean }[] = await mapBounded(missing, LOOKUP_CONCURRENCY, async (term: string) => {
     if (Date.now() > lookupDeadline) throw new ModelError('provider_timeout', 504);
-    fetched.push({ term, ...await searchUsda(term, claimUsda, lookupDeadline) });
-  }
+    return { term, ...await searchUsda(term, claimUsda, lookupDeadline) };
+  });
 
   for (const { term, facts, cacheable } of fetched) {
     resolved.set(term, facts);
@@ -521,28 +611,39 @@ async function resolveDetection(
   return { status: 200, body: analysisResultBody(detection, items, warnings, correctionProtocol) };
 }
 
+async function timedLookup(timing: AnalysisTiming | undefined, run: () => Promise<Result>): Promise<Result> {
+  const started = Date.now();
+  try {
+    return await run();
+  } finally {
+    if (timing) timing.lookupMs += Date.now() - started;
+  }
+}
+
 // deno-lint-ignore no-explicit-any
-async function analyzePhoto(input: any, admin: any, claimUsda?: () => Promise<void>, candidate = false, signal?: AbortSignal): Promise<Result> {
+async function analyzePhoto(input: any, admin: any, claimUsda?: () => Promise<void>, candidate = false, signal?: AbortSignal, hooks: AnalysisHooks = {}): Promise<Result> {
   if (!validateAnalysisInput(input)) {
     return { status: 400, body: { code: 'invalid_input', message: 'Ungültiges Fotoformat.' } };
   }
   if (typeof input.imageBase64 !== 'string' || input.imageBase64.length > MAX_IMAGE_BASE64) {
     return { status: 413, body: { code: 'invalid_input', message: 'Das Foto ist zu groß.' } };
   }
-  return resolveDetection(forEstimateProtocol(await requestDetection([
-    { type: 'input_text', text: photoDetectionPrompt(requestedLanguage(input)) },
-    { type: 'input_image', image_url: `data:${input.mimeType};base64,${input.imageBase64}`, detail: imageDetail },
-  ], candidate, signal), input), admin, 'photo', claimUsda, input.ingredientCorrection);
+  const prompt = { type: 'input_text', text: photoDetectionPrompt(requestedLanguage(input)) };
+  const image = { type: 'input_image', image_url: `data:${input.mimeType};base64,${input.imageBase64}` };
+  // The retry is the cheaper, faster path: the same photo at low detail
+  // (a fraction of the image tokens), on the fallback model when configured.
+  const detection = await requestDetection([prompt, { ...image, detail: imageDetail }], candidate, signal, hooks, [prompt, { ...image, detail: 'low' }]);
+  return timedLookup(hooks.timing, () => resolveDetection(forEstimateProtocol(detection, input), admin, 'photo', claimUsda, input.ingredientCorrection));
 }
 
 // deno-lint-ignore no-explicit-any
-async function analyzeDescription(input: any, admin: any, claimUsda?: () => Promise<void>, candidate = false, signal?: AbortSignal): Promise<Result> {
+async function analyzeDescription(input: any, admin: any, claimUsda?: () => Promise<void>, candidate = false, signal?: AbortSignal, hooks: AnalysisHooks = {}): Promise<Result> {
   const description = typeof input?.description === 'string' ? input.description.trim() : '';
   if (description.length < 3 || description.length > 500) {
     return { status: 400, body: { code: 'invalid_input', message: 'Beschreibe die Mahlzeit in 3 bis 500 Zeichen.' } };
   }
-  const detection = await requestDetection([{ type: 'input_text', text: descriptionDetectionPrompt(description, requestedLanguage(input)) }], candidate, signal);
-  return resolveDetection(applyDescriptionAmountsTolerant(forEstimateProtocol(detection, input), description), admin, 'text', claimUsda, input.ingredientCorrection);
+  const detection = await requestDetection([{ type: 'input_text', text: descriptionDetectionPrompt(description, requestedLanguage(input)) }], candidate, signal, hooks);
+  return timedLookup(hooks.timing, () => resolveDetection(applyDescriptionAmountsTolerant(forEstimateProtocol(detection, input), description), admin, 'text', claimUsda, input.ingredientCorrection));
 }
 
 /**
@@ -1092,6 +1193,7 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     return reply({ status: 404, body: { code: 'not_found', message: 'Route nicht gefunden.' } });
   }
 
+  const requestStartedAt = Date.now();
   const payload = await request.json().catch(() => null);
   if (route === '/v1/analyze') {
     if (!validateAnalysisInput(payload)) {
@@ -1211,6 +1313,7 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     return (await accessRpc(context.supabaseAdmin,'finish_capture_operation',{p_user_id:data.user.id,p_request_id:requestId,p_result:result}))?.status === 'completed';
   };
 
+  const timing = newAnalysisTiming(route === '/v1/analyze' ? 'photo' : 'text');
   const started = await accessRpc(context.supabaseAdmin, 'mark_analysis_request_started', {
     p_user_id: data.user.id,
     p_request_id: requestId,
@@ -1220,19 +1323,31 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     return reply({ status: 503, body: { code: 'access_unavailable', message: 'Die Analyse ist gerade nicht erreichbar.' } });
   }
 
+  timing.accessMs = Date.now() - requestStartedAt;
+  // The retry is a second provider call, so it counts against the
+  // service-wide cost breaker like any other; it never touches the user's
+  // allowance, which this request already reserved exactly once.
+  const analysisHooks: AnalysisHooks = {
+    timing,
+    beforeRetry: async () => (await accessRpc(context.supabaseAdmin, 'consume_global_analysis_quota', {
+      p_daily_limit: globalDailyLimit,
+    }))?.status === 'allowed',
+  };
   let result: Result;
   try {
     result = route === '/v1/analyze'
-      ? await analyzePhoto(payload, context.supabaseAdmin, claimAnalysisUsda, candidate, request.signal)
-      : await analyzeDescription(payload, context.supabaseAdmin, claimAnalysisUsda, candidate, request.signal);
+      ? await analyzePhoto(payload, context.supabaseAdmin, claimAnalysisUsda, candidate, request.signal, analysisHooks)
+      : await analyzeDescription(payload, context.supabaseAdmin, claimAnalysisUsda, candidate, request.signal, analysisHooks);
   } catch (error) {
     if(error instanceof Error && ['mass_required','amount_ambiguous','amount_out_of_range'].includes(error.message)) error=new ModelError(error.message,422);
     if(error instanceof Error && /^(AbortError|TimeoutError)$/.test(error.name)) error=new ModelError('provider_timeout',504);
     await refundAnalysis(context.supabaseAdmin, data.user.id, requestId, error instanceof ProviderQuotaError ? 'provider_quota' : error instanceof ModelError ? error.code : 'provider_error');
     const failed: Result = error instanceof ProviderQuotaError ? error.result : {status:error instanceof ModelError?error.status:502,body:{code:error instanceof ModelError?error.code:'provider_error'},headers:error instanceof ModelError && error.retryAfter?{'Retry-After':String(error.retryAfter)}:undefined};
     await rememberCapture(failed);
+    logAnalysisTiming(timing, String(failed.body.code ?? 'provider_error'));
     return reply(failed);
   }
+  logAnalysisTiming(timing, result.status === 200 ? (result.body.correctionRequired === true ? 'correction_required' : 'ok') : String(result.body.code ?? 'http_' + result.status));
   if (!await rememberCapture(result)) return reply({status:503,body:{code:'access_unavailable'}});
   // A failed lookup still refunds the user's allowance. The new app can repair
   // its draft for free; provider rate limits still account for the real calls.

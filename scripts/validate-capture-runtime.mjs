@@ -74,7 +74,10 @@ await test('model adapter keeps routes separate, blocks unapproved Gemini and tr
  assert.equal(req.body.provider.only[0],'google-vertex/global');assert.equal(req.body.max_tokens,8192);assert.equal(req.body.reasoning.effort,'medium');assert.equal(req.body.messages[0].content[0].image_url.url,'data:image/jpeg;base64,AA==');
  assert.deepEqual(modelRequest({content:[]}).body.provider.only,['azure']);assert.throws(()=>modelRequest({model:GEMINI_MODEL,reasoning:'none',content:[]}));
  let calls=0; await assert.rejects(requestStructured({apiKey:'synthetic',model:GEMINI_MODEL,content:[],fetchImpl:()=>{calls++;}}),/ai_route_not_approved/);assert.equal(calls,0);
- for(const [payload,code,gemini] of [[{choices:[{finish_reason:'length'}]},'model_truncated',true],[{choices:[{finish_reason:'content_filter'}]},'model_refused',true],[{choices:[{finish_reason:'stop',message:{content:'```json {}'}}]},'provider_response_invalid',true],[{status:'incomplete'},'model_truncated',false],[{output:[{content:[{type:'refusal'}]}]},'model_refused',false]])assert.throws(()=>parseStructuredResponse(payload,gemini),new RegExp(code));
+ for(const [payload,code,gemini] of [[{choices:[{finish_reason:'length'}]},'model_truncated',true],[{choices:[{finish_reason:'content_filter'}]},'model_refused',true],[{choices:[{finish_reason:'stop',message:{content:'```json {"a":'}}]},'provider_response_invalid',true],[{status:'incomplete'},'model_truncated',false],[{output:[{content:[{type:'refusal'}]}]},'model_refused',false]])assert.throws(()=>parseStructuredResponse(payload,gemini),new RegExp(code));
+ // Framing slips (code fence, trailing sentence) are repaired; content is still schema-validated afterwards.
+ assert.deepEqual(parseStructuredResponse({choices:[{finish_reason:'stop',message:{content:'```json\n{"a":1}\n```'}}]},true),{a:1});
+ assert.deepEqual(parseStructuredResponse({status:'completed',output_text:'{"a":[1,2]} Hope this helps.'}),{a:[1,2]});
  await assert.rejects(requestStructured({apiKey:'synthetic',content:[],timeoutMs:5,fetchImpl:async()=>({ok:true,json:()=>new Promise(()=>{})})}),/provider_timeout/);
  await assert.rejects(requestStructured({apiKey:'synthetic',content:[],fetchImpl:async()=>({ok:true,json:async()=>({output_text:'{}'})})}),/provider_response_invalid/);
 });
