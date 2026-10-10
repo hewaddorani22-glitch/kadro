@@ -15,6 +15,11 @@ import { useLanguage } from '@/i18n/LanguageProvider';
 import { AnalysisErrorKind } from '@/services/contracts';
 import { setScanInputDraft } from '@/services/captureIntents';
 
+/**
+ * Most analyses answer within a few seconds. After this the screen says so
+ * honestly: it is taking longer, and the server retries once by itself.
+ */
+const LONGER_AFTER_MS = 8_000;
 /** Most analyses answer well within this; after it the user gets a way out. */
 const SLOW_AFTER_MS = 15_000;
 
@@ -36,6 +41,7 @@ export default function AnalyzingScreen() {
     startDemoScan,
   } = useApp();
   const [slow, setSlow] = useState(false);
+  const [longer, setLonger] = useState(false);
   const started = useRef(false);
   const reduceMotion = useReducedMotion();
   const { t } = useLanguage();
@@ -86,9 +92,11 @@ export default function AnalyzingScreen() {
   // The 90 s request deadline stays; after 15 s the user may stop waiting.
   useEffect(() => {
     setSlow(false);
+    setLonger(false);
     if (analysisStatus !== 'analyzing') return;
+    const longerTimer = setTimeout(() => setLonger(true), LONGER_AFTER_MS);
     const timer = setTimeout(() => setSlow(true), SLOW_AFTER_MS);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(longerTimer); clearTimeout(timer); };
   }, [analysisStatus]);
 
   useEffect(() => {
@@ -138,6 +146,12 @@ export default function AnalyzingScreen() {
 
   const error = analysisError ? errorCopy[analysisError] : null;
   const failed = analysisStatus === 'error' || analysisStatus === 'queued';
+  // A photo stays on screen after any failure, so trying it again is one tap.
+  const photoCapture = scanMode === 'live' || scanMode === 'queued';
+  const describeInstead = () => { setScanInputDraft(null); changeInput('/(tabs)/scan?mode=description'); };
+  // Only the analysing phase can take long; preparing the photo is local.
+  // The copy promises the server's automatic retry, which only AI analyses have.
+  const waitingLonger = longer && analysisPhase !== 'preparing' && (photoCapture || scanMode === 'description');
   const failureDetail = analysisError === 'offline'
     ? (analysisStatus === 'queued' ? error?.detail : t.analyzing.errOfflineNotQueuedBody)
     : scanMode === 'description' && analysisError === 'unclear-image'
@@ -172,9 +186,9 @@ export default function AnalyzingScreen() {
           <View style={[styles.sparkleCircle, failed && styles.warningCircle]}>
             <Ionicons color={colors.onAccent} name={failed ? 'alert-outline' : 'sparkles'} size={25} />
           </View>
-          <Text accessibilityLiveRegion="polite" style={styles.title}>{failed ? error?.title : slow ? t.analyzing.slowTitle : statusLine}</Text>
+          <Text accessibilityLiveRegion="polite" style={styles.title}>{failed ? error?.title : slow ? t.analyzing.slowTitle : waitingLonger ? t.analyzing.longerTitle : statusLine}</Text>
           <Text style={styles.subtitle}>
-            {failed ? failureDetail : slow ? t.analyzing.slowText : t.analyzing.phaseHint}
+            {failed ? failureDetail : slow ? t.analyzing.slowText : waitingLonger ? t.analyzing.longerText : t.analyzing.phaseHint}
           </Text>
 
           {failed ? (
@@ -199,7 +213,14 @@ export default function AnalyzingScreen() {
                   {/* Unclear is still an error, but never a dead end: one tap to
                       try again with the camera or to say it in words. */}
                   <PrimaryButton icon="camera-outline" label={t.analyzing.retakePhoto} onPress={() => changeInput()} />
-                  <PrimaryButton icon="create-outline" label={t.analyzing.describeInstead} onPress={() => { setScanInputDraft(null); changeInput('/(tabs)/scan?mode=description'); }} variant="secondary" />
+                  <PrimaryButton icon="create-outline" label={t.analyzing.describeInstead} onPress={describeInstead} variant="secondary" />
+                </>
+              ) : analysisError === 'invalid-input' && photoCapture ? (
+                <>
+                  {/* The photo is kept: retry it as is, or say it in words. */}
+                  <PrimaryButton icon="refresh" label={t.analyzing.retryPhoto} onPress={retry} />
+                  <PrimaryButton icon="create-outline" label={t.analyzing.describeInstead} onPress={describeInstead} variant="secondary" />
+                  <PrimaryButton label={t.analyzing.retakePhoto} onPress={() => changeInput()} variant="ghost" />
                 </>
               ) : analysisError === 'product-not-found' || analysisError === 'invalid-input' ? (
                 <>
@@ -211,11 +232,20 @@ export default function AnalyzingScreen() {
                   <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
                 </>
               ) : (
-                <>
-                  {analysisError !== 'not-configured' ? <PrimaryButton icon="refresh" label={t.analyzing.retry} onPress={retry} /> : null}
-                  <PrimaryButton label={t.analyzing.openDemo} onPress={runDemo} variant={analysisError === 'not-configured' ? 'primary' : 'secondary'} />
-                  <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
-                </>
+                photoCapture && analysisError !== 'not-configured' ? (
+                  <>
+                    {/* Any other photo failure keeps the photo: one tap retries it. */}
+                    <PrimaryButton icon="refresh" label={t.analyzing.retryPhoto} onPress={retry} />
+                    <PrimaryButton icon="create-outline" label={t.analyzing.describeInstead} onPress={describeInstead} variant="secondary" />
+                    <PrimaryButton label={t.analyzing.retakePhoto} onPress={() => changeInput()} variant="ghost" />
+                  </>
+                ) : (
+                  <>
+                    {analysisError !== 'not-configured' ? <PrimaryButton icon="refresh" label={t.analyzing.retry} onPress={retry} /> : null}
+                    <PrimaryButton label={t.analyzing.openDemo} onPress={runDemo} variant={analysisError === 'not-configured' ? 'primary' : 'secondary'} />
+                    <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
+                  </>
+                )
               )}
             </View>
           ) : slow && scanMode !== 'demo' ? (

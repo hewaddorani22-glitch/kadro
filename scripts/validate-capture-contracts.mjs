@@ -44,7 +44,7 @@ let payload=null, generation=0, language='de';
 const oldFetch=globalThis.fetch;
 globalThis.fetch=async()=>({ok:true,status:200,headers:new Headers(),json:async()=>payload});
 const mocks={
- 'expo-file-system':{},'expo-image-manipulator':{},
+ 'expo-file-system':{},'expo-image-manipulator':{},'react-native':{Image:{getSize:(_uri,_ok,fail)=>fail()}},
  '@/services/supabaseClient':{isSupabaseConfigured:true,functionsBaseUrl:'http://127.0.0.1/test',supabaseAnonKey:'synthetic',getAccessToken:async()=> 'synthetic'},
  '@/i18n/active':{getLanguage:()=> language,getLocale:()=> 'de-DE',getDictionary:()=>dictionary},
  '@/utils/ingredientCorrection':{needsIngredientCorrection:()=>false},

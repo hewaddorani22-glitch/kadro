@@ -1,6 +1,7 @@
 import { getLocalDataGeneration } from '@/services/localRepository';
 import { File } from 'expo-file-system';
 import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
+import { Image } from 'react-native';
 
 import { AnalysisErrorKind, MealAnalysisInput, MealAnalysisResult } from '@/services/contracts';
 import {
@@ -20,6 +21,20 @@ import { needsIngredientCorrection } from '@/utils/ingredientCorrection';
  */
 const localApiUrl = process.env.EXPO_PUBLIC_ANALYSIS_API_URL?.replace(/\/$/, '');
 const MAX_IMAGE_BASE64 = 3_000_000;
+/**
+ * Long edge of the photo sent for analysis. 1024 px keeps a plate, its sides
+ * and a legible package label recognisable while uploading a fraction of the
+ * former 1600 px image, which is most of the wait on a mobile connection.
+ */
+export const PHOTO_LONG_EDGE = 1024;
+/** About 600 KB of JPEG; base64 is 4/3 of the byte size. */
+export const TARGET_IMAGE_BASE64 = 800_000;
+/** Quality steps, tried in order until the photo fits the target. */
+const PHOTO_PASSES = [
+  { longEdge: PHOTO_LONG_EDGE, compress: 0.8 },
+  { longEdge: PHOTO_LONG_EDGE, compress: 0.65 },
+  { longEdge: 800, compress: 0.6 },
+];
 
 /**
  * The gateway's own message is German: it is one deployed function serving
@@ -201,26 +216,43 @@ async function gatewayFetch(path: string, init?: { method: 'POST'; body: unknown
   }
 }
 
-export async function prepareMealPhoto(photoUri: string): Promise<PreparedMealPhoto> {
-  const passes = [
-    { width: 1600, compress: 0.82 },
-    { width: 1280, compress: 0.68 },
-    { width: 1024, compress: 0.55 },
-  ];
-  let result = await manipulateAsync(photoUri, [{ resize: { width: passes[0].width } }], {
-    base64: true,
-    compress: passes[0].compress,
-    format: SaveFormat.JPEG,
-  });
+/**
+ * Resize action for a photo of the given size: bound the LONG edge (portrait
+ * photos used to keep a 2133 px height), never upscale, and bound the width
+ * when the size is unknown. Cropping happens earlier, in the scan screen.
+ */
+export function photoResize(width: number, height: number, longEdge = PHOTO_LONG_EDGE): { width: number } | { height: number } | null {
+  if (!(width > 0) || !(height > 0)) return { width: longEdge };
+  if (Math.max(width, height) <= longEdge) return null;
+  return width >= height ? { width: longEdge } : { height: longEdge };
+}
 
-  for (const pass of passes.slice(1)) {
-    if (result.base64 && result.base64.length <= MAX_IMAGE_BASE64) break;
-    const oversizedUri = result.uri;
-    result = await manipulateAsync(photoUri, [{ resize: { width: pass.width } }], {
+function photoSize(uri: string) {
+  return new Promise<{ width: number; height: number } | null>((resolve) => {
+    try {
+      Image.getSize(uri, (width, height) => resolve({ width, height }), () => resolve(null));
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+export async function prepareMealPhoto(photoUri: string): Promise<PreparedMealPhoto> {
+  const size = await photoSize(photoUri);
+  const encode = (pass: (typeof PHOTO_PASSES)[number]) => {
+    const resize = photoResize(size?.width ?? 0, size?.height ?? 0, pass.longEdge);
+    return manipulateAsync(photoUri, resize ? [{ resize }] : [], {
       base64: true,
       compress: pass.compress,
       format: SaveFormat.JPEG,
     });
+  };
+  let result = await encode(PHOTO_PASSES[0]);
+
+  for (const pass of PHOTO_PASSES.slice(1)) {
+    if (result.base64 && result.base64.length <= TARGET_IMAGE_BASE64) break;
+    const oversizedUri = result.uri;
+    result = await encode(pass);
     deleteTemporaryPhoto(oversizedUri);
   }
 
