@@ -1,5 +1,14 @@
 # Roadmap
 
+
+### Owner decisions delegated to Claude (2026-10-10)
+
+- **No renewed consent for "Mein Produkt" / label scan.** Custom foods hold product nutrition facts, not new health data about the person; label photos follow the existing meal-photo path (same processor, temporary, same purpose). The privacy notice was updated (inform, Art. 13); the consent version stays.
+- **OpenRouter transfer basis:** OpenRouter is not DPF-certified; its privacy policy (§9) relies on EU SCCs. Privacy text names this. Action for the owner: request/sign OpenRouter's DPA via privacy@openrouter.ai.
+- **ODbL:** the supermarket extract is published under ODbL at `site/data/supermarket-products.json` (live with the next site deploy from `main`).
+- **Canned tuna:** label values are per drained fish; whole cans without a labelled serving count ~72 % of the net weight, marked as estimate.
+- **Rollout order:** custom-foods migration and `nutrition` deploy are live (2026-10-10). The hard-paywall migration (`20261010120000`) is applied only after 1.0.4 is live in the App Store.
+
 ## 2026-10-10 – Harte Paywall nach dem ersten Scan (Branch `wip2/hardwall`, nicht ausgeliefert)
 
 Eigentümerentscheidung 10.10.2026: Umsatz pro Installation. Ersetzt für **neue** Installationen die weiche Paywall aus dem pausierten Test vom 09.10.; bestehende Installationen behalten ihren Umfang.
