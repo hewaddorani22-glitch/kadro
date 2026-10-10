@@ -83,11 +83,11 @@ export default function PlanScreen() {
     });
   }, [combos, marketMode, options, remaining, selected, suggestions]);
 
-  const portionLabel = (portion: ComboPortion) => {
+  const portionAmount = (portion: ComboPortion) => {
     const [one, many] = t.plan.marketPortion[portion.container];
-    const amount = portion.kind === 'half' ? t.plan.marketHalf(one) : t.plan.marketCount(portion.count, portion.count === 1 ? one : many);
-    return `${amount} · ${t.plan.marketGrams(formatNumber(portion.grams, locale), portion.estimated)}`;
+    return portion.kind === 'half' ? t.plan.marketHalf(one) : t.plan.marketCount(portion.count, portion.count === 1 ? one : many);
   };
+  const portionLabel = (portion: ComboPortion) => `${portionAmount(portion)} · ${t.plan.marketGrams(formatNumber(portion.grams, locale), portion.estimated)}`;
 
   /**
    * A basket is several products eaten as one meal. It opens the normal
@@ -99,7 +99,8 @@ export default function PlanScreen() {
     void selectionHaptic();
     trackEvent('recommendation selected', { meal_context: selected, rank: rank as 1 | 2 | 3 });
     void recordRecommendationFeedback(selected, combo.id, 'accepted').catch(() => undefined);
-    startPlannedDraft(comboSearchEntries(combo, language, portionLabel));
+    // Confirm and the portion sheet print the grams themselves.
+    startPlannedDraft(comboSearchEntries(combo, language, portionAmount));
     router.push('/confirm');
   };
 

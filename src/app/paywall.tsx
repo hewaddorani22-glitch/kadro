@@ -192,9 +192,11 @@ export default function PaywallScreen() {
   } : null;
   const title = blocked ? t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE)
     : hardWallOffer ? hardWallOffer.trialDays ? t.paywall.hardWallTitleTrial(hardWallOffer.trialDays) : t.paywall.hardWallTitle
+      : hardWall ? t.paywall.hardWallTitle
       : hard ? t.paywall.hardTitle : t.paywall.headline;
   const subtitle = blocked ? t.paywall.blockedSub
     : hardWallOffer ? hardWallOffer.trialDays ? t.paywall.hardWallSubTrial(hardWallOffer.charge) : t.paywall.hardWallSub(hardWallOffer.charge)
+      : hardWall ? t.paywall.subtitle
       : hard ? t.paywall.hardSubtitle : t.paywall.subtitle;
 
   const buttonLabel = busy
