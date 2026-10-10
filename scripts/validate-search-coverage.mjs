@@ -32,6 +32,30 @@ for (const [query, language] of strongCases) {
   }
 }
 
+// --- German spellings, regional words and plurals lead to the plain food ----
+// People type "Hühnchen", "Jogurt", "Topfen" or a plural; BLS labels say
+// "Hähnchen", "Joghurt", "Quark" and the singular. Expected = top result.
+const germanFirst = [
+  ['hühnchen', /^V416/], ['huehnchen', /^V416/], ['hühnerbrust', /^V416/], ['hähnchenbrust', /^V416/], ['chicken', /^V416/],
+  ['jogurt', /^M141[23]00$/], ['joghurts', /^M141[23]00$/], ['joghurt', /^M141[23]00$/],
+  ['quark', /^M713100$/], ['magerquark', /^M713100$/], ['topfen', /^M713100$/],
+  ['hüttenkäse', /^M711100$/], ['tomaten', /^G561100$/], ['bananen', /^F503100$/], ['äpfel', /^F110100$/],
+  ['hackfleisch', /^U010100$/], ['hack', /^U010100$/], ['rinderhack', /^U010100$/], ['frischkäse', /^M710800$/],
+  ['nudeln', /^E401(000|032)$/], ['putenbrust', /^V486100$/], ['erdäpfel', /^K1(10|20)1/], ['paradeiser', /^G561100$/],
+];
+for (const [query, code] of germanFirst) {
+  const [top] = searchBlsCatalog(query, 'de', 5);
+  if (!top) { problems.push(`"${query}" finds nothing`); continue; }
+  if (!code.test(top.code)) problems.push(`"${query}" leads with ${top.code} ${top.nameDe}`);
+  if (!top.strong) problems.push(`"${query}" is only a prefix match`);
+}
+// English stays English: the German rewrite table is not applied to English readers.
+if (!/^V416/.test(searchBlsCatalog('chicken breast', 'en', 3)[0]?.code ?? '')) problems.push('"chicken breast" (en) lost the chicken breast');
+if (!/^M141/.test(searchBlsCatalog('yoghurt', 'en', 3)[0]?.code ?? '')) problems.push('"yoghurt" (en) lost plain yogurt');
+// A plural ending only ever shortens what was typed: the cheese leads "brie",
+// never sweetbread ("Bries") through a reversed plural rule.
+if (!/^M6016/.test(searchBlsCatalog('brie', 'de', 5)[0]?.code ?? '')) problems.push('"brie" no longer leads with Brie');
+
 // --- A prefix coincidence must not claim to be an answer -------------------
 {
   const hits = searchBlsCatalog('pho', 'de', 5);
@@ -60,4 +84,4 @@ if (problems.length) {
   for (const problem of problems) console.error(`  - ${problem}`);
   process.exit(1);
 }
-console.log(`Search coverage: ${strongCases.length} everyday and international dishes match the catalogue outright, and a prefix coincidence no longer ends the search.`);
+console.log(`Search coverage: ${strongCases.length} everyday and international dishes match the catalogue outright, ${germanFirst.length} German spellings/plurals/regional words lead with the plain food, and a prefix coincidence no longer ends the search.`);
