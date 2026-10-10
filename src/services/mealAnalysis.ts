@@ -13,6 +13,7 @@ import {
 import { MealItem, Nutrition } from '@/types/nutrition';
 import { getDictionary, getLanguage, getLocale } from '@/i18n/active';
 import { needsIngredientCorrection } from '@/utils/ingredientCorrection';
+import { customFoodResult, findCustomFoodByBarcode } from '@/services/customFoods';
 
 /**
  * Optional local override for development. When it is unset the app talks to
@@ -109,6 +110,8 @@ function gatewayMessage(code: string | undefined, _fallback: string | undefined)
     // Routing faults a user should never reach; the raw German would be worse.
     method_not_allowed: t.gatewayUnexpected,
     not_found: t.gatewayUnexpected,
+    label_unreadable: t.gatewayLabelUnreadable,
+    label_volume_basis: t.gatewayLabelVolume,
   };
   return (code && byCode[code]) || t.analysisFailed;
 }
@@ -122,6 +125,7 @@ function gatewayError(response: GatewayResponse, code?: string, message?: string
     missing_nutrition:'product-not-found',product_not_found:'product-not-found',provider_rate_limited:'rate-limited',
     provider_timeout:'timeout',provider_response_invalid:'invalid-response',model_truncated:'invalid-response',model_refused:'model-refused',
     mass_required:'invalid-input',amount_ambiguous:'invalid-input',amount_out_of_range:'invalid-input',
+    label_unreadable:'unclear-image',label_volume_basis:'invalid-input',
   };
   const detail = gatewayMessage(code, message);
   return new MealAnalysisError(kinds[code ?? ''] ?? (response.status === 429 ? 'rate-limited' : 'provider-error'),
@@ -339,10 +343,27 @@ type BarcodePayload = {
   message?: string;
 };
 
+let unknownBarcode: string | null = null;
+/** The last barcode no database knew, for the label-scan fallback. */
+export function getUnknownBarcode() {
+  return unknownBarcode;
+}
+
 export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResult> {
+  // The user's own product for this barcode ("Mein Produkt") answers first:
+  // offline, free, and with the values from the label they photographed.
+  const own = await findCustomFoodByBarcode(barcode);
+  if (own) {
+    const result = customFoodResult(own);
+    const meal = mealFromSearch(result, result.defaultGrams);
+    const serving = result.portions?.[0];
+    return { ...meal, warnings: [serving ? getDictionary().errors.portionStartServing(serving.label, serving.grams) : getDictionary().errors.portionStartValue] };
+  }
   const response = await gatewayFetch(`/v1/barcode/${encodeURIComponent(barcode)}?language=${getLanguage()}`);
   const payload = (await response.json().catch(() => null)) as BarcodePayload | null;
   if (!response.ok || !payload) {
+    // Remembered so "Nährwerttabelle fotografieren" can link the new product.
+    if (payload?.code === 'product_not_found' || payload?.code === 'missing_nutrition') unknownBarcode = barcode;
     throw gatewayError(response, payload?.code, payload?.message);
   }
   if (payload.barcode !== barcode || typeof payload.name !== 'string' || !validSearchResult({id:barcode,name:payload.name || getDictionary().errors.packagedFood,per100g:payload.per100g,defaultGrams:100,portions:payload.portions,source:payload.source})) {
@@ -387,6 +408,57 @@ export async function analyzeBarcode(barcode: string): Promise<MealAnalysisResul
   };
 }
 
+/** One nutrition-label read, per 100 g, before the user confirms it. */
+export type LabelRead = {
+  values: { calories: number | null; protein: number | null; carbs: number | null; sugar: number | null; fat: number | null; saturatedFat: number | null; fiber: number | null; salt: number | null };
+  missing: string[];
+  energyFromKj: boolean;
+  basis: 'per_100g' | 'per_serving';
+  serving: { grams: number; label: string | null } | null;
+  packageG: number | null;
+  name: string | null;
+  brand: string | null;
+  barcode: string | null;
+  plausibility: { plausible: boolean; issues: string[]; blocking: string[]; atwaterKcal: number | null };
+};
+
+const nullableNumber = (value: unknown) => value === null || (typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 10000);
+
+/**
+ * Reads a photographed nutrition table through the gateway. Costs one AI
+ * analysis like a meal photo (refunded when unreadable or incomplete); the
+ * caller shows every value for confirmation before anything is saved.
+ */
+export async function readNutritionLabel(table: MealAnalysisInput, requestId: string, options: { frontImageBase64?: string | null; barcode?: string | null } = {}): Promise<{ label: LabelRead; correctionRequired: boolean }> {
+  const response = await gatewayFetch('/v1/label', {
+    method: 'POST',
+    body: {
+      imageBase64: table.imageBase64, mimeType: table.mimeType, language: getLanguage(), locale: getLocale(), requestId, captureProtocol: 2,
+      ...(options.frontImageBase64 ? { frontImageBase64: options.frontImageBase64 } : {}),
+      ...(options.barcode && /^\d{7,14}$/.test(options.barcode) ? { barcode: options.barcode } : {}),
+    },
+  });
+  const payload = (await response.json().catch(() => null)) as { label?: LabelRead; correctionRequired?: boolean; code?: string; message?: string } | null;
+  if (!response.ok) throw gatewayError(response, payload?.code, payload?.message);
+  const label = payload?.label;
+  if (!label || typeof label !== 'object' || !label.values || !Object.values(label.values).every(nullableNumber)
+    || !Array.isArray(label.missing) || !label.plausibility || !Array.isArray(label.plausibility.issues) || !Array.isArray(label.plausibility.blocking)
+    || (label.name !== null && typeof label.name !== 'string') || (label.brand !== null && typeof label.brand !== 'string')
+    || (label.serving !== null && !(label.serving && Number.isFinite(label.serving.grams)))
+    || (label.packageG !== null && !Number.isFinite(label.packageG))) {
+    throw new MealAnalysisError('invalid-response', getDictionary().errors.gatewayInvalidResponse);
+  }
+  return { label, correctionRequired: payload?.correctionRequired === true };
+}
+
+/** The optional pack-front photo only needs to show the name: sent small. */
+export async function prepareLabelFrontPhoto(photoUri: string): Promise<string> {
+  const result = await manipulateAsync(photoUri, [{ resize: { width: 1024 } }], { base64: true, compress: 0.6, format: SaveFormat.JPEG });
+  deleteTemporaryPhoto(result.uri);
+  if (!result.base64 || result.base64.length > 1_500_000) throw new MealAnalysisError('invalid-input', getDictionary().errors.gatewayPhotoTooLarge);
+  return result.base64;
+}
+
 export type FoodSearchResult = {
   id: string;
   name: string;
@@ -397,6 +469,8 @@ export type FoodSearchResult = {
   source: MealItem['source'];
   /** Amount the user logged last time; preselected in the portion sheet. */
   lastGrams?: number;
+  /** Barcode an own product ("Mein Produkt") is linked to; used to drop duplicates. */
+  barcode?: string;
 };
 
 /**

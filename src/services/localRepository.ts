@@ -18,6 +18,8 @@ const COUNTED_SCAN_IDS_KEY = '@kandro/counted-analysis-ids:v1';
 const DELETED_MEALS_KEY = '@kandro/deleted-meals:v1';
 const ACCOUNT_SWITCH_PENDING_KEY = '@kandro/account-switch-pending:v1';
 const FAVORITES_KEY = '@kandro/favorite-meals:v1';
+// "Mein Produkt" foods (nutrition-label scans and own products), per account.
+const CUSTOM_FOODS_KEY = '@kandro/custom-foods:v1';
 let scanCountMutation: Promise<number> = Promise.resolve(0);
 let localGeneration = 0;
 export const getLocalDataGeneration = () => localGeneration;
@@ -519,6 +521,19 @@ export function saveFavoriteMeals(favorites: FavoriteMeal[]) {
   return mutateAuxiliary(() => AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites.slice(0, 50))));
 }
 
+/**
+ * The user's own products. Account data like the diary: every reset and
+ * account switch below removes them; the service validates each record.
+ */
+export async function loadStoredCustomFoods(): Promise<unknown[]> {
+  const stored = await readJson<unknown>(CUSTOM_FOODS_KEY, []);
+  return Array.isArray(stored) ? stored.slice(0, 500) : [];
+}
+
+export function saveStoredCustomFoods(foods: unknown[]) {
+  return mutateAuxiliary(() => AsyncStorage.setItem(CUSTOM_FOODS_KEY, JSON.stringify(foods.slice(0, 500))));
+}
+
 export async function clearLocalKandroData() {
   localGeneration += 1;
   await invalidatePrivateData();
@@ -527,7 +542,7 @@ export async function clearLocalKandroData() {
   await auxiliaryMutation;
   await scanCountMutation.catch(() => undefined);
   await AsyncStorage.multiRemove([MEALS_KEY, QUEUE_KEY, PROFILE_KEY, WEIGHTS_KEY, LIFETIME_SCANS_KEY, COUNTED_SCAN_IDS_KEY, DELETED_MEALS_KEY]);
-  await AsyncStorage.removeItem(FAVORITES_KEY);
+  await AsyncStorage.multiRemove([FAVORITES_KEY, CUSTOM_FOODS_KEY]);
 }
 
 export type PendingLocalAccountSwitch = {
@@ -590,7 +605,7 @@ export function replaceLocalAccountData(
       [COUNTED_SCAN_IDS_KEY, JSON.stringify({ version: 1, count, ids: [] })],
     ]);
     await AsyncStorage.multiRemove([QUEUE_KEY, WEIGHTS_KEY, DELETED_MEALS_KEY]);
-    await AsyncStorage.removeItem(FAVORITES_KEY);
+    await AsyncStorage.multiRemove([FAVORITES_KEY, CUSTOM_FOODS_KEY]);
     return count;
   });
 

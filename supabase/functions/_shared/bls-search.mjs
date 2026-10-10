@@ -2,6 +2,7 @@ import { compatibleSearchIdentity } from './search-policy.mjs';
 import { BLS_SEARCH_ROWS } from './bls-search-data.mjs';
 import { blsEnglishName } from './bls-names.mjs';
 import { resolveReviewedStapleFacts } from './bls-reference.mjs';
+import { applyFoodSynonyms, sameFoodWord } from './food-synonyms.mjs';
 
 /**
  * Full-text search over the compact BLS 4.0 snapshot.
@@ -110,6 +111,12 @@ const EVERYDAY_QUERY_CODES = {
   yogurt: ['M141300', 'M141200'],
   // Compound German names (Weizentoastbrot) otherwise lose to gluten-free toast.
   toast: ['B314000', 'B314072', 'B111200', 'B254000', 'B314200'],
+  // Bare German category words: the raw meat, not a sauce or pudding made
+  // with it; plain fresh cheese, not a cake; plain pasta, not gluten-free.
+  hackfleisch: ['U010100', 'U050100', 'U020100', 'U040100', 'U030100'],
+  'frischkase': ['M710800', 'M710700', 'M820100', 'M711100'],
+  teigwaren: ['E401000', 'E401032'],
+  tomate: ['G561100', 'G561132'],
 };
 
 function scoreName(name, words, query, terms) {
@@ -128,7 +135,9 @@ function scoreName(name, words, query, terms) {
     let exact = 0;
     let prefix = 0;
     for (const term of terms) {
-      if (words.includes(term)) {
+      // "Tomaten" is "Tomate", "Joghurts" is "Joghurt": a plural is the same
+      // word, not a prefix of a longer one.
+      if (words.includes(term) || words.some((word) => sameFoodWord(term, word))) {
         exact += 1;
         continue;
       }
@@ -148,8 +157,9 @@ function scoreName(name, words, query, terms) {
   // A simple preparation of the actual food comes before recipes containing
   // it: banana raw/dried before banana quark; oats dry/boiled before cookies.
   // Explicit compound queries still use their own full phrase normally.
-  const basicVariant = terms.every(term => words.includes(term))
-    && words.filter(word => !terms.includes(word)).every(word =>
+  const hasWord = (term) => words.some(word => word === term || sameFoodWord(term, word));
+  const basicVariant = terms.every(hasWord)
+    && words.filter(word => !terms.some(term => term === word || sameFoodWord(term, word))).every(word =>
       /^(raw|roh|fresh|frisch|boiled|gekocht|dried|getrocknet|steamed|gedampft|mature|reif)$/.test(word));
   // A bare everyday name means the ordinary food. "Banana" should lead with
   // raw banana, not dried banana or nectar; asking for "banana dried" still
@@ -163,13 +173,16 @@ function scoreName(name, words, query, terms) {
     && terms.length === 1;
   // Source word order ("lentil red mature") must not make a full ingredient
   // lose to a dish with a matching prefix ("red lentil soup ...").
+  if (!base) return 0;
   return (basicVariant ? Math.max(base, 1050) : base) + plainBonus + (basicVariant ? 160 : 0) - (compoundDish ? 140 : 0)
     - Math.min(extraWords, 25) * 4
     - unrequestedProcessing * 90;
 }
 
 export function searchBlsCatalog(query, language = 'en', limit = 15) {
-  const folded = searchFold(query);
+  // Everyday spellings ("Hühnchen", "Jogurt", "Topfen") become the words the
+  // BLS labels use. Only the query is rewritten; labels and values are not.
+  const folded = searchFold(applyFoodSynonyms(fold(query), language));
   // A bare German category also needs its English word: 'Brot' otherwise
   // misses compounds such as Vollkornbrot and Roggenbrot entirely.
   const aliases = { brot: 'bread', brote: 'bread', milch: 'milk', joghurt: 'yogurt', yoghurt: 'yogurt', toastbrot: 'toast', toasts: 'toast' };
@@ -197,7 +210,7 @@ export function searchBlsCatalog(query, language = 'en', limit = 15) {
     if (name === needle || name.startsWith(`${needle} `)) return true;
     if (terms.length === 1 && name.replace(/\s+/g, '') === needle) return true;
     return terms.every((term) => {
-      if (words.includes(term)) return true;
+      if (words.includes(term) || words.some((word) => sameFoodWord(term, word))) return true;
       // German compounds are answers: "hähnchenbrust" means
       // "Hähnchenbrustfilet". Three letters inside "phosphat" are a
       // coincidence. What separates them is how much of the word the query

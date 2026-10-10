@@ -21,7 +21,10 @@ import { manipulateAsync, SaveFormat } from 'expo-image-manipulator';
 import { frameToPhotoCrop, type Rect } from '@/utils/cameraCrop';
 import { useApp } from '@/context/AppContext';
 import { deleteTemporaryPhoto, FoodSearchResult, MealAnalysisError, searchFoods } from '@/services/mealAnalysis';
-import { foodUsage, mergeSuggestions, recentFoods, suggestFoods } from '@/services/foodSuggest';
+import { foodSourceBadge, foodUsage, frequentFoods, mergeSuggestions, recentFoods, suggestFoods, type FoodSourceBadge } from '@/services/foodSuggest';
+import { customFoodResult, deleteCustomFood, isCustomFoodResult, matchCustomFoods } from '@/services/customFoods';
+import { useCustomFoods } from '@/hooks/useCustomFoods';
+import { isQuickAddResult, QuickAddForm } from '@/components/QuickAddForm';
 import { parseLocalDescription } from '@/services/localDescription';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -70,6 +73,8 @@ export default function ScanScreen() {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [pendingFood, setPendingFood] = useState<FoodSearchResult | null>(restoredInput?.pendingFood ?? null);
   const [manualFor, setManualFor] = useState<string | null>(null);
+  // "Kalorien schnell eintragen": null = closed, otherwise the prefilled name.
+  const [quickAddFor, setQuickAddFor] = useState<string | null>(null);
   // Foods picked in this search session, newest last. They are saved together
   // as one meal ("Als Frühstück speichern"), not as one entry per food.
   const [added, setAdded] = useState<{ id: string; food: FoodSearchResult; name: string; grams: number; kcal: number }[]>([]);
@@ -84,6 +89,7 @@ export default function ScanScreen() {
   const latestSearch = useRef('');
   const searchGeneration = useRef(0);
   const confirmAfterSearchDismiss = useRef(false);
+  const labelAfterSearchDismiss = useRef(false);
   const afterSheetDismiss = useRef<'/analyzing' | '/paywall?reason=blocked' | null>(null);
   useEffect(() => () => {
     searchGeneration.current += 1;
@@ -368,7 +374,19 @@ export default function ScanScreen() {
    */
   // Language-aware: suggestion names follow the app language.
   const usage = useMemo(() => foodUsage(mealHistory), [mealHistory]);
-  const recents = useMemo(() => recentFoods(mealHistory), [mealHistory, language]);
+  // Own products ("Mein Produkt") lead every list they match; refreshed from
+  // the cloud once while the search sheet is open.
+  const customFoods = useCustomFoods(showSearch);
+  // Empty field: own products, then what is eaten often, then the latest.
+  const myProducts = useMemo(() => customFoods.slice(0, 5).map(customFoodResult), [customFoods, language]);
+  const frequent = useMemo(() => frequentFoods(mealHistory), [mealHistory, language]);
+  const recents = useMemo(() => {
+    const shown = new Set([...myProducts, ...frequent].map(result => result.source.referenceId ?? result.id));
+    return recentFoods(mealHistory).filter(result => !shown.has(result.source.referenceId ?? result.id));
+  }, [mealHistory, language, myProducts, frequent]);
+  const badgeLabel = (badge: FoodSourceBadge) => ({
+    bls: t.scan.badgeBls, off: t.scan.badgeOff, usda: t.scan.badgeUsda, custom: t.scan.badgeCustom, own: t.scan.badgeOwn, catalog: t.scan.badgeCatalog,
+  })[badge];
   const runSearch = (value: string, submitted = false) => {
     setCompletedEmptySearch(false);
     setSearchNotice(null);
@@ -386,8 +404,9 @@ export default function ScanScreen() {
       setSearching(false);
       return;
     }
-    // Instant on-device suggestions; the gateway's brands/products follow.
-    const local = suggestFoods(term, usage);
+    // Instant on-device suggestions (own products first, then the German
+    // catalogue); the gateway's brands/products follow after the debounce.
+    const local = mergeSuggestions(matchCustomFoods(term, customFoods), suggestFoods(term, usage));
     setSearchResults(local);
     setSearching(true);
     setSearchError(null);
@@ -461,7 +480,27 @@ export default function ScanScreen() {
       ]);
       return;
     }
-    setManualFor(null); setPendingFood(null); setPortionDraft(null); setSearchQuery(''); setSearchResults([]); setShowSearch(false); setMode('photo'); };
+    setManualFor(null); setQuickAddFor(null); setPendingFood(null); setPortionDraft(null); setSearchQuery(''); setSearchResults([]); setShowSearch(false); setMode('photo'); };
+
+  /** The search sheet is a native modal: it must be gone before a new screen. */
+  const openLabelScan = () => {
+    Keyboard.dismiss();
+    if (Platform.OS === 'ios') {
+      labelAfterSearchDismiss.current = true;
+      setShowSearch(false);
+    } else {
+      setShowSearch(false);
+      router.push('/label-scan');
+    }
+  };
+  const confirmDeleteCustom = (result: FoodSearchResult) => {
+    const id = result.source.referenceId?.replace(/^custom-/, '');
+    if (!id) return;
+    Alert.alert(t.scan.deleteCustomTitle, t.scan.deleteCustomBody, [
+      { text: t.common.cancel, style: 'cancel' },
+      { text: t.scan.deleteCustomConfirm, style: 'destructive', onPress: () => void deleteCustomFood(id) },
+    ]);
+  };
 
   const confirmPortion = (grams: number) => {
     if (!pendingFood) return;
@@ -473,7 +512,7 @@ export default function ScanScreen() {
     void successHaptic();
     const kcal = Math.round(food.per100g.calories * grams / 100);
     setAdded(list => [...list, { id: `pick-${++pickSerial.current}`, food, name: food.name, grams, kcal }]);
-    setPendingFood(null); setPortionDraft(null); setManualFor(null);
+    setPendingFood(null); setPortionDraft(null); setManualFor(null); setQuickAddFor(null);
     setSearchQuery(''); setSearchResults([]); setScanInputDraft(null);
     setSearchError(null); setSearchNotice(null); setCompletedEmptySearch(false); setSearching(false);
     searchGeneration.current += 1;
@@ -544,6 +583,34 @@ export default function ScanScreen() {
     }
     setShowBarcodeEntry(false);
     openBarcode(normalized);
+  };
+
+  const renderResult = (result: FoodSearchResult) => {
+    const badge = badgeLabel(foodSourceBadge(result));
+    const own = isCustomFoodResult(result);
+    return (
+      <View key={result.id} style={styles.searchResultRow}>
+        <Pressable accessibilityHint={t.scan.sourceBadgeLabel(badge)} accessibilityRole="button" onPress={() => addSearchResult(result)} style={[styles.searchRow, styles.searchRowMain]}>
+          <View style={styles.searchRowCopy}>
+            <Text numberOfLines={2} style={styles.searchRowName}>{result.name}</Text>
+            <Text style={styles.searchRowMeta}>
+              {result.lastGrams
+                ? `${t.scan.lastAmount(`${formatNumber(result.lastGrams, locale)} g`)} · ${formatNumber(Math.round(result.per100g.calories * result.lastGrams / 100), locale)} kcal`
+                : `${formatNumber(Math.round(result.per100g.calories), locale)} kcal ${t.scan.searchPer100} · ${formatNumber(Number(result.per100g.protein.toFixed(1)), locale)} g ${t.common.protein}`}
+            </Text>
+            <View style={[styles.sourceBadge, own && styles.sourceBadgeOwn]}>
+              <Text numberOfLines={1} style={[styles.sourceBadgeText, own && styles.sourceBadgeTextOwn]}>{badge}</Text>
+            </View>
+          </View>
+          <Ionicons color={colors.accentText} name="add-circle" size={26} />
+        </Pressable>
+        {own && searchQuery.trim().length < 2 ? (
+          <Pressable accessibilityLabel={t.scan.deleteCustom(result.name)} accessibilityRole="button" hitSlop={6} onPress={() => confirmDeleteCustom(result)} style={styles.searchRowDelete}>
+            <Ionicons color={colors.muted} name="trash-outline" size={20} />
+          </Pressable>
+        ) : null}
+      </View>
+    );
   };
 
   return (
@@ -719,6 +786,9 @@ export default function ScanScreen() {
         if (confirmAfterSearchDismiss.current) {
           confirmAfterSearchDismiss.current = false;
           router.push('/confirm');
+        } else if (labelAfterSearchDismiss.current) {
+          labelAfterSearchDismiss.current = false;
+          if (scanFocused.current) router.push('/label-scan');
         }
       }} onRequestClose={() => { if (pendingFood) cancelPortion(); else cancelSearch(); }} transparent visible={showSearch}>
         {pendingFood ? <PortionSheet
@@ -737,6 +807,9 @@ export default function ScanScreen() {
             {manualFor !== null ? <>
               {addError ? <Text accessibilityRole="alert" style={styles.searchError}>{addError}</Text> : null}
               <ManualFoodForm initialName={manualFor} onCancel={() => { setAddError(null); setManualFor(null); }} onConfirm={finishFood} />
+            </> : quickAddFor !== null ? <>
+              {addError ? <Text accessibilityRole="alert" style={styles.searchError}>{addError}</Text> : null}
+              <QuickAddForm initialName={quickAddFor} onCancel={() => { setAddError(null); setQuickAddFor(null); }} onConfirm={finishFood} />
             </> : <>
             <View style={styles.searchHead}>
               <Text accessibilityRole="header" style={styles.describeTitle}>{t.scan.searchTitle}</Text>
@@ -747,7 +820,7 @@ export default function ScanScreen() {
               {added.map(entry => (
                 <View key={entry.id} style={styles.addedRow}>
                   <Ionicons color={colors.success} name="checkmark-circle" size={18} />
-                  <Text numberOfLines={1} style={styles.addedText}>{entry.name} · {formatNumber(entry.grams, locale)} g · {formatNumber(entry.kcal, locale)} kcal</Text>
+                  <Text numberOfLines={1} style={styles.addedText}>{isQuickAddResult(entry.food) ? `${entry.name} · ${formatNumber(entry.kcal, locale)} kcal` : `${entry.name} · ${formatNumber(entry.grams, locale)} g · ${formatNumber(entry.kcal, locale)} kcal`}</Text>
                   <Pressable accessibilityLabel={t.scan.removePicked(entry.name)} accessibilityRole="button" hitSlop={10} onPress={() => removePicked(entry.id)} style={styles.addedRemove}>
                     <Ionicons color={colors.muted} name="close" size={18} />
                   </Pressable>
@@ -782,20 +855,14 @@ export default function ScanScreen() {
                 <Text style={styles.searchStatus}>{t.scan.searchHintEnglish}</Text>
               ) : null}
               {completedEmptySearch && !searching && !searchError ? <CaptureSearchHelp query={searchQuery.trim()} onConfirm={value=>runSearch(value,true)}/> : null}
-              {searchQuery.trim().length < 2 && recents.length ? <Text accessibilityRole="header" style={styles.searchSection}>{t.scan.recentTitle}</Text> : null}
-              {(searchQuery.trim().length < 2 ? recents : searchResults.slice(0, visibleSearchCount)).map((result) => (
-                <Pressable accessibilityRole="button" key={result.id} onPress={() => addSearchResult(result)} style={styles.searchRow}>
-                  <View style={styles.searchRowCopy}>
-                    <Text numberOfLines={2} style={styles.searchRowName}>{result.name}</Text>
-                    <Text style={styles.searchRowMeta}>
-                      {result.lastGrams
-                        ? `${t.scan.lastAmount(`${formatNumber(result.lastGrams, locale)} g`)} · ${formatNumber(Math.round(result.per100g.calories * result.lastGrams / 100), locale)} kcal`
-                        : `${formatNumber(Math.round(result.per100g.calories), locale)} kcal ${t.scan.searchPer100} · ${formatNumber(Number(result.per100g.protein.toFixed(1)), locale)} g ${t.common.protein}`}
-                    </Text>
-                  </View>
-                  <Ionicons color={colors.accentText} name="add-circle" size={26} />
-                </Pressable>
-              ))}
+              {searchQuery.trim().length < 2 ? <>
+                {myProducts.length ? <Text accessibilityRole="header" style={styles.searchSection}>{t.scan.myProductsTitle}</Text> : null}
+                {myProducts.map(renderResult)}
+                {frequent.length ? <Text accessibilityRole="header" style={styles.searchSection}>{t.scan.frequentTitle}</Text> : null}
+                {frequent.map(renderResult)}
+                {recents.length ? <Text accessibilityRole="header" style={styles.searchSection}>{t.scan.recentTitle}</Text> : null}
+                {recents.map(renderResult)}
+              </> : searchResults.slice(0, visibleSearchCount).map(renderResult)}
               {searchResults.length > visibleSearchCount ? <PrimaryButton label={t.scan.searchMore} variant="secondary" onPress={() => setVisibleSearchCount((count) => count + 15)} /> : null}
               {searchQuery.trim().length >= 2 && !searching ? (
                 <Pressable accessibilityRole="button" onPress={() => { Keyboard.dismiss(); runSearch(searchQuery, true); }} style={styles.searchRow}>
@@ -815,10 +882,28 @@ export default function ScanScreen() {
                   <Ionicons color={colors.accentText} name="create-outline" size={24} />
                 </Pressable>
               ) : null}
+              {!searching ? (
+                <Pressable accessibilityRole="button" onPress={() => { Keyboard.dismiss(); setQuickAddFor(searchQuery.trim()); }} style={styles.searchRow}>
+                  <View style={styles.searchRowCopy}>
+                    <Text numberOfLines={2} style={styles.searchRowName}>{t.scan.quickAddCta}</Text>
+                    <Text style={styles.searchRowMeta}>{t.scan.quickAddHint}</Text>
+                  </View>
+                  <Ionicons color={colors.accentText} name="flash-outline" size={24} />
+                </Pressable>
+              ) : null}
+              {!searching ? (
+                <Pressable accessibilityRole="button" onPress={() => openLabelScan()} style={styles.searchRow}>
+                  <View style={styles.searchRowCopy}>
+                    <Text numberOfLines={2} style={styles.searchRowName}>{t.scan.labelScanCta}</Text>
+                    <Text style={styles.searchRowMeta}>{t.scan.labelScanHint}</Text>
+                  </View>
+                  <Ionicons color={colors.accentText} name="nutrition-outline" size={24} />
+                </Pressable>
+              ) : null}
             </View>
             </>}
             </ScrollView>
-            {manualFor !== null ? null : added.length ? <>
+            {manualFor !== null || quickAddFor !== null ? null : added.length ? <>
               <PrimaryButton disabled={adding} icon="checkmark" label={t.scan.saveAs(mealTypeLabel(saveSlot, t.common))} onPress={() => void savePicked()} />
               <Pressable accessibilityRole="button" onPress={cancelSearch} style={styles.describeCancel}>
                 <Text style={styles.describeCancelText}>{t.common.cancel}</Text>
@@ -946,6 +1031,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   searchSection: { color: colors.muted, fontSize: typeScale.caption, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 8, marginBottom: 4 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, borderBottomWidth: 1, borderBottomColor: colors.border },
   searchRowCopy: { flex: 1, gap: 3 },
+  searchResultRow: { flexDirection: 'row', alignItems: 'stretch' },
+  searchRowMain: { flex: 1 },
+  searchRowDelete: { width: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderBottomWidth: 1, borderBottomColor: colors.border },
+  sourceBadge: { alignSelf: 'flex-start', marginTop: 3, borderRadius: radii.pill, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 8, paddingVertical: 2 },
+  sourceBadgeOwn: { borderColor: colors.accentText, backgroundColor: colors.neutralSoft },
+  sourceBadgeText: { color: colors.muted, fontSize: typeScale.micro, fontWeight: '700' },
+  sourceBadgeTextOwn: { color: colors.accentText },
   searchRowName: { color: colors.text, fontSize: 16, fontWeight: '600', lineHeight: 21 },
   searchRowMeta: { color: colors.muted, fontSize: typeScale.caption },
   describeSheet: { borderTopLeftRadius: radii.sheet, borderTopRightRadius: radii.sheet, backgroundColor: colors.surface, paddingHorizontal: 22, paddingTop: 22, gap: 13 },

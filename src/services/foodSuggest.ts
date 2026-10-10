@@ -21,6 +21,10 @@ const { searchBlsCatalog } = require('../../supabase/functions/_shared/bls-searc
 // the automatic answer to a description with a raw/cooked or grain qualifier.
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { resolveReviewedStapleFacts } = require('../../supabase/functions/_shared/bls-reference.mjs') as { resolveReviewedStapleFacts: (query: string) => { referenceId: string } | null };
+// "Hühnchen" → Hähnchen, "Jogurt" → Joghurt, "Topfen" → Quark: the same
+// reviewed spelling table the gateway catalogue uses.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { applyFoodSynonyms } = require('../../supabase/functions/_shared/food-synonyms.mjs') as { applyFoodSynonyms: (folded: string, language: string) => string };
 
 // "Haehnchen" and "Hähnchen" are the same word: umlaut spellings fold to the
 // same key on both sides (index and query), so ae/oe/ue typing still matches.
@@ -204,11 +208,15 @@ function toResult(row: Row, language: string, usage?: FoodUsage): FoodSearchResu
 
 /** Ranked suggestions for a partly typed query; synchronous, about 10 ms. */
 export function suggestFoods(query: string, usage: Map<string, FoodUsage> = new Map(), limit = 25): FoodSearchResult[] {
-  const tokens = fold(query).split(' ').filter(Boolean);
-  if (!tokens.length || tokens.join('').length < 2) return [];
+  const typed = fold(query).split(' ').filter(Boolean);
+  if (!typed.length || typed.join('').length < 2) return [];
   const language = getLanguage();
+  // Everyday spellings become the label's words; aliases of what was actually
+  // typed ("nudeln", "hähnchenbrust") keep their reviewed everyday rows.
+  const tokens = fold(applyFoodSynonyms(typed.join(' '), language)).split(' ').filter(Boolean);
   const scored: { entry: Entry; score: number }[] = [];
-  const aliases = aliasCodes(tokens.join(' '));
+  const aliases = aliasCodes(typed.join(' '));
+  for (const [code, strength] of aliasCodes(tokens.join(' '))) aliases.set(code, Math.max(aliases.get(code) ?? 0, strength));
   for (const entry of entries()) {
     let total = aliases.get(entry.row[0]) ?? 0;
     let ok = true;
@@ -287,8 +295,9 @@ export function recentFoods(history: Meal[], limit = 12): FoodSearchResult[] {
         seen.add(`bls-${ref}`);
         out.push(toResult(rows.get(ref)!, language, usage.get(ref)));
       } else if (item.nutritionPer100g && ref && ['open-food-facts', 'usda', 'manual'].includes(item.source.provider)) {
-        // Own entries repeat by name, not by their one-off id.
-        const key = item.source.provider === 'manual' ? `manual-${fold(item.name)}` : `${item.source.provider}-${ref}`;
+        // Own entries repeat by name, not by their one-off id; a saved
+        // product ("Mein Produkt") keeps its own stable id.
+        const key = item.source.provider === 'manual' && !ref.startsWith('custom-') ? `manual-${fold(item.name)}` : `${item.source.provider}-${ref}`;
         if (seen.has(key)) continue;
         seen.add(key);
         out.push({ id: key, name: item.name, per100g: item.nutritionPer100g, defaultGrams: item.amountG, portions: item.portions ?? [], source: item.source, lastGrams: item.amountG });
@@ -298,15 +307,65 @@ export function recentFoods(history: Meal[], limit = 12): FoodSearchResult[] {
   return out;
 }
 
+/**
+ * Keys that identify the same food across sources: the reference itself, a
+ * barcode shared by an own product and Open Food Facts, and the visible
+ * name with its energy (the same product listed twice under two codes).
+ */
+function sameFoodKeys(result: FoodSearchResult) {
+  const keys = [result.source.referenceId ?? result.id];
+  if (result.source.provider === 'open-food-facts' && result.source.referenceId) keys.push(`barcode-${result.source.referenceId}`);
+  if (result.barcode) keys.push(`barcode-${result.barcode}`);
+  if (typeof result.name === 'string' && Number.isFinite(result.per100g?.calories)) keys.push(`name-${fold(result.name)}-${Math.round(result.per100g.calories)}`);
+  return keys;
+}
+
 /** Local suggestions first, then the gateway's extra rows without duplicates. */
 export function mergeSuggestions(local: FoodSearchResult[], remote: FoodSearchResult[]) {
-  const seen = new Set(local.map(result => result.source.referenceId ?? result.id));
-  return [...local, ...remote.filter(result => {
-    const key = result.source.referenceId ?? result.id;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  })];
+  const seen = new Set<string>();
+  const out: FoodSearchResult[] = [];
+  for (const result of [...local, ...remote]) {
+    const keys = sameFoodKeys(result);
+    if (keys.some(key => seen.has(key))) continue;
+    keys.forEach(key => seen.add(key));
+    out.push(result);
+  }
+  return out;
+}
+
+/** Which database a row comes from, for the badge beside it. */
+export type FoodSourceBadge = 'bls' | 'off' | 'usda' | 'custom' | 'own' | 'catalog';
+export function foodSourceBadge(result: Pick<FoodSearchResult, 'source'>): FoodSourceBadge {
+  switch (result.source.provider) {
+    case 'bls': return 'bls';
+    case 'open-food-facts': return 'off';
+    case 'usda': return 'usda';
+    case 'manual': return result.source.referenceId?.startsWith('custom-') ? 'custom' : 'own';
+    default: return 'catalog';
+  }
+}
+
+/**
+ * Foods eaten at least twice, most often first (ties: most recent), for the
+ * empty search field. Any source with a stored per-100 g reference counts.
+ */
+export function frequentFoods(history: Meal[], limit = 6): FoodSearchResult[] {
+  const recents = recentFoods(history, 200);
+  const counts = new Map<string, { count: number; lastAt: string }>();
+  for (const meal of history) {
+    for (const item of meal.items ?? []) {
+      if (!item.included || !item.source?.referenceId) continue;
+      const ref = item.source.referenceId;
+      const key = item.source.provider === 'bls' ? `bls-${ref}` : item.source.provider === 'manual' && !ref.startsWith('custom-') ? `manual-${fold(item.name)}` : `${item.source.provider}-${ref}`;
+      const at = meal.savedAt ?? meal.date ?? '';
+      const previous = counts.get(key);
+      counts.set(key, { count: (previous?.count ?? 0) + 1, lastAt: previous && previous.lastAt > at ? previous.lastAt : at });
+    }
+  }
+  return recents
+    .filter(result => (counts.get(result.id)?.count ?? 0) >= 2)
+    .sort((a, b) => (counts.get(b.id)!.count - counts.get(a.id)!.count) || counts.get(b.id)!.lastAt.localeCompare(counts.get(a.id)!.lastAt))
+    .slice(0, limit);
 }
 
 /** Plural/inflection-tolerant exact word comparison ("bananen" = "banane"). */

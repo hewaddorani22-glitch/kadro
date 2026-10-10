@@ -98,9 +98,10 @@ for (const language of ['de', 'en']) {
   assert.deepEqual(localize({items:[{source:{}}],warnings:[]}).warnings, [], 'exact sources need no family warning');
   assert.deepEqual(result.warnings, [], 'do not mutate gateway response');
 }
-// Photo and typed description are separate requests; both have to carry it.
+// Photo, typed description and nutrition label are separate requests; all have to carry it.
 const sends = mealAnalysis.match(/language: getLanguage\(\)/g) ?? [];
-assert.equal(sends.length, 2, `both the photo and the description request must send the language, found ${sends.length}`);
+assert.equal(sends.length, 3, `the photo, description and nutrition-label requests must send the language, found ${sends.length}`);
+assert.match(mealAnalysis, /gatewayFetch\('\/v1\/label', \{[\s\S]{0,200}language: getLanguage\(\)/, 'the label read must send the language for the product name');
 assert.ok(!mealAnalysis.includes("locale: 'de-DE'"), 'the app must not hardcode a German locale any more');
 // The gateway ships one German message per code; the app translates by code.
 // Derive the list from the gateway rather than restating it here, so a new

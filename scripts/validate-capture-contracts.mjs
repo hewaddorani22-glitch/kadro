@@ -49,6 +49,8 @@ const mocks={
  '@/i18n/active':{getLanguage:()=> language,getLocale:()=> 'de-DE',getDictionary:()=>dictionary},
  '@/utils/ingredientCorrection':{needsIngredientCorrection:()=>false},
  '@/services/localRepository':{getLocalDataGeneration:()=>generation},
+ // No own product ("Mein Produkt") stored: every barcode reaches the gateway.
+ '@/services/customFoods':{findCustomFoodByBarcode:async()=>null,customFoodResult:()=>{throw new Error('unexpected own product');}},
 };
 const module={exports:{}};
 new Function('require','module','exports',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText)(id=>{assert.ok(id in mocks,'unmocked '+id);return mocks[id]},module,module.exports);

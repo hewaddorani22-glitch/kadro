@@ -62,4 +62,28 @@ assert.match(gateway, /if \(strict\) return '';/,
 assert.match(gateway, /try \{\s*for \(const product of await searchOpenFoodFacts\(\s*term,\s*language,\s*claimProvider \? \(\) => claimProvider\('off_search'\) : undefined,\s*\)\)[\s\S]*catch \(error\) \{\s*noteFailure\(error\);/,
   'Open Food Facts going down must not fail the whole search, while quota denials are preserved as partial status or an explicit error');
 
-console.log(`German search: ${Object.keys(GERMAN_FOOD_TERMS).length} food terms translated, Open Food Facts wired in as a fallback source.`);
+// --- German-first Open Food Facts: products sold in Germany, German fields ----
+assert.match(off, /const q = german \? `\$\{words\} countries_tags:"en:germany"` : words;/, 'German readers must search products sold in Germany');
+assert.match(off, /&langs=\$\{german \? 'de' : 'en'\}/, 'German readers must be matched on German product fields');
+assert.match(off, /api\/v2\/search\?brands_tags=\$\{encodeURIComponent\(slug\)\}&countries_tags_en=germany&lc=de/, 'a brand query must reach the brand tag search for Germany');
+assert.match(off, /if \(german && out\.length < 3\)/, 'the brand search only runs when the text search found little');
+assert.match(off, /if \(error instanceof ProviderQuotaError\) throw error;/, 'a quota denial in the brand probe must not be swallowed');
+assert.match(off, /replace\(\/\["\(\):\\\[\\\]\{\}\^~\*\?\\\\\/!\+\]\/g, ' '\)/, 'query syntax characters must not reach the search engine');
+
+// --- Shared synonym table ----------------------------------------------------
+const { foodSynonym, applyFoodSynonyms, sameFoodWord, synonymKey } = await import('../supabase/functions/_shared/food-synonyms.mjs');
+assert.equal(synonymKey('Hühnchen'), synonymKey('Huehnchen'));
+assert.equal(foodSynonym('Hühnchen'), 'hahnchen');
+assert.equal(foodSynonym('Jogurt'), 'joghurt');
+assert.equal(foodSynonym('Topfen'), 'quark');
+assert.equal(foodSynonym('Hüttenkäse'), 'korniger frischkase');
+assert.equal(foodSynonym('chicken', 'de'), 'hahnchen');
+assert.equal(foodSynonym('chicken', 'en'), null, 'English readers keep English words');
+assert.equal(foodSynonym('yoghurt', 'en'), 'yogurt');
+assert.equal(foodSynonym('Banane'), null, 'words the labels already use are not rewritten');
+assert.equal(applyFoodSynonyms('huhnchen gegrillt', 'de'), 'hahnchen gegrillt');
+assert.equal(applyFoodSynonyms('chicken breast', 'de'), 'hahnchen brustfilet', 'two-word compounds are rewritten together');
+assert.ok(sameFoodWord('tomaten', 'tomate') && sameFoodWord('joghurts', 'joghurt') && sameFoodWord('bananen', 'banane'));
+assert.ok(!sameFoodWord('brie', 'bries') && !sameFoodWord('eis', 'ei') && !sameFoodWord('tomate', 'tomaten'), 'plural tolerance only shortens what was typed, to at least four letters');
+
+console.log(`German search: ${Object.keys(GERMAN_FOOD_TERMS).length} food terms translated, German synonym/plural table shared by app and gateway, Open Food Facts scoped to products sold in Germany with a brand-tag fallback.`);

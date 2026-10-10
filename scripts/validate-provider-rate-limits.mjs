@@ -38,8 +38,16 @@ assert.match(gateway, /usdaRows\([^]*await claimUsda\?\.\(\)[^]*fetch\(`https:\/
   'free search can fetch USDA before claiming each provider unit');
 assert.match(gateway, /searchOpenFoodFacts\([^]*await claimOff\?\.\(\)[^]*fetch\(url/,
   'food search can fetch Open Food Facts before claiming a provider unit');
-assert.match(gateway, /lookupBarcode\([^]*await claimOff\?\.\(\)[^]*fetch\(`https:\/\/world\.openfoodfacts\.org/,
+// Barcode: every v2/v0 product request (and every UPC/EAN candidate) goes
+// through one helper that claims a unit immediately before its fetch.
+assert.match(gateway, /async function offProductRequest\(url: string, claimOff\?: \(\) => Promise<void>\) \{\s*await claimOff\?\.\(\);\s*return fetch\(url,/,
   'barcode lookup can fetch Open Food Facts before claiming a provider unit');
+assert.match(gateway, /offProductRequest\(`https:\/\/world\.openfoodfacts\.org\/api\/\$\{version\}\/product\/\$\{code\}\.json\?fields=\$\{OFF_PRODUCT_FIELDS\}`, claimOff\)/,
+  'every Open Food Facts product request must use the claiming helper');
+assert.equal((gateway.match(/world\.openfoodfacts\.org\/api\/\$\{version\}/g) ?? []).length, 1, 'no second, unclaimed product request path');
+assert.match(gateway, /const fetched = await fetchOffProduct\(code, claimOff\);/, 'the lookup passes the claim to every candidate');
+assert.match(gateway, /await claimOff\?\.\(\);\s*const brandResponse = await fetch\(`https:\/\/world\.openfoodfacts\.org\/api\/v2\/search/,
+  'the brand search claims a unit before its fetch');
 const analysisFlow = gateway.slice(gateway.indexOf("context.supabase.rpc('consume_analysis_quota')"), gateway.indexOf("const completed ="));
 const paidFlow = analysisFlow;
 assert.ok(analysisFlow.indexOf("claimProviderRequest(context.supabaseAdmin, data.user.id, 'usda_analysis'") < analysisFlow.indexOf("'consume_global_analysis_quota'"),

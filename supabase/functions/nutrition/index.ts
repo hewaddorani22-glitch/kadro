@@ -1,7 +1,8 @@
 import { runSearchAssistance } from '../_shared/search-assistance.mjs';
 import { referenceCache } from '../_shared/reference-cache.mjs';
 import { isSearchQuery, compatibleSearchIdentity, SEARCH_VERSION } from '../_shared/search-policy.mjs';
-import { offMassNutrition, offMassPortions } from '../_shared/off-product.mjs';
+import { offMassNutrition, offMassPortions, OFF_PRODUCT_FIELDS, offBarcodeCandidates, offBrand, offPackageGrams } from '../_shared/off-product.mjs';
+import { labelPrompt, labelSchema, normalizeLabelRead, validateLabelRead } from '../_shared/label-facts.mjs';
 import { requestStructured, requestStructuredWithRetry, resolveFallbackModel, ModelError, GEMINI_MODEL, GEMINI_CONSENT_VERSION, GEMINI_RELEASE_APPROVED } from '../_shared/model-adapter.mjs';
 import { applyDescriptionAmountsTolerant } from '../_shared/description-amounts.mjs';
 import { withSupabase } from 'npm:@supabase/server@1.5.1';
@@ -114,10 +115,19 @@ const REQUIRED_GUARDIAN_VERSION = '2026-09-04-guardian-v1';
  * 1600 px and stay accepted.
  */
 const MAX_IMAGE_BASE64 = 3_000_000;
+/** The optional pack-front photo for a label read is sent small (1024px). */
+const MAX_LABEL_FRONT_BASE64 = 1_500_000;
 
 /** USDA values do not change; a miss only needs re-checking now and then. */
 const CACHE_TTL_HIT_DAYS = 90;
 const CACHE_TTL_MISS_DAYS = 7;
+/**
+ * Open Food Facts records are edited by the community: a found product is
+ * re-read after 30 days, an unknown barcode after 3 (someone may add it).
+ */
+const OFF_CACHE_HIT_DAYS = 30;
+const OFF_CACHE_MISS_DAYS = 3;
+const OFF_USER_AGENT = 'Kandro/1.0 (https://getkandro.com; hewaddorani22@gmail.com)';
 
 type FoodFacts = {
   provider: 'usda';
@@ -647,6 +657,40 @@ async function analyzeDescription(input: any, admin: any, claimUsda?: () => Prom
 }
 
 /**
+ * Nutrition-label reading ("Nährwerttabelle fotografieren"). Runs behind the
+ * same auth, consent, paywall, quota and refund path as a meal photo and
+ * costs one analysis. The model only transcribes the printed table; the
+ * deterministic checks in label-facts.mjs convert units and test plausibility,
+ * and the user confirms every value before it is saved as their own product.
+ * An unreadable or volume-based table is answered with a code (refunded); an
+ * incomplete one returns what was read with correctionRequired (refunded).
+ */
+// deno-lint-ignore no-explicit-any
+async function analyzeLabel(input: any, signal?: AbortSignal): Promise<Result> {
+  const front = typeof input?.frontImageBase64 === 'string' ? input.frontImageBase64 : null;
+  const content: unknown[] = [
+    { type: 'input_text', text: labelPrompt(requestedLanguage(input), Boolean(front)) },
+    { type: 'input_image', image_url: `data:image/jpeg;base64,${input.imageBase64}`, detail: imageDetail },
+  ];
+  if (front) content.push({ type: 'input_image', image_url: `data:image/jpeg;base64,${front}`, detail: 'low' });
+  const read = await requestStructured({
+    apiKey: aiApiKey, content, model: visionModel, provider: aiProvider,
+    schema: labelSchema, name: 'kandro_label_read', validate: validateLabelRead, signal,
+  });
+  const label = normalizeLabelRead(read);
+  if ('code' in label) return { status: 422, body: { code: label.code } };
+  const barcode = typeof input?.barcode === 'string' && /^\d{7,14}$/.test(input.barcode) ? input.barcode : null;
+  return {
+    status: 200,
+    body: {
+      label: { ...label, barcode },
+      // Missing core values: the user completes them and the read is refunded.
+      ...(label.missing.length ? { correctionRequired: true } : {}),
+    },
+  };
+}
+
+/**
  * Free-text food search. No model call, so it costs nothing and stays outside
  * the paid quota — which is the point: logging a banana should not spend one
  * of three free analyses, and should not take five seconds.
@@ -812,8 +856,13 @@ async function searchOpenFoodFacts(
   language: string,
   claimOff?: () => Promise<void>,
 ): Promise<unknown[]> {
-  const fields = 'code,lang,lc,product_name,product_name_de,product_name_en,brands,nutriments,serving_quantity,serving_size,serving_quantity_unit,nutrition_data_per,quantity,product_quantity_unit';
-  const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(term)}&page_size=10&fields=${fields}`;
+  const fields = OFF_PRODUCT_FIELDS;
+  // German readers search what German shops sell: products sold in Germany,
+  // matched on their German fields. Query syntax characters are not passed on.
+  const words = term.replace(/["():\[\]{}^~*?\\/!+]/g, ' ').replace(/\s+/g, ' ').trim();
+  const german = language === 'de';
+  const q = german ? `${words} countries_tags:"en:germany"` : words;
+  const url = `https://search.openfoodfacts.org/search?q=${encodeURIComponent(q)}&langs=${german ? 'de' : 'en'}&page_size=10&fields=${fields}`;
   await claimOff?.();
   const response = await fetch(url, {
     headers: { 'User-Agent': 'Kandro/1.0 (https://getkandro.com; hewaddorani22@gmail.com)' },
@@ -825,28 +874,56 @@ async function searchOpenFoodFacts(
   const hits = payload.hits;
 
   const out: unknown[] = [];
-  for (const hit of hits) {
-    // deno-lint-ignore no-explicit-any
-    const product = hit as any;
-    const values = product?.nutriments || {};
-    // Search and barcode use one completeness/precision boundary. Unknown
-    // protein, carbs or fat must never look like a measured zero.
-    const per100g = offMassNutrition(product);
-    if (!per100g) continue;
-    // Preserve an identifiable original product name when a translation is absent.
-    const name = localizedProductName(product, language);
-    if (!name || name.length > 130 || !/^\d{7,14}$/.test(String(product.code)) || !compatibleSearchIdentity(term,name)) continue;
-    const brand = Array.isArray(product.brands) ? product.brands[0] : product.brands;
-    const serving = Number(product.serving_quantity);
-    out.push({
-      id: `off-${product.code}`,
-      name: brand && !name.toLowerCase().includes(String(brand).toLowerCase()) ? `${name} (${brand})` : name,
-      per100g,
-      defaultGrams: 100,
-      portions: offMassPortions(product),
-      source: { provider: 'open-food-facts', referenceId: String(product.code), label: `Open Food Facts ${product.code}` },
-    });
-    if (out.length >= 5) break;
+  const seen = new Set<string>();
+  const collect = (list: unknown[], requiredWords: string[] = []) => {
+    for (const hit of list) {
+      // deno-lint-ignore no-explicit-any
+      const product = hit as any;
+      // Search and barcode use one completeness/precision boundary. Unknown
+      // protein, carbs or fat must never look like a measured zero.
+      const per100g = offMassNutrition(product);
+      if (!per100g) continue;
+      // Preserve an identifiable original product name when a translation is absent.
+      const name = localizedProductName(product, language);
+      if (!name || name.length > 130 || !/^\d{7,14}$/.test(String(product.code)) || !compatibleSearchIdentity(term,name)) continue;
+      if (seen.has(String(product.code))) continue;
+      const brand = offBrand(product);
+      const label = `${name} ${brand ?? ''}`.toLowerCase();
+      if (requiredWords.some((word) => !label.includes(word))) continue;
+      seen.add(String(product.code));
+      out.push({
+        id: `off-${product.code}`,
+        name: brand && !name.toLowerCase().includes(brand.toLowerCase()) ? `${name} (${brand})` : name,
+        per100g,
+        defaultGrams: 100,
+        portions: offMassPortions(product),
+        source: { provider: 'open-food-facts', referenceId: String(product.code), label: `Open Food Facts ${product.code}` },
+      });
+      if (out.length >= 5) break;
+    }
+  };
+  collect(hits);
+
+  // "Milka", "Rewe Bio", "Müller Milchreis": a brand is a tag, not text. When
+  // the text search found little, ask for the brand's products sold in
+  // Germany; further words must then appear in the product name.
+  if (german && out.length < 3) {
+    const [first, ...rest] = words.toLowerCase().split(' ');
+    const slug = (first ?? '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (slug.length >= 3) {
+      try {
+        await claimOff?.();
+        const brandResponse = await fetch(`https://world.openfoodfacts.org/api/v2/search?brands_tags=${encodeURIComponent(slug)}&countries_tags_en=germany&lc=de&page_size=10&sort_by=unique_scans_n&fields=${fields}`, {
+          headers: { 'User-Agent': OFF_USER_AGENT },
+          signal: AbortSignal.timeout(4000),
+        });
+        const brandPayload = brandResponse.ok ? await brandResponse.json().catch(() => null) : null;
+        if (Array.isArray(brandPayload?.products)) collect(brandPayload.products, rest.filter((word) => word.length >= 3));
+      } catch (error) {
+        // The text search already answered; a quota denial still counts.
+        if (error instanceof ProviderQuotaError) throw error;
+      }
+    }
   }
   return out;
 }
@@ -917,30 +994,90 @@ function localizedProductName(product: any, language: string, strict = false): s
   return ordered.map((value) => (typeof value === 'string' ? value.trim() : '')).find(Boolean) ?? '';
 }
 
-async function lookupBarcode(barcode: string, language: string, claimOff?: () => Promise<void>): Promise<Result> {
-  if (!/^\d{7,14}$/.test(barcode)) {
-    return { status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } };
-  }
-  const fields = 'code,product_name_de,product_name_en,product_name,nutriments,serving_size,serving_quantity,serving_quantity_unit,nutrition_data_per,quantity,product_quantity_unit';
+type OffFetch = { product: Record<string, unknown> | null } | { error: Result };
+
+/** Only the requested fields are cached; the record holds no user data. */
+// deno-lint-ignore no-explicit-any
+function offCacheable(product: any): Record<string, unknown> {
+  const keep: Record<string, unknown> = {};
+  for (const key of OFF_PRODUCT_FIELDS.split(',')) if (product?.[key] !== undefined) keep[key] = product[key];
+  return keep;
+}
+
+async function offProductRequest(url: string, claimOff?: () => Promise<void>) {
   await claimOff?.();
-  const response = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}.json?fields=${fields}`, {
+  return fetch(url, {
     // Open Food Facts asks callers to identify themselves and throttles the
     // ones that do not. A generic agent is how you get rate limited at scale.
     headers: { 'User-Agent': 'Kandro/1.0 (https://getkandro.com; hewaddorani22@gmail.com)' },
     signal: AbortSignal.timeout(7000),
   });
-  if (!response.ok) {
-    return {
-      status: response.status === 404 ? 404 : response.status === 429 ? 429 : 502,
-      body: { code: response.status === 404 ? 'product_not_found' : response.status === 429 ? 'provider_rate_limited' : 'provider_error' },
-      headers: response.headers.get('retry-after') ? {'Retry-After': response.headers.get('retry-after')!} : undefined,
-    };
+}
+
+/**
+ * One code: the v2 product API first, the older v0 API when v2 itself fails
+ * (5xx, timeout or a broken body). A 404 or status 0 is an answer, not a
+ * failure; a 429 is respected rather than retried elsewhere.
+ */
+async function fetchOffProduct(code: string, claimOff?: () => Promise<void>): Promise<OffFetch> {
+  let failure: Result = { status: 502, body: { code: 'provider_error' } };
+  for (const version of ['v2', 'v0']) {
+    let response: Response;
+    try {
+      response = await offProductRequest(`https://world.openfoodfacts.org/api/${version}/product/${code}.json?fields=${OFF_PRODUCT_FIELDS}`, claimOff);
+    } catch (error) {
+      if (error instanceof ProviderQuotaError) throw error;
+      continue;
+    }
+    if (response.status === 404) return { product: null };
+    if (response.status === 429) {
+      return { error: {
+        status: 429,
+        body: { code: 'provider_rate_limited' },
+        headers: response.headers.get('retry-after') ? {'Retry-After': response.headers.get('retry-after')!} : undefined,
+      } };
+    }
+    if (!response.ok) { failure = { status: 502, body: { code: 'provider_error' } }; continue; }
+    const result = await response.json().catch(() => null);
+    if (result?.status === 0) return { product: null };
+    if (result?.product && typeof result.product === 'object') return { product: offCacheable(result.product) };
+    failure = { status: 502, body: { code: 'provider_response_invalid' } };
   }
-  const result = await response.json().catch(() => { throw new ModelError('provider_response_invalid'); });
-  if (result?.status === 0) return {status:404,body:{code:'product_not_found'}};
-  if (!result?.product || typeof result.product !== 'object') throw new ModelError('provider_response_invalid');
-  const product = result.product;
-  const values = product?.nutriments || {};
+  return { error: failure };
+}
+
+// deno-lint-ignore no-explicit-any
+async function readOffCache(admin: any, barcode: string): Promise<{ product: Record<string, unknown> | null } | null> {
+  if (!admin) return null;
+  try {
+    const { data, error } = await admin.from('off_product_cache')
+      .select('barcode, product, fetched_at')
+      .eq('barcode', barcode)
+      .abortSignal(AbortSignal.timeout(2000))
+      .maybeSingle();
+    if (error || !data || data.barcode !== barcode || typeof data.fetched_at !== 'string') return null;
+    const product = data.product && typeof data.product === 'object' && !Array.isArray(data.product) ? data.product : null;
+    const ageDays = (Date.now() - new Date(data.fetched_at).getTime()) / 86_400_000;
+    if (!Number.isFinite(ageDays) || ageDays > (product ? OFF_CACHE_HIT_DAYS : OFF_CACHE_MISS_DAYS)) return null;
+    return { product };
+  } catch {
+    return null;
+  }
+}
+
+// deno-lint-ignore no-explicit-any
+async function writeOffCache(admin: any, barcode: string, product: Record<string, unknown> | null) {
+  if (!admin) return;
+  // A cache write must never fail a lookup the user is waiting on.
+  try {
+    await admin.from('off_product_cache')
+      .upsert({ barcode, product, fetched_at: new Date().toISOString() }, { onConflict: 'barcode' })
+      .abortSignal(AbortSignal.timeout(2000));
+  } catch { /* best effort */ }
+}
+
+// deno-lint-ignore no-explicit-any
+function barcodeResult(barcode: string, product: any, language: string): Result {
   const per100g = offMassNutrition(product);
   if (!per100g) {
     return {
@@ -951,17 +1088,22 @@ async function lookupBarcode(barcode: string, language: string, claimOff?: () =>
       },
     };
   }
+  // The product name follows the reader, not the database's field order.
+  // Preferring product_name_de unconditionally showed German names to
+  // English users whenever Open Food Facts happened to carry one.
+  const localized = localizedProductName(product, language)
+    || (language === 'de' && typeof product?.generic_name_de === 'string' ? product.generic_name_de.trim().slice(0, 130) : '');
+  const brand = offBrand(product);
   return {
     status: 200,
     body: {
       barcode,
-      // The product name follows the reader, not the database's field order.
-      // Preferring product_name_de unconditionally showed German names to
-      // English users whenever Open Food Facts happened to carry one.
-      name: localizedProductName(product, language),
+      name: localized && brand && !localized.toLowerCase().includes(brand.toLowerCase()) ? `${localized} (${brand})` : localized,
       // Empty rather than a sentence: the app fills in the fallback wording
       // from its own dictionary, so it is never German for an English reader.
-      nameMissing: !localizedProductName(product, language),
+      nameMissing: !localized,
+      brand,
+      packageGrams: offPackageGrams(product),
       per100g,
       // The pack's own serving, so "2 servings" is a tap rather than a
       // multiplication the user does in their head.
@@ -969,6 +1111,31 @@ async function lookupBarcode(barcode: string, language: string, claimOff?: () =>
       source: { provider: 'open-food-facts', referenceId: barcode, label: `Open Food Facts ${barcode}` },
     },
   };
+}
+
+// deno-lint-ignore no-explicit-any
+async function lookupBarcode(barcode: string, language: string, claimOff?: () => Promise<void>, admin?: any): Promise<Result> {
+  if (!/^\d{7,14}$/.test(barcode)) {
+    return { status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } };
+  }
+  const cached = await readOffCache(admin, barcode);
+  if (cached) return cached.product ? barcodeResult(barcode, cached.product, language) : { status: 404, body: { code: 'product_not_found' } };
+  let firstError: Result | null = null;
+  // UPC-A/EAN-13 spellings of the same code are tried before giving up.
+  for (const code of offBarcodeCandidates(barcode)) {
+    const fetched = await fetchOffProduct(code, claimOff);
+    if ('error' in fetched) { firstError ??= fetched.error; if (fetched.error.status === 429) break; continue; }
+    if (fetched.product) {
+      await writeOffCache(admin, barcode, fetched.product);
+      return barcodeResult(barcode, fetched.product, language);
+    }
+  }
+  if (firstError) {
+    if (firstError.body.code === 'provider_response_invalid') throw new ModelError('provider_response_invalid');
+    return firstError;
+  }
+  await writeOffCache(admin, barcode, null);
+  return { status: 404, body: { code: 'product_not_found' } };
 }
 
 /** An Open Food Facts serving size, when it is a weight anyone would trust. */
@@ -1122,6 +1289,7 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
           match[1],
           requestedLanguage({ language: requested }),
           () => claimProviderRequest(context.supabaseAdmin, data.user.id, 'off_barcode', networkHash),
+          context.supabaseAdmin,
         ), (result: Result) => [200,404].includes(result.status), (result: Result) => result.status === 404));
       } catch (error) {
         if (error instanceof ProviderQuotaError) return reply(error.result);
@@ -1189,13 +1357,27 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
       });
     }
   }
-  if (route !== '/v1/analyze' && route !== '/v1/describe') {
+  if (route !== '/v1/analyze' && route !== '/v1/describe' && route !== '/v1/label') {
     return reply({ status: 404, body: { code: 'not_found', message: 'Route nicht gefunden.' } });
   }
 
   const requestStartedAt = Date.now();
   const payload = await request.json().catch(() => null);
-  if (route === '/v1/analyze') {
+  if (route === '/v1/label') {
+    // The table photo is required; the front of the pack is optional and only
+    // helps with the name. Both are JPEGs checked like a meal photo.
+    const front = payload?.frontImageBase64;
+    if (!validateAnalysisInput(payload) || (front !== undefined && front !== null && !validateAnalysisInput({ mimeType: 'image/jpeg', imageBase64: front }))) {
+      return reply({ status: 400, body: { code: 'invalid_input', message: 'Ungültiges Fotoformat.' } });
+    }
+    if (typeof payload.imageBase64 !== 'string' || payload.imageBase64.length > MAX_IMAGE_BASE64
+      || (typeof front === 'string' && (front.length > MAX_LABEL_FRONT_BASE64))) {
+      return reply({ status: 413, body: { code: 'invalid_input', message: 'Das Foto ist zu groß.' } });
+    }
+    if (payload.barcode !== undefined && payload.barcode !== null && !(typeof payload.barcode === 'string' && /^\d{7,14}$/.test(payload.barcode))) {
+      return reply({ status: 400, body: { code: 'invalid_barcode', message: 'Ungültiger Barcode.' } });
+    }
+  } else if (route === '/v1/analyze') {
     if (!validateAnalysisInput(payload)) {
       return reply({ status: 400, body: { code: 'invalid_input', message: 'Ungültiges Fotoformat.' } });
     }
@@ -1209,7 +1391,8 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     }
   }
 
-  const candidate = payload?.analysisProvider === GEMINI_MODEL;
+  // A label read always uses the disclosed default model.
+  const candidate = route !== '/v1/label' && payload?.analysisProvider === GEMINI_MODEL;
   if (candidate && !GEMINI_RELEASE_APPROVED) throw new ModelError('ai_route_not_approved',503);
   if (candidate && !await candidateConsent('analysis')) return reply({status:403,body:{code:'consent_required'}});
 
@@ -1224,7 +1407,7 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
     });
   }
 
-  const captureArgs={p_user_id:data.user.id,p_request_id:requestId,p_kind:'analysis',p_fingerprint:await captureFingerprint([route,payload.description??payload.imageBase64,requestedLanguage(payload),candidate]),p_network_hash:networkHash};
+  const captureArgs={p_user_id:data.user.id,p_request_id:requestId,p_kind:'analysis',p_fingerprint:await captureFingerprint([route,payload.description??payload.imageBase64,requestedLanguage(payload),candidate,...(route==='/v1/label'?[payload.frontImageBase64??null,payload.barcode??null]:[])]),p_network_hash:networkHash};
   if (payload.captureProtocol === 2) {
     const previous=await accessRpc(context.supabaseAdmin,'lookup_capture_operation',captureArgs);
     if(previous?.status==='replay' && previous.result) {
@@ -1335,7 +1518,9 @@ const handler = withSupabase({ auth: 'user' }, async (request: Request, context)
   };
   let result: Result;
   try {
-    result = route === '/v1/analyze'
+    result = route === '/v1/label'
+      ? await analyzeLabel(payload, request.signal)
+      : route === '/v1/analyze'
       ? await analyzePhoto(payload, context.supabaseAdmin, claimAnalysisUsda, candidate, request.signal, analysisHooks)
       : await analyzeDescription(payload, context.supabaseAdmin, claimAnalysisUsda, candidate, request.signal, analysisHooks);
   } catch (error) {

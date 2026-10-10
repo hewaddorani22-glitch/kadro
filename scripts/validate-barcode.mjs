@@ -85,4 +85,32 @@ assert.ok(
   'an unknown product must not offer a pointless retry',
 );
 
-console.log('Validated the barcode path: localized names, no German fallback, an identifying User-Agent, and a way out of an unknown product.');
+// --- Coverage: fallbacks, German fields and a shared cache ------------------
+const { offBarcodeCandidates, offBrand, offPackageGrams, OFF_PRODUCT_FIELDS } = await import('../supabase/functions/_shared/off-product.mjs');
+// A UPC-A code is stored by Open Food Facts as EAN-13 with a leading zero, and vice versa.
+assert.deepEqual(offBarcodeCandidates('012345678905'), ['012345678905', '0012345678905']);
+assert.deepEqual(offBarcodeCandidates('0012345678905'), ['0012345678905', '012345678905']);
+assert.deepEqual(offBarcodeCandidates('40084107'), ['40084107']);
+assert.deepEqual(offBarcodeCandidates('12'), []);
+assert.equal(offBrand({ brands: 'Ehrmann, Almighurt' }), 'Ehrmann');
+assert.equal(offBrand({ brands: ['REWE Bio'] }), 'REWE Bio');
+assert.equal(offPackageGrams({ product_quantity: 250, product_quantity_unit: 'g' }), 250);
+assert.equal(offPackageGrams({ product_quantity: 500, product_quantity_unit: 'ml' }), null, 'a volume is never a weight');
+for (const field of ['product_name_de', 'generic_name_de', 'brands', 'nutriments', 'serving_quantity', 'product_quantity']) {
+  assert.ok(OFF_PRODUCT_FIELDS.split(',').includes(field), `Open Food Facts must be asked for ${field}`);
+}
+const lookup = gateway.slice(gateway.indexOf('async function fetchOffProduct'), gateway.indexOf('/** An Open Food Facts serving size'));
+assert.match(lookup, /for \(const version of \['v2', 'v0'\]\)/, 'the v2 product API must fall back to v0 when it fails');
+assert.match(lookup, /world\.openfoodfacts\.org\/api\/\$\{version\}\/product\/\$\{code\}\.json/);
+assert.match(lookup, /if \(response\.status === 429\)/, 'a rate limit is respected, not retried against v0');
+assert.match(lookup, /for \(const code of offBarcodeCandidates\(barcode\)\)/, 'UPC/EAN spellings must be tried');
+assert.match(gateway, /const OFF_CACHE_HIT_DAYS = 30;\nconst OFF_CACHE_MISS_DAYS = 3;/, 'found products are cached 30 days, unknown barcodes 3');
+assert.match(lookup, /from\('off_product_cache'\)[\s\S]*ageDays > \(product \? OFF_CACHE_HIT_DAYS : OFF_CACHE_MISS_DAYS\)/);
+assert.match(lookup, /await writeOffCache\(admin, barcode, null\);\s*return \{ status: 404/, 'an unknown barcode is remembered as such');
+assert.match(lookup, /language === 'de' && typeof product\?\.generic_name_de === 'string'/, 'German readers get the German generic name when no product name exists');
+// "Produkt nicht gefunden" → photograph the nutrition label.
+assert.match(analyzing, /analysisError === 'product-not-found' && scanMode === 'barcode'[\s\S]*t\.analyzing\.labelScanInstead/);
+assert.match(app, /const own = await findCustomFoodByBarcode\(barcode\);/, 'an own product linked to the barcode answers first');
+for (const file of ['src/i18n/de.ts', 'src/i18n/en.ts']) assert.match(await read(file), /labelScanInstead: '/);
+
+console.log('Validated the barcode path: localized names, no German fallback, an identifying User-Agent, v2→v0 and UPC/EAN fallbacks, a 30/3-day shared cache, own products first, and the label scan as the way out of an unknown product.');

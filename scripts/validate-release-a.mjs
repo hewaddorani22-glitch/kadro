@@ -1,5 +1,5 @@
 import {compatibleSearchIdentity} from '../supabase/functions/_shared/search-policy.mjs';
-import {offMassNutrition,offMassPortions} from '../supabase/functions/_shared/off-product.mjs';
+import {offMassNutrition,offMassPortions,OFF_PRODUCT_FIELDS,offBrand} from '../supabase/functions/_shared/off-product.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ts from 'typescript';
@@ -27,8 +27,8 @@ assert.equal(openFoodFactsNutrition({...kj,'energy-kcal_100g':''}),null,'invalid
 const source=read('supabase/functions/nutrition/index.ts');
 const fn=source.slice(source.indexOf('async function searchOpenFoodFacts('),source.indexOf('async function usdaRows('));
 const compiled=ts.transpileModule(fn,{compilerOptions:{target:ts.ScriptTarget.ES2022}}).outputText;
-const search=new Function('compatibleSearchIdentity','fetch','offMassNutrition','offMassPortions','openFoodFactsNutrition','localizedProductName',compiled+';return searchOpenFoodFacts;')(
- compatibleSearchIdentity,async()=>({ok:true,json:async()=>({hits:[{code:'0000001',product_name:'Incomplete',nutriments:{'energy-kcal_100g':250}},{code:'0000002',product_name:'Complete',nutriments:full,serving_quantity:12.5,serving_size:'12.5 g'}]})}),offMassNutrition,offMassPortions,openFoodFactsNutrition,p=>p.product_name);
+const search=new Function('compatibleSearchIdentity','fetch','offMassNutrition','offMassPortions','openFoodFactsNutrition','localizedProductName','OFF_PRODUCT_FIELDS','offBrand',compiled+';return searchOpenFoodFacts;')(
+ compatibleSearchIdentity,async()=>({ok:true,json:async()=>({hits:[{code:'0000001',product_name:'Incomplete',nutriments:{'energy-kcal_100g':250}},{code:'0000002',product_name:'Complete',nutriments:full,serving_quantity:12.5,serving_size:'12.5 g'}]})}),offMassNutrition,offMassPortions,openFoodFactsNutrition,p=>p.product_name,OFF_PRODUCT_FIELDS,offBrand);
 const found=await search('test','en');assert.equal(found.length,1);assert.equal(found[0].id,'off-0000002');assert.equal(found[0].per100g.protein,7.25);assert.equal(found[0].portions[0].grams,12.5);
 
 const personalization=load('src/services/personalization.ts',{'@/i18n/active':{getDictionary:()=>({common:{}})},'@/utils/units':{formatWeeklyRate:String}});
