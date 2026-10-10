@@ -4,17 +4,20 @@ import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Pressable, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 
 import { mealPhotoPlaceholder } from '@/utils/format';
 import { Card, ConfidenceBadge, Eyebrow, MealPhoto, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
+import { ShareDayModal } from '@/components/ShareDayModal';
 import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { recommendationPreview } from '@/services/recommendations';
 import { projectMealForDay } from '@/services/mockNutrition';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { trackEvent } from '@/services/telemetry';
+import { successHaptic } from '@/services/haptics';
+import { nextMealSlot } from '@/services/shareDay';
 import { formatDayLabel, formatNumber } from '@/utils/format';
 import { draftConfidence } from '@/utils/confidence';
 import { useLocalDay } from '@/hooks/useLocalDay';
@@ -43,9 +46,16 @@ export default function ResultScreen() {
   const mealProgress = useRef(new Animated.Value(0)).current;
   const remainingProgress = useRef(new Animated.Value(0)).current;
   const recommendationReveal = useRef(new Animated.Value(0)).current;
+  // The ring "settles" once the meal has counted in: a short swell and back.
+  const ringSettle = useRef(new Animated.Value(0)).current;
+  const landed = useRef(false);
+  const reduceMotionRef = useRef(false);
   const savedOnArrival = useRef(false);
   const saveInFlight = useRef<Promise<boolean> | null>(null);
   const [saveStatus, setSaveStatus] = useState<'saving' | 'saved' | 'failed'>('saving');
+  const saveStatusRef = useRef(saveStatus);
+  saveStatusRef.current = saveStatus;
+  const [sharing, setSharing] = useState(false);
   const revealDone = useRef(false);
   const { language, locale, t } = useLanguage();
   const nextMeal = useMemo(() => recommendationPreview(projected, profile.preferences),
@@ -54,6 +64,7 @@ export default function ResultScreen() {
   const [proteinLow, proteinHigh] = nextMeal.protein;
   const [displayedCalories, setDisplayedCalories] = useState(0);
   const [displayedRemaining, setDisplayedRemaining] = useState(startingRemaining);
+  const nextSlot = nextMealSlot(scannedMeal.type, new Date().getHours());
 
   // The example meal demonstrates the flow; it must never enter the real diary.
   const demo = scanMode === 'demo';
@@ -90,8 +101,21 @@ export default function ResultScreen() {
   };
 
   useEffect(() => {
+    // The moment the meal lands: one success tick and, motion allowed, the
+    // ring settles. Fired once, whether the count animated or jumped.
+    const land = () => {
+      if (landed.current) return;
+      landed.current = true;
+      if (saveStatusRef.current !== 'failed') void successHaptic();
+      if (reduceMotionRef.current) return;
+      Animated.sequence([
+        Animated.timing(ringSettle, { toValue: 1, duration: 140, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.spring(ringSettle, { toValue: 0, speed: 16, bounciness: 7, useNativeDriver: true }),
+      ]).start();
+    };
     const mealListener = mealProgress.addListener(({ value }) => {
       setDisplayedCalories(Math.round(targetsRef.current.calories * value));
+      if (value >= 1) land();
     });
     const remainingListener = remainingProgress.addListener(({ value }) => {
       const { startingRemaining: from, projected: to } = targetsRef.current;
@@ -101,6 +125,7 @@ export default function ResultScreen() {
 
     void AccessibilityInfo.isReduceMotionEnabled().then((reduceMotion) => {
       if (cancelled) return;
+      reduceMotionRef.current = reduceMotion;
       if (reduceMotion) {
         mealProgress.setValue(1);
         remainingProgress.setValue(1);
@@ -109,22 +134,24 @@ export default function ResultScreen() {
         return;
       }
 
+      // Count the meal in, let the ring settle for a beat, count the day down,
+      // then reveal what fits next. About 1.8 s end to end.
       Animated.sequence([
         Animated.timing(mealProgress, {
-          duration: 700,
-          easing: Easing.bezier(0.22, 1, 0.36, 1),
-          toValue: 1,
-          useNativeDriver: false,
-        }),
-        Animated.delay(400),
-        Animated.timing(remainingProgress, {
           duration: 650,
           easing: Easing.bezier(0.22, 1, 0.36, 1),
           toValue: 1,
           useNativeDriver: false,
         }),
+        Animated.delay(280),
+        Animated.timing(remainingProgress, {
+          duration: 600,
+          easing: Easing.bezier(0.22, 1, 0.36, 1),
+          toValue: 1,
+          useNativeDriver: false,
+        }),
         Animated.timing(recommendationReveal, {
-          duration: 300,
+          duration: 320,
           easing: Easing.out(Easing.cubic),
           toValue: 1,
           useNativeDriver: false,
@@ -141,11 +168,12 @@ export default function ResultScreen() {
       mealProgress.stopAnimation();
       remainingProgress.stopAnimation();
       recommendationReveal.stopAnimation();
+      ringSettle.stopAnimation();
     };
     // Deliberately mount-only: these are stable Animated refs, and every other
     // input is read live from targetsRef.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mealProgress, recommendationReveal, remainingProgress]);
+  }, [mealProgress, recommendationReveal, remainingProgress, ringSettle]);
 
   // Once the reveal has finished the listener stops firing, so a later
   // correction to the meal would keep showing the old figure.
@@ -170,12 +198,9 @@ export default function ResultScreen() {
     router.dismissTo('/(tabs)/today');
   };
 
-  const shareResult = async () => {
-    await Share.share({
-      message: `${scannedMeal.title}: ~${formatNumber(scannedMeal.calories, locale)} kcal · ${scannedMeal.protein} g ${t.common.protein} · ${scannedMeal.carbs} g ${t.common.carbs} · ${scannedMeal.fat} g ${t.common.fat}. Kandro.`,
-      title: t.result.shareTitle,
-    });
-  };
+  // The day card is about today; a back-dated meal or the example meal has
+  // no real day to share.
+  const canShareDay = !pastDay && !demo;
 
   const ingredientEditAction = (
     <Pressable accessibilityRole="button" onPress={() => router.replace('/confirm')}>
@@ -190,9 +215,11 @@ export default function ResultScreen() {
           <Ionicons color={colors.text} name="arrow-back" size={22} />
         </Pressable>
         <Text style={styles.topTitle}>{t.result.title}</Text>
-        <Pressable accessibilityLabel={t.result.share} accessibilityRole="button" hitSlop={8} onPress={() => void shareResult()} style={styles.iconButton}>
-          <Ionicons color={colors.text} name="share-outline" size={21} />
-        </Pressable>
+        {canShareDay ? (
+          <Pressable accessibilityHint={t.shareDay.openHint} accessibilityLabel={t.result.shareDay} accessibilityRole="button" hitSlop={8} onPress={() => setSharing(true)} style={styles.iconButton}>
+            <Ionicons color={colors.text} name="share-outline" size={22} />
+          </Pressable>
+        ) : <View style={styles.iconSpacer} />}
       </View>
 
       {saveStatus === 'failed' ? <Card>
@@ -211,13 +238,13 @@ export default function ResultScreen() {
             <Text style={[styles.mealTitle, scannedMeal.title.length > 28 && styles.mealTitleLong]}>{scannedMeal.title}</Text>
             <ConfidenceBadge level={draftConfidence(scannedMeal.items, { autoMatchedIds: autoMatchedItemIds, portionEstimated })} />
           </View>
-          <View style={[styles.calorieBlock, { width: calorieSize, height: calorieSize }]}>
+          <Animated.View style={[styles.calorieBlock, { width: calorieSize, height: calorieSize, transform: [{ scale: ringSettle.interpolate({ inputRange: [0, 1], outputRange: [1, 1.045] }) }] }]}>
             <ImpactRing size={calorieSize} total={scannedMeal.calories} value={displayedCalories} />
             <View style={styles.calorieCenter}>
               <Text style={styles.calories}>~{formatNumber(displayedCalories, locale)}</Text>
               <Text style={styles.calorieLabel}>{t.result.estimated}</Text>
             </View>
-          </View>
+          </Animated.View>
         </View>
       </View>
 
@@ -292,7 +319,7 @@ export default function ResultScreen() {
           <View style={styles.nextBadge}><Ionicons color={colors.onAccent} name="navigate" size={20} /></View>
           <View style={styles.nextCopy}>
             <Eyebrow>{t.result.nextMeal}</Eyebrow>
-            <Text style={styles.nextTitle}>{t.result.nextMealTitle}</Text>
+            <Text style={styles.nextTitle}>{t.result.nextStep(formatNumber(projected.calories, locale), t.shareDay.ideasFor(nextSlot))}</Text>
           </View>
         </View>
         <View style={styles.aimRow}>
@@ -309,12 +336,27 @@ export default function ResultScreen() {
             <Text style={styles.aimLabel}>{t.result.lightOnFat}</Text>
           </View>
         </View>
-        <PrimaryButton icon="arrow-forward" label={t.result.showOptions} onPress={showOptions} />
+        <PrimaryButton haptic icon="arrow-forward" label={t.result.showOptions} onPress={showOptions} />
       </Card>}
       </Animated.View>
 
-      <PrimaryButton icon="checkmark" label={t.result.toToday} onPress={saveForLater} variant="secondary" />
+      <PrimaryButton haptic icon="checkmark" label={t.result.toToday} onPress={saveForLater} variant="secondary" />
+      {canShareDay ? <PrimaryButton haptic icon="share-outline" label={t.result.shareDay} onPress={() => setSharing(true)} variant="ghost" /> : null}
       <Text style={styles.estimateNote}>{t.common.estimateNote}</Text>
+      {canShareDay ? (
+        <ShareDayModal
+          input={{
+            consumedCalories: preview.consumed.calories,
+            targetCalories: targets.calories,
+            consumedProtein: preview.consumed.protein,
+            targetProtein: targets.protein,
+            next: { calories: nextMeal.calories, protein: nextMeal.protein },
+            slot: nextSlot,
+          }}
+          onClose={() => setSharing(false)}
+          visible={sharing}
+        />
+      ) : null}
     </Screen>
   );
 }
@@ -360,7 +402,8 @@ function MacroResult({ label, unit, value }: { label: string; unit: string; valu
 
 const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  iconButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  iconButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  iconSpacer: { width: 44, height: 44 },
   topTitle: { color: colors.text, fontSize: 14, fontWeight: '700' },
   resultHeading: { gap: 12 },
   titleRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },

@@ -6,12 +6,13 @@ import type { ThemeColors } from '@/constants/theme';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { Alert, PanResponder, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Alert, PanResponder, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { MealSyncStatus } from '@/components/MealSyncStatus';
 import { CalorieRing, overBudgetLevel } from '@/components/CalorieRing';
 import { MealDetailSheet } from '@/components/MealDetailSheet';
-import { Card, Eyebrow, IconCircle, MacroCard, PrimaryButton, Screen, SectionTitle } from '@/components/ui';
+import { Card, Eyebrow, IconCircle, MacroCard, PressableScale, PrimaryButton, Screen, SectionTitle, SkeletonBlock } from '@/components/ui';
+import { ShareDayModal } from '@/components/ShareDayModal';
 import { radii, typeScale } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { recommendationPreview } from '@/services/recommendations';
@@ -23,14 +24,20 @@ import { availableRepeats, withFavorites, yesterdayBreakfast } from '@/services/
 import { useLocalDay } from '@/hooks/useLocalDay';
 import { sumMeals } from '@/services/mockNutrition';
 import { MAX_BACKDATE_DAYS, shiftDateKey } from '@/utils/mealDay';
+import { latestMainSlot, nextMealSlot } from '@/services/shareDay';
+
+const REPEAT_CARD_WIDTH = 152;
+const REPEAT_GAP = 10;
 
 export default function TodayScreen() {
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { consumed: consumedToday, favoriteMeals, hasLoggedScan, logRepeatMeal, mealHistory, meals, pendingAnalysisCount, profile, remaining, repeatMeals, resetScan, resumeLatestAnalysis, setPlannedMealDate, setPlannedMealType, targets, userName } = useApp();
+  const { consumed: consumedToday, favoriteMeals, hasLoggedScan, logRepeatMeal, mealHistory, meals, pendingAnalysisCount, profile, refreshCloudState, remaining, repeatMeals, resetScan, resumeLatestAnalysis, setPlannedMealDate, setPlannedMealType, syncMode, targets, userName } = useApp();
   const [repeating, setRepeating] = useState<string | null>(null);
   const [openMeal, setOpenMeal] = useState<Meal | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   usePresentationBlock(Boolean(openMeal || repeating));
   const { language, locale, t } = useLanguage();
   const day = useLocalDay();
@@ -78,6 +85,21 @@ export default function TodayScreen() {
   const calorieRange = calorieLow === calorieHigh ? `${calorieLow}` : `${calorieLow}–${calorieHigh}`;
   const [proteinLow, proteinHigh] = nextMeal.protein;
   const proteinRange = proteinLow === proteinHigh ? `${proteinLow}` : `${proteinLow}–${proteinHigh}`;
+  // The ideas are for the slot after the latest meal today, or the clock's.
+  const shareSlot = nextMealSlot(latestMainSlot(meals.map((meal) => meal.type)), hour);
+
+  // Pull to refresh only where there is something to refresh: the cloud copy.
+  const canRefresh = syncMode !== 'local';
+  const refresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshCloudState();
+    } catch {
+      // MealSyncStatus shows the failed sync with its own retry.
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const startScan = (slot?: Meal['type']) => {
     resetScan();
@@ -123,7 +145,7 @@ export default function TodayScreen() {
 
   const { width } = useWindowDimensions();
   return (
-    <Screen>
+    <Screen refreshControl={canRefresh ? <RefreshControl colors={[colors.accentText]} onRefresh={() => void refresh()} refreshing={refreshing} tintColor={colors.muted} /> : undefined}>
       <View style={styles.header}>
         <View style={styles.headerCopy}>
           <Text style={styles.date}>{isToday ? dateLabel : formatDateParts(viewDay, { weekday: 'short', day: 'numeric', month: 'long' }, locale)}</Text>
@@ -196,7 +218,7 @@ export default function TodayScreen() {
       <Card style={styles.heroCard}>
         <View {...swipe.panHandlers} style={styles.heroSwipe}>
         <View style={styles.heroTop}>
-          <View>
+          <View style={styles.heroHeading}>
             <Eyebrow>{isToday ? t.today.status : t.today.pastDayStatus}</Eyebrow>
             <Text style={styles.onTrack}>
               {!isToday
@@ -208,6 +230,18 @@ export default function TodayScreen() {
                     : hasLoggedScan ? t.today.onTrack : t.today.firstMove}
             </Text>
           </View>
+          {isToday && dayMeals.length > 0 ? (
+            <PressableScale
+              accessibilityHint={t.shareDay.openHint}
+              accessibilityLabel={t.shareDay.open}
+              accessibilityRole="button"
+              hitSlop={6}
+              onPress={() => setSharing(true)}
+              style={styles.shareButton}
+            >
+              <Ionicons color={colors.text} name="share-outline" size={18} />
+            </PressableScale>
+          ) : null}
         </View>
         <CalorieRing consumed={consumed.calories} proteinReached={targets.protein > 0 && consumed.protein >= targets.protein * 0.9} total={targets.calories} />
         {overLevel !== 'none' ? <Text style={styles.consumed}>{t.ring.tomorrowNew}</Text> : null}
@@ -243,24 +277,24 @@ export default function TodayScreen() {
             </View>
           </View>
           <Text style={styles.dayDoneText}>{overBudget ? t.today.dayOverText : t.today.dayCompleteText}</Text>
-          <PrimaryButton icon="arrow-forward" label={t.plan.smallIdeas} onPress={() => router.push('/(tabs)/plan')} variant="secondary" />
-          <PrimaryButton icon="add" label={t.today.logAnyway} onPress={() => router.push('/(tabs)/scan')} variant="ghost" />
+          <PrimaryButton haptic icon="arrow-forward" label={t.plan.smallIdeas} onPress={() => router.push('/(tabs)/plan')} variant="secondary" />
+          <PrimaryButton haptic icon="add" label={t.today.logAnyway} onPress={() => router.push('/(tabs)/scan')} variant="ghost" />
         </Card>
       ) : (
         <Card style={styles.nextCard}>
-          <Pressable
+          <PressableScale
             accessibilityHint={t.today.showIdeas}
             accessibilityRole="button"
             onPress={() => router.push('/(tabs)/plan')}
-            style={({ pressed }) => [styles.nextHeader, pressed && styles.nextHeaderPressed]}
+            style={styles.nextHeader}
           >
             <IconCircle name="navigate" size={48} />
             <View style={styles.nextHeading}>
               <Eyebrow>{t.today.nextMove}</Eyebrow>
               <Text style={styles.mealMoment}>{hasLoggedScan ? t.today.nextMeal : t.today.firstMeal}</Text>
             </View>
-            <Ionicons color={colors.text} name="arrow-forward" size={22} />
-          </Pressable>
+            <Ionicons color={colors.text} name="arrow-forward" size={20} />
+          </PressableScale>
           <View style={styles.targetRow}>
             <View style={styles.targetBlock}>
               <Text style={styles.targetLabel}>{t.today.targetRange}</Text>
@@ -274,8 +308,8 @@ export default function TodayScreen() {
           </View>
           {/* The aha moment is the first logged meal, not a list of ideas:
               before it, the primary action opens capture directly. */}
-          {!hasLoggedScan ? <PrimaryButton icon="camera" label={t.today.logFirstMeal} onPress={() => router.push('/(tabs)/scan')} /> : null}
-          <PrimaryButton icon="arrow-forward" label={t.today.showIdeas} onPress={() => router.push('/(tabs)/plan')} variant={hasLoggedScan ? 'secondary' : 'ghost'} />
+          {!hasLoggedScan ? <PrimaryButton haptic icon="camera" label={t.today.logFirstMeal} onPress={() => router.push('/(tabs)/scan')} /> : null}
+          <PrimaryButton haptic icon="arrow-forward" label={t.today.showIdeas} onPress={() => router.push('/(tabs)/plan')} variant={hasLoggedScan ? 'secondary' : 'ghost'} />
         </Card>
       )}
 
@@ -291,12 +325,15 @@ export default function TodayScreen() {
           ) : undefined}>{t.today.eatAgain}</SectionTitle>
           <ScrollView
             contentContainerStyle={styles.repeatRow}
+            decelerationRate="fast"
             horizontal
             showsHorizontalScrollIndicator={false}
+            snapToAlignment="start"
+            snapToInterval={REPEAT_CARD_WIDTH + REPEAT_GAP}
             style={styles.repeatScroll}
           >
             {repeatChoices.map((candidate) => (
-              <Pressable
+              <PressableScale
                 accessibilityLabel={candidate === yesterday ? `${t.today.yesterdayBreakfast}: ${candidate.title}` : t.common.repeatLabel(candidate.title)}
                 accessibilityHint={candidate === yesterday ? t.today.yesterdayBreakfastHint : undefined}
                 accessibilityRole="button"
@@ -304,16 +341,21 @@ export default function TodayScreen() {
                 disabled={repeating !== null}
                 key={candidate.key}
                 onPress={() => void repeat(candidate.key)}
-                style={({ pressed }) => [styles.repeatCard, pressed && styles.repeatPressed, repeating === candidate.key && styles.repeatBusy]}
+                style={[styles.repeatCard, candidate.favorite && styles.repeatFavorite, repeating !== null && repeating !== candidate.key && styles.repeatBusy]}
               >
                 <View style={styles.repeatTop}>
-                  <Ionicons accessibilityLabel={candidate.favorite ? t.today.favoriteLabel : undefined} color={colors.text} name={candidate.favorite ? 'star' : 'refresh'} size={15} />
+                  <View style={[styles.repeatIcon, candidate.favorite && styles.repeatIconFavorite]}>
+                    <Ionicons accessibilityLabel={candidate.favorite ? t.today.favoriteLabel : undefined} color={candidate.favorite ? colors.onAccent : colors.text} name={candidate.favorite ? 'star' : 'refresh'} size={14} />
+                  </View>
                   {candidate.count > 1 ? <Text style={styles.repeatCount}>{candidate.count}×</Text> : null}
                 </View>
                 {candidate === yesterday ? <Text style={styles.repeatYesterday}>{t.today.yesterdayBreakfast}</Text> : null}
                 <Text numberOfLines={2} style={styles.repeatTitle}>{candidate.title}</Text>
-                <Text style={styles.repeatMacros}>~{formatNumber(candidate.calories, locale)} kcal · {candidate.protein} g P</Text>
-              </Pressable>
+                {/* While it is being logged the numbers make way for a calm placeholder, not a blank. */}
+                {repeating === candidate.key
+                  ? <SkeletonBlock height={14} style={styles.repeatSkeleton} width="70%" />
+                  : <Text style={styles.repeatMacros}>~{formatNumber(candidate.calories, locale)} kcal · {candidate.protein} g P</Text>}
+              </PressableScale>
             ))}
           </ScrollView>
         </View>
@@ -331,7 +373,7 @@ export default function TodayScreen() {
               <Text style={styles.slotCalories}>
                 {slot.calories ? `${formatNumber(slot.calories, locale)} kcal` : ''}
               </Text>
-              <Pressable
+              <PressableScale
                 accessibilityLabel={t.today.addTo(mealTypeLabel(slot.type, t.common))}
                 accessibilityRole="button"
                 hitSlop={8}
@@ -339,7 +381,7 @@ export default function TodayScreen() {
                 style={styles.slotAdd}
               >
                 <Ionicons color={colors.text} name="add" size={20} />
-              </Pressable>
+              </PressableScale>
             </View>
             {/* An empty slot says what goes there and opens the camera for it. */}
             {!slot.entries.length ? (
@@ -396,6 +438,20 @@ export default function TodayScreen() {
       ) : null}
 
       <MealDetailSheet meal={openMeal} onClose={() => setOpenMeal(null)} />
+      {isToday ? (
+        <ShareDayModal
+          input={{
+            consumedCalories: consumed.calories,
+            targetCalories: targets.calories,
+            consumedProtein: consumed.protein,
+            targetProtein: targets.protein,
+            next: nextMeal,
+            slot: shareSlot,
+          }}
+          onClose={() => setSharing(false)}
+          visible={sharing}
+        />
+      ) : null}
     </Screen>
   );
 }
@@ -426,14 +482,15 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   pendingText: { color: colors.muted, fontSize: typeScale.micro },
   heroCard: { gap: 18, paddingVertical: 22 },
   heroSwipe: { gap: 18 },
-  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  onTrack: { color: colors.text, fontSize: 18, fontWeight: '700', marginTop: 4 },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  heroHeading: { flex: 1, minWidth: 0 },
+  onTrack: { color: colors.text, fontSize: 20, lineHeight: 26, fontWeight: '700', letterSpacing: -0.4, marginTop: 4 },
+  shareButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
   consumed: { color: colors.muted, fontSize: typeScale.micro, textAlign: 'center', fontVariant: ['tabular-nums'] },
   macroRow: { flexDirection: 'row', gap: 9 },
   dayDoneText: { color: colors.muted, fontSize: 14, lineHeight: 21 },
   nextCard: { backgroundColor: colors.accentSoft, borderColor: colors.accent, gap: 18 },
   nextHeader: { flexDirection: 'row', alignItems: 'center', gap: 13 },
-  nextHeaderPressed: { opacity: 0.68 },
   nextHeading: { flex: 1, gap: 4 },
   mealMoment: { color: colors.text, fontSize: 23, fontWeight: '700' },
   targetRow: { flexDirection: 'row', alignItems: 'center' },
@@ -465,10 +522,13 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   addIcon: { width: 38, height: 38, borderRadius: 19, borderWidth: 1, borderStyle: 'dashed', borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   addMealText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
   repeatScroll: { marginHorizontal: -20 },
-  repeatRow: { paddingHorizontal: 20, gap: 10 },
-  repeatCard: { width: 148, minHeight: 104, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 13, justifyContent: 'space-between' },
-  repeatPressed: { backgroundColor: colors.neutralSoft, transform: [{ scale: 0.98 }] },
+  repeatRow: { paddingHorizontal: 20, gap: REPEAT_GAP },
+  repeatCard: { width: REPEAT_CARD_WIDTH, minHeight: 112, borderRadius: radii.card, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 13, justifyContent: 'space-between' },
+  repeatFavorite: { borderColor: colors.accent },
   repeatBusy: { opacity: 0.5 },
+  repeatIcon: { width: 28, height: 28, borderRadius: 14, backgroundColor: colors.neutralSoft, alignItems: 'center', justifyContent: 'center' },
+  repeatIconFavorite: { backgroundColor: colors.accent },
+  repeatSkeleton: { marginTop: 6 },
   repeatTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   repeatCount: { color: colors.muted, fontSize: typeScale.micro, fontWeight: '800' },
   repeatYesterday: { color: colors.text, fontSize: typeScale.micro, fontWeight: '700', marginTop: 6 },

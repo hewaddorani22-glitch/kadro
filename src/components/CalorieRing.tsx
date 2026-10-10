@@ -144,14 +144,18 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   sideValue: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 21,
+    lineHeight: 26,
     fontWeight: '700',
+    letterSpacing: -0.4,
     fontVariant: ['tabular-nums'],
   },
   sideLabel: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   svg: {
     position: 'absolute',
@@ -165,20 +169,26 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   },
   value: {
     color: colors.text,
-    fontWeight: '700',
-    letterSpacing: -1.7,
+    fontWeight: '800',
+    letterSpacing: -1.8,
     fontVariant: ['tabular-nums'],
   },
   label: {
     color: colors.muted,
-    fontSize: 15,
-    marginTop: -2,
+    fontSize: 14,
+    fontWeight: '600',
+    marginTop: 0,
   },
+  // A quiet chip, so the status reads as a label rather than loose text.
   statusRow: {
-    marginTop: 12,
+    marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    borderRadius: 999,
+    backgroundColor: colors.neutralSoft,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
   statusDot: {
     width: 7,

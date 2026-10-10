@@ -69,6 +69,7 @@ function render(profile=base, meals=[], weightEntries=[], review={ status:'activ
     'react':{useMemo:fn=>fn(),useState:fn=>[typeof fn==='function'?fn():fn,()=>{}]},
     'react/jsx-runtime':{jsx,jsxs:jsx}, 'react-native':{...rn,Platform:{OS:'ios'},StyleSheet:{create:x=>x}},
     'react-native-safe-area-context':{useSafeAreaInsets:()=>({bottom:0})},
+    'react-native-svg':{default:'Svg',Circle:'Circle',Line:'Line',Path:'Path',Rect:'Rect'},
     '@/components/ui':Object.fromEntries(['Card','Eyebrow','IconCircle','PageTitle','PrimaryButton','Screen','SectionTitle'].map(k=>[k,k])),
     '@/context/AppContext':{useApp:()=>({addWeightEntry:async()=>{},mealHistory:meals,profile,targets:personalization.calculateDailyTargets(profile),weightEntries,hydrationReady:true})},
     '@/i18n/LanguageProvider':{useLanguage:()=>({locale,t:dictionary})}, '@/hooks/useLocalDay':{useLocalDay:()=> '2026-09-26'},
@@ -98,7 +99,8 @@ await test('Thirty-day meal summary excludes tomorrow and old records',()=>{
   const card=r.byType('Card').find(n=>r.text(n).includes(en.progress.meals)); assert.ok(r.text(card).startsWith('2'),r.text(card));
 });
 await test('Weight chart dates match its last twelve actual observations',()=>{
-  const r=render(base,[],weights(14)); assert.ok(!r.texts.includes('1 Sept'),'Chart must not label a dropped measurement'); assert.ok(r.texts.includes('3 Sept')); assert.ok(r.texts.includes(en.progress.measurementSpacing));
+  const r=render(base,[],weights(14)); assert.ok(!r.texts.includes('1 Sept'),'Chart must not label a dropped measurement'); assert.ok(r.texts.includes('3 Sept')); assert.ok(r.texts.includes(en.progress.timeScaled));
+  assert.ok(!/not scaled by time|nicht zeitlich skaliert/.test(en.progress.timeScaled + de.progress.timeScaled),'the chart is time-scaled now; the note must not say otherwise');
 });
 await test('Future weights do not become the current measurement',()=>{
   const r=render(base,[],[{date:'2026-09-25',weightKg:89},{date:'2026-09-27',weightKg:99}]); assert.ok(r.texts.includes(units.formatWeight(89,'metric',locale))); assert.ok(!r.texts.includes(units.formatWeight(99,'metric',locale)));

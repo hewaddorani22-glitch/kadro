@@ -96,7 +96,8 @@ const fourDays = weeklyLoggingGoal(['2026-09-04', '2026-09-03', '2026-09-01', '2
 assert.equal(fourDays.reached, true); assert.equal(fourDays.days.length, 7); assert.equal(fourDays.days[6].today, true); assert.equal(fourDays.days[6].key, '2026-09-04');
 assert.equal(lastMealSavedAt([on('2026-09-01', { savedAt: '2026-09-01T10:00:00Z' }), on('2026-09-03', { savedAt: '2026-09-03T08:00:00Z' }), on('2026-09-04', { origin: 'seed', savedAt: '2026-09-04T08:00:00Z' })]), Date.parse('2026-09-03T08:00:00Z'));
 assert.equal(lastMealSavedAt([]), null);
-assert.match(progress, /range === 0 \? 0\.5/,
+// The chart geometry moved into the time-scaled layout helper.
+assert.match(progress + read('src/utils/progressPresentation.ts'), /range === 0 \? 0\.5/,
   'an unchanged weight trend must render flat instead of at the chart minimum');
 assert.doesNotMatch(progress, /weightChange > 0 \? colors\.attention/,
   'weight gain must not be marked as failure when building muscle may be the goal');
