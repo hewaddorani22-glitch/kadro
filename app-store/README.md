@@ -10,11 +10,11 @@ Upload all six in filename order. The order follows the positioning "Kandro sagt
 1. `01-adapt` — "782 kcal übrig. Was jetzt?" / "585 kcal left. Now what?": three meals that fit the rest of the day (hook). The kcal figure is the one on each locale's capture.
 2. `02-photo` — Photo to an estimate. Real result screen of the in-app example meal; the photo card is that example's own photo.
 3. `03-voice` — Speak or type a meal in plain sentences. Real describe sheet; the speech bubbles are example inputs.
-4. `04-today` — Today: calories and macros left, live.
+4. `04-today` — Today: calories and macros left, with day switching.
 5. `05-portions` — Portions instead of grams, with BLS reference data.
-6. `06-plan` — The personal plan with the goal curve and a target date that follows the chosen pace.
+6. `06-plan` — The initial personal plan after five onboarding steps, without a target-date promise.
 
-> **Re-render pending (09.10.2026):** captions and order changed in `compose/frames.json`, but the PNGs in `screenshots/` were only renamed to the new order. All twelve still show the old captions and must be regenerated with `python3 app-store/compose/render.py` (needs Google Chrome and Pillow) before upload.
+> **Regenerated and inspected (09.10.2026):** all twelve PNGs were rendered from the current frames and captures. Screens 4 and 6 show the 1.0.4 flow. These are simulator captures, not proof of live AI accuracy or StoreKit purchases.
 
 ## How they are made
 

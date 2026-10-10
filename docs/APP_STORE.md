@@ -2,7 +2,7 @@
 
 This file is the source of truth for Kandro's iOS App Store setup. English is the primary App Store localization; German is the additional localization. Customer-facing listing text (name, subtitle, keywords, promotional text, description, What's New) lives in `store.config.json` and is checked by `npm run validate:store-listing`; do not copy it here, where it goes stale.
 
-**Version state (09.10.2026):** `app.json` and `store.config.json` are at `1.0.3`; work happens on `release/1.0.4`. Builds 38 and older must not be submitted (release gate in `AGENTS.md`), and App Review submission needs the owner's explicit approval for the exact build number. The build history is in `docs/ROADMAP.md`.
+**Version state (09.10.2026):** `app.json` and `store.config.json` are at `1.0.4`; work happens on `growth/1.0.4-funnel`. App Store Connect confirms 1.0.3 is already live. The 1.0.4 draft is configured for manual release. Builds 38 and older must not be submitted (release gate in `AGENTS.md`), and App Review submission needs the owner's explicit approval for the exact build number. The build history is in `docs/ROADMAP.md`.
 
 ## Product metadata
 
@@ -13,7 +13,7 @@ This file is the source of truth for Kandro's iOS App Store setup. English is th
 - **Bundle ID:** `com.hewaddorani.kandro`
 - **Apple Team ID:** `85S69CVRAY`
 - **App Store Connect Apple ID:** `6808622187`
-- **Version:** see `app.json` → `expo.version` (currently `1.0.3`)
+- **Version:** see `app.json` → `expo.version` (currently `1.0.4`)
 - **SKU suggestion:** `kandro-ios-001`
 - **Copyright:** `2026 Hewad Dorani`
 - **Support URL:** `https://getkandro.com/en/support` · `https://getkandro.com/support`
@@ -35,11 +35,11 @@ Owner decision 09.10.2026: Kandro is for people aged 16 and over; there are no u
 
 Six 6.9-inch portrait screenshots per locale at `1320 × 2868` px in `app-store/screenshots/<locale>/`, uploaded in filename order: `01-adapt` (782 / 585 kcal left, now what?), `02-photo`, `03-voice`, `04-today`, `05-portions`, `06-plan`. Captions live in `app-store/compose/frames.json`.
 
-**Re-render before upload:** on 09.10.2026 the captions and the order changed, but the PNGs were only renamed. Run `python3 app-store/compose/render.py` (needs Google Chrome and Pillow) to regenerate all twelve, then `npm run validate:store-screenshots`. Before submission, compare every depicted control and claim to the exact final native build. Keep personal email addresses and account identifiers out of all assets.
+**Rendered and visually inspected on 09.10.2026:** all twelve screenshots were regenerated with `python3 app-store/compose/render.py`. The new Today and starting-plan captures show the five-step onboarding and day selector. Native purchase/trial checks remain separate; the simulator captures do not prove them.
 
 ## CI repository variables
 
-`.github/workflows/ci.yml` reads the provider identity that the legal pages and the release check need from repository variables instead of the workflow file. The owner must create them once under GitHub → repository → Settings → Secrets and variables → Actions → **Variables**:
+`.github/workflows/ci.yml` reads the provider identity that the legal pages and the release check need from repository variables instead of the workflow file. The three variables were created and read back against the production identity on 09.10.2026. They are managed under GitHub → repository → Settings → Secrets and variables → Actions → **Variables**:
 
 | Variable | Value |
 |---|---|
@@ -47,7 +47,7 @@ Six 6.9-inch portrait screenshots per locale at `1320 × 2868` px in `app-store/
 | `IMPRESSUM_ADDRESS` | street, postcode and city as on the Impressum |
 | `IMPRESSUM_EMAIL` | public contact email |
 
-Until they exist, the "Check legal identity variables" step fails with a message naming the missing variable. CI runs on pushes to `main`, `audit/**` and `release/**`, and on pull requests.
+The "Check legal identity variables" step will fail if one is removed. CI runs on pushes to `main`, `audit/**` and `release/**`, and on pull requests.
 
 ## Native TestFlight gate
 

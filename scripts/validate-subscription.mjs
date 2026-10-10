@@ -63,6 +63,14 @@ if (!context.includes("'active' | 'cancelled' | 'failed'")) failures.push('purch
 // languages actually carrying the string.
 if (!paywall.includes('t.paywall.restore')) failures.push('paywall has no user-triggered restore action');
 if (!paywall.includes('snapshot?.plans')) failures.push('paywall does not display RevenueCat offering prices');
+if (!paywall.includes('{t.paywall.fairUse}')) failures.push('paywall must visibly disclose the daily analysis limit before purchase');
+for (const [label, dict] of [['German', dictDe], ['English', dictEn]]) {
+  for (const key of ['proText', 'benefitAnalyze']) {
+    for (const [, copy] of dict.matchAll(new RegExp(`${key}:\\s*['\"]([^'\"]+)['\"]`, 'g'))) {
+      if (/unbegrenzt|unlimited|as much as you like/i.test(copy)) failures.push(`${label} ${key} promises unlimited use despite the daily cap`);
+    }
+  }
+}
 
 // The paywall must persuade with facts, not with pressure. These pin the
 // honest bits so a later "conversion optimisation" cannot quietly remove them.

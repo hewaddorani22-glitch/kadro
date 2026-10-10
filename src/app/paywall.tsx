@@ -276,6 +276,7 @@ export default function PaywallScreen() {
           <Benefit icon="restaurant-outline" title={t.paywall.benefitMeals} />
           <Benefit icon="calendar-outline" title={t.paywall.benefitReview} />
         </View>
+        <Text style={styles.benefitDetail}>{t.paywall.fairUse}</Text>
 
         {!hard ? <View style={styles.keepsCard}>
           <Ionicons color={colors.accentText} name="lock-open-outline" size={17} />
