@@ -201,6 +201,14 @@ const strong = supermarketCombos({ calories: 600, protein: 60, carbs: 60, fat: 2
 const average = (combos) => combos.reduce((sum, combo) => sum + combo.protein, 0) / combos.length;
 assert.ok(average(strong) >= average(plain), 'high-protein preference does not lower protein');
 
+// Canned tuna: label values are per drained fish, so a whole can never counts its oil/brine.
+for (const product of data.products.filter((p) => p.category === 'tuna' && p.packageG)) {
+  for (const portion of productPortions(product)) {
+    assert.ok(portion.grams < product.packageG || product.servingG, `${product.id}: tuna portion uses the gross can weight`);
+    if (!product.servingG) assert.equal(portion.estimated, true, `${product.id}: drained tuna weight must be marked as estimate`);
+  }
+}
+
 timings.sort((a, b) => a - b);
 const median = timings[Math.floor(timings.length / 2)];
 assert.ok(median < 20, `combo engine median ${median.toFixed(1)} ms exceeds 20 ms`);

@@ -77,6 +77,9 @@ export const STORE_IDS = ['lidl', 'aldi', 'aldi-nord', 'aldi-sued', 'rewe', 'ede
 export type StoreId = (typeof STORE_IDS)[number];
 
 type Role = 'sweet' | 'savory' | 'meal' | 'bar';
+/** Drained fish as a share of the can's net weight (typical German tuna cans: 195 g → ~140 g). */
+export const TUNA_DRAINED_SHARE = 0.72;
+
 const ANCHOR_ROLE: Partial<Record<SupermarketCategory, Role>> = {
   skyr: 'sweet', quark: 'sweet', yogurt: 'sweet', pudding: 'sweet',
   'cottage-cheese': 'savory', tuna: 'savory', fish: 'savory', poultry: 'savory', jerky: 'savory', eggs: 'savory',
@@ -142,9 +145,13 @@ export function productPortions(product: SupermarketProduct): ComboPortion[] {
     for (let count = 1; count <= max; count += 1) {
       portions.push({ kind: 'unit', count, grams: product.unit.g * count, container, estimated });
     }
+  } else if (product.packageG && product.category === 'tuna' && !product.servingG) {
+    // Canned tuna labels refer to the drained fish, but the pack weight
+    // includes oil or brine. Without a labelled serving, use the typical
+    // drained share (~72 %) of the can and mark it as an estimate.
+    portions.push({ kind: 'pack', count: 1, grams: Math.round(product.packageG * TUNA_DRAINED_SHARE), container, estimated: true });
   } else if (product.packageG && !(product.category === 'tuna' && product.servingG)) {
-    // Canned tuna labels refer to the drained fish; where the label names
-    // that serving, it is the amount, not the gross can weight.
+    // Where a tuna label names its drained serving, that serving (below) is the amount.
     portions.push({ kind: 'pack', count: 1, grams: product.packageG, container, estimated: false });
     if (HALVES.has(product.category) && product.packageG >= 200) {
       portions.push({ kind: 'half', count: 1, grams: Math.round(product.packageG / 2), container, estimated: false });
@@ -337,7 +344,7 @@ export function comboSearchEntries(combo: SupermarketCombo, language: string, po
     const bls = product.src === 'bls';
     const code = bls ? product.id.replace(/^bls-/, '') : product.id;
     const portions = [{ label: portionLabel(portion), grams: portion.grams, ...(portion.estimated ? { estimated: true } : {}) }];
-    if (product.packageG && product.packageG !== portion.grams) {
+    if (product.packageG && product.packageG !== portion.grams && product.category !== 'tuna') {
       portions.push({ label: portionLabel({ kind: 'pack', count: 1, grams: product.packageG, container: CONTAINER[product.category], estimated: false }), grams: product.packageG });
     }
     return {
