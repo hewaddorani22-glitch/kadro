@@ -29,7 +29,7 @@ Owner decision 09.10.2026: Kandro is for people aged 16 and over; there are no u
 
 ## Store listing
 
-`store.config.json` holds both locales. Rules the validator enforces: name and subtitle at most 30 characters, keywords at most 100 bytes with no word repeated from the name or subtitle, promotional text at most 170 characters, the description opens with the next-meal promise (three dishes for the rest of the day, at home / supermarket / on the go), states 16+, states the free scope (search, barcode, daily balance, suggestions, history, three AI analyses) and the Pro scope (fair-use analyses, weekly review), carries the trial, renewal and cancellation terms, links Terms, Privacy and Apple's standard EULA, and does not mention access tests or variants.
+`store.config.json` holds both locales. Rules the validator enforces: name and subtitle at most 30 characters, keywords at most 100 bytes with no word repeated from the name or subtitle, promotional text at most 170 characters, the description opens with the next-meal promise (three dishes for the rest of the day, at home / supermarket / on the go), states 16+, states the access a new download gets in an ACCESS/ZUGANG section (one free sample analysis, then Kandro Pro with a seven-day trial if eligible, auto-renewal, cancellation in Apple settings; Pro scope with fair-use analyses and weekly review; saved data, privacy and deletion always reachable) and no longer promises the legacy free scope (hard paywall after the first scan since 10.10.2026), carries the trial, renewal and cancellation terms, links Terms, Privacy and Apple's standard EULA, and does not mention access tests or variants.
 
 ## Screenshot package
 
