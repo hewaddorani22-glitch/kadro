@@ -178,6 +178,15 @@ assert.equal(activeIosSubscriptionFromV2({
   object: 'list',
   items: [subscription({ environment: 'sandbox' })],
 }, iosSubscriptionOptions).active, true, 'Apple sandbox must work for TestFlight and App Review');
+// Hard paywall after the first scan (10/2026): a running free trial is the
+// entitlement that opens the app, so a trialing subscription must count.
+assert.deepEqual(activeIosSubscriptionFromV2({
+  object: 'list',
+  items: [subscription({ status: 'trialing' })],
+}, iosSubscriptionOptions), {
+  active: true,
+  expiresAt: new Date(nowMs + 60_000).toISOString(),
+}, 'a running App Store trial is an active entitlement');
 assert.deepEqual(activeIosSubscriptionFromV2({
   object: 'list',
   items: [subscription({

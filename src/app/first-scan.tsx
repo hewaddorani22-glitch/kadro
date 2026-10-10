@@ -11,8 +11,10 @@ import { radii } from '@/constants/theme';
 import { useApp } from '@/context/AppContext';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
 import { useFirstRun } from '@/hooks/useFirstRun';
+import { useFreeScanAllowance } from '@/hooks/useHardWall';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { setFirstRunStage } from '@/services/firstRun';
+import { markHardWallUsed } from '@/services/hardWall';
 import { selectionHaptic } from '@/services/haptics';
 
 type Option = { mode: 'photo' | 'description'; icon: keyof typeof Ionicons.glyphMap; title: string; detail: string };
@@ -22,7 +24,10 @@ type Option = { mode: 'photo' | 'description'; icon: keyof typeof Ionicons.glyph
  * meal. Photo, speech and text are the three ways in; speech and text share
  * the description sheet, which has the microphone. It is the normal scan, so
  * it honestly counts as one of the free analyses. "Später" goes on to the
- * (soft) offer and the reminder question, never back into setup.
+ * offer and the reminder question, never back into setup.
+ *
+ * Behind the hard wall (new installs, 10/2026) this scan is the one free
+ * "Probe-Analyse"; "Später" skips it and goes straight to the hard paywall.
  */
 export default function FirstScanScreen() {
   const { colors } = useTheme();
@@ -31,6 +36,7 @@ export default function FirstScanScreen() {
   const { t } = useLanguage();
   const { freeScansLeft } = useApp();
   const stage = useFirstRun();
+  const { hardWall } = useFreeScanAllowance();
   const leaving = useRef(false);
   if (stage === null && !leaving.current) return <Redirect href="/(tabs)/today" />;
 
@@ -40,7 +46,9 @@ export default function FirstScanScreen() {
     { mode: 'description', icon: 'mic-outline', title: copy.speak, detail: copy.speakDetail },
     { mode: 'description', icon: 'create-outline', title: copy.type, detail: copy.typeDetail },
   ];
-  const allowance = freeScansLeft >= FREE_SCAN_ALLOWANCE
+  const allowance = hardWall
+    ? copy.trialScan
+    : freeScansLeft >= FREE_SCAN_ALLOWANCE
     ? copy.allowanceFirst(FREE_SCAN_ALLOWANCE)
     : freeScansLeft > 0 ? copy.allowanceLeft(freeScansLeft, FREE_SCAN_ALLOWANCE) : copy.allowanceUsed;
   const open = (mode: Option['mode']) => {
@@ -52,6 +60,8 @@ export default function FirstScanScreen() {
     if (leaving.current) return;
     leaving.current = true;
     void selectionHaptic();
+    // Skipping the free scan ends the free scope of a hard-wall install.
+    await markHardWallUsed();
     await setFirstRunStage('paywall');
     router.replace('/paywall');
   };

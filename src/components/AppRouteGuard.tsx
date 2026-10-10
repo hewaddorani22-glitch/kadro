@@ -9,7 +9,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui';
 import { useAccess } from '@/context/AccessContext';
-import { rememberAccessDestination, routeRequiresAccess } from '@/services/accessPolicy';
+import { firstMealRevealOpen, rememberAccessDestination, routeRequiresAccess } from '@/services/accessPolicy';
 import { useReminderOnboarding } from '@/hooks/useReminderOnboarding';
 import { useFirstRun } from '@/hooks/useFirstRun';
 import { firstRunRedirect } from '@/services/firstRun';
@@ -59,7 +59,11 @@ export function AppRouteGuard({ children }: PropsWithChildren) {
     }
   };
 
-  const accessApplies = !appleReauthenticationRequired && hydrationReady && wellnessConsentGranted && !!profile.completedAt && routeRequiresAccess(path);
+  // Hard wall: the first saved meal locks the app, but its reveal (result:
+  // eaten, left today, three ideas) is the value moment and stays open until
+  // the run moves on; every next step then lands on the paywall.
+  const revealOpen = access.hardWall && firstMealRevealOpen(path, firstRunStage);
+  const accessApplies = !appleReauthenticationRequired && hydrationReady && wellnessConsentGranted && !!profile.completedAt && routeRequiresAccess(path) && !revealOpen;
   // The entry offer waits for the first saved meal (or "Später"): the first
   // run shows it itself, after value, never in front of the first scan.
   const entryPaywall = access.entryPaywall && firstRunStage === null;

@@ -7,7 +7,16 @@ export type AccessRecord = {
   access: 'free' | 'active' | 'inactive' | 'unknown';
   validUntil: string | null;
   enrollmentOpen?: boolean;
+  /** Server access mode (20261010120000). Absent: no server answer yet. */
+  mode?: AccessMode;
+  freeAnalyses?: number;
 };
+/**
+ * 'legacy': the existing free scope (3 free AI analyses, soft paywall).
+ * 'hard_after_first_scan': a new install gets one free analysis and one free
+ * meal, then needs Kandro Pro (a running trial counts).
+ */
+export type AccessMode = 'legacy' | 'hard_after_first_scan';
 export const FREE_ACCESS: AccessRecord = { experiment: 'paywall_access_v1', variant: 'excluded', source: 'public', environment: 'production', hard: false, access: 'free', validUntil: null };
 
 export const UNRESOLVED_ACCESS: AccessRecord = { ...FREE_ACCESS, variant: 'unassigned', access: 'unknown' };
@@ -17,7 +26,9 @@ export function parseAccessRecord(value: unknown): AccessRecord {
   if (!v || v.experiment !== 'paywall_access_v1' || !['A', 'B', 'excluded', 'unassigned'].includes(v.variant)
     || !['qa', 'public'].includes(v.source) || !['production', 'local', 'testflight', 'review'].includes(v.environment)
     || typeof v.hard !== 'boolean' || !['free', 'active', 'inactive', 'unknown'].includes(v.access)
-    || (v.hard && v.variant !== 'B') || (v.hard && v.access === 'free')
+    || (v.mode !== undefined && !['legacy', 'hard_after_first_scan'].includes(v.mode))
+    || (v.freeAnalyses !== undefined && (!Number.isInteger(v.freeAnalyses) || v.freeAnalyses < 0 || v.freeAnalyses > 3))
+    || (v.hard && v.variant !== 'B' && v.mode !== 'hard_after_first_scan') || (v.hard && v.access === 'free')
     || (v.validUntil !== null && (typeof v.validUntil !== 'string' || !Number.isFinite(Date.parse(v.validUntil))))) throw Error('access_response_invalid');
   return v;
 }
@@ -29,6 +40,30 @@ export function resolveAccess(record: AccessRecord, paymentPending = false, now 
   if (paymentPending) return 'pending' as const;
   if (record.access === 'inactive') return 'locked' as const;
   return 'verification' as const;
+}
+
+/** Per-install facts the server cannot know yet (offline, unsynced meal, "Später"). */
+export type HardWallLocal = { cohort: boolean; used: boolean };
+
+/** The server decides; only without any server answer does the install flag. */
+export function hardWallApplies(record: AccessRecord, local: HardWallLocal) {
+  return record.mode ? record.mode === 'hard_after_first_scan' : local.cohort;
+}
+
+/**
+ * The client side of the hard wall: once the first meal is saved (or the
+ * first scan was skipped with "Später") a hard-wall install is locked like a
+ * server-enforced hard record until an entitlement is active. The server
+ * enforces the same independently; this only closes the gap before sync.
+ */
+export function applyHardWall(record: AccessRecord, local: HardWallLocal): AccessRecord {
+  if (record.hard || !local.used || !hardWallApplies(record, local)) return record;
+  return { ...record, hard: true, access: record.access === 'free' ? 'inactive' : record.access };
+}
+
+/** The first meal's reveal (result screen) stays open until the run moves on. */
+export function firstMealRevealOpen(path: string, firstRunStage: string | null | undefined) {
+  return path === '/result' && firstRunStage === 'scan';
 }
 
 // '/first-scan' only offers choices; the scan it leads to is checked as usual.

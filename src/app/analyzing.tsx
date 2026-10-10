@@ -8,7 +8,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { mealPhotoPlaceholder } from '@/utils/format';
 import { MealPhoto, PrimaryButton } from '@/components/ui';
-import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
+import { useFreeScanAllowance } from '@/hooks/useHardWall';
 import { useApp } from '@/context/AppContext';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -39,6 +39,7 @@ export default function AnalyzingScreen() {
   const started = useRef(false);
   const reduceMotion = useReducedMotion();
   const { t } = useLanguage();
+  const { allowance, hardWall } = useFreeScanAllowance();
   // The gateway answers once, at the end. Rather than tick off steps it never
   // reported, say what is actually happening: preparing the photo on the
   // device, then waiting for the analysis.
@@ -54,7 +55,9 @@ export default function AnalyzingScreen() {
   const errorCopy: Record<AnalysisErrorKind, { title: string; detail: string }> = {
     'not-configured': { title: t.analyzing.errNotConfiguredTitle, detail: t.analyzing.errNotConfiguredBody },
     'consent-required': { title: t.analyzing.errConsentTitle, detail: t.analyzing.errConsentBody },
-    'subscription-required': { title: t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE), detail: t.paywall.blockedSub },
+    'subscription-required': hardWall
+      ? { title: t.paywall.trialUsedHeadline, detail: t.paywall.trialUsedSub }
+      : { title: t.paywall.blockedHeadline(allowance), detail: t.paywall.blockedSub },
     'daily-limit': { title: t.analyzing.errProviderTitle, detail: t.errors.gatewayDailyLimit },
     'invalid-input': { title: t.analyzing.errInputTitle, detail: t.analyzing.errInputBody },
     'request-expired': { title: t.analyzing.errExpiredTitle, detail: t.analyzing.errExpiredBody },

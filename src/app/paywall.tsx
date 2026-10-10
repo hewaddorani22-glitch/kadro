@@ -41,12 +41,15 @@ export default function PaywallScreen() {
   const access = useAccess();
   const { freeScansLeft } = useApp();
   const hard = access.record.hard;
-  // Soft for everyone: only a server-enforced lock (old B cohort) without
-  // usable access keeps the screen without a close button.
+  // New installs (hard wall): after the first saved meal or "Später" the
+  // record is hard until an entitlement (a running trial counts) is active.
+  const hardWall = access.hardWall;
+  // Soft for everyone else: only an enforced lock (hard wall, old B cohort)
+  // without usable access keeps the screen without a close button.
   const closable = !hard || access.canUse;
   // Interrupted mid-scan after the free analyses: say why the paywall appears.
   const { reason } = useLocalSearchParams<{ reason?: string }>();
-  const blocked = reason === 'blocked' && !hard;
+  const blocked = reason === 'blocked' && !hard && !hardWall;
   const { t, locale } = useLanguage();
   const [selected, setSelected] = useState<Plan>('yearly');
   const [cancelled, setCancelled] = useState(false);
@@ -179,6 +182,21 @@ export default function PaywallScreen() {
     yearly?.trialLabel ? t.paywall.trialFree(yearly.trialLabel) : null,
   ].filter(Boolean).join(' · ') || (yearly?.detail ?? t.paywall.yearlyFallback);
 
+  // Hard wall copy states the real store price (never hard-coded) and the
+  // trial only when the store confirmed it for this plan.
+  const hardWallOffer = hardWall && status !== 'active' && !testStore && selectedPlan ? {
+    trialDays: selectedPlan.hasFreeTrial ? selectedPlan.trialDays : null,
+    charge: selected === 'yearly'
+      ? t.paywall.chargeYearly(selectedPlan.package.product.priceString, yearlyPerMonth)
+      : t.paywall.chargeMonthly(selectedPlan.package.product.priceString),
+  } : null;
+  const title = blocked ? t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE)
+    : hardWallOffer ? hardWallOffer.trialDays ? t.paywall.hardWallTitleTrial(hardWallOffer.trialDays) : t.paywall.hardWallTitle
+      : hard ? t.paywall.hardTitle : t.paywall.headline;
+  const subtitle = blocked ? t.paywall.blockedSub
+    : hardWallOffer ? hardWallOffer.trialDays ? t.paywall.hardWallSubTrial(hardWallOffer.charge) : t.paywall.hardWallSub(hardWallOffer.charge)
+      : hard ? t.paywall.hardSubtitle : t.paywall.subtitle;
+
   const buttonLabel = busy
     ? t.paywall.ctaProcessing
     : status === 'loading'
@@ -192,7 +210,8 @@ export default function PaywallScreen() {
             : testStore
               ? t.paywall.ctaTest
               : selectedPlan?.hasFreeTrial
-                ? selectedPlan.trialDays === 7 ? t.access.trialCTA : t.paywall.ctaTrial
+                ? hardWall && selectedPlan.trialDays ? t.paywall.hardWallTrialCta(selectedPlan.trialDays)
+                  : selectedPlan.trialDays === 7 ? t.access.trialCTA : t.paywall.ctaTrial
                 : t.paywall.ctaStart;
 
   const billingCopy = status === 'active'
@@ -268,8 +287,8 @@ export default function PaywallScreen() {
         <View style={styles.heroMark}><KandroMark size={32} /></View>
         {testStore ? <View style={styles.testBadge}><Text style={styles.testBadgeText}>{t.paywall.testStoreBadge}</Text></View> : null}
         <Text style={styles.eyebrow}>{t.paywall.eyebrow}</Text>
-        <Text style={styles.title}>{blocked ? t.paywall.blockedHeadline(FREE_SCAN_ALLOWANCE) : hard ? t.paywall.hardTitle : t.paywall.headline}</Text>
-        <Text style={styles.subtitle}>{blocked ? t.paywall.blockedSub : hard ? t.paywall.hardSubtitle : t.paywall.subtitle}</Text>
+        <Text accessibilityRole="header" style={styles.title}>{title}</Text>
+        <Text style={styles.subtitle}>{subtitle}</Text>
 
         <View style={styles.benefits}>
           <Benefit icon="camera-outline" title={t.paywall.benefitAnalyze} />
@@ -278,7 +297,8 @@ export default function PaywallScreen() {
         </View>
         <Text style={styles.benefitDetail}>{t.paywall.fairUse}</Text>
 
-        {!hard ? <View style={styles.keepsCard}>
+        {/* The free scope card belongs to the legacy scope only. */}
+        {!hard && !hardWall ? <View style={styles.keepsCard}>
           <Ionicons color={colors.accentText} name="lock-open-outline" size={17} />
           <View style={{ flex: 1, gap: 4 }}>
             <Text style={styles.benefitTitle}>{t.paywall.freeTitle}</Text>

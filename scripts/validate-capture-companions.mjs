@@ -225,6 +225,7 @@ function scanScreenHarness() {
   const rn = Object.fromEntries(['ActivityIndicator','KeyboardAvoidingView','Modal','Pressable','ScrollView','Text','TextInput','View'].map(key => [key, key]));
   const screen = compile('src/app/(tabs)/scan.tsx', {
     '@/services/captureIntents': registry,
+    '@/hooks/useHardWall': { useFreeScanAllowance: () => ({ hardWall: false, allowance: 3 }) },
     '@/services/localRepository': { subscribePrivateDataInvalidation: fn => { privacy.add(fn); return () => privacy.delete(fn); } },
     '@/components/CaptureSearchHelp': { CaptureSearchHelp: 'CaptureSearchHelp' },
     '@/components/ManualFoodForm': { ManualFoodForm: 'ManualFoodForm' },

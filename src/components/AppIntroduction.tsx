@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, BackHandler, findNodeHandle, Platform, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
+import { useFreeScanAllowance } from '@/hooks/useHardWall';
 import { PrimaryButton } from '@/components/ui';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { useTheme, useThemedStyles } from '@/context/ThemeContext';
@@ -14,6 +14,7 @@ import type { ThemeColors } from '@/constants/theme';
 export function AppIntroduction({ onClose, onStart }: { onClose: () => void; onStart: () => void }) {
   usePresentationBlock(true);
   const { t } = useLanguage();
+  const { allowance } = useFreeScanAllowance();
   const { colors } = useTheme();
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
@@ -26,7 +27,7 @@ export function AppIntroduction({ onClose, onStart }: { onClose: () => void; onS
     { title: t.intro.scanTitle, text: t.intro.scanText, tab: 2, icon: 'add-circle-outline' },
     { title: t.intro.planTitle, text: t.intro.planText, tab: 1, icon: 'sparkles-outline' },
     { title: t.intro.progressTitle, text: t.intro.progressText, tab: 3, icon: 'stats-chart-outline' },
-    { title: t.intro.profileTitle, text: `${t.intro.profileText} ${t.intro.proText(FREE_SCAN_ALLOWANCE)}`, tab: 4, icon: 'person-outline' },
+    { title: t.intro.profileTitle, text: `${t.intro.profileText} ${t.intro.proText(allowance)}`, tab: 4, icon: 'person-outline' },
   ] as const;
   const current = steps[step];
   useEffect(() => { trackEvent('introduction step viewed', { step: (step + 1) as 1 | 2 | 3 | 4 | 5 }); }, [step]);

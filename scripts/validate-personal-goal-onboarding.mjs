@@ -67,7 +67,7 @@ async function controller(profile=base,editing=false,drafts=draftStore()){
   '@/context/AppContext':{useApp:()=>({profile,completeOnboarding:async p=>saved.push(p),grantWellnessConsent:async age=>grants.push(age)})},
   '@/i18n/LanguageProvider':{useLanguage:()=>({language:'de',locale:'de-DE',t})},
   '@/services/personalization':personalization,'@/services/personalGoal':goals,'@/services/onboardingDraft':drafts.mock,
-  '@/services/firstRun':{setFirstRunStage:async stage=>stages.push(stage)},
+  '@/services/firstRun':{setFirstRunStage:async stage=>stages.push(stage)},'@/services/hardWall':{startHardWallInstall:async()=>stages.push('hard-wall')},
   '@/services/appAccess':{prepareAccessEnrollment:async confirmed=>enrolled.push(confirmed)},
   '@/services/telemetry':{trackEvent:(event,payload)=>events.push({event,...payload}),setAnalyticsCollectionEnabled:async v=>{analytics.push(v);return v}},
   '@/services/haptics':Object.fromEntries(['errorHaptic','selectionHaptic','stepHaptic','successHaptic'].map(k=>[k,async()=>{}])),
@@ -92,7 +92,7 @@ await test('real screen: explicit birth year, manual next, five steps, defaults 
  await through(c,['about','body','activity']);assert.equal(c.step(),'plan');await c.next();assert.equal(c.saved.length,0,'needs wellness consent');
  c.find('PrimaryButton',p=>p.label==='consentAccept').onPress();await c.flush();assert.equal(c.saved.length,1);
  const saved=c.saved[0];assert.equal(saved.age,29);assert.equal(saved.goal,'gain');assert.equal(saved.weeklyRateKg,0.25,'calm pace by default');assert.deepEqual(saved.preferences,['high-protein'],'"Proteinreich" by default');assert.equal(saved.targetWeightKg,null,'no target weight in the first run');assert.equal(saved.targetDate,null);
- assert.deepEqual(c.enrolled,[true]);assert.deepEqual(c.stages,['scan'],'the first scan comes next');assert.deepEqual(c.routes,['/(tabs)/today']);assert.deepEqual(c.analytics,[],'analytics stay off unless chosen');
+ assert.deepEqual(c.enrolled,[true]);assert.deepEqual(c.stages,['hard-wall','scan'],'a fresh install joins the hard wall, then the first scan comes next');assert.deepEqual(c.routes,['/(tabs)/today']);assert.deepEqual(c.analytics,[],'analytics stay off unless chosen');
 });
 await test('real screen: plan editing keeps tap-only goal entry, date chips, validation, back retention, unit conversion',async()=>{
  const previous={...base,displayName:'Saved',sex:'female',completedAt:'2026-09-01T12:00:00Z',targetWeightKg:70.5,targetDate:'2027-04-01'};

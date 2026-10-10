@@ -2,7 +2,9 @@ import { createContext, PropsWithChildren, useCallback, useContext, useEffect, u
 import { AppState } from 'react-native';
 import { useApp } from '@/context/AppContext';
 import { useSubscription } from '@/context/SubscriptionContext';
-import { AccessRecord, UNRESOLVED_ACCESS, clearAccessDestination, resolveAccess } from '@/services/accessPolicy';
+import { AccessRecord, UNRESOLVED_ACCESS, applyHardWall, clearAccessDestination, hardWallApplies, resolveAccess } from '@/services/accessPolicy';
+import { getHardWallSnapshot, markHardWallUsed } from '@/services/hardWall';
+import { useHardWall } from '@/hooks/useHardWall';
 import { accessPaywallSeen, completeAccessEnrollment, excludeUnassignedAccess, hasAccessEnrollmentPending, invalidateAppAccess, isAppAccessMeasurementVerified, markAccessPaywallSeen, refreshAppAccess, subscribeAppAccess } from '@/services/appAccess';
 import { getCurrentSessionUserId, supabase } from '@/services/supabaseClient';
 import { setReminderAccessAllowed } from '@/services/reminders';
@@ -10,13 +12,17 @@ import { RevenueCatExperimentAnalytics } from '@/components/RevenueCatExperiment
 import { invalidateRevenueCatExperimentMeasurement } from '@/services/revenueCatExperimentAnalytics';
 
 type AccessContextValue = {
+  /** `record` includes the install's hard wall (applyHardWall). */
   ready: boolean; record: AccessRecord; state: ReturnType<typeof resolveAccess>;
   canUse: boolean; enrollmentPending: boolean; entryPaywall: boolean;
+  /** Hard paywall after the first scan applies to this install/account. */
+  hardWall: boolean;
   refresh: () => Promise<void>; enroll: (firstUse: boolean) => Promise<void>; markSeen: () => Promise<void>;
 };
 const AccessContext = createContext<AccessContextValue | null>(null);
 export function AccessProvider({ children }: PropsWithChildren) {
-  const { hydrationReady, wellnessConsentGranted, profile } = useApp();
+  const { hydrationReady, wellnessConsentGranted, profile, mealHistory } = useApp();
+  const wall = useHardWall();
   const { status } = useSubscription();
   const [record, setRecord] = useState<AccessRecord>(UNRESOLVED_ACCESS);
   const [ready, setReady] = useState(false);
@@ -41,7 +47,7 @@ export function AccessProvider({ children }: PropsWithChildren) {
       const wasSeen = await accessPaywallSeen();
       if (epoch !== generation.current || requestOwner !== await getCurrentSessionUserId()) return;
       const needsEnrollment = pending && next.variant === 'unassigned' && next.enrollmentOpen === true;
-      setReminderAccessAllowed(!needsEnrollment && ['free', 'active'].includes(resolveAccess(next)));
+      setReminderAccessAllowed(!needsEnrollment && ['free', 'active'].includes(resolveAccess(applyHardWall(next, getHardWallSnapshot()))));
       setRecord(next); setRecordOwner(requestOwner); setMeasurementVerified(isAppAccessMeasurementVerified(requestOwner)); setEnrollmentPending(needsEnrollment); setSeen(wasSeen); setReady(true);
     })().catch(() => {
       // Never erase a known B on a configuration or storage failure.
@@ -67,8 +73,16 @@ export function AccessProvider({ children }: PropsWithChildren) {
     const remove = subscribeAppAccess(() => { void refresh(); });
     return () => { auth?.unsubscribe(); app.remove(); remove(); };
   }, [refresh]);
-  const state = resolveAccess(record, status === 'pending');
+  // Any saved meal ends the free scope of a hard-wall install (sticky).
+  const mealSaved = mealHistory.length > 0;
+  useEffect(() => { if (mealSaved && !wall.used) void markHardWallUsed(); }, [mealSaved, wall.used]);
+  const local = { cohort: wall.cohort, used: wall.used || mealSaved };
+  const hardWall = hardWallApplies(record, local);
+  const effective = applyHardWall(record, local);
+  const state = resolveAccess(effective, status === 'pending');
   const canUse = ready && !enrollmentPending && ['free', 'active'].includes(state);
+  // The first saved meal can lock a hard-wall install between refreshes.
+  useEffect(() => { if (ready && hardWall) setReminderAccessAllowed(canUse); }, [ready, hardWall, canUse]);
   useEffect(() => {
     if (!record.validUntil) return;
     const delay = Date.parse(record.validUntil) - Date.now();
@@ -78,7 +92,7 @@ export function AccessProvider({ children }: PropsWithChildren) {
   }, [record.validUntil, refresh]);
   const enroll = async (firstUse: boolean) => { await completeAccessEnrollment(firstUse); await refresh(); };
   const markSeen = async () => { await markAccessPaywallSeen(); setSeen(true); };
-  return <AccessContext.Provider value={{ record, ready, state, canUse, enrollmentPending, entryPaywall: !seen && ['A', 'B'].includes(record.variant) && state !== 'active', refresh, enroll, markSeen }}>
+  return <AccessContext.Provider value={{ record: effective, ready, state, canUse, enrollmentPending, hardWall, entryPaywall: !seen && ['A', 'B'].includes(record.variant) && state !== 'active', refresh, enroll, markSeen }}>
     <RevenueCatExperimentAnalytics owner={recordOwner} ready={ready && hydrationReady && wellnessConsentGranted} serverVerified={measurementVerified} age={profile.completedAt ? profile.age : null} record={record} />
     {children}
   </AccessContext.Provider>;
