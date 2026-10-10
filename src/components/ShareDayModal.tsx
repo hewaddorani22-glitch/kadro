@@ -2,7 +2,9 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+// A native Modal is its own root, so the app-level provider's insets do not
+// reach it; this provider measures the modal window itself.
+import { initialWindowMetrics, SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ShareDayCard, SHARE_CARD_HEIGHT, SHARE_CARD_WIDTH } from '@/components/ShareDayCard';
 import { PrimaryButton } from '@/components/ui';
@@ -81,6 +83,7 @@ export function ShareDayModal({ input, onClose, visible }: {
 
   return (
     <Modal animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={close} presentationStyle="fullScreen" visible={visible}>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
       <StatusBar hidden={focus} />
       <SafeAreaView edges={focus ? [] : ['top', 'bottom']} style={styles.safe}>
         {!focus ? (
@@ -138,6 +141,7 @@ export function ShareDayModal({ input, onClose, visible }: {
           </ScrollView>
         ) : null}
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

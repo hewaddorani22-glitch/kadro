@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import Svg, { Circle, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, G, Line, Path, Rect, Text as SvgText } from 'react-native-svg';
 
 import { useTheme } from '@/context/ThemeContext';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -108,10 +108,18 @@ export function ShareDayCard({ card, dateLabel, weightLabel, width }: {
 
   return (
     <Svg height={height} viewBox={`0 0 ${SHARE_CARD_WIDTH} ${SHARE_CARD_HEIGHT}`} width={width}>
+      <Defs>
+        <ClipPath id="shareCardShape">
+          <Rect height={SHARE_CARD_HEIGHT} rx={28} width={SHARE_CARD_WIDTH} x={0} y={0} />
+        </ClipPath>
+      </Defs>
       <Rect fill={colors.background} height={SHARE_CARD_HEIGHT} rx={28} width={SHARE_CARD_WIDTH} x={0} y={0} />
-      {/* A quiet brand echo: one large soft disc and the pistachio dot. */}
-      <Circle cx={318} cy={44} fill={colors.neutralSoft} r={96} />
+      {/* A quiet brand echo: one large soft disc and the pistachio dot, clipped to the card's rounded corner. */}
+      <G clipPath="url(#shareCardShape)">
+        <Circle cx={318} cy={44} fill={colors.neutralSoft} r={96} />
+      </G>
       <Circle cx={316} cy={120} fill={colors.accent} r={7} />
+      <Rect fill="none" height={SHARE_CARD_HEIGHT - 1} rx={27.5} stroke={colors.border} strokeWidth={1} width={SHARE_CARD_WIDTH - 1} x={0.5} y={0.5} />
 
       {/* Header: the mark, the name, the day. */}
       <G transform="translate(22 22) scale(0.5)">

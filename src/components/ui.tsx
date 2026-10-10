@@ -66,7 +66,8 @@ export function PressableScale({ haptic = true, onPressIn, onPressOut, style, di
     animate(false);
     onPressOut?.(event);
   };
-  const resolved = typeof style === 'function' ? style({ pressed: isPressed }) : style;
+  // Expo's web typings widen the state with hovered/focused; native only reports pressed.
+  const resolved = typeof style === 'function' ? style({ pressed: isPressed } as PressableStateCallbackType) : style;
   const motion = reduceMotion ? (isPressed ? { opacity: 0.72 } : null) : { transform: [{ scale }] };
   return (
     <AnimatedPressable
