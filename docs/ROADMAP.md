@@ -1,5 +1,13 @@
 # Roadmap
 
+## 2026-10-10 – Plan → Supermarkt mit echten Produkten (`wip2/supermarket`)
+
+- [x] Gebündelter Open-Food-Facts-Auszug (`src/data/supermarketProducts.json`, 397 Produkte, ~104 KB) per `npm run data:supermarket`; Händler nur aus dem OFF-Stores-Tag, nie aus der Marke abgeleitet.
+- [x] Drei Einkaufskombis (Protein-Anker + optional Obst/Brot + Beilage), deterministisch, ≤ 10 % über dem Restbudget, Präferenzen als harte Filter.
+- [x] „Das hole ich mir“ öffnet die Bestätigung mit allen Produkten vorausgefüllt und trägt sie als eine Mahlzeit ein (kostenlos, keine Analyse).
+- [x] ODbL-Hinweis in Plan und `THIRD_PARTY_NOTICES.md`; `scripts/validate-supermarket-combos.mjs` in `verify`.
+- [ ] Offen: Stichprobe der Produktdaten gegen echte Packungen, Gerätetest der Karten (Dark Mode, große Schrift), Datenaktualisierung vor jedem Release.
+
 ## 2026-10-09 – Growth/Funnel release (`growth/1.0.4-funnel`)
 
 Zusammenführung aller Arbeitsstränge seit `20f93d3`. Ziel: mehr erste gespeicherte Mahlzeiten, weniger erstattete KI-Analysen, Messung ohne Client-Analytics.

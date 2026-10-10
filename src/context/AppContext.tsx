@@ -70,21 +70,22 @@ export type AnalysisStatus = 'idle' | 'analyzing' | 'ready' | 'queued' | 'error'
 export type AnalysisPhase = 'preparing' | 'analysing';
 /** Amount errors an older gateway still answers with 422 instead of an estimate. */
 const AMOUNT_ERROR_CODES = new Set(['mass_required', 'amount_ambiguous', 'amount_out_of_range']);
-type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search';
+type ScanMode = 'live' | 'demo' | 'queued' | 'description' | 'barcode' | 'search' | 'plan';
 
 /**
  * Inputs that never reach the model, and therefore never spend one of the
  * three free meals. Search is the reason this exists: it is a database lookup
  * the sheet openly labels as free.
  */
-const FREE_ANALYSIS_MODES = new Set<ScanMode>(['demo', 'search', 'barcode']);
+const FREE_ANALYSIS_MODES = new Set<ScanMode>(['demo', 'search', 'barcode', 'plan']);
 
 function telemetryScanSource(mode: ScanMode) {
   if (mode === 'live') return 'camera' as const;
   if (mode === 'queued') return 'queued_retry' as const;
   if (mode === 'description') return 'description' as const;
   if (mode === 'barcode') return 'barcode' as const;
-  if (mode === 'search') return 'search' as const;
+  // A supermarket basket from Plan is a set of database products, like search.
+  if (mode === 'search' || mode === 'plan') return 'search' as const;
   return 'demo' as const;
 }
 
@@ -136,6 +137,8 @@ type AppContextValue = {
   startDescriptionScan: (description: string) => void;
   startBarcodeScan: (barcode: string) => void;
   applySearchResult: (result: FoodSearchResult, grams: number) => void;
+  /** Puts several known products (a Plan → Supermarkt basket) on the confirm screen as one meal. Free, no analysis. */
+  startPlannedDraft: (entries: { result: FoodSearchResult; grams: number }[]) => void;
   /** Logs the foods picked in one search session as one meal (free, no confirmation screen). */
   logFoodsDirect: (entries: { result: FoodSearchResult; grams: number }[]) => Promise<Meal>;
   replaceDetectedItem: (id: string, result: FoodSearchResult, grams: number) => void;
@@ -907,6 +910,38 @@ export function AppProvider({ children }: PropsWithChildren) {
     trackEvent('meal scan started', { scan_source: 'search' });
   }, []);
 
+  /**
+   * A supermarket basket from Plan is already resolved, like a search hit,
+   * but it is several products. It goes through the normal confirm screen so
+   * every amount can still be changed, and it is logged as one meal. No
+   * analysis ran, so it never spends a free analysis.
+   */
+  const startPlannedDraft = useCallback((entries: { result: FoodSearchResult; grams: number }[]) => {
+    if (!entries.length) throw new Error('Cannot start an empty planned meal');
+    const items = entries.map((entry, index) => {
+      const [item] = mealFromSearch(entry.result, entry.grams).items;
+      return entries.length > 1 ? { ...item, id: `${item.id}-${index + 1}` } : item;
+    });
+    analysisGenerationRef.current += 1;
+    deleteTemporaryPhoto(photoUriRef.current);
+    photoUriRef.current = null;
+    scanModeRef.current = 'plan';
+    setPhotoUri(null);
+    setScanMode('plan');
+    setScanId(makeScanId());
+    setQueuedInput(null);
+    setDescriptionInput('');
+    setBarcodeInput('');
+    setDetectedItems(items);
+    setMealTitle(items.map((item) => item.name).join(', ').slice(0, 160));
+    setMealPortionState(1);
+    setPortionEstimated(false);
+    setAutoMatchedItemIds([]);
+    setAnalysisMessage(null);
+    setAnalysisError(null);
+    setAnalysisStatus('ready');
+  }, []);
+
   const startBarcodeScan = useCallback((barcode: string) => {
     analysisGenerationRef.current += 1;
     deleteTemporaryPhoto(photoUriRef.current);
@@ -1309,7 +1344,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       ...(moment.date !== today ? { time: formatClockTime(moment.at) } : {}),
       savedAt: moment.at.toISOString(),
     };
-    await saveSyncedMeal(persistedMeal, telemetryScanSource(scanModeRef.current));
+    await saveSyncedMeal(persistedMeal, scanModeRef.current === 'plan' ? 'recommendation' : telemetryScanSource(scanModeRef.current));
     if (generation !== getLocalDataGeneration()) throw new Error('cloud_identity_changed');
     // Only today's meals belong in `meals`; a past day lives in the history.
     setMeals((current) => [...current.filter((meal) => meal.id !== persistedMeal.id), ...(persistedMeal.date === today ? [persistedMeal] : [])]);
@@ -1544,6 +1579,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       analysisStatus,
       analysisError,
       applySearchResult,
+      startPlannedDraft,
       replaceDetectedItem,
       removeDetectedItem,
       analysisMessage,
@@ -1580,7 +1616,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       adjustLoggedMealPortion,
       setLoggedMealType,
     }),
-    [descriptionInput, addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, localStorageError, appleReauthenticationRequired, isCurrentScanLogged, loadExistingAccount, loadAppleAccount, logFoodsDirect, setLoggedItemAmount, plannedMealDate, setPlannedMealDate, scanTarget, favoriteMeals, toggleFavoriteMeal, analysisPhase, portionEstimated, autoMatchedItemIds, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, cancelAnalysis, retryAccountRecovery, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
+    [descriptionInput, addWeightEntry, adjustLoggedMealPortion, analysisError, applySearchResult, analysisMessage, analysisStatus, analyzeCurrentPhoto, completeOnboarding, consumed, deleteLoggedMeal, detectedItems, freeScansLeft, grantWellnessConsent, hasEverLoggedScan, hasLoggedScan, lifetimeScanCount, hydrationReady, localStorageError, appleReauthenticationRequired, isCurrentScanLogged, loadExistingAccount, loadAppleAccount, logFoodsDirect, setLoggedItemAmount, plannedMealDate, setPlannedMealDate, scanTarget, favoriteMeals, toggleFavoriteMeal, analysisPhase, portionEstimated, autoMatchedItemIds, logPlannedMeal, logRepeatMeal, logScannedMeal, mealHistory, repeatMeals, mealPortion, meals, pendingAnalysisCount, photoUri, profile, refreshCloudState, remaining, resetAfterAccountDeletion, resetScan, resumeLatestAnalysis, cancelAnalysis, retryAccountRecovery, scanMode, setUnitSystem, setLoggedMealType, plannedMealType, setPlannedMealType, scannedMeal, setCapturedPhoto, startBarcodeScan, startDemoScan, startDescriptionScan, startPlannedDraft, syncMode, targets, userName, weightEntries, wellnessConsentGranted, withdrawWellnessConsent],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

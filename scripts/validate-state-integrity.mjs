@@ -59,8 +59,8 @@ assert.match(cloud, /defaultProfile\.completedAt \? \{[\s\S]*age: defaultProfile
   'a first cloud profile created from completed local onboarding must preserve its declared measurements');
 assert.match(cloud, /deriveMissingTargetsFromCloud && profile\.completedAt[\s\S]*calculateDailyTargets\(profile\)[\s\S]*missingTargetDefaults/,
   'a returning account with no target row for today must derive it from the cloud profile instead of generic defaults');
-assert.match(app, /\['demo', 'search', 'barcode'\]/,
-  'barcode and search must remain outside the paid AI allowance');
+assert.match(app, /\['demo', 'search', 'barcode', 'plan'\]/,
+  'barcode, search and Plan supermarket baskets must remain outside the paid AI allowance');
 assert.doesNotMatch(scan.slice(scan.indexOf('const openBarcode'), scan.indexOf('const handleBarcode')), /hasScanAccess/,
   'barcode must not open the paywall');
 assert.match(plan, /freeScansLeft === 0/,

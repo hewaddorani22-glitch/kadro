@@ -122,6 +122,8 @@ const allowedGerman = [
   'Deutsche Nährstoffdatenbank',
   'Max Rubner-Institut',
   'Altenessener Str.',
+  // Store chain shown on Plan → Supermarkt product chips.
+  'Aldi Süd',
 ];
 for (const file of ['src/i18n/en.ts', 'src/i18n/legal.en.ts']) {
   const source = await readFile(resolve(projectRoot, file), 'utf8');
