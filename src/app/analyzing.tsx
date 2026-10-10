@@ -14,6 +14,7 @@ import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { useLanguage } from '@/i18n/LanguageProvider';
 import { AnalysisErrorKind } from '@/services/contracts';
 import { setScanInputDraft } from '@/services/captureIntents';
+import { getUnknownBarcode } from '@/services/mealAnalysis';
 
 /** Most analyses answer well within this; after it the user gets a way out. */
 const SLOW_AFTER_MS = 15_000;
@@ -112,6 +113,12 @@ export default function AnalyzingScreen() {
     void analyzeCurrentPhoto(false, analysisError !== 'offline' && analysisError !== 'timeout');
   };
 
+  const openLabelScan = () => {
+    const barcode = getUnknownBarcode();
+    resetScan();
+    router.replace(barcode ? { pathname: '/label-scan', params: { barcode } } : '/label-scan');
+  };
+
   const changeInput = (path: '/(tabs)/scan' | '/(tabs)/scan?mode=description' = '/(tabs)/scan') => {
     if (scanMode === 'description') {
       router.dismissTo('/(tabs)/scan?mode=description');
@@ -203,10 +210,18 @@ export default function AnalyzingScreen() {
                 </>
               ) : analysisError === 'product-not-found' || analysisError === 'invalid-input' ? (
                 <>
+                  {/* "Produkt nicht gefunden": the label on the pack is the
+                      source; photographed once, the barcode knows it next time. */}
+                  {analysisError === 'product-not-found' && scanMode === 'barcode' ? <PrimaryButton
+                    icon="nutrition-outline"
+                    label={t.analyzing.labelScanInstead}
+                    onPress={openLabelScan}
+                  /> : null}
                   {analysisError === 'product-not-found' ? <PrimaryButton
                     icon="create-outline"
                     label={t.analyzing.describeInstead}
                     onPress={() => changeInput('/(tabs)/scan?mode=description')}
+                    variant={scanMode === 'barcode' ? 'secondary' : 'primary'}
                   /> : null}
                   <PrimaryButton label={t.analyzing.changeInput} onPress={() => changeInput()} variant="ghost" />
                 </>

@@ -104,7 +104,8 @@ assert.deepEqual(initialSelection(Number.NaN, [], chosen), { unitIndex: -1, amou
 const readSource = (relative) => readFileSync(resolve(projectRoot, relative), 'utf8');
 const hops = [
   ['supabase/functions/nutrition/index.ts', /portions: servingPortion\(product\)/, 'the barcode endpoint does not return the pack serving'],
-  ['supabase/functions/nutrition/index.ts', /serving_size,serving_quantity/, 'the barcode lookup does not ask for the serving fields'],
+  ['supabase/functions/nutrition/index.ts', /product\/\$\{code\}\.json\?fields=\$\{OFF_PRODUCT_FIELDS\}/, 'the barcode lookup does not ask for the shared field list'],
+  ['supabase/functions/_shared/off-product.mjs', /serving_size,serving_quantity/, 'the barcode lookup does not ask for the serving fields'],
   ['supabase/functions/nutrition/index.ts', /portions: usdaPortions\(entry\)/, 'search results carry no household measures'],
   ['src/services/mealAnalysis.ts', /portions: payload\.portions/, 'a scanned barcode drops its portions'],
   ['src/services/mealAnalysis.ts', /portions: result\.portions/, 'a searched food drops its portions'],

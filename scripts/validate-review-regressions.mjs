@@ -1,4 +1,4 @@
-import {offMassNutrition,offMassPortions} from '../supabase/functions/_shared/off-product.mjs';
+import {offMassNutrition,offMassPortions,OFF_PRODUCT_FIELDS,offBarcodeCandidates,offBrand,offPackageGrams} from '../supabase/functions/_shared/off-product.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import ts from 'typescript';
@@ -48,9 +48,22 @@ function loadFunction(path, name, dependencies) {
 }
 for (const path of ['server/index.mjs', 'supabase/functions/nutrition/index.ts']) {
   let nutriments = { ...label, 'energy-kcal_100g': undefined };
-  const lookup = loadFunction(path, 'lookupBarcode', {
-    fetch: async () => ({ ok: true, json: async () => ({ product: { nutriments } }) }),
-    offMassNutrition,offMassPortions,openFoodFactsNutrition, localizedProductName: () => 'Fixture', servingPortion: () => [],
+  const fetch = async () => ({ ok: true, status: 200, json: async () => ({ product: { nutriments } }) });
+  const gateway = path.endsWith('index.ts');
+  // The hosted gateway reads the shared OFF cache first and tries v2, then v0,
+  // through small helpers; run those actual helpers with a cold cache.
+  const lookup = loadFunction(path, 'lookupBarcode', gateway ? {
+    readOffCache: async () => null, writeOffCache: async () => {}, offBarcodeCandidates, ModelError: Error,
+    fetchOffProduct: loadFunction(path, 'fetchOffProduct', {
+      OFF_PRODUCT_FIELDS, ProviderQuotaError: class extends Error {},
+      offProductRequest: loadFunction(path, 'offProductRequest', { fetch, AbortSignal }),
+      offCacheable: loadFunction(path, 'offCacheable', { OFF_PRODUCT_FIELDS }),
+    }),
+    barcodeResult: loadFunction(path, 'barcodeResult', {
+      offMassNutrition, localizedProductName: () => 'Fixture', offBrand, offPackageGrams, servingPortion: () => [],
+    }),
+  } : {
+    fetch, offMassNutrition,offMassPortions,openFoodFactsNutrition, localizedProductName: () => 'Fixture', servingPortion: () => [],
   });
   assert.equal((await lookup('8000500310427', 'de')).status, 422);
   nutriments = label;
@@ -61,6 +74,8 @@ let barcodeNutrition;
 const barcode = loadFunction('src/services/mealAnalysis.ts', 'analyzeBarcode', {
   gatewayFetch: async () => ({ ok: true, json: async () => ({ barcode:'8000500310427',name: 'Fixture', per100g: barcodeNutrition,source:{provider:'open-food-facts',referenceId:'8000500310427',label:'Synthetic fixture'} }) }),
   getLanguage: () => 'de', getDictionary: () => ({ errors: { portionStartValue: '100 g' } }),
+  // No own product ("Mein Produkt") for this barcode: the gateway answers.
+  findCustomFoodByBarcode: async () => null,
   gatewayMessage: () => 'missing_nutrition', MealAnalysisError: AnalysisError,
   validSearchResult:loadFunction('src/services/mealAnalysis.ts','validSearchResult',{}),
 });

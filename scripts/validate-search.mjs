@@ -101,4 +101,51 @@ const bls = await read('supabase/functions/_shared/bls-reference.mjs');
 assert.ok(bls.includes('export function searchBlsReferences'), 'German search needs the dish references');
 assert.match(searchFn, /language === 'de'/, 'the German dish names must only be offered to German readers');
 
-console.log('Validated search: no model call, no quota, no free meal spent, debounced, stale responses discarded.');
+// --- Database gap: German synonyms, dedupe, source badges, empty-field picks ---
+// Local first (own products, then the on-device BLS catalogue), remote after the debounce.
+assert.match(runFn, /const local = mergeSuggestions\(matchCustomFoods\(term, customFoods\), suggestFoods\(term, usage\)\);[\s\S]*setSearchResults\(local\);[\s\S]*searchTimer\.current = setTimeout\(/,
+  'own products and on-device suggestions must show before the debounced gateway search');
+assert.match(screen, /setSearchResults\(mergeSuggestions\(local, results\)\)/, 'gateway rows are merged without duplicates');
+assert.match(screen, /foodSourceBadge\(result\)/, 'every row shows where its values come from');
+assert.match(screen, /myProducts\.map\(renderResult\)[\s\S]*frequent\.map\(renderResult\)[\s\S]*recents\.map\(renderResult\)/,
+  'an empty field lists own products, then frequent, then recent foods');
+assert.match(screen, /t\.scan\.quickAddCta/, 'quick add must be offered when nothing fits');
+assert.match(screen, /openLabelScan\(\)/, 'the search must offer the nutrition-label scan');
+for (const file of ['src/i18n/de.ts', 'src/i18n/en.ts']) {
+  const dictionary = await read(file);
+  for (const key of ['badgeBls', 'badgeOff', 'badgeCustom', 'frequentTitle', 'myProductsTitle', 'quickAddTitle']) assert.ok(dictionary.includes(`${key}:`), `${file} is missing ${key}`);
+}
+assert.match(await read('src/i18n/de.ts'), /badgeOff: 'Open Food Facts', badgeUsda: 'USDA', badgeCustom: 'Mein Produkt'/);
+const suggestSource = await read('src/services/foodSuggest.ts');
+assert.match(suggestSource, /const tokens = fold\(applyFoodSynonyms\(typed\.join\(' '\), language\)\)/, 'on-device suggestions must use the shared synonym table');
+assert.match(await read('supabase/functions/_shared/bls-search.mjs'), /searchFold\(applyFoodSynonyms\(fold\(query\), language\)\)/, 'the gateway catalogue must use the shared synonym table');
+
+// Runtime: the actual merge, badge and frequent-food helpers.
+const ts = (await import('typescript')).default;
+const shared = (name) => import(new URL(`../supabase/functions/_shared/${name}`, import.meta.url));
+const modules = { 'bls-search-data.mjs': await shared('bls-search-data.mjs'), 'bls-reference.mjs': await shared('bls-reference.mjs'), 'bls-search.mjs': await shared('bls-search.mjs'), 'food-synonyms.mjs': await shared('food-synonyms.mjs') };
+const loaded = { exports: {} };
+new Function('require', 'module', 'exports', ts.transpileModule(suggestSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText)(
+  (id) => id === '@/i18n/active' ? { getLanguage: () => 'de', getDictionary: () => ({ scan: new Proxy({}, { get: () => '1 Portion' }) }) } : modules[id.split('/').pop()],
+  loaded, loaded.exports);
+const suggest = loaded.exports;
+const per100g = { calories: 63, protein: 11, carbs: 4, fat: 0.2 };
+const own = { id: 'custom-1', name: 'Skyr Natur (Ehrmann)', per100g, defaultGrams: 150, barcode: '4002971104202', source: { provider: 'manual', referenceId: 'custom-1', label: 'Mein Produkt' } };
+const off = { id: 'off-4002971104202', name: 'Skyr (Ehrmann)', per100g, defaultGrams: 100, source: { provider: 'open-food-facts', referenceId: '4002971104202', label: 'Open Food Facts 4002971104202' } };
+const pudding = { id: 'off-111', name: 'Protein Pudding (Ehrmann)', per100g: { ...per100g, calories: 80 }, defaultGrams: 100, source: { provider: 'open-food-facts', referenceId: '111', label: 'Open Food Facts 111' } };
+const puddingTwin = { ...pudding, id: 'off-222', source: { ...pudding.source, referenceId: '222' } };
+const skyr = suggest.suggestFoods('skyr')[0];
+const merged = suggest.mergeSuggestions([own, skyr], [off, pudding, puddingTwin, { ...skyr, id: 'bls-dup' }]);
+assert.deepEqual(merged.map((row) => row.id), [own.id, skyr.id, pudding.id], 'same barcode (own product = OFF record), same reference or same name+energy is one row');
+assert.deepEqual([own, skyr, off].map(suggest.foodSourceBadge), ['custom', 'bls', 'off']);
+assert.equal(suggest.foodSourceBadge({ source: { provider: 'manual', referenceId: 'manual-1' } }), 'own');
+const meal = (id, at, items) => ({ id, savedAt: at, items: items.map((item) => ({ included: true, amountG: 100, ...item })) });
+const history = [
+  meal('a', '2026-10-01T08:00:00Z', [{ name: 'Skyr', source: { provider: 'bls', referenceId: 'M710100', label: 'BLS' } }]),
+  meal('b', '2026-10-02T08:00:00Z', [{ name: 'Skyr', source: { provider: 'bls', referenceId: 'M710100', label: 'BLS' } }, { name: 'Riegel', nutritionPer100g: per100g, source: { provider: 'open-food-facts', referenceId: '400', label: 'OFF' } }]),
+  meal('c', '2026-10-03T08:00:00Z', [{ name: 'Riegel', nutritionPer100g: per100g, source: { provider: 'open-food-facts', referenceId: '400', label: 'OFF' } }, { name: 'Apfel', source: { provider: 'bls', referenceId: 'F110100', label: 'BLS' } }]),
+  meal('d', '2026-10-04T08:00:00Z', [{ name: 'Riegel', nutritionPer100g: per100g, source: { provider: 'open-food-facts', referenceId: '400', label: 'OFF' } }]),
+];
+assert.deepEqual(suggest.frequentFoods(history).map((row) => row.source.referenceId), ['400', 'M710100'], 'frequent foods: most often first, any source, eaten at least twice');
+
+console.log('Validated search: no model call, no quota, no free meal spent, debounced, stale responses discarded; own products and synonyms first, cross-source dedupe, source badges, frequent/recent picks and quick add.');

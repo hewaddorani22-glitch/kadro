@@ -143,7 +143,9 @@ await test('B blocks every new provider entry before free quota/cache; A and old
 await test('production GET paths: auth/consent before cache, local typing no external calls, cache replay',async()=>{
  assert.equal(compatibleSearchIdentity('Milk 1.5 %','Milk 11.5 %'),false);
  for(const q of ['Ei','Öl','egg','oil']){const result=await get('/v1/search?q='+encodeURIComponent(q)+'&language=de&scope=catalogue');assert.equal(result.status,200);assert.ok(result.body.results.length);}
- assert.equal(providerCalls,0);const path='/v1/search?q=AcmeSynthetic&language=de';const first=await get(path);assert.equal(first.status,200);assert.equal(first.body.searchStatus,'complete');await get(path);assert.equal(providerCalls,1);
+ assert.equal(providerCalls,0);const path='/v1/search?q=AcmeSynthetic&language=de';const first=await get(path);assert.equal(first.status,200);assert.equal(first.body.searchStatus,'complete');
+ // German readers: Germany-scoped text search plus one brand-tag probe when it found little; the replay is cached.
+ assert.equal(providerCalls,2);await get(path);assert.equal(providerCalls,2);
  authorized=false;assert.equal((await get(path)).status,401);authorized=true;consented=false;assert.equal((await get(path)).status,403);consented=true;
 });
 await test('production barcode/search errors preserve status and Retry-After; invalid JSON never empty success',async()=>{

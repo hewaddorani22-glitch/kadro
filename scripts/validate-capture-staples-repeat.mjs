@@ -4,6 +4,7 @@ import ts from 'typescript';
 import * as bls from '../supabase/functions/_shared/bls-search-data.mjs';
 import * as references from '../supabase/functions/_shared/bls-reference.mjs';
 import * as catalog from '../supabase/functions/_shared/bls-search.mjs';
+import * as synonyms from '../supabase/functions/_shared/food-synonyms.mjs';
 globalThis.fetch = async () => { throw Error('TEST_EXTERNAL_HTTP_BLOCKED'); };
 const read = path => fs.readFileSync(new URL('../' + path, import.meta.url), 'utf8');
 function load(path, dependencies = {}) {
@@ -12,6 +13,7 @@ function load(path, dependencies = {}) {
   new Function('require', 'module', 'exports', code)(id => {
     if (id.endsWith('bls-search-data.mjs')) return bls;
     if (id.endsWith('bls-search.mjs')) return catalog;
+    if (id.endsWith('food-synonyms.mjs')) return synonyms;
     if (id.endsWith('bls-reference.mjs')) return references;
     assert.ok(id in dependencies, `Unmocked dependency: ${id}`); return dependencies[id];
   }, module, module.exports);
