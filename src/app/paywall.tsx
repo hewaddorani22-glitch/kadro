@@ -23,7 +23,7 @@ import { TRIAL_REMINDER_LEAD_DAYS, getReminderPermission, requestReminderPermiss
 import { toBillingMode, trackEvent } from '@/services/telemetry';
 import { markPaywallShown } from '@/services/paywallExposure';
 
-/** The close button arrives after a short, calm moment; it is never removed. */
+/** The close button arrives after a short, calm moment; only an enforced lock (hard wall, old B) without usable access has none. */
 const CLOSE_DELAY_MS = 2500;
 
 type Plan = 'yearly' | 'monthly';
