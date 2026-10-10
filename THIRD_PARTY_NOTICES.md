@@ -46,8 +46,10 @@ serving and nutrients per 100 g of roughly 300 products sold in Germany).
   with the data date under the suggestions, and every logged product keeps its
   barcode as source.
 - Because the extract ships inside the app, the ODbL requires that the
-  extract (or the build script that recreates it) is available under the ODbL
-  on request; the file and script in this repository serve that purpose.
+  extract (or the build script that recreates it) is available under the ODbL.
+  It is published openly at `https://getkandro.com/data/supermarket-products.json`
+  (`site/data/`, with `LICENSE.txt`); keep that copy in sync with
+  `src/data/supermarketProducts.json` whenever the data is rebuilt.
 - Product data, store listings and recipes can change; the extract records
   its fetch date and is refreshed by rerunning the build script.
 
