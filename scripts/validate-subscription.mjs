@@ -120,8 +120,10 @@ if (!scan.includes('freeScansLeft > 0') || !scan.includes("subscriptionStatus ==
 // A wall the user saw coming reads as a price; a wall that appears without
 // warning reads as a bait and switch.
 // The wording moved into the dictionaries; the guarantee is that the scanner
-// surfaces the remaining allowance at all, in whichever language.
-if (!scan.includes('FREE_SCAN_ALLOWANCE') || !scan.includes('t.scan.allowanceLeft')) {
+// surfaces the remaining allowance at all, in whichever language. Since
+// 10/2026 the total comes from useFreeScanAllowance (3 legacy, 1 behind the
+// hard wall), and a hard-wall install sees its single sample analysis.
+if (!scan.includes('useFreeScanAllowance') || !scan.includes('t.scan.allowanceLeft') || !scan.includes('t.scan.trialScanLeft')) {
   failures.push('scanner does not show the remaining free allowance before the paywall');
 }
 const analyzeFlow = appContext.slice(

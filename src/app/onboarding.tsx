@@ -19,6 +19,7 @@ import { useApp } from '@/context/AppContext';
 import { BIOLOGICAL_SEXES, caloriePlan, dailyGoalOffset, calculateDailyTargets, effectiveGoal, estimatedPace, isRateLimited, isTeenProfile, isUnderweight, lowestHealthyWeightKg, weeklyRateLabel } from '@/services/personalization';
 import { clearOnboardingDraft, loadOnboardingDraft, saveOnboardingDraft } from '@/services/onboardingDraft';
 import { setFirstRunStage } from '@/services/firstRun';
+import { startHardWallInstall } from '@/services/hardWall';
 import { setAnalyticsCollectionEnabled, trackEvent } from '@/services/telemetry';
 import { errorHaptic, selectionHaptic, stepHaptic, successHaptic } from '@/services/haptics';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -353,6 +354,9 @@ export default function OnboardingScreen() {
     if (firstRun) await prepareAccessEnrollment(ageKnown);
     // Value before the offer: the first scan comes next, then the paywall,
     // then the optional reminder question (see services/firstRun.ts).
+    // A fresh install on this build: one free analysis, then the hard paywall
+    // (the server confirms or overrides this per account; services/hardWall.ts).
+    if (firstRun) await startHardWallInstall();
     if (firstRun) await setFirstRunStage('scan');
     await completeOnboarding(draftProfile);
     if (firstRun && analyticsOptIn && draftProfile.age >= 18) void setAnalyticsCollectionEnabled(true).catch(() => false);

@@ -1,5 +1,21 @@
 # Roadmap
 
+## 2026-10-10 – Harte Paywall nach dem ersten Scan (Branch `wip2/hardwall`, nicht ausgeliefert)
+
+Eigentümerentscheidung 10.10.2026: Umsatz pro Installation. Ersetzt für **neue** Installationen die weiche Paywall aus dem pausierten Test vom 09.10.; bestehende Installationen behalten ihren Umfang.
+
+- [x] **Server:** Modus `hard_after_first_scan` in `private.paywall_config` (an, Stichtag einmalig beim Anwenden gespeichert). Neue Konten: genau 1 kostenlose KI-Analyse und 1 kostenlose Mahlzeit (`private.paywall_free_meals`), danach `hard = true` über die bestehenden Wege (Gateway 402, Mahlzeit-Freigabe, Meal-Trigger). Laufender Trial = aktives Entitlement. Bestandskonten, Zuordnungen vor dem Stichtag und aktive A/B-/QA-Varianten bleiben `legacy` (3 Analysen, weiche Paywall). md5-Guards auf allen drei ersetzten Funktionen; `validate-hard-paywall-postgres.py`.
+- [x] **App:** Servermodus maßgeblich, offline gilt das Installationsflag (erster Scan erlaubt, danach Paywall). Nach der ersten gespeicherten Mahlzeit bzw. „Später“ führen alle Routen außer Paywall, Konto & Hilfe, Rechtstexten, Datenschutz/Einwilligung, gespeicherten Mahlzeiten und Kontolöschung zur Paywall; das Ergebnis der ersten Mahlzeit bleibt bis zum nächsten Schritt sichtbar. Harte Paywall ohne X, Wischen oder Zurück: Jahresabo vorausgewählt, „Dein Plan steht. Starte jetzt deine 7 Tage gratis.“, Preis und Monatsäquivalent aus RevenueCat, „7 Tage gratis starten“ bzw. „Kandro Pro starten“ ohne Trial-Berechtigung, Wiederherstellen, Bedingungen/Datenschutz, Konto & Hilfe, Fair-Use-Hinweis. First-Scan: „Deine kostenlose Probe-Analyse“, ohne Gratis-Umfang-Karte. Sichtung `markPaywallShown('hard')`.
+- [x] **Ehrlichkeit:** Store-Texte DE/EN mit Abschnitt ZUGANG/ACCESS, AGB/Datenschutz 2.6 (neue vs. bestehende Konten, Speicherung der kostenlosen Mahlzeit), Review-Notes mit Prüfpfad, Website-Rechtstexte neu erzeugt.
+- [x] **Validatoren:** neu `validate-hard-paywall.mjs` (in `verify`) und `validate-hard-paywall-postgres.py`; angepasst: Store-Listing, Rechtstexte, Abo-Hinweis, Trial-Entitlement, bestehende Mocks.
+
+Offene Produktionsschritte (Eigentümer, nicht durch Claude ausgeführt):
+
+- [ ] Reihenfolge: **zuerst** den App-Build mit diesem Stand veröffentlichen, **danach** Migration `20261010120000_hard_paywall_after_first_scan.sql` anwenden (Stichtag = Anwendungszeitpunkt). Ältere Builds verstehen `mode` nicht und würden bei neuen Konten nur serverseitig blockiert. Vorher `20261009100000`–`20261009100300` anwenden, falls noch offen.
+- [ ] Edge Function `nutrition`: keine Codeänderung nötig (reicht `mode`/`freeAnalyses` unverändert durch); nur deployen, falls der Stand vom 09.10. noch nicht live ist.
+- [ ] Gerätetest: Neuinstallation → eine Analyse → Paywall ohne X → Sandbox-Trial → App offen; „Später“ → Paywall; Bestandsinstallation unverändert; Flugmodus nach dem ersten Scan.
+- [ ] Store-Texte in App Store Connect übernehmen; Abschalten bei Bedarf: `update private.paywall_config set hard_after_first_scan=false`.
+
 ## 2026-10-09 – Growth/Funnel release (`growth/1.0.4-funnel`)
 
 Zusammenführung aller Arbeitsstränge seit `20f93d3`. Ziel: mehr erste gespeicherte Mahlzeiten, weniger erstattete KI-Analysen, Messung ohne Client-Analytics.

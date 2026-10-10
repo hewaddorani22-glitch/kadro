@@ -41,7 +41,7 @@ import {
   nutritionFromItems,
   sumMeals,
 } from '@/services/mockNutrition';
-import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
+import { useFreeScanAllowance } from '@/hooks/useHardWall';
 import { calculateDailyTargets, DEFAULT_PROFILE } from '@/services/personalization';
 import { availableRepeats, FavoriteMeal, favoriteKey, favoriteSnapshot, RepeatCandidate } from '@/services/repeatMeals';
 import { deleteSyncedMeal, hydrateCloudState, hydrateExistingCloudAccount, saveSyncedMeal, syncUserSetup, SyncMode } from '@/services/syncRepository';
@@ -756,7 +756,9 @@ export function AppProvider({ children }: PropsWithChildren) {
   );
   const hasLoggedScan = meals.some((meal) => meal.origin === 'scan' || meal.origin === 'plan');
   const hasEverLoggedScan = lifetimeScanCount > 0 || mealHistory.some((meal) => meal.origin === 'scan');
-  const freeScansLeft = Math.max(0, FREE_SCAN_ALLOWANCE - lifetimeScanCount);
+  // 3 free AI analyses for existing installs, 1 behind the hard wall.
+  const { allowance: freeScanAllowance } = useFreeScanAllowance();
+  const freeScansLeft = Math.max(0, freeScanAllowance - lifetimeScanCount);
   const isCurrentScanLogged = mealHistory.some((meal) => meal.id === scanId);
   const userName = profile.displayName;
 

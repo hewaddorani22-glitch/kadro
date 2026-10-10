@@ -11,7 +11,7 @@ import { useIsFocused } from '@react-navigation/native';
 import { ActivityIndicator, Alert, AppState, Keyboard, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { FREE_SCAN_ALLOWANCE } from '@/constants/product';
+import { useFreeScanAllowance } from '@/hooks/useHardWall';
 import { PrimaryButton } from '@/components/ui';
 import { PortionSheet } from '@/components/PortionSheet';
 import { ManualFoodForm } from '@/components/ManualFoodForm';
@@ -254,6 +254,7 @@ export default function ScanScreen() {
   // hasEverLoggedScan is kept so the copy can distinguish a first-time user from
   // someone who has simply used up the allowance.
   const showAllowance = !subscribed && !subscriptionUncertain && hasEverLoggedScan;
+  const { allowance, hardWall } = useFreeScanAllowance();
 
   const navigateAfterSheet = (target: '/analyzing' | '/paywall?reason=blocked') => {
     Keyboard.dismiss();
@@ -643,7 +644,9 @@ export default function ScanScreen() {
             <View style={styles.allowancePill}>
               <Ionicons color={colors.accent} name="sparkles" size={13} />
               <Text style={styles.allowanceText}>
-                {freeScansLeft > 0 ? t.scan.allowanceLeft(freeScansLeft, FREE_SCAN_ALLOWANCE) : t.scan.allowanceUsed}
+                {hardWall
+                  ? freeScansLeft > 0 ? t.scan.trialScanLeft : t.scan.trialScanUsed
+                  : freeScansLeft > 0 ? t.scan.allowanceLeft(freeScansLeft, allowance) : t.scan.allowanceUsed}
               </Text>
             </View>
           ) : null}

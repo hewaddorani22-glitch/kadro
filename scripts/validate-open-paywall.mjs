@@ -79,8 +79,8 @@ function guardFixture(state) {
     'expo-apple-authentication': { isAvailableAsync: async () => false },
     'expo-router': { usePathname: () => state.path, useSegments: () => [state.path.slice(1)], useRouter: () => ({ replace: to => redirects.push(to) }) },
     '@/components/KandroMark': { KandroMark: 'Brand' }, '@/components/ui': { PrimaryButton: 'Primary' }, '@/context/ThemeContext': { useTheme: () => ({ colors: {} }), useThemedStyles: () => ({}) },
-    '@/context/AccessContext': { useAccess: () => ({ ready: true, canUse: true, enrollmentPending: false, entryPaywall: state.entryPaywall ?? false }) },
-    '@/services/accessPolicy': { rememberAccessDestination: path => remembered.push(path), routeRequiresAccess: path => !['/paywall', '/first-scan', '/reminder-setup', '/privacy'].includes(path) },
+    '@/context/AccessContext': { useAccess: () => ({ ready: true, canUse: true, enrollmentPending: false, hardWall: false, entryPaywall: state.entryPaywall ?? false }) },
+    '@/services/accessPolicy': { firstMealRevealOpen: () => false, rememberAccessDestination: path => remembered.push(path), routeRequiresAccess: path => !['/paywall', '/first-scan', '/reminder-setup', '/privacy'].includes(path) },
     '@/hooks/useReminderOnboarding': { useReminderOnboarding: () => state.reminder ?? false }, '@/hooks/useFirstRun': { useFirstRun: () => state.stage },
     '@/services/firstRun': { firstRunRedirect: firstRun.firstRunRedirect },
     '@/context/AppContext': { useApp: () => ({ appleReauthenticationRequired: false, analysisStatus: 'idle', detectedItems: [], hydrationReady: true, localStorageError: false, mealHistory: state.meals ?? [], profile: { completedAt: '2026-10-09' }, retryAccountRecovery: async () => {}, syncMode: 'cloud', wellnessConsentGranted: true }) },
@@ -111,13 +111,15 @@ function guardFixture(state) {
     '@/constants/product': { FREE_SCAN_ALLOWANCE: 3 }, '@/constants/theme': { radii: {}, typeScale: { micro: 12, caption: 13, compact: 15, body: 17, heading: 22, title: 32, display: 56 } }, '@/context/AppContext': { useApp: () => ({ freeScansLeft: 3 }) },
     '@/context/ThemeContext': { useTheme: () => ({ colors: {} }), useThemedStyles: () => ({}) }, '@/hooks/useFirstRun': { useFirstRun: () => stage },
     '@/i18n/LanguageProvider': { useLanguage: () => ({ t: dict }) }, '@/services/firstRun': { setFirstRunStage: async next => { stages.push(next); } }, '@/services/haptics': { selectionHaptic() {} },
+    // Legacy install (no hard wall); the hard-wall variant is covered by validate-hard-paywall.mjs.
+    '@/hooks/useHardWall': { useFreeScanAllowance: () => ({ hardWall: false, allowance: 3 }) }, '@/services/hardWall': { markHardWallUsed: async () => { stages.push('used'); } },
   }).default;
   const all = tree => !tree || typeof tree !== 'object' ? [] : [tree, ...[tree.props?.children].flat(Infinity).flatMap(all)];
   const tree = Screen(); const buttons = all(tree).filter(n => n.type === 'Pressable');
   assert.deepEqual(buttons.slice(0, 3).map(b => b.props.accessibilityLabel), ['photo', 'speak', 'type']);
   assert.ok(all(tree).some(n => n.type === 'Text' && n.props.children === 'allowanceFirst:3'), 'the first scan honestly counts as analysis 1 of 3');
   buttons[0].props.onPress(); assert.deepEqual(routes.at(-1), { pathname: '/(tabs)/scan', params: { mode: 'photo' } });
-  buttons.at(-1).props.onPress(); await ticks(); assert.deepEqual(stages, ['paywall']); assert.equal(routes.at(-1), '/paywall', '"Später" goes on to the offer');
+  buttons.at(-1).props.onPress(); await ticks(); assert.deepEqual(stages, ['used', 'paywall'], '"Später" ends the free scope before the offer'); assert.equal(routes.at(-1), '/paywall', '"Später" goes on to the offer');
   stage = null; assert.equal(Screen().type, 'Redirect', 'outside the first run the prompt is not reachable');
 }
 // Onboarding starts the run; the paywall ends it once viewed.

@@ -41,6 +41,16 @@ for (const [language, clause, dataClause] of [
  }
  assert.match(privacy, /OWNER MUST VERIFY: OpenRouter DPF certification\/SCC in their DPA before release/,
   `${language}: keep the owner verification note next to the transfer paragraph`);
+ // Hard paywall after the first scan (owner decision 10.10.2026): new
+ // accounts get one free sample analysis, a confirmed trial counts as Pro,
+ // existing accounts keep the legacy scope, and the free-meal record is disclosed.
+ for (const rule of language === 'de'
+  ? [/Neue Konten .* eine kostenlose Probe-Analyse/, /siebentägiger Trial zählt als Kandro Pro/, /Wer den ersten Scan überspringt/, /Für Konten, die vorher angelegt wurden, ändert sich nichts/]
+  : [/New accounts .* one free sample analysis/, /seven-day trial confirmed by Apple counts as Kandro Pro/, /If you skip the first scan/, /Nothing changes for accounts created before/]) {
+  assert.match(terms, rule, `${language}: terms must describe the hard paywall honestly (${rule})`);
+ }
+ assert.match(privacy, language === 'de' ? /ID und den Zeitpunkt der einen kostenlosen Mahlzeit/ : /ID and time of the one free meal/, `${language}: the free-meal record must be disclosed`);
+ assert.doesNotMatch(terms + privacy, /alle erhalten denselben Zugang|everyone gets the same access/, `${language}: no longer true for new accounts`);
  // 16+ (owner decision 09.10.2026).
  assert.match(terms, language === 'de' ? /für Nutzer ab 16 Jahren/ : /for users aged 16 and over/);
  assert.doesNotMatch(terms, /ab 14 Jahren|aged 14 and over|14- bis 17|14–17/, `${language}: terms still state the old 14+ minimum`);

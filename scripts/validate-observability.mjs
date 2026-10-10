@@ -55,7 +55,7 @@ values.set('@kandro/meals:v1', beforeFailure);
 const events = [];
 let cloudFail = false;
 const sync = load('src/services/syncRepository.ts', {
-  '@/services/appAccess': { authorizeMealCreate: async () => undefined },
+  '@/services/appAccess': { authorizeMealCreate: async () => undefined }, '@/services/hardWall': { markHardWallUsed: async () => undefined },
   '@/services/localRepository': local,
   '@/services/supabaseClient': { getCurrentSessionUserId: async () => 'one' },
   '@/services/cloudRepository': { saveCloudMeal: async () => { if (cloudFail) throw Error('network'); return true; } },

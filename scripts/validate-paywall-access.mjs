@@ -21,9 +21,11 @@ for(const route of ['/result','https://evil.test','/capture?save=true']) {policy
 policy.rememberAccessDestination('/capture');policy.rememberAccessDestination('/plan');assert.equal(policy.takeAccessDestination(),'/capture');assert.equal(policy.takeAccessDestination(),'/today');
 assert.throws(()=>policy.parseAccessRecord({...b,variant:'A'}));
 const storage=new Map();let readFailure=false,writeFailure=false, owner='first', network=true, remote={...policy.FREE_ACCESS,variant:'unassigned',enrollmentOpen:true}, excludes=0, permits=0, held=null, enrollInput;
+const asyncStorage={getItem:async k=>{if(readFailure)throw Error('storage');return storage.get(k)??null},setItem:async(k,v)=>{if(writeFailure)throw Error('storage');storage.set(k,v)},removeItem:async k=>storage.delete(k)};
+const hardWall=load('src/services/hardWall.ts',{'@react-native-async-storage/async-storage':asyncStorage});
 const app=load('src/services/appAccess.ts',{
- '@react-native-async-storage/async-storage':{getItem:async k=>{if(readFailure)throw Error('storage');return storage.get(k)??null},setItem:async(k,v)=>{if(writeFailure)throw Error('storage');storage.set(k,v)},removeItem:async k=>storage.delete(k)},
- '@/services/accessPolicy':policy,
+ '@react-native-async-storage/async-storage':asyncStorage,
+ '@/services/accessPolicy':policy,'@/services/hardWall':hardWall,
  '@/services/supabaseClient':{functionsBaseUrl:'https://fixture.invalid/functions/v1',supabaseAnonKey:'fixture-public',getAccessSession:async()=>({userId:owner,accessToken:'fixture-'+owner}),getCurrentSessionUserId:async()=>owner,supabase:{rpc:async(name)=>{if(name==='exclude_paywall_access_v1'){excludes++;if(remote.variant==='unassigned')remote=policy.FREE_ACCESS;}else if(name==='authorize_meal_create_v1')permits++;else throw Error(name);return {error:null};}}},
  '@/i18n/active':{getDictionary:()=>({access:{accessRequired:'access_required',saveOnline:'online_required'}})},
  '@/services/subscription':{loadSubscriptionSnapshot:async()=>({mode:'native-store',plans:{monthly:{hasFreeTrial:true,trialDays:7,package:{product:{identifier:'monthly'}}}}})},

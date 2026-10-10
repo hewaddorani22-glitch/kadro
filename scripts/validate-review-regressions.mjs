@@ -142,7 +142,7 @@ const sync = compile(read('src/services/syncRepository.ts'), {
     saveCloudProfile: async profile => { promoted = profile; return true; },
     loadCloudMealHistory: async () => [], hasCloudAnalyzedMeal: async () => false,
   },
-  '@/services/appAccess': { authorizeMealCreate: async () => undefined },
+  '@/services/appAccess': { authorizeMealCreate: async () => undefined }, '@/services/hardWall': { markHardWallUsed: async () => undefined },
   '@/services/localRepository': { getLocalDataGeneration: () => 0, loadLocalAccountSwitch: async () => null, mergeCloudMealSnapshot: async (meals) => meals, loadProfile: async () => local, loadAllStoredScans: async () => [], loadDeletedMealIds: async () => [] },
   '@/services/mockNutrition': { DEFAULT_TARGETS: {} },
   '@/services/personalization': { calculateDailyTargets: p => ({ calories: p.weightKg * 20 }), DEFAULT_PROFILE: initial },

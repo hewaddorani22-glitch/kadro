@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AccessRecord, FREE_ACCESS, UNRESOLVED_ACCESS, parseAccessRecord, resolveAccess } from '@/services/accessPolicy';
+import { AccessRecord, FREE_ACCESS, UNRESOLVED_ACCESS, applyHardWall, parseAccessRecord, resolveAccess } from '@/services/accessPolicy';
+import { getHardWallSnapshot, loadHardWall, setHardWallServerMode } from '@/services/hardWall';
 import { functionsBaseUrl, getAccessSession, getCurrentSessionUserId, supabase, supabaseAnonKey } from '@/services/supabaseClient';
 import { getDictionary } from '@/i18n/active';
 import { loadSubscriptionSnapshot } from '@/services/subscription';
@@ -17,7 +18,12 @@ let generation = 0;
 const listeners = new Set<() => void>();
 export function subscribeAppAccess(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; }
 function emit() { for (const fn of listeners) fn(); }
-export function invalidateAppAccess() { generation++; current = null; measurementVerifiedOwner = null; emit(); }
+export function invalidateAppAccess() { generation++; current = null; measurementVerifiedOwner = null; setHardWallServerMode(null); emit(); }
+// The hard-wall store follows the record's server mode; null = no answer yet.
+function setCurrent(owner: string, record: AccessRecord) { current = { owner, record }; setHardWallServerMode(record.mode ?? null); }
+// A fallback keeps the last server-issued mode: going offline must neither
+// lift a hard wall nor impose one the server already ruled out.
+function freeFallback(cached: AccessRecord): AccessRecord { return cached.mode ? { ...FREE_ACCESS, mode: cached.mode, freeAnalyses: cached.freeAnalyses } : FREE_ACCESS; }
 
 async function read(owner: string): Promise<Cache> {
   const raw = await AsyncStorage.getItem(key(owner));
@@ -37,7 +43,9 @@ async function request(path: string, body?: Record<string, unknown>) {
       ...(body ? { body: JSON.stringify(body) } : {}),
     });
     if (!response.ok) throw Error('access_unavailable');
-    const record = parseAccessRecord(await response.json());
+    const parsed = parseAccessRecord(await response.json());
+    // A server without the 20261010120000 mode still answered: legacy scope.
+    const record: AccessRecord = { ...parsed, mode: parsed.mode ?? 'legacy' };
     if (epoch !== generation || session.userId !== await getCurrentSessionUserId()) throw Error('cloud_identity_changed');
     return { owner: session.userId, record };
   } finally { clearTimeout(timeout); }
@@ -73,7 +81,7 @@ export async function refreshAppAccess(): Promise<AccessRecord> {
     }
     const next = await request('access');
     if (epoch !== generation || next.owner !== owner) throw Error('cloud_identity_changed');
-    current = next;
+    setCurrent(next.owner, next.record);
     measurementVerifiedOwner = owner;
     // Storage errors cannot turn a successfully resolved B into a free fallback.
     await AsyncStorage.setItem(key(owner), JSON.stringify({ ...cached, fallback: false, record: next.record })).catch(() => undefined);
@@ -82,9 +90,9 @@ export async function refreshAppAccess(): Promise<AccessRecord> {
     measurementVerifiedOwner = null;
     if (epoch !== generation || owner !== await getCurrentSessionUserId()) throw error;
     // Existing B keeps its assignment and only the last server-issued expiry.
-    const record = cached.record.variant === 'B' || cached.record.access === 'unknown' ? cached.record : FREE_ACCESS;
+    const record = cached.record.variant === 'B' || cached.record.access === 'unknown' || cached.record.mode === 'hard_after_first_scan' ? cached.record : freeFallback(cached.record);
     await AsyncStorage.setItem(key(owner), JSON.stringify({ ...cached, record, fallback: record.access === 'free' })).catch(() => undefined);
-    current = { owner, record };
+    setCurrent(owner, record);
     return record;
   }
 }
@@ -109,13 +117,13 @@ export async function completeAccessEnrollment(firstUse: boolean): Promise<Acces
     await AsyncStorage.setItem(key(owner), JSON.stringify({ ...cached, record: next, fallback: false })).catch(() => undefined);
   } catch {
     if (epoch !== generation || owner !== await getCurrentSessionUserId()) throw Error('cloud_identity_changed');
-    next = cached.record.variant === 'B' ? cached.record : FREE_ACCESS;
+    next = cached.record.variant === 'B' || cached.record.mode === 'hard_after_first_scan' ? cached.record : freeFallback(cached.record);
     await AsyncStorage.setItem(key(owner), JSON.stringify({ ...cached, record: next, fallback: next.variant !== 'B' }));
     if (next.variant !== 'B') await supabase?.rpc('exclude_paywall_access_v1');
   }
   if (epoch !== generation || owner !== await getCurrentSessionUserId()) throw Error('cloud_identity_changed');
   await AsyncStorage.removeItem(entryKey(owner)).catch(() => undefined);
-  current = { owner, record: next }; emit();
+  setCurrent(owner, next); emit();
   return next;
 }
 export async function markAccessPaywallSeen() {
@@ -126,17 +134,21 @@ export async function accessPaywallSeen() {
   const owner = await getCurrentSessionUserId();
   return owner ? (await read(owner)).paywallSeen === true : true;
 }
+/** The record new use is checked against, including the install's hard wall. */
+async function effectiveRecord(owner: string) {
+  await loadHardWall();
+  return applyHardWall(current?.owner === owner ? current.record : (await read(owner)).record, getHardWallSnapshot());
+}
 /** UI and local saves share the same resolver; the server independently enforces it. */
 export async function assertNewAppUse() {
   const owner = await getCurrentSessionUserId();
   if (!owner) return;
-  const record = current?.owner === owner ? current.record : (await read(owner)).record;
-  if (!['active', 'free'].includes(resolveAccess(record))) throw Error(getDictionary().access.accessRequired);
+  if (!['active', 'free'].includes(resolveAccess(await effectiveRecord(owner)))) throw Error(getDictionary().access.accessRequired);
 }
 export async function authorizeMealCreate(id: string) {
   await assertNewAppUse();
   const owner = await getCurrentSessionUserId();
-  const record = owner ? (current?.owner === owner ? current.record : (await read(owner)).record) : FREE_ACCESS;
+  const record = owner ? await effectiveRecord(owner) : FREE_ACCESS;
   // A/old clients retain offline creation. B needs a per-meal server receipt
   // before its local pending mutation; retrying that receipt after expiry works.
   if (record.hard) {

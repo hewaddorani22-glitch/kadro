@@ -60,10 +60,16 @@ for (const [locale, info] of locales) {
   if (!(german ? /medizinische Beratung/ : /medical advice/).test(info.description)) {
     problems.push(`${locale}: keep the short no-medical-advice line`);
   }
-  const freeAndPro = german ? [/Kostenlos:/, /drei KI-Analysen/, /Kandro Pro:/, /Fair Use/, /Wochenrückblick/]
-    : [/Free:/, /three AI analyses/, /Kandro Pro:/, /fair use/, /weekly review/];
-  if (freeAndPro.some(rule => !rule.test(info.description))) {
-    problems.push(`${locale}: the free and Pro scope must be stated plainly`);
+  // Owner decision 10.10.2026: new installs get one free sample analysis, then
+  // the hard paywall. The listing describes what a new download gets, plainly.
+  const access = german
+    ? [/ZUGANG/, /Eine kostenlose Probe-Analyse, danach Kandro Pro mit 7 Tagen gratis testen \(wenn berechtigt\)\./, /Automatische Verlängerung, Kündigung in den Apple-Einstellungen\./, /Kandro Pro:/, /Fair Use/, /Wochenrückblick/, /bleiben immer erreichbar/]
+    : [/ACCESS/, /One free sample analysis, then try Kandro Pro free for 7 days \(if eligible\)\./, /Auto-renewing; cancel in your Apple settings\./, /Kandro Pro:/, /fair use/, /weekly review/, /always remain accessible/];
+  if (access.some(rule => !rule.test(info.description))) {
+    problems.push(`${locale}: the access section (one free sample analysis, then Kandro Pro with an eligible trial) must be stated plainly`);
+  }
+  if (/drei KI-Analysen|three AI analyses|Kostenlos:|\bFree:/.test(info.description)) {
+    problems.push(`${locale}: the listing must not promise the legacy free scope to new downloads`);
   }
   const listing = [info.description, info.promoText, info.releaseNotes ?? ''].join('\n');
   if (/A\/B|variant|Variante|verifi|Zugangstest|access test|experiment/i.test(listing)) {

@@ -85,7 +85,7 @@ For camera or navigation changes, also run the app in Expo Go and manually verif
 2. Demo capture through analyzing and confirmation.
 3. `weniger / passt / mehr` and gram-level detail correction both update the estimate.
 4. Confirming the result saves it once and updates Today by exactly the corrected meal totals.
-5. The soft paywall appears once, after the first saved meal; the limit paywall appears only after the 3 free AI analyses are used.
+5. New install (hard wall, 10/2026): exactly one free analysis; after the first saved meal (or "Später") the paywall has no close button and every route except paywall, account help, legal and data controls leads to it; a sandbox trial opens the app. Existing install: the soft paywall appears once after the first saved meal; the limit paywall only after the 3 free AI analyses.
 6. The result sequence counts the meal up, the remaining day down, then reveals the recommendation; Reduce Motion skips the sequence.
 
 ## Change discipline
