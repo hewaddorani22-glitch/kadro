@@ -12,6 +12,7 @@ import { hasRecipe } from '@/services/recipes';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { recordRecommendationFeedback, recordRecommendationSet } from '@/services/cloudRepository';
 import { recommendMeals } from '@/services/recommendations';
+import { ComboPortion, comboSearchEntries, productDisplayName, StoreId, SUPERMARKET_DATA, supermarketCombos, SupermarketCombo } from '@/services/supermarketCombos';
 import { SMALL_MEAL_CALORIES, suggestedNutrition } from '@/utils/mealSuggestions';
 import { trackEvent } from '@/services/telemetry';
 import { useLanguage } from '@/i18n/LanguageProvider';
@@ -25,7 +26,7 @@ export default function PlanScreen() {
   const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{ context?: string; fromScan?: string }>();
   const router = useRouter();
-  const { consumed, freeScansLeft, hasLoggedScan, logPlannedMeal, profile, remaining, targets } = useApp();
+  const { consumed, freeScansLeft, hasLoggedScan, logPlannedMeal, profile, remaining, startPlannedDraft, targets } = useApp();
   const { language, locale, t } = useLanguage();
   const contexts: { id: MealContext; title: string; detail: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { id: 'home', title: t.plan.ctxHome, detail: t.plan.ctxHomeDetail, icon: 'home-outline' },
@@ -54,22 +55,53 @@ export default function PlanScreen() {
     // device guess.
     [language, profile.preferences, remaining, selected],
   );
+  // Supermarkt shows real products. The dish catalogue stays the fallback if
+  // the bundled product data ever cannot fill three baskets.
+  const combos = useMemo(
+    () => (selected === 'supermarket' ? supermarketCombos(remaining, profile.preferences) : []),
+    [profile.preferences, remaining, selected],
+  );
+  const marketMode = selected === 'supermarket' && combos.length === 3;
+  const options: { id: string; calories: number; protein: number }[] = marketMode ? combos : suggestions;
   const range = (key: 'calories' | 'protein') => {
-    const values = suggestions.map((suggestion) => suggestion[key]);
+    const values = options.map((option) => option[key]);
     const low = Math.min(...values), high = Math.max(...values);
     return low === high ? formatNumber(low, locale) : `${formatNumber(low, locale)}–${formatNumber(high, locale)}`;
   };
 
   useEffect(() => {
-    if (!selected || suggestions.length !== 3) return;
-    const key = `${selected}:${remaining.calories}:${remaining.protein}:${suggestions.map((suggestion) => suggestion.id).join(',')}`;
+    if (!selected || options.length !== 3) return;
+    const key = `${selected}:${remaining.calories}:${remaining.protein}:${options.map((option) => option.id).join(',')}`;
     if (recordedSet.current === key) return;
     recordedSet.current = key;
     trackEvent('recommendation set viewed', { meal_context: selected });
-    void recordRecommendationSet(selected, remaining, suggestions).catch(() => {
+    const recorded: MealSuggestion[] = marketMode
+      ? combos.map((combo) => ({ id: combo.id, title: '', detail: '', time: '', calories: combo.calories, protein: combo.protein, carbs: combo.carbs, fat: combo.fat }))
+      : suggestions;
+    void recordRecommendationSet(selected, remaining, recorded).catch(() => {
       recordedSet.current = '';
     });
-  }, [remaining, selected, suggestions]);
+  }, [combos, marketMode, options, remaining, selected, suggestions]);
+
+  const portionLabel = (portion: ComboPortion) => {
+    const [one, many] = t.plan.marketPortion[portion.container];
+    const amount = portion.kind === 'half' ? t.plan.marketHalf(one) : t.plan.marketCount(portion.count, portion.count === 1 ? one : many);
+    return `${amount} · ${t.plan.marketGrams(formatNumber(portion.grams, locale), portion.estimated)}`;
+  };
+
+  /**
+   * A basket is several products eaten as one meal. It opens the normal
+   * confirm screen prefilled with every product and amount, so the person can
+   * still change what they actually bought before it is logged.
+   */
+  const takeCombo = (combo: SupermarketCombo, rank: number) => {
+    if (!selected) return;
+    void selectionHaptic();
+    trackEvent('recommendation selected', { meal_context: selected, rank: rank as 1 | 2 | 3 });
+    void recordRecommendationFeedback(selected, combo.id, 'accepted').catch(() => undefined);
+    startPlannedDraft(comboSearchEntries(combo, language, portionLabel));
+    router.push('/confirm');
+  };
 
   const chooseContext = (context: MealContext) => {
     void selectionHaptic();
@@ -200,7 +232,62 @@ export default function PlanScreen() {
             <Ionicons color={colors.accentText} name="checkmark-done" size={24} />
           </View>
 
-          {suggestions.map((suggestion, index) => {
+          {marketMode ? combos.map((combo, index) => {
+            const afterMeal = Math.round(availableCalories - combo.calories);
+            const estimated = combo.items.some((item) => item.portion.estimated);
+            const prefix = estimated ? '~' : '';
+            return (
+              <Card key={combo.id} style={styles.suggestion}>
+                <View style={styles.suggestionTop}>
+                  <View style={styles.rank}><Text style={styles.rankText}>0{index + 1}</Text></View>
+                  <View style={styles.comboItems}>
+                    {combo.items.map((item) => (
+                      <View key={item.product.id} style={styles.comboItem}>
+                        <Text style={styles.suggestionTitle}>{productDisplayName(item.product, language)}</Text>
+                        <Text style={styles.suggestionDetail}>
+                          {portionLabel(item.portion)} · {t.plan.marketItemMacros(formatNumber(item.calories, locale), item.protein)}
+                        </Text>
+                        {item.portion.estimated ? <Text style={styles.source}>{t.plan.marketEstimatedPiece}</Text> : null}
+                        {item.product.stores.length ? (
+                          <View style={styles.storeRow}>
+                            {item.product.stores.map((store) => {
+                              const storeName = t.plan.marketStores[store as StoreId] ?? store;
+                              return (
+                                <View
+                                  accessibilityLabel={t.plan.marketStore(storeName)}
+                                  accessible
+                                  key={store}
+                                  style={styles.storeChip}
+                                >
+                                  <Ionicons color={colors.muted} name="storefront-outline" size={12} />
+                                  <Text style={styles.storeChipText}>{storeName}</Text>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                <View style={styles.nutritionRow}>
+                  <NutritionStat label="kcal" value={`${prefix}${formatNumber(combo.calories, locale)}`} />
+                  <NutritionStat label={t.common.protein} value={`${prefix}${combo.protein} g`} />
+                  <NutritionStat label={t.common.carbs} value={`${prefix}${combo.carbs} g`} />
+                  <NutritionStat label={t.common.fat} value={`${prefix}${combo.fat} g`} />
+                </View>
+                <Text style={styles.portionResult}>
+                  {afterMeal < 0 ? t.plan.afterOver(formatNumber(-afterMeal, locale)) : t.plan.afterLeft(formatNumber(afterMeal, locale))}
+                </Text>
+                <PrimaryButton
+                  icon="basket-outline"
+                  label={t.plan.marketTake}
+                  onPress={() => takeCombo(combo, index + 1)}
+                  variant="secondary"
+                />
+              </Card>
+            );
+          }) : suggestions.map((suggestion, index) => {
             const isChosen = chosen === suggestion.id;
             const relativePortion = isChosen ? portion : 1;
             const nutrition = suggestedNutrition(suggestion, relativePortion);
@@ -287,7 +374,14 @@ export default function PlanScreen() {
             );
           })}
 
-          <Text style={styles.catalogNote}>{t.plan.catalogNote}</Text>
+          {marketMode ? (
+            <>
+              <Text style={styles.catalogNote}>{t.plan.marketNote}</Text>
+              <Text style={styles.catalogNote}>{t.plan.marketAttribution(formatDataDate(SUPERMARKET_DATA.fetchedAt, locale))}</Text>
+            </>
+          ) : (
+            <Text style={styles.catalogNote}>{t.plan.catalogNote}</Text>
+          )}
 
           {hasLoggedScan && params.fromScan !== '1' && subscriptionStatus !== 'active' ? (
             <Pressable accessibilityRole="button" onPress={() => router.push('/paywall')} style={styles.proBanner}>
@@ -308,6 +402,11 @@ export default function PlanScreen() {
       )}
     </Screen>
   );
+}
+
+function formatDataDate(isoDate: string, locale: string) {
+  const date = new Date(`${isoDate}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? isoDate : date.toLocaleDateString(locale, { month: 'short', year: 'numeric' });
 }
 
 function NutritionStat({ label, value }: { label: string; value: number | string }) {
@@ -353,6 +452,11 @@ const makeStyles = (colors: ThemeColors) => StyleSheet.create({
   rank: { width: 34, height: 34, borderRadius: 12, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   rankText: { color: colors.muted, fontSize: 12, fontWeight: '800' },
   suggestionCopy: { flex: 1, minWidth: 0, gap: 4 },
+  comboItems: { flex: 1, minWidth: 0, gap: 12 },
+  comboItem: { gap: 4 },
+  storeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 2 },
+  storeChip: { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: radii.pill, backgroundColor: colors.background, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 8, paddingVertical: 3 },
+  storeChipText: { color: colors.text, fontSize: 12, fontWeight: '700' },
   suggestionTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   suggestionDetail: { color: colors.muted, fontSize: 12, lineHeight: 18 },
   source: { color: colors.muted, fontSize: 12, marginTop: 2 },

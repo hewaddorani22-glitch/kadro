@@ -58,6 +58,11 @@ export default function ConfirmScreen() {
   const replaceFood = (id: string) => router.push({ pathname: '/correct-food', params: { itemId: id } } as never);
 
   const changeInput = () => {
+    // A supermarket basket came from Plan; going back shows the other two.
+    if (scanMode === 'plan') {
+      router.back();
+      return;
+    }
     if (scanMode === 'search') {
       router.dismissTo('/(tabs)/scan?mode=search');
       return;
@@ -283,7 +288,7 @@ export default function ConfirmScreen() {
       {!hasIncludedFood ? <Text style={styles.subtitle}>{t.confirm.emptyMeal}</Text> : null}
       <PrimaryButton disabled={!canConfirm} icon="arrow-forward" label={t.confirm.proceed} onPress={confirm} />
       <PrimaryButton
-        label={scanMode === 'search' ? t.confirm.searchAgain : scanMode === 'description' ? t.confirm.editDescription : scanMode === 'barcode' ? t.confirm.scanAgain : t.confirm.retake}
+        label={scanMode === 'plan' ? t.confirm.otherOption : scanMode === 'search' ? t.confirm.searchAgain : scanMode === 'description' ? t.confirm.editDescription : scanMode === 'barcode' ? t.confirm.scanAgain : t.confirm.retake}
         onPress={changeInput}
         variant="ghost"
       />
